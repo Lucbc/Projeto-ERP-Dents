@@ -1,0 +1,57 @@
+﻿version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: erp_dents_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: erp_dents_api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      EXAMS_BASE_PATH: ${EXAMS_BASE_PATH}
+      TZ: ${TZ}
+    volumes:
+      - exams_data:${EXAMS_BASE_PATH:-/data/exams}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${PUBLIC_API_URL}
+    container_name: erp_dents_web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PROD_PORT:-8080}:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  exams_data:

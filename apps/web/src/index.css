@@ -1,0 +1,44 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 201 40% 97%;
+  --foreground: 216 33% 17%;
+  --card: 0 0% 100%;
+  --card-foreground: 216 33% 17%;
+  --primary: 192 88% 34%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 198 23% 92%;
+  --muted-foreground: 214 18% 42%;
+  --border: 200 21% 82%;
+  --input: 200 21% 82%;
+  --ring: 192 88% 34%;
+  --success: 145 63% 32%;
+  --danger: 6 78% 48%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(6, 182, 212, 0.18), transparent 36%),
+    radial-gradient(circle at 90% 20%, rgba(45, 212, 191, 0.16), transparent 34%),
+    linear-gradient(160deg, #f3f9fd 0%, #eef6fb 45%, #f7fbff 100%);
+  color: hsl(var(--foreground));
+  font-family: "Manrope", "Segoe UI", sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.rbc-calendar {
+  background: white;
+  border-radius: 12px;
+  padding: 0.5rem;
+}
