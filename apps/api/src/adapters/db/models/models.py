@@ -11,6 +11,7 @@ from sqlalchemy import (
     Enum as SAEnum,
     ForeignKey,
     Index,
+    JSON,
     Text,
     UniqueConstraint,
 )
@@ -76,6 +77,17 @@ class UserModel(Base):
     )
 
     dentist: Mapped[DentistModel | None] = relationship("DentistModel")
+
+
+class RolePermissionModel(Base):
+    __tablename__ = "role_permissions"
+
+    role: Mapped[UserRole] = mapped_column(SAEnum(UserRole, name="user_role"), primary_key=True)
+    permissions: Mapped[dict[str, dict[str, bool]]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
+    )
 
 
 class AppointmentModel(Base):

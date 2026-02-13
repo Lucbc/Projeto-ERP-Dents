@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { formatDate } from "@/lib/datetime";
 import { getApiErrorMessage } from "@/lib/api";
 import { patientService } from "@/lib/services";
@@ -36,6 +37,7 @@ function nullable(value?: string) {
 
 export function PatientsPage() {
   const { toast } = useToast();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -111,10 +113,15 @@ export function PatientsPage() {
   });
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const canCreate = can("patients", "create");
+  const canUpdate = can("patients", "update");
+  const canDelete = can("patients", "delete");
+  const canViewExams = can("exams", "view");
 
   const items = useMemo(() => patientsQuery.data?.items ?? [], [patientsQuery.data]);
 
   const onNew = () => {
+    if (!canCreate) return;
     setEditingPatient(null);
     form.reset({
       full_name: "",
@@ -129,6 +136,7 @@ export function PatientsPage() {
   };
 
   const onEdit = (patient: Patient) => {
+    if (!canUpdate) return;
     setEditingPatient(patient);
     form.reset({
       full_name: patient.full_name,
@@ -166,7 +174,7 @@ export function PatientsPage() {
               onChange={(event) => setSearch(event.target.value)}
               className="md:w-80"
             />
-            <Button onClick={onNew}>Novo</Button>
+            {canCreate && <Button onClick={onNew}>Novo</Button>}
           </div>
         </div>
       </Card>
@@ -198,24 +206,34 @@ export function PatientsPage() {
                       <td className="p-2">{patient.cpf ?? "-"}</td>
                       <td className="p-2">{patient.phone ?? patient.email ?? "-"}</td>
                       <td className="p-2">
-                        <div className="flex gap-2">
-                          <Button variant="outline" onClick={() => onEdit(patient)}>
-                            Editar
-                          </Button>
-                          <Link to={`/patients/${patient.id}`}>
-                            <Button variant="outline">Exames</Button>
-                          </Link>
-                          <Button
-                            variant="danger"
-                            onClick={() => {
-                              if (window.confirm("Deseja remover este paciente?")) {
-                                deleteMutation.mutate(patient.id);
-                              }
-                            }}
-                          >
-                            Excluir
-                          </Button>
-                        </div>
+                        {!canUpdate && !canDelete && !canViewExams ? (
+                          <span className="text-slate-400">-</span>
+                        ) : (
+                          <div className="flex gap-2">
+                            {canUpdate && (
+                              <Button variant="outline" onClick={() => onEdit(patient)}>
+                                Editar
+                              </Button>
+                            )}
+                            {canViewExams && (
+                              <Link to={`/patients/${patient.id}`}>
+                                <Button variant="outline">Exames</Button>
+                              </Link>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="danger"
+                                onClick={() => {
+                                  if (window.confirm("Deseja remover este paciente?")) {
+                                    deleteMutation.mutate(patient.id);
+                                  }
+                                }}
+                              >
+                                Excluir
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -30,13 +30,13 @@ export function DashboardPage() {
   const isLoading = patientsQuery.isLoading || dentistsQuery.isLoading || appointmentsQuery.isLoading;
   const isError = patientsQuery.isError || dentistsQuery.isError || appointmentsQuery.isError;
 
-  if (isLoading) return <LoadingState message="Carregando dashboard..." />;
+  if (isLoading) return <LoadingState message="Carregando painel..." />;
   if (isError) return <ErrorState message="Não foi possível carregar os indicadores." />;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold text-slate-800">Dashboard</h1>
+        <h1 className="font-display text-2xl font-semibold text-slate-800">Painel</h1>
         <p className="text-sm text-slate-500">Visão geral rápida da clínica.</p>
       </div>
 

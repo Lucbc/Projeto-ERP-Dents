@@ -16,20 +16,18 @@ branch_labels = None
 depends_on = None
 
 
-user_role_enum = sa.Enum("admin", "receptionist", "dentist", name="user_role")
+user_role_enum = sa.Enum("admin", "receptionist", "dentist", name="user_role", create_type=False)
 appointment_status_enum = sa.Enum(
     "scheduled",
     "confirmed",
     "completed",
     "cancelled",
     name="appointment_status",
+    create_type=False,
 )
 
 
 def upgrade() -> None:
-    user_role_enum.create(op.get_bind(), checkfirst=True)
-    appointment_status_enum.create(op.get_bind(), checkfirst=True)
-
     op.create_table(
         "patients",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),

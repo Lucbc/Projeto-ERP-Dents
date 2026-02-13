@@ -123,6 +123,26 @@ class UserListResponse(BaseModel):
     total: int
 
 
+class PermissionActionSchema(BaseModel):
+    view: bool
+    create: bool
+    update: bool
+    delete: bool
+
+
+class RolePermissionResponse(BaseModel):
+    role: UserRole
+    permissions: dict[str, PermissionActionSchema]
+
+
+class RolePermissionListResponse(BaseModel):
+    items: list[RolePermissionResponse]
+
+
+class RolePermissionUpdateRequest(BaseModel):
+    permissions: dict[str, PermissionActionSchema]
+
+
 class AppointmentCreateRequest(BaseModel):
     patient_id: UUID
     dentist_id: UUID
@@ -153,6 +173,22 @@ class AppointmentResponse(AppBaseSchema):
     updated_at: datetime
     patient_name: str | None = None
     dentist_name: str | None = None
+
+
+class ConsultationPatientSummaryResponse(BaseModel):
+    patient: PatientResponse
+    next_appointment: AppointmentResponse | None = None
+
+
+class ConsultationPatientListResponse(BaseModel):
+    items: list[ConsultationPatientSummaryResponse]
+    total: int
+
+
+class ConsultationPatientDetailResponse(BaseModel):
+    patient: PatientResponse
+    next_appointment: AppointmentResponse | None = None
+    upcoming_appointments: list[AppointmentResponse]
 
 
 class ExamResponse(AppBaseSchema):

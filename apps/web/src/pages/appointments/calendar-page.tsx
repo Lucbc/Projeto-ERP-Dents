@@ -23,7 +23,9 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
+import { appointmentStatusOptions } from "@/lib/labels";
 import { appointmentService, dentistService, patientService } from "@/lib/services";
 import type { Appointment } from "@/types";
 
@@ -31,10 +33,29 @@ const locales = { "pt-BR": ptBR };
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: (date) => startOfWeek(date, { weekStartsOn: 1 }),
+  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 1 }),
   getDay,
   locales,
 });
+
+const calendarMessages = {
+  date: "Data",
+  time: "Hora",
+  event: "Evento",
+  allDay: "Dia inteiro",
+  week: "Semana",
+  work_week: "Semana útil",
+  day: "Dia",
+  month: "Mês",
+  previous: "Anterior",
+  next: "Próximo",
+  yesterday: "Ontem",
+  tomorrow: "Amanhã",
+  today: "Hoje",
+  agenda: "Agenda",
+  noEventsInRange: "Nenhuma consulta neste período.",
+  showMore: (total: number) => `+${total} mais`,
+};
 
 const appointmentSchema = z
   .object({
@@ -58,6 +79,7 @@ type CalendarEvent = Event & {
 
 export function CalendarPage() {
   const { toast } = useToast();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
 
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -148,6 +170,9 @@ export function CalendarPage() {
 
   const patients = patientsQuery.data?.items ?? [];
   const dentists = dentistsQuery.data?.items ?? [];
+  const canCreate = can("appointments", "create");
+  const canUpdate = can("appointments", "update");
+  const canDelete = can("appointments", "delete");
 
   const events = useMemo<CalendarEvent[]>(
     () =>
@@ -206,7 +231,7 @@ export function CalendarPage() {
           <p className="text-sm text-slate-600">
             Agenda em calendário com visualizações por dia, semana e mês.
           </p>
-          <Button onClick={openCreateModal}>Nova consulta</Button>
+          {canCreate && <Button onClick={openCreateModal}>Nova consulta</Button>}
         </div>
       </Card>
 
@@ -218,14 +243,19 @@ export function CalendarPage() {
             startAccessor="start"
             endAccessor="end"
             culture="pt-BR"
+            messages={calendarMessages}
             views={[Views.DAY, Views.WEEK, Views.MONTH]}
             view={currentView}
             onView={(view) => setCurrentView(view)}
             date={currentDate}
             onNavigate={(date) => setCurrentDate(date)}
-            onSelectEvent={(event) => openEditModal((event as CalendarEvent).resource)}
-            selectable
+            onSelectEvent={(event) => {
+              if (!canUpdate) return;
+              openEditModal((event as CalendarEvent).resource);
+            }}
+            selectable={canCreate}
             onSelectSlot={(slot) => {
+              if (!canCreate) return;
               setEditingAppointment(null);
               form.reset({
                 patient_id: "",
@@ -316,10 +346,11 @@ export function CalendarPage() {
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Status</label>
             <Select {...form.register("status")}>
-              <option value="scheduled">scheduled</option>
-              <option value="confirmed">confirmed</option>
-              <option value="completed">completed</option>
-              <option value="cancelled">cancelled</option>
+              {appointmentStatusOptions.map((statusOption) => (
+                <option key={statusOption.value} value={statusOption.value}>
+                  {statusOption.label}
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -330,7 +361,7 @@ export function CalendarPage() {
 
           <div className="md:col-span-2 mt-2 flex justify-between gap-2">
             <div>
-              {editingAppointment && (
+              {editingAppointment && canDelete && (
                 <Button
                   type="button"
                   variant="danger"

@@ -8,8 +8,9 @@ from uuid import UUID
 
 class UserRole(str, Enum):
     admin = "admin"
-    receptionist = "receptionist"
+    coordinator = "coordinator"
     dentist = "dentist"
+    reception = "reception"
 
 
 class AppointmentStatus(str, Enum):
@@ -54,6 +55,14 @@ class User:
     dentist_id: UUID | None
     password_hash: str
     is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(slots=True)
+class RolePermission:
+    role: UserRole
+    permissions: dict[str, dict[str, bool]]
     created_at: datetime
     updated_at: datetime
 

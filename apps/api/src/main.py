@@ -8,9 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.error_handlers import register_exception_handlers
 from src.api.routers.appointments_router import router as appointments_router
 from src.api.routers.auth_router import router as auth_router
+from src.api.routers.consultations_router import router as consultations_router
 from src.api.routers.dentists_router import router as dentists_router
 from src.api.routers.exams_router import router as exams_router
 from src.api.routers.patients_router import router as patients_router
+from src.api.routers.permissions_router import router as permissions_router
 from src.api.routers.users_router import router as users_router
 from src.config import get_settings
 
@@ -49,3 +51,5 @@ app.include_router(dentists_router)
 app.include_router(users_router)
 app.include_router(appointments_router)
 app.include_router(exams_router)
+app.include_router(permissions_router)
+app.include_router(consultations_router)

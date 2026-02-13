@@ -1,5 +1,23 @@
-﻿export type UserRole = "admin" | "receptionist" | "dentist";
+export type UserRole = "admin" | "coordinator" | "dentist" | "reception";
 export type AppointmentStatus = "scheduled" | "confirmed" | "completed" | "cancelled";
+export type PermissionAction = "view" | "create" | "update" | "delete";
+export type PermissionResource =
+  | "dashboard"
+  | "patients"
+  | "dentists"
+  | "appointments"
+  | "calendar"
+  | "exams"
+  | "users"
+  | "permissions"
+  | "consultations";
+
+export interface PermissionActions {
+  view: boolean;
+  create: boolean;
+  update: boolean;
+  delete: boolean;
+}
 
 export interface Patient {
   id: string;
@@ -70,4 +88,29 @@ export interface TokenResponse {
   access_token: string;
   token_type: string;
   user: User;
+}
+
+export interface RolePermission {
+  role: UserRole;
+  permissions: Record<string, PermissionActions>;
+}
+
+export interface RolePermissionListResponse {
+  items: RolePermission[];
+}
+
+export interface ConsultationPatientSummary {
+  patient: Patient;
+  next_appointment: Appointment | null;
+}
+
+export interface ConsultationPatientListResponse {
+  items: ConsultationPatientSummary[];
+  total: number;
+}
+
+export interface ConsultationPatientDetailResponse {
+  patient: Patient;
+  next_appointment: Appointment | null;
+  upcoming_appointments: Appointment[];
 }

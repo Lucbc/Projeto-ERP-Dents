@@ -13,9 +13,11 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
+import { appointmentStatusLabels, appointmentStatusOptions } from "@/lib/labels";
 import { appointmentService, dentistService, patientService } from "@/lib/services";
-import type { Appointment, AppointmentStatus } from "@/types";
+import type { Appointment } from "@/types";
 
 const appointmentSchema = z
   .object({
@@ -33,15 +35,9 @@ const appointmentSchema = z
 
 type AppointmentForm = z.infer<typeof appointmentSchema>;
 
-const statusLabel: Record<AppointmentStatus, string> = {
-  scheduled: "Agendada",
-  confirmed: "Confirmada",
-  completed: "Concluída",
-  cancelled: "Cancelada",
-};
-
 export function AppointmentsPage() {
   const { toast } = useToast();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
 
   const [fromDate, setFromDate] = useState("");
@@ -136,10 +132,14 @@ export function AppointmentsPage() {
   const items = useMemo(() => appointmentsQuery.data ?? [], [appointmentsQuery.data]);
   const patients = useMemo(() => patientsQuery.data?.items ?? [], [patientsQuery.data]);
   const dentists = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
+  const canCreate = can("appointments", "create");
+  const canUpdate = can("appointments", "update");
+  const canDelete = can("appointments", "delete");
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   const onNew = () => {
+    if (!canCreate) return;
     const start = new Date();
     const end = new Date(start.getTime() + 30 * 60 * 1000);
 
@@ -156,6 +156,7 @@ export function AppointmentsPage() {
   };
 
   const onEdit = (appointment: Appointment) => {
+    if (!canUpdate) return;
     setEditingAppointment(appointment);
     form.reset({
       patient_id: appointment.patient_id,
@@ -201,7 +202,7 @@ export function AppointmentsPage() {
             ))}
           </Select>
 
-          <Button onClick={onNew}>Nova</Button>
+          {canCreate && <Button onClick={onNew}>Nova</Button>}
         </div>
       </Card>
 
@@ -232,23 +233,31 @@ export function AppointmentsPage() {
                       <td className="p-2">{appointment.dentist_name ?? "-"}</td>
                       <td className="p-2">{new Date(appointment.start_at).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{new Date(appointment.end_at).toLocaleString("pt-BR")}</td>
-                      <td className="p-2">{statusLabel[appointment.status]}</td>
+                      <td className="p-2">{appointmentStatusLabels[appointment.status]}</td>
                       <td className="p-2">
-                        <div className="flex gap-2">
-                          <Button variant="outline" onClick={() => onEdit(appointment)}>
-                            Editar
-                          </Button>
-                          <Button
-                            variant="danger"
-                            onClick={() => {
-                              if (window.confirm("Deseja remover esta consulta?")) {
-                                deleteMutation.mutate(appointment.id);
-                              }
-                            }}
-                          >
-                            Excluir
-                          </Button>
-                        </div>
+                        {!canUpdate && !canDelete ? (
+                          <span className="text-slate-400">-</span>
+                        ) : (
+                          <div className="flex gap-2">
+                            {canUpdate && (
+                              <Button variant="outline" onClick={() => onEdit(appointment)}>
+                                Editar
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="danger"
+                                onClick={() => {
+                                  if (window.confirm("Deseja remover esta consulta?")) {
+                                    deleteMutation.mutate(appointment.id);
+                                  }
+                                }}
+                              >
+                                Excluir
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -314,10 +323,11 @@ export function AppointmentsPage() {
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Status</label>
             <Select {...form.register("status")}>
-              <option value="scheduled">scheduled</option>
-              <option value="confirmed">confirmed</option>
-              <option value="completed">completed</option>
-              <option value="cancelled">cancelled</option>
+              {appointmentStatusOptions.map((statusOption) => (
+                <option key={statusOption.value} value={statusOption.value}>
+                  {statusOption.label}
+                </option>
+              ))}
             </Select>
           </div>
 

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from uuid import UUID
 
-from src.core.domain.entities import Appointment, Dentist, Exam, Patient, User
+from src.core.domain.entities import Appointment, Dentist, Exam, Patient, RolePermission, User, UserRole
 
 
 class PatientRepository(ABC):
@@ -62,6 +62,17 @@ class UserRepository(ABC):
 
     @abstractmethod
     def delete(self, user_id: UUID) -> bool: ...
+
+
+class RolePermissionRepository(ABC):
+    @abstractmethod
+    def get_by_role(self, role: UserRole) -> RolePermission | None: ...
+
+    @abstractmethod
+    def list_all(self) -> list[RolePermission]: ...
+
+    @abstractmethod
+    def upsert(self, role: UserRole, permissions: dict[str, dict[str, bool]]) -> RolePermission: ...
 
 
 class AppointmentRepository(ABC):

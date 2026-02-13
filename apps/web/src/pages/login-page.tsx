@@ -78,7 +78,7 @@ export function LoginPage() {
       await login(values.email, values.password);
     },
     onSuccess: () => {
-      toast("Admin inicial criado com sucesso.");
+      toast("Administrador inicial criado com sucesso.");
     },
     onError: (error) => {
       toast(getApiErrorMessage(error), "error");
@@ -124,7 +124,7 @@ export function LoginPage() {
           {needsBootstrapQuery.data?.needsBootstrap && (
             <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-3">
               <p className="text-sm text-amber-900">
-                Nenhum usuário encontrado. Crie o admin inicial para liberar o sistema.
+                Nenhum usuário encontrado. Crie o administrador inicial para liberar o sistema.
               </p>
               <Button
                 type="button"
@@ -132,14 +132,16 @@ export function LoginPage() {
                 className="mt-2"
                 onClick={() => setShowBootstrap((prev) => !prev)}
               >
-                {showBootstrap ? "Ocultar formulário" : "Criar admin inicial"}
+                {showBootstrap ? "Ocultar formulário" : "Criar administrador inicial"}
               </Button>
             </div>
           )}
         </Card>
 
         <Card className="border-teal-100 bg-white/95">
-          <h2 className="font-display text-xl font-semibold text-slate-800">Criar admin inicial</h2>
+          <h2 className="font-display text-xl font-semibold text-slate-800">
+            Criar administrador inicial
+          </h2>
           <p className="mt-1 text-sm text-slate-500">
             Use apenas na primeira inicialização, quando o banco está vazio.
           </p>
@@ -184,7 +186,7 @@ export function LoginPage() {
               </div>
 
               <Button type="submit" className="w-full" disabled={bootstrapMutation.isPending}>
-                {bootstrapMutation.isPending ? "Criando..." : "Criar admin"}
+                {bootstrapMutation.isPending ? "Criando..." : "Criar administrador"}
               </Button>
             </form>
           ) : (

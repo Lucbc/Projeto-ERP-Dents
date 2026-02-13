@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { formatDateTime } from "@/lib/datetime";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
 import { examService, patientService } from "@/lib/services";
 
@@ -25,6 +26,7 @@ type UploadForm = z.infer<typeof uploadSchema>;
 export function PatientExamsPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const { toast } = useToast();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
 
   const form = useForm<UploadForm>({
@@ -68,6 +70,9 @@ export function PatientExamsPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
+  const canCreate = can("exams", "create");
+  const canDelete = can("exams", "delete");
+
   if (!patientId) {
     return <ErrorState message="Paciente não informado." />;
   }
@@ -93,32 +98,34 @@ export function PatientExamsPage() {
         </div>
       </Card>
 
-      <Card>
-        <h3 className="font-semibold text-slate-800">Upload de exame</h3>
-        <form
-          className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]"
-          onSubmit={form.handleSubmit((values) => uploadMutation.mutate(values))}
-        >
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Arquivo *</label>
-            <Input type="file" {...form.register("file")} />
-            {form.formState.errors.file && (
-              <p className="mt-1 text-xs text-red-600">{form.formState.errors.file.message as string}</p>
-            )}
-          </div>
+      {canCreate && (
+        <Card>
+          <h3 className="font-semibold text-slate-800">Upload de exame</h3>
+          <form
+            className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]"
+            onSubmit={form.handleSubmit((values) => uploadMutation.mutate(values))}
+          >
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Arquivo *</label>
+              <Input type="file" {...form.register("file")} />
+              {form.formState.errors.file && (
+                <p className="mt-1 text-xs text-red-600">{form.formState.errors.file.message as string}</p>
+              )}
+            </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Notas</label>
-            <Input placeholder="Ex.: radiografia panorâmica" {...form.register("notes")} />
-          </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Notas</label>
+              <Input placeholder="Ex.: radiografia panorâmica" {...form.register("notes")} />
+            </div>
 
-          <div className="self-end">
-            <Button type="submit" disabled={uploadMutation.isPending}>
-              {uploadMutation.isPending ? "Enviando..." : "Enviar"}
-            </Button>
-          </div>
-        </form>
-      </Card>
+            <div className="self-end">
+              <Button type="submit" disabled={uploadMutation.isPending}>
+                {uploadMutation.isPending ? "Enviando..." : "Enviar"}
+              </Button>
+            </div>
+          </form>
+        </Card>
+      )}
 
       <Card>
         <h3 className="mb-3 font-semibold text-slate-800">Arquivos enviados</h3>
@@ -167,16 +174,18 @@ export function PatientExamsPage() {
                             >
                               Abrir
                             </Button>
-                            <Button
-                              variant="danger"
-                              onClick={() => {
-                                if (window.confirm("Deseja remover este exame?")) {
-                                  deleteMutation.mutate(exam.id);
-                                }
-                              }}
-                            >
-                              Excluir
-                            </Button>
+                            {canDelete && (
+                              <Button
+                                variant="danger"
+                                onClick={() => {
+                                  if (window.confirm("Deseja remover este exame?")) {
+                                    deleteMutation.mutate(exam.id);
+                                  }
+                                }}
+                              >
+                                Excluir
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>

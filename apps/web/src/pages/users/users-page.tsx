@@ -11,18 +11,30 @@ import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
+import { userRoleLabels, userRoleOptions } from "@/lib/labels";
 import { dentistService, userService } from "@/lib/services";
 import type { User, UserRole } from "@/types";
 
-const userSchema = z.object({
-  name: z.string().min(2, "Nome obrigatório."),
-  email: z.string().email("E-mail inválido."),
-  role: z.enum(["admin", "receptionist", "dentist"]),
-  dentist_id: z.string().optional(),
-  is_active: z.enum(["true", "false"]),
-  password: z.string().optional(),
-});
+const userSchema = z
+  .object({
+    name: z.string().min(2, "Nome obrigatório."),
+    email: z.string().email("E-mail inválido."),
+    role: z.enum(["admin", "coordinator", "dentist", "reception"]),
+    dentist_id: z.string().optional(),
+    is_active: z.enum(["true", "false"]),
+    password: z.string().optional(),
+  })
+  .superRefine((value, context) => {
+    if (value.role === "dentist" && !value.dentist_id) {
+      context.addIssue({
+        code: "custom",
+        path: ["dentist_id"],
+        message: "Selecione o dentista associado para este perfil.",
+      });
+    }
+  });
 
 const passwordSchema = z
   .object({
@@ -39,6 +51,7 @@ type PasswordForm = z.infer<typeof passwordSchema>;
 
 export function UsersPage() {
   const { toast } = useToast();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -52,7 +65,7 @@ export function UsersPage() {
     defaultValues: {
       name: "",
       email: "",
-      role: "receptionist",
+      role: "reception",
       dentist_id: "",
       is_active: "true",
       password: "",
@@ -140,13 +153,17 @@ export function UsersPage() {
 
   const users = useMemo(() => usersQuery.data?.items ?? [], [usersQuery.data]);
   const dentists = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
+  const canCreate = can("users", "create");
+  const canUpdate = can("users", "update");
+  const canDelete = can("users", "delete");
 
   const onNew = () => {
+    if (!canCreate) return;
     setEditingUser(null);
     form.reset({
       name: "",
       email: "",
-      role: "receptionist",
+      role: "reception",
       dentist_id: "",
       is_active: "true",
       password: "",
@@ -155,6 +172,7 @@ export function UsersPage() {
   };
 
   const onEdit = (user: User) => {
+    if (!canUpdate) return;
     setEditingUser(user);
     form.reset({
       name: user.name,
@@ -187,7 +205,7 @@ export function UsersPage() {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="font-display text-xl font-semibold text-slate-800">Usuários</h2>
-            <p className="text-sm text-slate-500">Somente admin pode gerenciar usuários.</p>
+            <p className="text-sm text-slate-500">Gerencie logins, perfis e status dos usuários.</p>
           </div>
 
           <div className="flex gap-2">
@@ -197,7 +215,7 @@ export function UsersPage() {
               onChange={(event) => setSearch(event.target.value)}
               className="md:w-80"
             />
-            <Button onClick={onNew}>Novo</Button>
+            {canCreate && <Button onClick={onNew}>Novo</Button>}
           </div>
         </div>
       </Card>
@@ -226,34 +244,44 @@ export function UsersPage() {
                     <tr key={user.id} className="border-b last:border-b-0">
                       <td className="p-2 font-medium text-slate-800">{user.name}</td>
                       <td className="p-2">{user.email}</td>
-                      <td className="p-2">{user.role}</td>
+                      <td className="p-2">{userRoleLabels[user.role]}</td>
                       <td className="p-2">{user.is_active ? "Sim" : "Não"}</td>
                       <td className="p-2">
-                        <div className="flex gap-2">
-                          <Button variant="outline" onClick={() => onEdit(user)}>
-                            Editar
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedUserId(user.id);
-                              passwordForm.reset();
-                              setOpenPasswordModal(true);
-                            }}
-                          >
-                            Senha
-                          </Button>
-                          <Button
-                            variant="danger"
-                            onClick={() => {
-                              if (window.confirm("Deseja remover este usuário?")) {
-                                deleteMutation.mutate(user.id);
-                              }
-                            }}
-                          >
-                            Excluir
-                          </Button>
-                        </div>
+                        {!canUpdate && !canDelete ? (
+                          <span className="text-slate-400">-</span>
+                        ) : (
+                          <div className="flex gap-2">
+                            {canUpdate && (
+                              <>
+                                <Button variant="outline" onClick={() => onEdit(user)}>
+                                  Editar
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setSelectedUserId(user.id);
+                                    passwordForm.reset();
+                                    setOpenPasswordModal(true);
+                                  }}
+                                >
+                                  Senha
+                                </Button>
+                              </>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="danger"
+                                onClick={() => {
+                                  if (window.confirm("Deseja remover este usuário?")) {
+                                    deleteMutation.mutate(user.id);
+                                  }
+                                }}
+                              >
+                                Excluir
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -289,9 +317,11 @@ export function UsersPage() {
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Perfil *</label>
             <Select {...form.register("role")}>
-              <option value="admin">admin</option>
-              <option value="receptionist">receptionist</option>
-              <option value="dentist">dentist</option>
+              {userRoleOptions.map((roleOption) => (
+                <option key={roleOption.value} value={roleOption.value}>
+                  {roleOption.label}
+                </option>
+              ))}
             </Select>
           </div>
 

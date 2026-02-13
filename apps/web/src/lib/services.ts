@@ -1,10 +1,15 @@
-﻿import { api } from "@/lib/api";
+import { api } from "@/lib/api";
 import type {
   Appointment,
+  ConsultationPatientDetailResponse,
+  ConsultationPatientListResponse,
   Dentist,
   Exam,
   ListResponse,
   Patient,
+  PermissionActions,
+  RolePermission,
+  RolePermissionListResponse,
   TokenResponse,
   User,
   UserRole,
@@ -21,6 +26,10 @@ export interface AppointmentFilters {
   to?: string;
   dentist_id?: string;
   patient_id?: string;
+}
+
+export interface ConsultationFilters extends PaginationParams {
+  dentist_id?: string;
 }
 
 export const authService = {
@@ -160,6 +169,43 @@ export const appointmentService = {
   },
   async remove(id: string) {
     await api.delete(`/api/appointments/${id}`);
+  },
+};
+
+export const permissionService = {
+  async me() {
+    const response = await api.get<RolePermission>("/api/permissions/me");
+    return response.data;
+  },
+  async list() {
+    const response = await api.get<RolePermissionListResponse>("/api/permissions");
+    return response.data;
+  },
+  async update(role: UserRole, payload: { permissions: Record<string, PermissionActions> }) {
+    const response = await api.put<RolePermission>(`/api/permissions/${role}`, payload);
+    return response.data;
+  },
+};
+
+export const consultationService = {
+  async next(dentist_id?: string) {
+    const response = await api.get<Appointment | null>("/api/consultations/next", {
+      params: { dentist_id },
+    });
+    return response.data;
+  },
+  async listPatients(params: ConsultationFilters) {
+    const response = await api.get<ConsultationPatientListResponse>("/api/consultations/patients", {
+      params,
+    });
+    return response.data;
+  },
+  async getPatientDetail(patientId: string, dentist_id?: string) {
+    const response = await api.get<ConsultationPatientDetailResponse>(
+      `/api/consultations/patients/${patientId}`,
+      { params: { dentist_id } },
+    );
+    return response.data;
   },
 };
 

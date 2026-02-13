@@ -8,11 +8,13 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { queryClient } from "@/lib/query-client";
 import { AppointmentsPage } from "@/pages/appointments/appointments-page";
 import { CalendarPage } from "@/pages/appointments/calendar-page";
+import { ConsultationPage } from "@/pages/consultations/consultation-page";
 import { DashboardPage } from "@/pages/dashboard-page";
 import { DentistsPage } from "@/pages/dentists/dentists-page";
 import { LoginPage } from "@/pages/login-page";
 import { PatientExamsPage } from "@/pages/patients/patient-exams-page";
 import { PatientsPage } from "@/pages/patients/patients-page";
+import { PermissionsPage } from "@/pages/permissions/permissions-page";
 import { UsersPage } from "@/pages/users/users-page";
 
 export default function App() {
@@ -32,17 +34,78 @@ export default function App() {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<DashboardPage />} />
-                <Route path="patients" element={<PatientsPage />} />
-                <Route path="patients/:patientId" element={<PatientExamsPage />} />
-                <Route path="dentists" element={<DentistsPage />} />
-                <Route path="appointments" element={<AppointmentsPage />} />
-                <Route path="calendar" element={<CalendarPage />} />
+                <Route
+                  index
+                  element={
+                    <ProtectedRoute permission={{ resource: "dashboard", action: "view" }}>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="patients"
+                  element={
+                    <ProtectedRoute permission={{ resource: "patients", action: "view" }}>
+                      <PatientsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="patients/:patientId"
+                  element={
+                    <ProtectedRoute permission={{ resource: "exams", action: "view" }}>
+                      <PatientExamsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="dentists"
+                  element={
+                    <ProtectedRoute permission={{ resource: "dentists", action: "view" }}>
+                      <DentistsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="appointments"
+                  element={
+                    <ProtectedRoute permission={{ resource: "appointments", action: "view" }}>
+                      <AppointmentsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="calendar"
+                  element={
+                    <ProtectedRoute permission={{ resource: "calendar", action: "view" }}>
+                      <CalendarPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="consultation"
+                  element={
+                    <ProtectedRoute
+                      allowedRoles={["dentist"]}
+                      permission={{ resource: "consultations", action: "view" }}
+                    >
+                      <ConsultationPage />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route
                   path="users"
                   element={
-                    <ProtectedRoute adminOnly>
+                    <ProtectedRoute permission={{ resource: "users", action: "view" }}>
                       <UsersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="permissions"
+                  element={
+                    <ProtectedRoute adminOnly>
+                      <PermissionsPage />
                     </ProtectedRoute>
                   }
                 />

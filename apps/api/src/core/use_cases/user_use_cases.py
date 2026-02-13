@@ -31,6 +31,7 @@ class UserUseCases:
             raise ConflictError("Já existe usuário com este email.")
 
         role = UserRole(data["role"])
+        dentist_id = self._normalize_dentist_id(role, data.get("dentist_id"))
         password_hash = self.auth_service.hash_password(data["password"])
 
         return self.user_repository.create(
@@ -38,24 +39,31 @@ class UserUseCases:
                 "name": data["name"].strip(),
                 "email": data["email"].lower().strip(),
                 "role": role,
-                "dentist_id": data.get("dentist_id"),
+                "dentist_id": dentist_id,
                 "password_hash": password_hash,
                 "is_active": data.get("is_active", True),
             }
         )
 
     def update(self, user_id: UUID, data: dict) -> User:
+        current = self.user_repository.get(user_id)
+        if current is None:
+            raise NotFoundError("Usuário não encontrado.")
+
         if "email" in data:
             existing = self.user_repository.get_by_email(data["email"].lower().strip())
             if existing is not None and existing.id != user_id:
                 raise ConflictError("Já existe usuário com este email.")
             data["email"] = data["email"].lower().strip()
 
-        if "role" in data:
-            data["role"] = UserRole(data["role"])
+        role = UserRole(data["role"]) if "role" in data else current.role
+        data["role"] = role
 
         if "name" in data and not data["name"].strip():
             raise ValidationError("Nome é obrigatório.")
+
+        dentist_id = data["dentist_id"] if "dentist_id" in data else current.dentist_id
+        data["dentist_id"] = self._normalize_dentist_id(role, dentist_id)
 
         user = self.user_repository.update(user_id, data)
         if user is None:
@@ -76,4 +84,11 @@ class UserUseCases:
         deleted = self.user_repository.delete(user_id)
         if not deleted:
             raise NotFoundError("Usuário não encontrado.")
+
+    def _normalize_dentist_id(self, role: UserRole, dentist_id: UUID | None) -> UUID | None:
+        if role == UserRole.dentist:
+            if dentist_id is None:
+                raise ValidationError("Usuário com perfil Dentista deve ter um dentista associado.")
+            return dentist_id
+        return None
 

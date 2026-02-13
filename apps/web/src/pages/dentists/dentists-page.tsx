@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
 import { dentistService } from "@/lib/services";
 import type { Dentist } from "@/types";
@@ -32,6 +33,7 @@ function nullable(value?: string) {
 
 export function DentistsPage() {
   const { toast } = useToast();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
@@ -102,8 +104,12 @@ export function DentistsPage() {
 
   const items = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const canCreate = can("dentists", "create");
+  const canUpdate = can("dentists", "update");
+  const canDelete = can("dentists", "delete");
 
   const onNew = () => {
+    if (!canCreate) return;
     setEditingDentist(null);
     form.reset({
       full_name: "",
@@ -116,6 +122,7 @@ export function DentistsPage() {
   };
 
   const onEdit = (dentist: Dentist) => {
+    if (!canUpdate) return;
     setEditingDentist(dentist);
     form.reset({
       full_name: dentist.full_name,
@@ -151,7 +158,7 @@ export function DentistsPage() {
               onChange={(event) => setSearch(event.target.value)}
               className="md:w-80"
             />
-            <Button onClick={onNew}>Novo</Button>
+            {canCreate && <Button onClick={onNew}>Novo</Button>}
           </div>
         </div>
       </Card>
@@ -185,21 +192,29 @@ export function DentistsPage() {
                       <td className="p-2">{dentist.email ?? "-"}</td>
                       <td className="p-2">{dentist.active ? "Sim" : "Não"}</td>
                       <td className="p-2">
-                        <div className="flex gap-2">
-                          <Button variant="outline" onClick={() => onEdit(dentist)}>
-                            Editar
-                          </Button>
-                          <Button
-                            variant="danger"
-                            onClick={() => {
-                              if (window.confirm("Deseja remover este dentista?")) {
-                                deleteMutation.mutate(dentist.id);
-                              }
-                            }}
-                          >
-                            Excluir
-                          </Button>
-                        </div>
+                        {!canUpdate && !canDelete ? (
+                          <span className="text-slate-400">-</span>
+                        ) : (
+                          <div className="flex gap-2">
+                            {canUpdate && (
+                              <Button variant="outline" onClick={() => onEdit(dentist)}>
+                                Editar
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="danger"
+                                onClick={() => {
+                                  if (window.confirm("Deseja remover este dentista?")) {
+                                    deleteMutation.mutate(dentist.id);
+                                  }
+                                }}
+                              >
+                                Excluir
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}

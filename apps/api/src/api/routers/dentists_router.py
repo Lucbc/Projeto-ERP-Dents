@@ -2,11 +2,11 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.dentist_repository import SqlAlchemyDentistRepository
-from src.api.deps.auth import get_current_user
+from src.api.deps.auth import require_permission
 from src.api.deps.db import get_db_dep
 from src.api.schemas.schemas import (
     DentistCreateRequest,
@@ -19,11 +19,14 @@ from src.core.use_cases.dentist_use_cases import DentistUseCases
 router = APIRouter(
     prefix="/api/dentists",
     tags=["dentists"],
-    dependencies=[Depends(get_current_user)],
 )
 
 
-@router.get("", response_model=DentistListResponse)
+@router.get(
+    "",
+    response_model=DentistListResponse,
+    dependencies=[Depends(require_permission("dentists", "view"))],
+)
 def list_dentists(
     search: str | None = None,
     limit: int = Query(default=20, ge=1, le=200),
@@ -38,19 +41,32 @@ def list_dentists(
     )
 
 
-@router.post("", response_model=DentistResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=DentistResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("dentists", "create"))],
+)
 def create_dentist(payload: DentistCreateRequest, db: Session = Depends(get_db_dep)):
     use_case = DentistUseCases(SqlAlchemyDentistRepository(db))
     return use_case.create(payload.model_dump())
 
 
-@router.get("/{dentist_id}", response_model=DentistResponse)
+@router.get(
+    "/{dentist_id}",
+    response_model=DentistResponse,
+    dependencies=[Depends(require_permission("dentists", "view"))],
+)
 def get_dentist(dentist_id: UUID, db: Session = Depends(get_db_dep)):
     use_case = DentistUseCases(SqlAlchemyDentistRepository(db))
     return use_case.get(dentist_id)
 
 
-@router.put("/{dentist_id}", response_model=DentistResponse)
+@router.put(
+    "/{dentist_id}",
+    response_model=DentistResponse,
+    dependencies=[Depends(require_permission("dentists", "update"))],
+)
 def update_dentist(
     dentist_id: UUID,
     payload: DentistUpdateRequest,
@@ -60,7 +76,13 @@ def update_dentist(
     return use_case.update(dentist_id, payload.model_dump(exclude_unset=True))
 
 
-@router.delete("/{dentist_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_dentist(dentist_id: UUID, db: Session = Depends(get_db_dep)) -> None:
+@router.delete(
+    "/{dentist_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+    dependencies=[Depends(require_permission("dentists", "delete"))],
+)
+def delete_dentist(dentist_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
     use_case = DentistUseCases(SqlAlchemyDentistRepository(db))
     use_case.delete(dentist_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
