@@ -87,7 +87,7 @@ export function UsersPage() {
 
   const dentistsQuery = useQuery({
     queryKey: ["dentists", "users-form"],
-    queryFn: () => dentistService.list({ limit: 200, offset: 0 }),
+    queryFn: () => dentistService.listAll(),
   });
 
   const createMutation = useMutation({
@@ -349,7 +349,7 @@ export function UsersPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Ativo</label>
-            <Select {...form.register("is_active")}>
+            <Select searchable={false} {...form.register("is_active")}>
               <option value="true">Sim</option>
               <option value="false">Não</option>
             </Select>

@@ -1,4 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
+
+from copy import deepcopy
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
@@ -22,6 +24,7 @@ class SqlAlchemyDentistRepository(DentistRepository):
                     DentistModel.full_name.ilike(pattern),
                     DentistModel.cro.ilike(pattern),
                     DentistModel.email.ilike(pattern),
+                    DentistModel.specialty.ilike(pattern),
                 )
             )
 
@@ -47,7 +50,7 @@ class SqlAlchemyDentistRepository(DentistRepository):
         if item is None:
             return None
 
-        for key in ["full_name", "cro", "phone", "email", "active"]:
+        for key in ["full_name", "cro", "phone", "email", "specialty", "color", "availability", "active"]:
             if key in data:
                 setattr(item, key, data[key])
 
@@ -71,6 +74,9 @@ class SqlAlchemyDentistRepository(DentistRepository):
             cro=model.cro,
             phone=model.phone,
             email=model.email,
+            specialty=model.specialty,
+            color=model.color,
+            availability=deepcopy(model.availability or []),
             active=model.active,
             created_at=model.created_at,
             updated_at=model.updated_at,

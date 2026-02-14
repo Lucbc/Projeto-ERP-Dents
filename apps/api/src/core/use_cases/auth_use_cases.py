@@ -52,6 +52,23 @@ class AuthUseCases:
         )
         return token, user
 
+    def change_password(self, user_id: UUID, current_password: str, new_password: str) -> None:
+        user = self.user_repository.get(user_id)
+        if user is None:
+            raise NotFoundError("Usuário não encontrado.")
+
+        if not self.auth_service.verify_password(current_password, user.password_hash):
+            raise UnauthorizedError("Senha atual inválida.")
+
+        if len(new_password) < 8:
+            raise ValidationError("A nova senha deve ter no mínimo 8 caracteres.")
+
+        if current_password == new_password:
+            raise ValidationError("A nova senha deve ser diferente da senha atual.")
+
+        password_hash = self.auth_service.hash_password(new_password)
+        self.user_repository.update(user_id, {"password_hash": password_hash})
+
     def me(self, user_id: UUID) -> User:
         user = self.user_repository.get(user_id)
         if user is None:

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
   userRoleLabels,
 } from "@/lib/labels";
 import { permissionService } from "@/lib/services";
+import { cn } from "@/lib/utils";
 import type { PermissionAction, PermissionActions, PermissionResource, UserRole } from "@/types";
 
 const editableRoles: UserRole[] = ["coordinator", "dentist", "reception"];
@@ -53,6 +55,7 @@ export function PermissionsPage() {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<DraftState>({});
   const [savingRole, setSavingRole] = useState<UserRole | null>(null);
+  const [openRole, setOpenRole] = useState<UserRole | null>(null);
 
   const permissionsQuery = useQuery({
     queryKey: ["permissions", "roles"],
@@ -84,7 +87,7 @@ export function PermissionsPage() {
       setSavingRole(payload.role);
     },
     onSuccess: (_, payload) => {
-      toast(`Permissões de ${userRoleLabels[payload.role]} atualizadas.`);
+      toast(`PermissÃµes de ${userRoleLabels[payload.role]} atualizadas.`);
       void queryClient.invalidateQueries({ queryKey: ["permissions"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -116,24 +119,28 @@ export function PermissionsPage() {
     updateMutation.mutate({ role, permissions: roleDraft });
   };
 
+  const toggleRoleAccordion = (role: UserRole) => {
+    setOpenRole((prev) => (prev === role ? null : role));
+  };
+
   if (permissionsQuery.isLoading) {
-    return <LoadingState message="Carregando permissões..." />;
+    return <LoadingState message="Carregando permissÃµes..." />;
   }
 
   if (permissionsQuery.isError) {
-    return <ErrorState message="Erro ao carregar permissões." />;
+    return <ErrorState message="Erro ao carregar permissÃµes." />;
   }
 
   if (!permissionsQuery.data || permissionsQuery.data.items.length === 0) {
-    return <EmptyState message="Nenhuma permissão cadastrada." />;
+    return <EmptyState message="Nenhuma permissÃ£o cadastrada." />;
   }
 
   return (
     <div className="space-y-4">
       <Card>
-        <h2 className="font-display text-xl font-semibold text-slate-800">Permissões por Perfil</h2>
+        <h2 className="font-display text-xl font-semibold text-slate-800">PermissÃµes por Perfil</h2>
         <p className="text-sm text-slate-500">
-          O perfil Administrador sempre possui acesso total e não pode ser alterado.
+          O perfil Administrador sempre possui acesso total e nÃ£o pode ser alterado.
         </p>
       </Card>
 
@@ -144,50 +151,75 @@ export function PermissionsPage() {
 
       {editableRoles.map((role) => {
         const roleDraft = draft[role] ?? createEmptyRoleMatrix();
+        const isOpen = openRole === role;
+
         return (
           <Card key={role}>
-            <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-              <h3 className="font-semibold text-slate-800">{userRoleLabels[role]}</h3>
-              <Button
-                onClick={() => saveRole(role)}
-                disabled={savingRole === role || updateMutation.isPending}
-              >
-                {savingRole === role ? "Salvando..." : "Salvar Permissões"}
-              </Button>
-            </div>
+            <button
+              type="button"
+              onClick={() => toggleRoleAccordion(role)}
+              className="mb-3 flex w-full items-center justify-between rounded-md border border-slate-200 px-3 py-2 text-left transition-colors hover:bg-slate-50"
+            >
+              <div>
+                <h3 className="font-semibold text-slate-800">{userRoleLabels[role]}</h3>
+                <p className="text-xs text-slate-500">
+                  {isOpen ? "Clique para recolher as permissÃµes." : "Clique para expandir as permissÃµes."}
+                </p>
+              </div>
+              <ChevronDown
+                size={16}
+                className={cn("text-slate-500 transition-transform", isOpen && "rotate-180")}
+              />
+            </button>
 
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="p-2 font-semibold">Recurso</th>
-                    {permissionActions.map((action) => (
-                      <th key={action} className="p-2 text-center font-semibold">
-                        {permissionActionLabels[action]}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {permissionResources.map((resource) => (
-                    <tr key={resource} className="border-b last:border-b-0">
-                      <td className="p-2 font-medium text-slate-800">{permissionResourceLabels[resource]}</td>
-                      {permissionActions.map((action) => (
-                        <td key={`${resource}-${action}`} className="p-2 text-center">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(roleDraft[resource][action])}
-                            onChange={(event) =>
-                              togglePermission(role, resource, action, event.target.checked)
-                            }
-                          />
-                        </td>
+            {isOpen && (
+              <>
+                <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <p className="text-sm text-slate-500">Marque as aÃ§Ãµes permitidas para este perfil.</p>
+                  <Button
+                    onClick={() => saveRole(role)}
+                    disabled={savingRole === role || updateMutation.isPending}
+                  >
+                    {savingRole === role ? "Salvando..." : "Salvar PermissÃµes"}
+                  </Button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="p-2 font-semibold">Recurso</th>
+                        {permissionActions.map((action) => (
+                          <th key={action} className="p-2 text-center font-semibold">
+                            {permissionActionLabels[action]}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {permissionResources.map((resource) => (
+                        <tr key={resource} className="border-b last:border-b-0">
+                          <td className="p-2 font-medium text-slate-800">
+                            {permissionResourceLabels[resource]}
+                          </td>
+                          {permissionActions.map((action) => (
+                            <td key={`${resource}-${action}`} className="p-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(roleDraft[resource][action])}
+                                onChange={(event) =>
+                                  togglePermission(role, resource, action, event.target.checked)
+                                }
+                              />
+                            </td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </Card>
         );
       })}

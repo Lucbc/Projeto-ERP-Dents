@@ -9,23 +9,35 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { usePermissions } from "@/hooks/use-permissions";
-import { formatDate } from "@/lib/datetime";
 import { getApiErrorMessage } from "@/lib/api";
+import { formatDate } from "@/lib/datetime";
 import { patientService } from "@/lib/services";
 import type { Patient } from "@/types";
 
 const patientSchema = z.object({
-  full_name: z.string().min(2, "Nome completo é obrigatório."),
+  full_name: z.string().min(2, "Nome completo e obrigatorio."),
+  preferred_name: z.string().optional(),
   birth_date: z.string().optional(),
   cpf: z.string().optional(),
+  rg: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email("E-mail inválido.").or(z.literal("")).optional(),
+  email: z.string().email("E-mail invalido.").or(z.literal("")).optional(),
   address: z.string().optional(),
+  preferred_contact_method: z.string().optional(),
+  emergency_contact_name: z.string().optional(),
+  emergency_contact_phone: z.string().optional(),
+  insurance_provider: z.string().optional(),
+  insurance_plan: z.string().optional(),
+  insurance_member_id: z.string().optional(),
+  allergies: z.string().optional(),
+  medical_history: z.string().optional(),
   notes: z.string().optional(),
+  active: z.enum(["true", "false"]),
 });
 
 type PatientForm = z.infer<typeof patientSchema>;
@@ -33,6 +45,33 @@ type PatientForm = z.infer<typeof patientSchema>;
 function nullable(value?: string) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+
+  const areaCode = digits.slice(0, 2);
+  const ninthDigit = digits.slice(2, 3);
+  const firstBlock = digits.slice(3, 7);
+  const secondBlock = digits.slice(7, 11);
+
+  if (digits.length <= 2) return `(${areaCode}`;
+  if (digits.length <= 3) return `(${areaCode}) ${ninthDigit}`;
+  if (digits.length <= 7) return `(${areaCode}) ${ninthDigit}-${firstBlock}`;
+  return `(${areaCode}) ${ninthDigit}-${firstBlock}-${secondBlock}`;
+}
+
+function formatCpf(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+}
+
+function normalizeRg(value: string): string {
+  return value.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 14);
 }
 
 export function PatientsPage() {
@@ -48,12 +87,23 @@ export function PatientsPage() {
     resolver: zodResolver(patientSchema),
     defaultValues: {
       full_name: "",
+      preferred_name: "",
       birth_date: "",
       cpf: "",
+      rg: "",
       phone: "",
       email: "",
       address: "",
+      preferred_contact_method: "",
+      emergency_contact_name: "",
+      emergency_contact_phone: "",
+      insurance_provider: "",
+      insurance_plan: "",
+      insurance_member_id: "",
+      allergies: "",
+      medical_history: "",
       notes: "",
+      active: "true",
     },
   });
 
@@ -66,12 +116,23 @@ export function PatientsPage() {
     mutationFn: (payload: PatientForm) =>
       patientService.create({
         full_name: payload.full_name,
+        preferred_name: nullable(payload.preferred_name),
         birth_date: payload.birth_date || null,
         cpf: nullable(payload.cpf),
+        rg: nullable(payload.rg),
         phone: nullable(payload.phone),
         email: nullable(payload.email),
         address: nullable(payload.address),
+        preferred_contact_method: nullable(payload.preferred_contact_method),
+        emergency_contact_name: nullable(payload.emergency_contact_name),
+        emergency_contact_phone: nullable(payload.emergency_contact_phone),
+        insurance_provider: nullable(payload.insurance_provider),
+        insurance_plan: nullable(payload.insurance_plan),
+        insurance_member_id: nullable(payload.insurance_member_id),
+        allergies: nullable(payload.allergies),
+        medical_history: nullable(payload.medical_history),
         notes: nullable(payload.notes),
+        active: payload.active === "true",
       }),
     onSuccess: () => {
       toast("Paciente cadastrado com sucesso.");
@@ -86,12 +147,23 @@ export function PatientsPage() {
     mutationFn: ({ id, payload }: { id: string; payload: PatientForm }) =>
       patientService.update(id, {
         full_name: payload.full_name,
+        preferred_name: nullable(payload.preferred_name),
         birth_date: payload.birth_date || null,
         cpf: nullable(payload.cpf),
+        rg: nullable(payload.rg),
         phone: nullable(payload.phone),
         email: nullable(payload.email),
         address: nullable(payload.address),
+        preferred_contact_method: nullable(payload.preferred_contact_method),
+        emergency_contact_name: nullable(payload.emergency_contact_name),
+        emergency_contact_phone: nullable(payload.emergency_contact_phone),
+        insurance_provider: nullable(payload.insurance_provider),
+        insurance_plan: nullable(payload.insurance_plan),
+        insurance_member_id: nullable(payload.insurance_member_id),
+        allergies: nullable(payload.allergies),
+        medical_history: nullable(payload.medical_history),
         notes: nullable(payload.notes),
+        active: payload.active === "true",
       }),
     onSuccess: () => {
       toast("Paciente atualizado com sucesso.");
@@ -125,12 +197,23 @@ export function PatientsPage() {
     setEditingPatient(null);
     form.reset({
       full_name: "",
+      preferred_name: "",
       birth_date: "",
       cpf: "",
+      rg: "",
       phone: "",
       email: "",
       address: "",
+      preferred_contact_method: "",
+      emergency_contact_name: "",
+      emergency_contact_phone: "",
+      insurance_provider: "",
+      insurance_plan: "",
+      insurance_member_id: "",
+      allergies: "",
+      medical_history: "",
       notes: "",
+      active: "true",
     });
     setOpenModal(true);
   };
@@ -140,12 +223,23 @@ export function PatientsPage() {
     setEditingPatient(patient);
     form.reset({
       full_name: patient.full_name,
+      preferred_name: patient.preferred_name ?? "",
       birth_date: patient.birth_date ?? "",
-      cpf: patient.cpf ?? "",
-      phone: patient.phone ?? "",
+      cpf: formatCpf(patient.cpf ?? ""),
+      rg: patient.rg ?? "",
+      phone: formatPhone(patient.phone ?? ""),
       email: patient.email ?? "",
       address: patient.address ?? "",
+      preferred_contact_method: patient.preferred_contact_method ?? "",
+      emergency_contact_name: patient.emergency_contact_name ?? "",
+      emergency_contact_phone: formatPhone(patient.emergency_contact_phone ?? ""),
+      insurance_provider: patient.insurance_provider ?? "",
+      insurance_plan: patient.insurance_plan ?? "",
+      insurance_member_id: patient.insurance_member_id ?? "",
+      allergies: patient.allergies ?? "",
+      medical_history: patient.medical_history ?? "",
       notes: patient.notes ?? "",
+      active: patient.active ? "true" : "false",
     });
     setOpenModal(true);
   };
@@ -169,7 +263,7 @@ export function PatientsPage() {
 
           <div className="flex gap-2">
             <Input
-              placeholder="Buscar por nome, CPF ou e-mail"
+              placeholder="Buscar por nome, CPF, RG, e-mail, telefone ou convenio"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               className="md:w-80"
@@ -188,23 +282,36 @@ export function PatientsPage() {
             <EmptyState message="Nenhum paciente encontrado." />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[920px] border-collapse text-left text-sm">
+              <table className="w-full min-w-[1120px] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b">
                     <th className="p-2 font-semibold">Nome</th>
                     <th className="p-2 font-semibold">Nascimento</th>
                     <th className="p-2 font-semibold">CPF</th>
                     <th className="p-2 font-semibold">Contato</th>
+                    <th className="p-2 font-semibold">Convenio</th>
+                    <th className="p-2 font-semibold">Ativo</th>
                     <th className="p-2 font-semibold">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((patient) => (
                     <tr key={patient.id} className="border-b last:border-b-0">
-                      <td className="p-2 font-medium text-slate-800">{patient.full_name}</td>
+                      <td className="p-2 font-medium text-slate-800">
+                        {patient.full_name}
+                        {patient.preferred_name ? (
+                          <p className="text-xs text-slate-500">Nome social: {patient.preferred_name}</p>
+                        ) : null}
+                      </td>
                       <td className="p-2">{formatDate(patient.birth_date)}</td>
                       <td className="p-2">{patient.cpf ?? "-"}</td>
                       <td className="p-2">{patient.phone ?? patient.email ?? "-"}</td>
+                      <td className="p-2">
+                        {patient.insurance_provider
+                          ? `${patient.insurance_provider}${patient.insurance_plan ? ` - ${patient.insurance_plan}` : ""}`
+                          : "-"}
+                      </td>
+                      <td className="p-2">{patient.active ? "Sim" : "Nao"}</td>
                       <td className="p-2">
                         {!canUpdate && !canDelete && !canViewExams ? (
                           <span className="text-slate-400">-</span>
@@ -259,18 +366,48 @@ export function PatientsPage() {
           </div>
 
           <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Nome social</label>
+            <Input {...form.register("preferred_name")} />
+          </div>
+
+          <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Data de nascimento</label>
             <Input type="date" {...form.register("birth_date")} />
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">CPF</label>
-            <Input {...form.register("cpf")} />
+            <Input
+              placeholder="000.000.000-00"
+              {...form.register("cpf", {
+                onChange: (event) => {
+                  event.target.value = formatCpf(event.target.value);
+                },
+              })}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">RG</label>
+            <Input
+              {...form.register("rg", {
+                onChange: (event) => {
+                  event.target.value = normalizeRg(event.target.value);
+                },
+              })}
+            />
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Telefone</label>
-            <Input {...form.register("phone")} />
+            <Input
+              placeholder="(11) 9-1234-5678"
+              {...form.register("phone", {
+                onChange: (event) => {
+                  event.target.value = formatPhone(event.target.value);
+                },
+              })}
+            />
           </div>
 
           <div>
@@ -282,12 +419,72 @@ export function PatientsPage() {
           </div>
 
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Endereço</label>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Endereco</label>
             <Input {...form.register("address")} />
           </div>
 
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Contato preferencial</label>
+            <Select {...form.register("preferred_contact_method")}>
+              <option value="">Nao informado</option>
+              <option value="phone">Telefone</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="email">E-mail</option>
+            </Select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Ativo</label>
+            <Select searchable={false} {...form.register("active")}>
+              <option value="true">Sim</option>
+              <option value="false">Nao</option>
+            </Select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Contato de emergencia</label>
+            <Input {...form.register("emergency_contact_name")} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Telefone emergencia</label>
+            <Input
+              placeholder="(11) 9-1234-5678"
+              {...form.register("emergency_contact_phone", {
+                onChange: (event) => {
+                  event.target.value = formatPhone(event.target.value);
+                },
+              })}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Convenio</label>
+            <Input {...form.register("insurance_provider")} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Plano</label>
+            <Input {...form.register("insurance_plan")} />
+          </div>
+
           <div className="md:col-span-2">
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Observações</label>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Numero da carteirinha</label>
+            <Input {...form.register("insurance_member_id")} />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Alergias</label>
+            <Textarea {...form.register("allergies")} />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Historico medico</label>
+            <Textarea {...form.register("medical_history")} />
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Observacoes gerais</label>
             <Textarea {...form.register("notes")} />
           </div>
 

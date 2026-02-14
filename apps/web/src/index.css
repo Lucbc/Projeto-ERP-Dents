@@ -18,6 +18,22 @@
   --danger: 6 78% 48%;
 }
 
+:root.dark {
+  --background: 222 21% 11%;
+  --foreground: 210 35% 92%;
+  --card: 222 18% 15%;
+  --card-foreground: 210 35% 92%;
+  --primary: 190 85% 56%;
+  --primary-foreground: 222 21% 11%;
+  --muted: 222 16% 22%;
+  --muted-foreground: 215 20% 74%;
+  --border: 222 16% 28%;
+  --input: 222 16% 28%;
+  --ring: 190 85% 56%;
+  --success: 145 63% 45%;
+  --danger: 4 83% 62%;
+}
+
 * {
   border-color: hsl(var(--border));
 }
@@ -31,6 +47,14 @@ body {
     linear-gradient(160deg, #f3f9fd 0%, #eef6fb 45%, #f7fbff 100%);
   color: hsl(var(--foreground));
   font-family: "Manrope", "Segoe UI", sans-serif;
+  transition: background 220ms ease, color 220ms ease;
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(6, 182, 212, 0.12), transparent 36%),
+    radial-gradient(circle at 90% 15%, rgba(16, 185, 129, 0.1), transparent 30%),
+    linear-gradient(160deg, #0f1624 0%, #101a28 45%, #0e1620 100%);
 }
 
 #root {
@@ -38,7 +62,109 @@ body {
 }
 
 .rbc-calendar {
-  background: white;
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
   border-radius: 12px;
   padding: 0.5rem;
+  border: 1px solid hsl(var(--border));
+}
+
+.rbc-toolbar button {
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+}
+
+.rbc-toolbar button:hover {
+  background: hsl(var(--muted));
+}
+
+.rbc-off-range-bg {
+  background: hsl(var(--muted));
+}
+
+.rbc-today {
+  background: hsl(var(--primary) / 0.15);
+}
+
+.rbc-time-header-content,
+.rbc-time-content,
+.rbc-timeslot-group,
+.rbc-month-row,
+.rbc-day-bg,
+.rbc-header,
+.rbc-time-view,
+.rbc-time-header,
+.rbc-day-slot .rbc-time-slot {
+  border-color: hsl(var(--border));
+}
+
+/* Fallbacks para classes utilitarias legadas no dark mode. */
+:root.dark .text-slate-900,
+:root.dark .text-slate-800,
+:root.dark .text-slate-700 {
+  color: hsl(var(--foreground)) !important;
+}
+
+:root.dark .text-slate-600,
+:root.dark .text-slate-500,
+:root.dark .text-slate-400 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+:root.dark .bg-white,
+:root.dark .bg-white\/95,
+:root.dark .bg-white\/75 {
+  background-color: hsl(var(--card)) !important;
+}
+
+:root.dark .bg-slate-50,
+:root.dark .bg-slate-100 {
+  background-color: hsl(var(--muted)) !important;
+}
+
+:root.dark .border-slate-100,
+:root.dark .border-slate-200,
+:root.dark .border-slate-300 {
+  border-color: hsl(var(--border)) !important;
+}
+
+:root.dark .hover\:bg-slate-50:hover,
+:root.dark .hover\:bg-slate-100:hover {
+  background-color: hsl(var(--muted)) !important;
+}
+
+:root.dark .bg-cyan-100 {
+  background-color: hsl(var(--primary) / 0.15) !important;
+}
+
+:root.dark .text-cyan-900 {
+  color: hsl(var(--primary)) !important;
+}
+
+:root.dark .text-cyan-700 {
+  color: hsl(var(--primary)) !important;
+}
+
+:root.dark .text-emerald-700 {
+  color: rgb(74 222 128) !important;
+}
+
+:root.dark .text-rose-700 {
+  color: rgb(251 113 133) !important;
+}
+
+:root.dark .text-amber-700 {
+  color: rgb(251 191 36) !important;
+}
+
+:root.dark .bg-red-50 {
+  background-color: rgb(127 29 29 / 0.35) !important;
+}
+
+:root.dark .border-red-200 {
+  border-color: rgb(185 28 28 / 0.55) !important;
+}
+
+:root.dark .text-red-700 {
+  color: rgb(252 165 165) !important;
 }

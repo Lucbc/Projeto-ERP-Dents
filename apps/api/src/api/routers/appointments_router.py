@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from src.adapters.db.repositories.appointment_repository import SqlAlchemyAppointmentRepository
 from src.adapters.db.repositories.dentist_repository import SqlAlchemyDentistRepository
 from src.adapters.db.repositories.patient_repository import SqlAlchemyPatientRepository
+from src.adapters.db.repositories.procedure_repository import SqlAlchemyProcedureRepository
 from src.api.deps.auth import require_permission
 from src.api.deps.db import get_db_dep
 from src.api.schemas.schemas import (
@@ -29,6 +30,7 @@ def build_use_case(db: Session) -> AppointmentUseCases:
         appointment_repository=SqlAlchemyAppointmentRepository(db),
         patient_repository=SqlAlchemyPatientRepository(db),
         dentist_repository=SqlAlchemyDentistRepository(db),
+        procedure_repository=SqlAlchemyProcedureRepository(db),
     )
 
 

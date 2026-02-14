@@ -21,7 +21,10 @@ class SqlAlchemyPatientRepository(PatientRepository):
                 or_(
                     PatientModel.full_name.ilike(pattern),
                     PatientModel.cpf.ilike(pattern),
+                    PatientModel.rg.ilike(pattern),
+                    PatientModel.phone.ilike(pattern),
                     PatientModel.email.ilike(pattern),
+                    PatientModel.insurance_provider.ilike(pattern),
                 )
             )
 
@@ -47,7 +50,26 @@ class SqlAlchemyPatientRepository(PatientRepository):
         if item is None:
             return None
 
-        for key in ["full_name", "birth_date", "cpf", "phone", "email", "address", "notes"]:
+        for key in [
+            "full_name",
+            "preferred_name",
+            "birth_date",
+            "cpf",
+            "rg",
+            "phone",
+            "email",
+            "address",
+            "preferred_contact_method",
+            "emergency_contact_name",
+            "emergency_contact_phone",
+            "insurance_provider",
+            "insurance_plan",
+            "insurance_member_id",
+            "allergies",
+            "medical_history",
+            "notes",
+            "active",
+        ]:
             if key in data:
                 setattr(item, key, data[key])
 
@@ -68,12 +90,23 @@ class SqlAlchemyPatientRepository(PatientRepository):
         return Patient(
             id=model.id,
             full_name=model.full_name,
+            preferred_name=model.preferred_name,
             birth_date=model.birth_date,
             cpf=model.cpf,
+            rg=model.rg,
             phone=model.phone,
             email=model.email,
             address=model.address,
+            preferred_contact_method=model.preferred_contact_method,
+            emergency_contact_name=model.emergency_contact_name,
+            emergency_contact_phone=model.emergency_contact_phone,
+            insurance_provider=model.insurance_provider,
+            insurance_plan=model.insurance_plan,
+            insurance_member_id=model.insurance_member_id,
+            allergies=model.allergies,
+            medical_history=model.medical_history,
             notes=model.notes,
+            active=model.active,
             created_at=model.created_at,
             updated_at=model.updated_at,
         )

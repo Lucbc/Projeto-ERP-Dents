@@ -1,10 +1,22 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
-from src.core.domain.entities import Appointment, Dentist, Exam, Patient, RolePermission, User, UserRole
+from src.core.domain.entities import (
+    Appointment,
+    Dentist,
+    Exam,
+    FinancialEntry,
+    FinancialSummary,
+    Patient,
+    Specialty,
+    Procedure,
+    RolePermission,
+    User,
+    UserRole,
+)
 
 
 class PatientRepository(ABC):
@@ -39,6 +51,40 @@ class DentistRepository(ABC):
 
     @abstractmethod
     def delete(self, dentist_id: UUID) -> bool: ...
+
+
+class ProcedureRepository(ABC):
+    @abstractmethod
+    def list(self, search: str | None, limit: int, offset: int) -> tuple[list[Procedure], int]: ...
+
+    @abstractmethod
+    def get(self, procedure_id: UUID) -> Procedure | None: ...
+
+    @abstractmethod
+    def create(self, data: dict) -> Procedure: ...
+
+    @abstractmethod
+    def update(self, procedure_id: UUID, data: dict) -> Procedure | None: ...
+
+    @abstractmethod
+    def delete(self, procedure_id: UUID) -> bool: ...
+
+
+class SpecialtyRepository(ABC):
+    @abstractmethod
+    def list(self, search: str | None, limit: int, offset: int) -> tuple[list[Specialty], int]: ...
+
+    @abstractmethod
+    def get(self, specialty_id: UUID) -> Specialty | None: ...
+
+    @abstractmethod
+    def create(self, data: dict) -> Specialty: ...
+
+    @abstractmethod
+    def update(self, specialty_id: UUID, data: dict) -> Specialty | None: ...
+
+    @abstractmethod
+    def delete(self, specialty_id: UUID) -> bool: ...
 
 
 class UserRepository(ABC):
@@ -91,9 +137,10 @@ class AppointmentRepository(ABC):
     @abstractmethod
     def has_conflict(
         self,
-        dentist_id: UUID,
         start_at: datetime,
         end_at: datetime,
+        dentist_id: UUID | None = None,
+        patient_id: UUID | None = None,
         exclude_appointment_id: UUID | None = None,
     ) -> bool: ...
 
@@ -119,4 +166,39 @@ class ExamRepository(ABC):
 
     @abstractmethod
     def delete(self, exam_id: UUID) -> bool: ...
+
+
+class FinancialRepository(ABC):
+    @abstractmethod
+    def list(
+        self,
+        search: str | None,
+        entry_type: str | None,
+        status: str | None,
+        dt_from: date | None,
+        dt_to: date | None,
+        patient_id: UUID | None,
+        dentist_id: UUID | None,
+        appointment_id: UUID | None,
+        limit: int,
+        offset: int,
+    ) -> tuple[list[FinancialEntry], int]: ...
+
+    @abstractmethod
+    def get(self, financial_entry_id: UUID) -> FinancialEntry | None: ...
+
+    @abstractmethod
+    def get_by_appointment(self, appointment_id: UUID) -> FinancialEntry | None: ...
+
+    @abstractmethod
+    def create(self, data: dict) -> FinancialEntry: ...
+
+    @abstractmethod
+    def update(self, financial_entry_id: UUID, data: dict) -> FinancialEntry | None: ...
+
+    @abstractmethod
+    def delete(self, financial_entry_id: UUID) -> bool: ...
+
+    @abstractmethod
+    def summarize(self, dt_from: date | None, dt_to: date | None) -> FinancialSummary: ...
 

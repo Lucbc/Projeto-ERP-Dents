@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -11,8 +11,11 @@ from src.api.routers.auth_router import router as auth_router
 from src.api.routers.consultations_router import router as consultations_router
 from src.api.routers.dentists_router import router as dentists_router
 from src.api.routers.exams_router import router as exams_router
+from src.api.routers.financial_router import router as financial_router
 from src.api.routers.patients_router import router as patients_router
 from src.api.routers.permissions_router import router as permissions_router
+from src.api.routers.procedures_router import router as procedures_router
+from src.api.routers.specialties_router import router as specialties_router
 from src.api.routers.users_router import router as users_router
 from src.config import get_settings
 
@@ -21,7 +24,7 @@ settings = get_settings()
 app = FastAPI(
     title="ERP Dents API",
     version="0.1.0",
-    description="API da clínica de ortodontia (MVP).",
+    description="API da clÃ­nica de ortodontia (MVP).",
 )
 
 app.add_middleware(
@@ -53,3 +56,6 @@ app.include_router(appointments_router)
 app.include_router(exams_router)
 app.include_router(permissions_router)
 app.include_router(consultations_router)
+app.include_router(procedures_router)
+app.include_router(specialties_router)
+app.include_router(financial_router)

@@ -1,6 +1,6 @@
-﻿import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -16,13 +16,14 @@ import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
 import { appointmentStatusLabels, appointmentStatusOptions } from "@/lib/labels";
-import { appointmentService, dentistService, patientService } from "@/lib/services";
-import type { Appointment } from "@/types";
+import { appointmentService, dentistService, patientService, procedureService } from "@/lib/services";
+import type { Appointment, Procedure } from "@/types";
 
 const appointmentSchema = z
   .object({
     patient_id: z.string().uuid("Selecione um paciente."),
     dentist_id: z.string().uuid("Selecione um dentista."),
+    procedure_ids: z.array(z.string().uuid()).default([]),
     start_at: z.string().min(1, "Data/hora inicial é obrigatória."),
     end_at: z.string().min(1, "Data/hora final é obrigatória."),
     status: z.enum(["scheduled", "confirmed", "completed", "cancelled"]),
@@ -34,6 +35,36 @@ const appointmentSchema = z
   });
 
 type AppointmentForm = z.infer<typeof appointmentSchema>;
+
+function calculateSuggestedDuration(
+  selectedProcedureIds: string[],
+  procedureById: Map<string, Procedure>,
+): number {
+  return selectedProcedureIds.reduce((total, procedureId) => {
+    const duration = procedureById.get(procedureId)?.duration_minutes ?? 0;
+    return total + duration;
+  }, 0);
+}
+
+function toSuggestedEndAt(startAtInput: string, durationMinutes: number): string | null {
+  if (!startAtInput || durationMinutes <= 0) return null;
+
+  const startDate = new Date(startAtInput);
+  if (Number.isNaN(startDate.getTime())) return null;
+
+  const suggestedEndAt = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+  return toInputDateTime(suggestedEndAt.toISOString());
+}
+
+function formatProcedureList(
+  procedureIds: string[] | undefined,
+  procedureById: Map<string, Procedure>,
+): string {
+  if (!procedureIds || procedureIds.length === 0) return "-";
+
+  const labels = procedureIds.map((procedureId) => procedureById.get(procedureId)?.name ?? "Procedimento");
+  return labels.join(", ");
+}
 
 export function AppointmentsPage() {
   const { toast } = useToast();
@@ -47,12 +78,14 @@ export function AppointmentsPage() {
 
   const [openModal, setOpenModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [manualEndOverride, setManualEndOverride] = useState(false);
 
   const form = useForm<AppointmentForm>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
       patient_id: "",
       dentist_id: "",
+      procedure_ids: [],
       start_at: "",
       end_at: "",
       status: "scheduled",
@@ -62,12 +95,17 @@ export function AppointmentsPage() {
 
   const patientsQuery = useQuery({
     queryKey: ["patients", "appointments-form"],
-    queryFn: () => patientService.list({ limit: 300, offset: 0 }),
+    queryFn: () => patientService.listAll(),
   });
 
   const dentistsQuery = useQuery({
     queryKey: ["dentists", "appointments-form"],
-    queryFn: () => dentistService.list({ limit: 300, offset: 0 }),
+    queryFn: () => dentistService.listAll(),
+  });
+
+  const proceduresQuery = useQuery({
+    queryKey: ["procedures", "appointments-form"],
+    queryFn: () => procedureService.listAll(),
   });
 
   const appointmentsQuery = useQuery({
@@ -86,6 +124,7 @@ export function AppointmentsPage() {
       appointmentService.create({
         patient_id: payload.patient_id,
         dentist_id: payload.dentist_id,
+        procedure_ids: payload.procedure_ids,
         start_at: fromInputDateTime(payload.start_at),
         end_at: fromInputDateTime(payload.end_at),
         status: payload.status,
@@ -95,6 +134,7 @@ export function AppointmentsPage() {
       toast("Consulta cadastrada com sucesso.");
       setOpenModal(false);
       form.reset();
+      setManualEndOverride(false);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -105,6 +145,7 @@ export function AppointmentsPage() {
       appointmentService.update(id, {
         patient_id: payload.patient_id,
         dentist_id: payload.dentist_id,
+        procedure_ids: payload.procedure_ids,
         start_at: fromInputDateTime(payload.start_at),
         end_at: fromInputDateTime(payload.end_at),
         status: payload.status,
@@ -115,6 +156,7 @@ export function AppointmentsPage() {
       setOpenModal(false);
       setEditingAppointment(null);
       form.reset();
+      setManualEndOverride(false);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -132,11 +174,48 @@ export function AppointmentsPage() {
   const items = useMemo(() => appointmentsQuery.data ?? [], [appointmentsQuery.data]);
   const patients = useMemo(() => patientsQuery.data?.items ?? [], [patientsQuery.data]);
   const dentists = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
+  const procedures = useMemo(() => proceduresQuery.data?.items ?? [], [proceduresQuery.data]);
+  const procedureById = useMemo(
+    () => new Map(procedures.map((procedure) => [procedure.id, procedure])),
+    [procedures],
+  );
+  const selectedProcedureIds = form.watch("procedure_ids") ?? [];
+  const startAtValue = form.watch("start_at");
+  const suggestedDurationMinutes = useMemo(
+    () => calculateSuggestedDuration(selectedProcedureIds, procedureById),
+    [procedureById, selectedProcedureIds],
+  );
   const canCreate = can("appointments", "create");
   const canUpdate = can("appointments", "update");
   const canDelete = can("appointments", "delete");
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  useEffect(() => {
+    if (manualEndOverride) return;
+
+    const suggestedEndAt = toSuggestedEndAt(startAtValue, suggestedDurationMinutes);
+    if (!suggestedEndAt) return;
+
+    form.setValue("end_at", suggestedEndAt, { shouldDirty: true, shouldValidate: true });
+  }, [form, manualEndOverride, startAtValue, suggestedDurationMinutes]);
+
+  const toggleProcedure = (procedureId: string) => {
+    const current = form.getValues("procedure_ids") ?? [];
+    const next = current.includes(procedureId)
+      ? current.filter((item) => item !== procedureId)
+      : [...current, procedureId];
+
+    form.setValue("procedure_ids", next, { shouldDirty: true, shouldValidate: false });
+  };
+
+  const applySuggestedDuration = () => {
+    const suggestedEndAt = toSuggestedEndAt(form.getValues("start_at"), suggestedDurationMinutes);
+    if (!suggestedEndAt) return;
+
+    setManualEndOverride(false);
+    form.setValue("end_at", suggestedEndAt, { shouldDirty: true, shouldValidate: true });
+  };
 
   const onNew = () => {
     if (!canCreate) return;
@@ -144,9 +223,11 @@ export function AppointmentsPage() {
     const end = new Date(start.getTime() + 30 * 60 * 1000);
 
     setEditingAppointment(null);
+    setManualEndOverride(false);
     form.reset({
       patient_id: "",
       dentist_id: "",
+      procedure_ids: [],
       start_at: toInputDateTime(start.toISOString()),
       end_at: toInputDateTime(end.toISOString()),
       status: "scheduled",
@@ -158,9 +239,11 @@ export function AppointmentsPage() {
   const onEdit = (appointment: Appointment) => {
     if (!canUpdate) return;
     setEditingAppointment(appointment);
+    setManualEndOverride(true);
     form.reset({
       patient_id: appointment.patient_id,
       dentist_id: appointment.dentist_id,
+      procedure_ids: appointment.procedure_ids ?? [],
       start_at: toInputDateTime(appointment.start_at),
       end_at: toInputDateTime(appointment.end_at),
       status: appointment.status,
@@ -215,11 +298,12 @@ export function AppointmentsPage() {
             <EmptyState message="Nenhuma consulta encontrada para o filtro informado." />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+              <table className="w-full min-w-[1200px] border-collapse text-left text-sm">
                 <thead>
                   <tr className="border-b">
                     <th className="p-2 font-semibold">Paciente</th>
                     <th className="p-2 font-semibold">Dentista</th>
+                    <th className="p-2 font-semibold">Procedimentos</th>
                     <th className="p-2 font-semibold">Início</th>
                     <th className="p-2 font-semibold">Fim</th>
                     <th className="p-2 font-semibold">Status</th>
@@ -231,6 +315,7 @@ export function AppointmentsPage() {
                     <tr key={appointment.id} className="border-b last:border-b-0">
                       <td className="p-2 font-medium text-slate-800">{appointment.patient_name ?? "-"}</td>
                       <td className="p-2">{appointment.dentist_name ?? "-"}</td>
+                      <td className="p-2">{formatProcedureList(appointment.procedure_ids, procedureById)}</td>
                       <td className="p-2">{new Date(appointment.start_at).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{new Date(appointment.end_at).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{appointmentStatusLabels[appointment.status]}</td>
@@ -304,6 +389,57 @@ export function AppointmentsPage() {
             )}
           </div>
 
+          <div className="md:col-span-2">
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Procedimentos</label>
+            <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-slate-200 p-2">
+              {procedures.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhum procedimento cadastrado.</p>
+              ) : (
+                procedures.map((procedure) => {
+                  const checked = selectedProcedureIds.includes(procedure.id);
+                  return (
+                    <label
+                      key={procedure.id}
+                      className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1 hover:bg-slate-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleProcedure(procedure.id)}
+                        className="mt-1 h-4 w-4"
+                      />
+                      <span className="flex-1 text-sm text-slate-700">
+                        {procedure.name}
+                        {procedure.duration_minutes ? (
+                          <span className="ml-2 text-xs text-slate-500">
+                            ({procedure.duration_minutes} min)
+                          </span>
+                        ) : (
+                          <span className="ml-2 text-xs text-slate-500">(sem duração)</span>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              {suggestedDurationMinutes > 0
+                ? `Duração sugerida: ${suggestedDurationMinutes} min`
+                : "Selecione procedimentos para sugerir a duração."}
+            </p>
+            {manualEndOverride && suggestedDurationMinutes > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-2 px-3 py-1 text-xs"
+                onClick={applySuggestedDuration}
+              >
+                Aplicar duração sugerida
+              </Button>
+            )}
+          </div>
+
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Início *</label>
             <Input type="datetime-local" {...form.register("start_at")} />
@@ -314,7 +450,12 @@ export function AppointmentsPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Fim *</label>
-            <Input type="datetime-local" {...form.register("end_at")} />
+            <Input
+              type="datetime-local"
+              {...form.register("end_at", {
+                onChange: () => setManualEndOverride(true),
+              })}
+            />
             {form.formState.errors.end_at && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.end_at.message}</p>
             )}
