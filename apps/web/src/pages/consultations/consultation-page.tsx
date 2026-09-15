@@ -19,12 +19,12 @@ export function ConsultationPage() {
     user && user.role !== "dentist" && user.dentist_id ? user.dentist_id : undefined;
 
   const nextQuery = useQuery({
-    queryKey: ["consultations", "next", dentistId],
+    queryKey: ["consultations", "next", user?.id, dentistId],
     queryFn: () => consultationService.next(dentistId),
   });
 
   const patientsQuery = useQuery({
-    queryKey: ["consultations", "patients", search, dentistId],
+    queryKey: ["consultations", "patients", user?.id, search, dentistId],
     queryFn: () =>
       consultationService.listPatients({
         search,
@@ -35,7 +35,7 @@ export function ConsultationPage() {
   });
 
   const detailQuery = useQuery({
-    queryKey: ["consultations", "patient-detail", selectedPatientId, dentistId],
+    queryKey: ["consultations", "patient-detail", user?.id, selectedPatientId, dentistId],
     queryFn: () => consultationService.getPatientDetail(selectedPatientId!, dentistId),
     enabled: Boolean(selectedPatientId),
   });

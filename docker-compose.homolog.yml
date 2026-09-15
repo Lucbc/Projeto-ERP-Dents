@@ -1,0 +1,49 @@
+# Somente dados fictícios. Configuração independente de desenvolvimento/produção.
+name: erp-dents-homolog
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: erp_dents_homolog
+      POSTGRES_USER: erp_homolog
+      POSTGRES_PASSWORD: ${HOMOLOG_DB_PASSWORD:?Execute scripts/homolog.ps1 primeiro}
+      TZ: America/Sao_Paulo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U erp_homolog -d erp_dents_homolog"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./apps/api
+    environment:
+      DATABASE_URL: postgresql+psycopg://erp_homolog:${HOMOLOG_DB_PASSWORD}@db:5432/erp_dents_homolog
+      JWT_SECRET_KEY: ${HOMOLOG_JWT_SECRET:?Execute scripts/homolog.ps1 primeiro}
+      JWT_EXPIRE_MINUTES: 60
+      CORS_ORIGINS: http://localhost:18080,http://127.0.0.1:18080
+      EXAMS_BASE_PATH: /data/exams
+      TZ: America/Sao_Paulo
+    volumes:
+      - exams_data:/data/exams
+    ports:
+      - "127.0.0.1:18000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        VITE_API_URL: http://localhost:18000
+    ports:
+      - "127.0.0.1:18080:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  exams_data:

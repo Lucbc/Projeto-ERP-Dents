@@ -1,0 +1,293 @@
+{
+  "date": "2026-09-15",
+  "commit": "7401b1a",
+  "note": "Dependencias resolvidas nesta revisao; repositorio original sem lockfile. Alertas de pacotes nao comprovam explorabilidade da aplicacao.",
+  "python": [
+    {
+      "package": "python-jose",
+      "version": "3.3.0",
+      "raw_advisory_count": 5,
+      "advisories": [
+        {
+          "id": "PYSEC-2024-233",
+          "aliases": [
+            "CVE-2024-33664",
+            "GHSA-cjwg-qfpm-7377"
+          ],
+          "fix_versions": [
+            "3.4.0"
+          ]
+        },
+        {
+          "id": "PYSEC-2024-232",
+          "aliases": [
+            "GHSA-6c5p-j8vq-pqhj",
+            "CVE-2024-33663"
+          ],
+          "fix_versions": [
+            "3.4.0"
+          ]
+        },
+        {
+          "id": "PYSEC-2025-185",
+          "aliases": [
+            "CVE-2024-29370"
+          ],
+          "fix_versions": []
+        }
+      ]
+    },
+    {
+      "package": "python-multipart",
+      "version": "0.0.20",
+      "raw_advisory_count": 12,
+      "advisories": [
+        {
+          "id": "PYSEC-2026-1852",
+          "aliases": [
+            "CVE-2026-24486",
+            "GHSA-wp53-j4wj-2cfg"
+          ],
+          "fix_versions": [
+            "0.0.22"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-3038",
+          "aliases": [
+            "GHSA-mj87-hwqh-73pj",
+            "CVE-2026-40347"
+          ],
+          "fix_versions": [
+            "0.0.26"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-3039",
+          "aliases": [
+            "CVE-2026-42561",
+            "GHSA-pp6c-gr5w-3c5g"
+          ],
+          "fix_versions": [
+            "0.0.27"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-3040",
+          "aliases": [
+            "GHSA-v9pg-7xvm-68hf",
+            "CVE-2026-53540"
+          ],
+          "fix_versions": [
+            "0.0.31"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-3036",
+          "aliases": [
+            "GHSA-5rvq-cxj2-64vf",
+            "CVE-2026-53539"
+          ],
+          "fix_versions": [
+            "0.0.30"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-3037",
+          "aliases": [
+            "CVE-2026-53538",
+            "GHSA-6jv3-5f52-599m"
+          ],
+          "fix_versions": [
+            "0.0.30"
+          ]
+        }
+      ]
+    },
+    {
+      "package": "starlette",
+      "version": "0.41.3",
+      "raw_advisory_count": 14,
+      "advisories": [
+        {
+          "id": "PYSEC-2026-1941",
+          "aliases": [
+            "GHSA-2c2j-9gv5-cj73",
+            "CVE-2025-54121"
+          ],
+          "fix_versions": [
+            "0.47.2"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-1942",
+          "aliases": [
+            "CVE-2025-62727",
+            "GHSA-7f5h-v6xp-fcq8"
+          ],
+          "fix_versions": [
+            "0.49.1"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-161",
+          "aliases": [
+            "X41-2026-002",
+            "CVE-2026-48710",
+            "GHSA-86qp-5c8j-p5mr"
+          ],
+          "fix_versions": [
+            "1.0.1"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2281",
+          "aliases": [
+            "CVE-2026-48818",
+            "GHSA-wqp7-x3pw-xc5r"
+          ],
+          "fix_versions": [
+            "1.1.0"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-2280",
+          "aliases": [
+            "GHSA-x746-7m8f-x49c",
+            "CVE-2026-48817"
+          ],
+          "fix_versions": [
+            "1.1.0"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-249",
+          "aliases": [
+            "CVE-2026-54283",
+            "GHSA-82w8-qh3p-5jfq"
+          ],
+          "fix_versions": [
+            "1.3.1"
+          ]
+        },
+        {
+          "id": "PYSEC-2026-248",
+          "aliases": [
+            "GHSA-jp82-jpqv-5vv3",
+            "CVE-2026-54282"
+          ],
+          "fix_versions": [
+            "1.3.0"
+          ]
+        }
+      ]
+    },
+    {
+      "package": "ecdsa",
+      "version": "0.19.2",
+      "raw_advisory_count": 2,
+      "advisories": [
+        {
+          "id": "PYSEC-2026-1325",
+          "aliases": [
+            "GHSA-wj6h-64fc-37mp",
+            "CVE-2024-23342"
+          ],
+          "fix_versions": []
+        }
+      ]
+    }
+  ],
+  "npm": {
+    "auditReportVersion": 2,
+    "vulnerabilities": {
+      "react-router": {
+        "name": "react-router",
+        "severity": "moderate",
+        "isDirect": false,
+        "via": [
+          {
+            "source": 1124268,
+            "name": "react-router",
+            "dependency": "react-router",
+            "title": "React Router: Open redirect via backslash in <Link> and useNavigate (CVE-2025-68470 bypass)",
+            "url": "https://github.com/advisories/GHSA-wrjc-x8rr-h8h6",
+            "severity": "moderate",
+            "cwe": [
+              "CWE-601"
+            ],
+            "cvss": {
+              "score": 0,
+              "vectorString": null
+            },
+            "range": ">=6.0.0 <7.18.0"
+          },
+          {
+            "source": 1124272,
+            "name": "react-router",
+            "dependency": "react-router",
+            "title": "React Router: Arbitrary Constructor Injection via deserializeErrors() in React Router SSR Hydration",
+            "url": "https://github.com/advisories/GHSA-337j-9hxr-rhxg",
+            "severity": "moderate",
+            "cwe": [
+              "CWE-470"
+            ],
+            "cvss": {
+              "score": 6.1,
+              "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N"
+            },
+            "range": ">=6.4.0 <7.18.0"
+          }
+        ],
+        "effects": [
+          "react-router-dom"
+        ],
+        "range": "6.0.0 - 7.17.0",
+        "nodes": [
+          "node_modules/react-router"
+        ],
+        "fixAvailable": {
+          "name": "react-router-dom",
+          "version": "7.18.3",
+          "isSemVerMajor": true
+        }
+      },
+      "react-router-dom": {
+        "name": "react-router-dom",
+        "severity": "moderate",
+        "isDirect": true,
+        "via": [
+          "react-router"
+        ],
+        "effects": [],
+        "range": "6.0.0-alpha.0 - 7.17.0",
+        "nodes": [
+          "node_modules/react-router-dom"
+        ],
+        "fixAvailable": {
+          "name": "react-router-dom",
+          "version": "7.18.3",
+          "isSemVerMajor": true
+        }
+      }
+    },
+    "metadata": {
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 2,
+        "high": 0,
+        "critical": 0,
+        "total": 2
+      },
+      "dependencies": {
+        "prod": 69,
+        "dev": 176,
+        "optional": 53,
+        "peer": 12,
+        "peerOptional": 0,
+        "total": 248
+      }
+    }
+  }
+}

@@ -2,6 +2,38 @@
 
 Monorepo para clínica pequena de ortodontia com arquitetura cliente-servidor, backend FastAPI (Clean Architecture Hexagonal), frontend React e persistência em Postgres + filesystem para exames.
 
+## Correções em etapas e homologação
+
+O status das entregas e o ponto de retomada ficam em [docs/PLANO-DE-EXECUCAO.md](docs/PLANO-DE-EXECUCAO.md).
+
+Testes de sessão/cache do frontend: `npm test --prefix apps/web` (após instalar as dependências de desenvolvimento). Evidências e limites da correção em [docs/homologacao-etapa-1B.md](docs/homologacao-etapa-1B.md).
+
+Para homologar neste computador Windows, com Docker ativo:
+
+```powershell
+./scripts/homolog.ps1 -Action up
+./scripts/homolog.ps1 -Action status
+```
+
+- Interface: `http://localhost:18080`
+- API: `http://localhost:18000`
+- Somente dados fictícios. As portas estão restritas a este computador.
+- O script gera `.env.homolog` com segredos aleatórios na primeira execução e preserva o arquivo nas seguintes.
+- `./scripts/homolog.ps1 -Action stop` para os containers e preserva os dados; `-Action logs` mostra diagnóstico.
+- A instalação assistida para o servidor da clínica será uma entrega posterior.
+
+### Isolamento e instalações existentes
+
+Os projetos padrão são `erp-dents-prod`, `erp-dents-dev` e `erp-dents-homolog`, com volumes independentes. Nomes diferentes de containers, sozinhos, não separam os dados. Não reutilize `COMPOSE_PROJECT_NAME` ou `--project-name` entre ambientes.
+
+**Se já havia uma instalação antes desta mudança**, mudar o nome do projeto pode fazer o Compose criar volumes vazios. Antes de atualizar, identifique o nome anterior e os volumes com `docker compose ls` e `docker volume ls`; faça backup. Para preservar a instalação existente, use explicitamente o nome anterior:
+
+```powershell
+docker compose --project-name NOME_ANTERIOR up -d --build
+```
+
+Não execute o comando com o texto `NOME_ANTERIOR` literalmente. A migração de volumes deve ser planejada, e volumes antigos não devem ser apagados para solucionar falhas de inicialização. O script de homologação fixa seu próprio nome de projeto e não utiliza esses dados.
+
 ## Stack
 
 - Frontend: React + TypeScript + Vite
