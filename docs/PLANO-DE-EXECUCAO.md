@@ -21,7 +21,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 0 | Ambiente isolado, primeira construção das imagens, migrações e fluxo básico real | Concluída | API/web/banco acessíveis; migrações aplicadas; login, cadastros, agenda, cobrança e exames verificados; evidência registrada |
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
-| 1C | Administração, bootstrap e autenticação | Em andamento: 1C.1 concluída | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados |
+| 1C | Administração, bootstrap e autenticação | Em andamento: 1C.1 e 1C.2 concluídas | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados |
 | 1D | Exames, erros e dependências de segurança | Pendente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Entrega concluída:** etapa 1C.1 — limites administrativos e último administrador ativo (R08/R09). Evidências em [homologação 1C.1](./homologacao-etapa-1C1.md). Etapas anteriores publicadas no commit `537065a`; esta entrega deve terminar com commit/push conforme a regra do projeto. Próximo recorte: 1C.2, bootstrap exclusivo e ativação inicial.
+**Concluída:** etapa 1C.2 — bootstrap exclusivo e ativação inicial (R10). Evidências: [homologação 1C.2](./homologacao-etapa-1C2.md). Próximo recorte: 1C.3 — revogação de sessões no servidor.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -74,7 +74,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próximo recorte: 1C.1 — limites administrativos e último administrador.** Ler R08/R09 e os casos de uso de usuários/permissões, confirmar a numeração dos achados na revisão e preparar cenários para usuários com permissões delegadas e tentativas de remover/rebaixar/inativar o último admin. Depois, em entregas separadas da mesma etapa, bootstrap exclusivo e revogação/autenticação.
 - Política de acesso à lista geral de pacientes permanece pendente (R13/etapa 3). Tokens continuam em localStorage e ainda não são revogados pelo logout no servidor (1C/1D).
 
-### Ponto de retomada atual — etapa 1C.1 concluída em 15/09/2026
+### Retomada da etapa 1C.1 (histórico)
 
 - Gestão de usuários recebe o ator autenticado; casos de uso relêem identidade/permissões sob bloqueio transacional. Não administradores não criam/promovem/alteram/excluem/redefinem senha de administradores.
 - PostgreSQL serializa gravações administrativas; último administrador ativo preservado em exclusão, inativação e rebaixamento, inclusive simultâneos. Sem migração de banco.
@@ -84,3 +84,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Evidências/comandos: `docs/homologacao-etapa-1C1.md`. Testes PostgreSQL em `apps/api/tests/test_user_administration.py`; HTTP em `scripts/smoke_admin_homolog.py`.
 - Regra permanente de commit/push registrada em AGENTS.md. Consultar `git log -1` e `git status` ao retomar; nunca publicar `.env.homolog`, `.data` ou volumes. Git sincroniza código/documentação, não os dados locais do Docker.
 - **Próximo recorte: 1C.2 — bootstrap exclusivo e ativação inicial controlada (R10).** Mapear bootstrap, segredo de instalação e experiência de primeira execução; testar disputa entre requisições em banco isolado e inicialização com banco existente. Revogação de sessões/senhas fica em recorte posterior de 1C.
+
+### Ponto de retomada atual — etapa 1C.2 concluída em 15/09/2026
+
+- Código local de ativação, registro persistente da instalação e criação transacional exclusiva implementados. R10 corrigido; exclusão de usuários não reabre bootstrap.
+- Migração `0008_installation_state` aplicada após testes isolados e cópia local do banco em `.data/homolog/pre-1C2.dump`. Dados e volumes anteriores preservados. Cópia não inclui exames nem valida restauração completa.
+- Passaram 26 testes PostgreSQL, 21 frontend, 7 grupos HTTP de bootstrap, 10 grupos do fluxo geral e testes PowerShell do gerador. Build Docker concluído; login/painel existentes conferidos no Chrome.
+- Evidências e comandos em `docs/homologacao-etapa-1C2.md`; instruções de ativação no README. Código de homologação em variável local ignorada; nunca publicar seu valor.
+- **Próximo recorte: 1C.3 — revogação de sessões no servidor (R11).** Mapear JWT, logout, troca/reset de senha e inativação; definir invalidação persistente e testar tokens antigos, sessões simultâneas e reinício. Senhas/tentativas e dependências mantêm recortes próprios.
+- Ao retomar, conferir `git status` e `git log -1`. Commit/push desta entrega são obrigatórios; o histórico Git identifica a versão publicada. Não reiniciar a revisão nem repetir testes aprovados sem mudança relevante.

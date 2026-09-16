@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 from dataclasses import dataclass
@@ -12,6 +12,7 @@ class Settings:
     jwt_expire_minutes: int
     cors_origins_raw: str
     exams_base_path: str
+    bootstrap_token: str = ""
 
     @property
     def cors_origins(self) -> list[str]:
@@ -28,4 +29,5 @@ def get_settings() -> Settings:
         jwt_expire_minutes=int(os.getenv("JWT_EXPIRE_MINUTES", "480")),
         cors_origins_raw=os.getenv("CORS_ORIGINS", "http://localhost:3000"),
         exams_base_path=os.getenv("EXAMS_BASE_PATH", "/data/exams"),
+        bootstrap_token=os.getenv("BOOTSTRAP_TOKEN", ""),
     )

@@ -1,39 +1,52 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from uuid import UUID
+from hmac import compare_digest
 
 from src.core.domain.entities import User, UserRole
-from src.core.domain.exceptions import ConflictError, NotFoundError, UnauthorizedError, ValidationError
+from src.core.domain.exceptions import ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError
 from src.core.ports.repositories import UserRepository
 from src.core.ports.services import AuthService
 
 
 class AuthUseCases:
-    def __init__(self, user_repository: UserRepository, auth_service: AuthService) -> None:
+    def __init__(self, user_repository: UserRepository, auth_service: AuthService,
+                 bootstrap_token: str = "") -> None:
         self.user_repository = user_repository
         self.auth_service = auth_service
+        self.bootstrap_token = bootstrap_token
 
     def needs_bootstrap(self) -> bool:
-        return self.user_repository.count_all() == 0
+        return not self.user_repository.bootstrap_completed() and self.user_repository.count_all() == 0
 
-    def bootstrap_admin(self, name: str, email: str, password: str) -> User:
+    def bootstrap_admin(self, name: str, email: str, password: str,
+                        activation_token: str | None = None) -> User:
         if not self.needs_bootstrap():
-            raise ConflictError("Bootstrap já foi concluído. Já existe usuário cadastrado.")
+            raise ConflictError("A configuração inicial já foi concluída ou está indisponível.")
+
+        if (len(self.bootstrap_token) < 32 or not activation_token or len(activation_token) > 256
+                or not compare_digest(self.bootstrap_token.encode(), activation_token.encode())):
+            raise ForbiddenError("Código de ativação inválido ou não configurado no servidor.")
+
+        if not name.strip():
+            raise ValidationError("Nome é obrigatório.")
 
         if len(password) < 8:
             raise ValidationError("A senha deve ter no mínimo 8 caracteres.")
 
         password_hash = self.auth_service.hash_password(password)
-        return self.user_repository.create(
-            {
-                "name": name,
+        with self.user_repository.administration_lock():
+            # Another worker may have initialized while this request validated/hashed.
+            if not self.needs_bootstrap():
+                raise ConflictError("A configuração inicial já foi concluída.")
+            return self.user_repository.complete_bootstrap({
+                "name": name.strip(),
                 "email": email.lower().strip(),
                 "role": UserRole.admin,
                 "password_hash": password_hash,
                 "is_active": True,
                 "dentist_id": None,
-            }
-        )
+            })
 
     def login(self, email: str, password: str) -> tuple[str, User]:
         user = self.user_repository.get_by_email(email.lower().strip())

@@ -38,8 +38,8 @@ def verify_target() -> None:
 
 
 def request(method: str, path: str, payload=None, *, token=None, expected=200,
-            raw=False, content_type='application/json'):
-    headers = {}
+            raw=False, content_type='application/json', extra_headers=None):
+    headers = dict(extra_headers or {})
     if token:
         headers['Authorization'] = 'Bearer ' + token
     if isinstance(payload, bytes):
@@ -83,6 +83,11 @@ def main() -> None:
     credentials_path = STATE / 'admin.json'
     bootstrap = request('GET', '/api/auth/needs-bootstrap')['needsBootstrap']
     if bootstrap:
+        env = dict(line.split('=', 1) for line in (ROOT / '.env.homolog').read_text().splitlines()
+                   if '=' in line and not line.startswith('#'))
+        activation = env.get('HOMOLOG_BOOTSTRAP_TOKEN', '')
+        if not activation:
+            raise RuntimeError('Gere o codigo local com scripts/homolog.ps1 -Action up.')
         if credentials_path.exists():
             credentials = json.loads(credentials_path.read_text())
         else:
@@ -90,7 +95,7 @@ def main() -> None:
             credentials_path.write_text(json.dumps(credentials, indent=2), encoding='utf8')
         request('POST', '/api/auth/bootstrap-admin', {
             'name': 'Administrador Homologacao', **credentials,
-        })
+        }, extra_headers={'X-Bootstrap-Token': activation})
         passed('primeiro administrador criado em banco vazio')
     elif credentials_path.exists():
         credentials = json.loads(credentials_path.read_text())

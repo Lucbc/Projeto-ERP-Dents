@@ -1,6 +1,6 @@
-﻿import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate } from "react-router-dom";
 import { z } from "zod";
@@ -20,6 +20,7 @@ const loginSchema = z.object({
 
 const bootstrapSchema = z
   .object({
+    activationToken: z.string().trim().min(1, "Informe o código de ativação do servidor."),
     name: z.string().min(2, "Nome obrigatório."),
     email: z.string().email("Informe um e-mail válido."),
     password: z.string().min(8, "Mínimo de 8 caracteres."),
@@ -36,11 +37,12 @@ type BootstrapForm = z.infer<typeof bootstrapSchema>;
 export function LoginPage() {
   const { user, login } = useAuth();
   const { toast } = useToast();
-  const [showBootstrap, setShowBootstrap] = useState(false);
+  const [bootstrapFinished, setBootstrapFinished] = useState(false);
 
   const needsBootstrapQuery = useQuery({
     queryKey: ["auth", "needs-bootstrap"],
     queryFn: authService.needsBootstrap,
+    enabled: !user,
   });
 
   const loginForm = useForm<LoginForm>({
@@ -50,14 +52,9 @@ export function LoginPage() {
 
   const bootstrapForm = useForm<BootstrapForm>({
     resolver: zodResolver(bootstrapSchema),
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: { activationToken: "", name: "", email: "", password: "", confirmPassword: "" },
   });
-
-  useEffect(() => {
-    if (needsBootstrapQuery.data?.needsBootstrap) {
-      setShowBootstrap(true);
-    }
-  }, [needsBootstrapQuery.data?.needsBootstrap]);
+  const needsBootstrap = !bootstrapFinished && Boolean(needsBootstrapQuery.data?.needsBootstrap);
 
   const loginMutation = useMutation({
     mutationFn: async (values: LoginForm) => {
@@ -74,14 +71,22 @@ export function LoginPage() {
         name: values.name,
         email: values.email,
         password: values.password,
-      });
-      await login(values.email, values.password);
+      }, values.activationToken);
     },
-    onSuccess: () => {
-      toast("Administrador inicial criado com sucesso.");
+    onSuccess: async (_result, values) => {
+      setBootstrapFinished(true);
+      bootstrapForm.reset();
+      loginForm.setValue("email", values.email);
+      await needsBootstrapQuery.refetch();
+      try {
+        await login(values.email, values.password);
+      } catch {
+        toast("Administrador criado. Faça login para continuar.", "error");
+      }
     },
     onError: (error) => {
       toast(getApiErrorMessage(error), "error");
+      void needsBootstrapQuery.refetch();
     },
   });
 
@@ -91,7 +96,8 @@ export function LoginPage() {
 
   return (
     <div className="grid min-h-screen place-items-center p-4">
-      <div className="w-full max-w-5xl grid-cols-1 gap-6 lg:grid lg:grid-cols-2">
+      <div className={needsBootstrap
+        ? "grid w-full max-w-5xl grid-cols-1 gap-6 lg:grid-cols-2" : "w-full max-w-md"}>
         <Card className="border-cyan-100 bg-white/95">
           <h1 className="font-display text-2xl font-semibold text-slate-800">ERP Dents</h1>
           <p className="mt-1 text-sm text-slate-500">Acesso ao sistema da clínica odontológica.</p>
@@ -121,63 +127,62 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {needsBootstrapQuery.data?.needsBootstrap && (
-            <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-3">
-              <p className="text-sm text-amber-900">
-                Nenhum usuário encontrado. Crie o administrador inicial para liberar o sistema.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-2"
-                onClick={() => setShowBootstrap((prev) => !prev)}
-              >
-                {showBootstrap ? "Ocultar formulário" : "Criar administrador inicial"}
+          {needsBootstrapQuery.isError && (
+            <div role="alert" className="mt-5 space-y-2 text-sm text-slate-600">
+              <p>Não foi possível consultar a configuração do servidor.</p>
+              <Button type="button" variant="outline" onClick={() => void needsBootstrapQuery.refetch()}>
+                Tentar novamente
               </Button>
             </div>
           )}
         </Card>
 
-        <Card className="border-teal-100 bg-white/95">
+        {needsBootstrap && <Card className="border-teal-100 bg-white/95">
           <h2 className="font-display text-xl font-semibold text-slate-800">
             Criar administrador inicial
           </h2>
           <p className="mt-1 text-sm text-slate-500">
-            Use apenas na primeira inicialização, quando o banco está vazio.
+            Para começar, informe o código de ativação gerado no servidor e cadastre o responsável pela clínica.
           </p>
 
-          {showBootstrap ? (
             <form
+              aria-label="Configuração inicial"
               className="mt-6 space-y-4"
               onSubmit={bootstrapForm.handleSubmit((values) => bootstrapMutation.mutate(values))}
             >
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Nome</label>
-                <Input {...bootstrapForm.register("name")} />
+                <label htmlFor="activation-token" className="mb-1 block text-sm font-semibold text-slate-700">Código de ativação</label>
+                <Input id="activation-token" type="password" autoComplete="off" {...bootstrapForm.register("activationToken")} />
+                <p className="mt-1 text-xs text-slate-500">Solicite o código à pessoa que preparou o servidor. Ele é usado apenas nesta configuração inicial.</p>
+                {bootstrapForm.formState.errors.activationToken && <p className="mt-1 text-xs text-red-600">{bootstrapForm.formState.errors.activationToken.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="bootstrap-name" className="mb-1 block text-sm font-semibold text-slate-700">Nome</label>
+                <Input id="bootstrap-name" {...bootstrapForm.register("name")} />
                 {bootstrapForm.formState.errors.name && (
                   <p className="mt-1 text-xs text-red-600">{bootstrapForm.formState.errors.name.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">E-mail</label>
-                <Input type="email" {...bootstrapForm.register("email")} />
+                <label htmlFor="bootstrap-email" className="mb-1 block text-sm font-semibold text-slate-700">E-mail</label>
+                <Input id="bootstrap-email" type="email" {...bootstrapForm.register("email")} />
                 {bootstrapForm.formState.errors.email && (
                   <p className="mt-1 text-xs text-red-600">{bootstrapForm.formState.errors.email.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Senha</label>
-                <Input type="password" {...bootstrapForm.register("password")} />
+                <label htmlFor="bootstrap-password" className="mb-1 block text-sm font-semibold text-slate-700">Senha</label>
+                <Input id="bootstrap-password" type="password" autoComplete="new-password" {...bootstrapForm.register("password")} />
                 {bootstrapForm.formState.errors.password && (
                   <p className="mt-1 text-xs text-red-600">{bootstrapForm.formState.errors.password.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-semibold text-slate-700">Confirmar senha</label>
-                <Input type="password" {...bootstrapForm.register("confirmPassword")} />
+                <label htmlFor="bootstrap-confirm" className="mb-1 block text-sm font-semibold text-slate-700">Confirmar senha</label>
+                <Input id="bootstrap-confirm" type="password" autoComplete="new-password" {...bootstrapForm.register("confirmPassword")} />
                 {bootstrapForm.formState.errors.confirmPassword && (
                   <p className="mt-1 text-xs text-red-600">
                     {bootstrapForm.formState.errors.confirmPassword.message}
@@ -189,14 +194,7 @@ export function LoginPage() {
                 {bootstrapMutation.isPending ? "Criando..." : "Criar administrador"}
               </Button>
             </form>
-          ) : (
-            <p className="mt-6 text-sm text-slate-500">
-              O formulário é habilitado automaticamente quando o endpoint
-              <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">/api/auth/needs-bootstrap</code>
-              retorna true.
-            </p>
-          )}
-        </Card>
+        </Card>}
       </div>
     </div>
   );

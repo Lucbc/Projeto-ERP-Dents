@@ -136,7 +136,7 @@ Os endpoints verificam a ação genérica, mas aceitam `role=admin`. Quem recebe
 
 ### R09 — P1 — É possível perder o último administrador e reabrir bootstrap
 
-**Atualização:** perda do último administrador ativo pelas rotas de gestão corrigida na [etapa 1C.1](./homologacao-etapa-1C1.md), inclusive sob concorrência. Segurança da ativação inicial e disputa de bootstrap (R10) continuam na 1C.2. A descrição abaixo registra o estado original.
+**Atualização:** perda do último administrador ativo pelas rotas de gestão corrigida na [etapa 1C.1](./homologacao-etapa-1C1.md), inclusive sob concorrência. Reabertura e disputa de bootstrap corrigidas na [etapa 1C.2](./homologacao-etapa-1C2.md). A descrição abaixo registra o estado original.
 
 **Confirmado.** [user_use_cases.py](../apps/api/src/core/use_cases/user_use_cases.py#L46), [auth_use_cases.py](../apps/api/src/core/use_cases/auth_use_cases.py#L16).
 
@@ -145,6 +145,8 @@ Não há proteção contra excluir, desativar ou rebaixar o último administrado
 **Correção:** manter pelo menos um administrador ativo, bloquear ações perigosas sobre a própria conta quando aplicável e preservar o estado permanente de instalação concluída. Executar a verificação e a mudança em uma transação protegida contra concorrência.
 
 ### R10 — P1 — Bootstrap público tem corrida e não comprova posse do servidor
+
+**Atualização:** corrigido na [etapa 1C.2](./homologacao-etapa-1C2.md): código local de ativação, estado persistente e criação transacional exclusiva, com testes de migração, rollback, concorrência e HTTP. A descrição abaixo registra o estado original.
 
 **Risco identificado.** [auth_router.py](../apps/api/src/api/routers/auth_router.py#L31), [auth_use_cases.py](../apps/api/src/core/use_cases/auth_use_cases.py#L19).
 

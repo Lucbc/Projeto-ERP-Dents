@@ -4,7 +4,8 @@ from contextlib import contextmanager
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
 
-from src.adapters.db.models.models import UserModel
+from src.adapters.db.models.models import InstallationStateModel, UserModel
+from src.core.domain.exceptions import ConflictError
 from src.core.domain.entities import User, UserRole
 from src.core.ports.repositories import UserRepository
 
@@ -29,6 +30,23 @@ class SqlAlchemyUserRepository(UserRepository):
         return int(self.session.scalar(select(func.count(UserModel.id)).where(
             UserModel.role == UserRole.admin, UserModel.is_active.is_(True),
         )) or 0)
+
+    def bootstrap_completed(self) -> bool:
+        state = self.session.get(InstallationStateModel, 1)
+        # Missing state is an installation error, never permission to initialize.
+        return state is None or state.bootstrap_completed
+
+    def complete_bootstrap(self, data: dict) -> User:
+        # Called under administration_lock; both writes commit together.
+        state = self.session.get(InstallationStateModel, 1)
+        if state is None or state.bootstrap_completed or self.count_all() != 0:
+            raise ConflictError("A configuração inicial já foi concluída ou está indisponível.")
+        item = UserModel(**data)
+        self.session.add(item)
+        state.bootstrap_completed = True
+        self.session.commit()
+        self.session.refresh(item)
+        return self._to_entity(item)
 
     def count_all(self) -> int:
         return int(self.session.scalar(select(func.count(UserModel.id))) or 0)

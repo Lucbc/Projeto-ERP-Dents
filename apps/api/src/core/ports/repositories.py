@@ -90,6 +90,12 @@ class SpecialtyRepository(ABC):
 
 class UserRepository(ABC):
     @abstractmethod
+    def bootstrap_completed(self) -> bool: ...
+
+    @abstractmethod
+    def complete_bootstrap(self, data: dict) -> User: ...
+
+    @abstractmethod
     def administration_lock(self) -> AbstractContextManager[None]: ...
 
     @abstractmethod

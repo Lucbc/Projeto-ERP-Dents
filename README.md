@@ -333,9 +333,27 @@ ou produção:
 docker compose up -d --build
 ```
 
+### Ativação do primeiro administrador
+
+Em uma instalação nova, prepare `.env` a partir de `.env.example` e gere o código no PowerShell, na pasta do projeto:
+
+```powershell
+./scripts/configure-bootstrap.ps1 -EnvFile .env
+```
+
+O script grava `BOOTSTRAP_TOKEN` no arquivo local sem mostrar seu valor e preserva códigos existentes. Suba o Compose escolhido; se a API já estiver rodando, recrie seu container para carregar a configuração. Abra `.env` localmente no servidor e copie somente o valor dessa variável para **Código de ativação**, na configuração inicial da tela de acesso. Preencha nome, e-mail e senha do primeiro administrador.
+
+Na homologação, `./scripts/homolog.ps1 -Action up` gera automaticamente `HOMOLOG_BOOTSTRAP_TOKEN` em `.env.homolog`. Use esse valor somente naquele ambiente. Não publique arquivos de ambiente nem compartilhe o código com os computadores clientes.
+
+Código ausente ou incorreto impede a ativação. A configuração manual exige pelo menos 32 caracteres; o gerador produz 64 caracteres aleatórios. O script não substitui valores já preenchidos, mesmo inválidos: nesse caso, esvazie apenas a variável de ativação e execute-o novamente antes de recriar a API.
+
+A criação inicial é única e registrada no banco. Após concluída, o código pode ser removido do arquivo de ambiente e a API recriada; ele não permite criar outro administrador ou reabrir a instalação. Instalações que já possuem usuários continuam usando o login habitual, sem precisar desse código.
+
+Evidências e testes: [etapa 1C.2](docs/homologacao-etapa-1C2.md). O instalador assistido e HTTPS estão previstos na etapa 5.
+
 ### "Criar admin inicial" não aparece
 
-Se já existe usuário no banco, o bootstrap é bloqueado por regra.
+Se a instalação já foi concluída ou existe usuário no banco, a configuração inicial fica bloqueada. A migração também marca bancos existentes como configurados. Excluir usuários não reabre essa configuração.
 
 Teste:
 

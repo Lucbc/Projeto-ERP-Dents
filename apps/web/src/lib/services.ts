@@ -149,8 +149,10 @@ export const authService = {
     const response = await api.get<{ needsBootstrap: boolean }>("/api/auth/needs-bootstrap");
     return response.data;
   },
-  async bootstrapAdmin(payload: { name: string; email: string; password: string }) {
-    const response = await api.post<User>("/api/auth/bootstrap-admin", payload);
+  async bootstrapAdmin(payload: { name: string; email: string; password: string }, activationToken: string) {
+    const response = await api.post<User>("/api/auth/bootstrap-admin", payload, {
+      headers: { "X-Bootstrap-Token": activationToken },
+    });
     return response.data;
   },
   async login(payload: { email: string; password: string }) {

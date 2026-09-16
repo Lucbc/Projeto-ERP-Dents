@@ -22,6 +22,10 @@ if (-not (Test-Path -LiteralPath $envPath)) {
     Write-Host 'Configuracao local de homologacao criada. Segredos preservados em .env.homolog.'
 }
 
+if ($Action -eq 'up') {
+    & (Join-Path $PSScriptRoot 'configure-bootstrap.ps1') -EnvFile $envPath -VariableName 'HOMOLOG_BOOTSTRAP_TOKEN'
+}
+
 # Nome explícito evita que COMPOSE_PROJECT_NAME de outro ambiente redirecione os testes.
 $composeArgs = @('compose', '--project-name', 'erp-dents-homolog', '--env-file', $envPath, '-f', $composePath)
 # Docker escreve progresso em stderr mesmo quando o comando tem sucesso.

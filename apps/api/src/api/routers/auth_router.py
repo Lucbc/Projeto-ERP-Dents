@@ -1,6 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
@@ -18,6 +18,7 @@ from src.api.schemas.schemas import (
 )
 from src.core.domain.entities import User
 from src.core.use_cases.auth_use_cases import AuthUseCases
+from src.config import get_settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -32,9 +33,10 @@ def needs_bootstrap(db: Session = Depends(get_db_dep)) -> NeedsBootstrapResponse
 def bootstrap_admin(
     payload: BootstrapAdminRequest,
     db: Session = Depends(get_db_dep),
+    activation_token: str | None = Header(default=None, alias="X-Bootstrap-Token"),
 ) -> User:
-    use_case = AuthUseCases(SqlAlchemyUserRepository(db), JwtAuthService())
-    return use_case.bootstrap_admin(payload.name, payload.email, payload.password)
+    use_case = AuthUseCases(SqlAlchemyUserRepository(db), JwtAuthService(), get_settings().bootstrap_token)
+    return use_case.bootstrap_admin(payload.name, payload.email, payload.password, activation_token)
 
 
 @router.post("/login", response_model=TokenResponse)

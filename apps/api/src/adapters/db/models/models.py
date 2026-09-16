@@ -6,6 +6,7 @@ from datetime import date, datetime, timezone
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Enum as SAEnum,
@@ -109,6 +110,14 @@ class SpecialtyModel(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
     )
+
+
+class InstallationStateModel(Base):
+    __tablename__ = "installation_state"
+    __table_args__ = (CheckConstraint("id = 1", name="ck_installation_singleton"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    bootstrap_completed: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
 
 class UserModel(Base):
