@@ -8,6 +8,10 @@ O status das entregas e o ponto de retomada ficam em [docs/PLANO-DE-EXECUCAO.md]
 
 Testes de sessão/cache do frontend: `npm test --prefix apps/web` (após instalar as dependências de desenvolvimento). Evidências e limites da correção em [docs/homologacao-etapa-1B.md](docs/homologacao-etapa-1B.md).
 
+Testes de permissões administrativas e concorrência do último administrador: [docs/homologacao-etapa-1C1.md](docs/homologacao-etapa-1C1.md).
+
+Para continuar o desenvolvimento em outro computador, atualize sua cópia com `git pull --ff-only` e reconstrua a homologação com o script abaixo. Código e documentação ficam no Git; senhas locais, banco e exames do Docker permanecem em cada máquina. Uma instalação nova de homologação terá banco próprio vazio.
+
 Para homologar neste computador Windows, com Docker ativo:
 
 ```powershell

@@ -126,6 +126,8 @@ Definir com a clínica quanto de trabalho pode ser perdido e em quanto tempo o s
 
 ### R08 — P1 — Permissão para gerir usuários permite obter poder de administrador
 
+**Atualização:** corrigido na [etapa 1C.1](./homologacao-etapa-1C1.md), com proteção pelo ator/alvo no backend, interface coerente e testes HTTP/PostgreSQL. A descrição abaixo registra o estado original.
+
 **Confirmado no controle implementado; depende de delegar `users.create` ou `users.update`.** [users_router.py](../apps/api/src/api/routers/users_router.py#L46), [user_use_cases.py](../apps/api/src/core/use_cases/user_use_cases.py#L25).
 
 Os endpoints verificam a ação genérica, mas aceitam `role=admin`. Quem recebe criação pode criar administrador; quem recebe atualização pode promover a si mesmo ou redefinir a senha de um administrador. Os perfis padrão negam essas ações, mas a tela permite que o administrador as delegue sem apresentar esse efeito.
@@ -133,6 +135,8 @@ Os endpoints verificam a ação genérica, mas aceitam `role=admin`. Quem recebe
 **Correção:** separar gestão operacional de contas de gestão de administradores; somente administrador pode criar/promover/alterar senha de administrador. Passar o ator ao caso de uso e verificar alvo, perfil anterior e perfil solicitado. Testar a API diretamente, pois esconder opções na tela é insuficiente.
 
 ### R09 — P1 — É possível perder o último administrador e reabrir bootstrap
+
+**Atualização:** perda do último administrador ativo pelas rotas de gestão corrigida na [etapa 1C.1](./homologacao-etapa-1C1.md), inclusive sob concorrência. Segurança da ativação inicial e disputa de bootstrap (R10) continuam na 1C.2. A descrição abaixo registra o estado original.
 
 **Confirmado.** [user_use_cases.py](../apps/api/src/core/use_cases/user_use_cases.py#L46), [auth_use_cases.py](../apps/api/src/core/use_cases/auth_use_cases.py#L16).
 

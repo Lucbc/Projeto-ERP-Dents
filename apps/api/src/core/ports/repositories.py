@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from contextlib import AbstractContextManager
 from datetime import date, datetime
 from uuid import UUID
 
@@ -88,6 +89,12 @@ class SpecialtyRepository(ABC):
 
 
 class UserRepository(ABC):
+    @abstractmethod
+    def administration_lock(self) -> AbstractContextManager[None]: ...
+
+    @abstractmethod
+    def count_active_admins(self) -> int: ...
+
     @abstractmethod
     def count_all(self) -> int: ...
 

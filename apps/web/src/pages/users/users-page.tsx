@@ -1,4 +1,4 @@
-﻿import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useAuth } from "@/hooks/use-auth";
 import { getApiErrorMessage } from "@/lib/api";
 import { userRoleLabels, userRoleOptions } from "@/lib/labels";
 import { dentistService, userService } from "@/lib/services";
@@ -50,6 +51,8 @@ type UserForm = z.infer<typeof userSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 
 export function UsersPage() {
+  const { user: currentUser, logout } = useAuth();
+  const isAdmin = currentUser?.role === "admin";
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
@@ -118,21 +121,23 @@ export function UsersPage() {
         dentist_id: payload.dentist_id ? payload.dentist_id : null,
         is_active: payload.is_active === "true",
       }),
-    onSuccess: () => {
+    onSuccess: (updated) => {
       toast("Usuário atualizado com sucesso.");
       setOpenModal(false);
       setEditingUser(null);
       form.reset();
       void queryClient.invalidateQueries({ queryKey: ["users"] });
+      if (updated.id === currentUser?.id && (updated.role !== currentUser.role || !updated.is_active)) logout();
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => userService.remove(id),
-    onSuccess: () => {
+    onSuccess: (_result, deletedId) => {
       toast("Usuário removido.");
       void queryClient.invalidateQueries({ queryKey: ["users"] });
+      if (deletedId === currentUser?.id) logout();
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
@@ -172,7 +177,7 @@ export function UsersPage() {
   };
 
   const onEdit = (user: User) => {
-    if (!canUpdate) return;
+    if (!canUpdate || (user.role === "admin" && !isAdmin)) return;
     setEditingUser(user);
     form.reset({
       name: user.name,
@@ -206,6 +211,11 @@ export function UsersPage() {
           <div>
             <h2 className="font-display text-xl font-semibold text-slate-800">Usuários</h2>
             <p className="text-sm text-slate-500">Gerencie logins, perfis e status dos usuários.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {isAdmin
+                ? "Mantenha pelo menos um administrador ativo. Para remover o último, cadastre ou ative outro antes."
+                : "Contas de administrador só podem ser alteradas por outro administrador."}
+            </p>
           </div>
 
           <div className="flex gap-2">
@@ -247,7 +257,9 @@ export function UsersPage() {
                       <td className="p-2">{userRoleLabels[user.role]}</td>
                       <td className="p-2">{user.is_active ? "Sim" : "Não"}</td>
                       <td className="p-2">
-                        {!canUpdate && !canDelete ? (
+                        {user.role === "admin" && !isAdmin ? (
+                          <span className="text-slate-400">Somente administrador</span>
+                        ) : !canUpdate && !canDelete ? (
                           <span className="text-slate-400">-</span>
                         ) : (
                           <div className="flex gap-2">
@@ -317,7 +329,7 @@ export function UsersPage() {
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Perfil *</label>
             <Select {...form.register("role")}>
-              {userRoleOptions.map((roleOption) => (
+              {userRoleOptions.filter((option) => isAdmin || option.value !== "admin").map((roleOption) => (
                 <option key={roleOption.value} value={roleOption.value}>
                   {roleOption.label}
                 </option>

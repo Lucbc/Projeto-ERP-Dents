@@ -1,16 +1,34 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
-from sqlalchemy import func, or_, select
+from contextlib import contextmanager
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.orm import Session
 
 from src.adapters.db.models.models import UserModel
-from src.core.domain.entities import User
+from src.core.domain.entities import User, UserRole
 from src.core.ports.repositories import UserRepository
 
 
 class SqlAlchemyUserRepository(UserRepository):
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    @contextmanager
+    def administration_lock(self):
+        # Serialize user writes through validation + commit. Ordinary SELECTs remain available.
+        # Unlike locking only existing admin rows, this also covers role changes and inserts.
+        try:
+            self.session.execute(text("LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE"))
+            self.session.expire_all()  # Discard identities read before waiting for the lock.
+            yield
+        finally:
+            # Mutations commit inside this repository; failures must release the lock too.
+            self.session.rollback()
+
+    def count_active_admins(self) -> int:
+        return int(self.session.scalar(select(func.count(UserModel.id)).where(
+            UserModel.role == UserRole.admin, UserModel.is_active.is_(True),
+        )) or 0)
 
     def count_all(self) -> int:
         return int(self.session.scalar(select(func.count(UserModel.id))) or 0)
