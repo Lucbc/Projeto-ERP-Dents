@@ -24,7 +24,7 @@ def docker(*args, check=True):
     return result
 
 
-def main(session_checks=None):
+def main(session_checks=None, report_name=None):
     smoke.verify_target()
     db_info = json.loads(docker("inspect", "erp-dents-homolog-db-1").stdout)[0]
     db_env = dict(line.split("=", 1) for line in db_info["Config"]["Env"] if "=" in line)
@@ -44,8 +44,9 @@ def main(session_checks=None):
         return docker("exec", "erp-dents-homolog-db-1", "psql", "-U", "erp_homolog",
                       "-d", "erp_dents_homolog", "-v", "ON_ERROR_STOP=1", "-tAc", statement).stdout.strip()
 
-    def request(method, path, payload=None, activation=None, token=None):
+    def request(method, path, payload=None, activation=None, token=None, extra_headers=None):
         headers = {"Content-Type": "application/json"}
+        headers.update(extra_headers or {})
         if activation is not None: headers["X-Bootstrap-Token"] = activation
         if token: headers["Authorization"] = "Bearer " + token
         req = Request("http://127.0.0.1:18001" + path, method=method, headers=headers,
@@ -53,6 +54,7 @@ def main(session_checks=None):
         try: response = urlopen(req, timeout=10)
         except HTTPError as error: response = error
         with response:
+            request.last_headers = response.headers
             raw = response.read()
             data = json.loads(raw) if raw else None
             assert code not in json.dumps(data), "Activation code was exposed in response"
@@ -103,7 +105,7 @@ def main(session_checks=None):
         assert request("GET", "/api/users", token=token)[1]["total"] == 1
         passed("initial account logs in with admin access and only one user exists")
         if session_checks:
-            session_checks(request, winner["email"], password, token, name, ready, passed)
+            session_checks(request, winner["email"], password, token, name, ready, passed, sql, schema)
         for activation in (None, code):
             assert request("POST", "/api/auth/bootstrap-admin", data, activation)[0] == 409
         docker("restart", name)
@@ -119,7 +121,7 @@ def main(session_checks=None):
         sql(f'DROP SCHEMA "{schema}" CASCADE')
         env_file.unlink(missing_ok=True)
     passed("temporary API/schema/secrets removed; original data and volumes preserved")
-    report = "last-session-smoke.json" if session_checks else "last-bootstrap-smoke.json"
+    report = report_name or ("last-session-smoke.json" if session_checks else "last-bootstrap-smoke.json")
     (smoke.STATE / report).write_text(json.dumps({
         "timestamp": datetime.now(timezone.utc).isoformat(), "checks": checks,
         "project": "erp-dents-homolog",

@@ -25,7 +25,7 @@ const userSchema = z
     role: z.enum(["admin", "coordinator", "dentist", "reception"]),
     dentist_id: z.string().optional(),
     is_active: z.enum(["true", "false"]),
-    password: z.string().optional(),
+    password: z.string().refine((value) => Array.from(value).length <= 128, "Máximo de 128 caracteres.").optional(),
   })
   .superRefine((value, context) => {
     if (value.role === "dentist" && !value.dentist_id) {
@@ -39,8 +39,8 @@ const userSchema = z
 
 const passwordSchema = z
   .object({
-    new_password: z.string().min(8, "Mínimo de 8 caracteres."),
-    confirm_password: z.string().min(8, "Confirme a senha."),
+    new_password: z.string().refine((value) => Array.from(value).length >= 8, "Mínimo de 8 caracteres.").refine((value) => Array.from(value).length <= 128, "Maximo de 128 caracteres."),
+    confirm_password: z.string().refine((value) => Array.from(value).length >= 8, "Confirme a senha.").refine((value) => Array.from(value).length <= 128, "Maximo de 128 caracteres."),
   })
   .refine((value) => value.new_password === value.confirm_password, {
     message: "As senhas não coincidem.",

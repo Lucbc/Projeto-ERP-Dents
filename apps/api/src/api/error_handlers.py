@@ -10,6 +10,7 @@ from src.core.domain.exceptions import (
     NotFoundError,
     UnauthorizedError,
     ValidationError,
+    RateLimitError,
 )
 
 
@@ -29,4 +30,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         elif isinstance(exc, ConflictError):
             status_code = 409
 
+        if isinstance(exc, RateLimitError):
+            return JSONResponse(status_code=429, content={"detail": str(exc)},
+                                headers={"Retry-After": str(exc.retry_after)})
         return JSONResponse(status_code=status_code, content={"detail": str(exc)})

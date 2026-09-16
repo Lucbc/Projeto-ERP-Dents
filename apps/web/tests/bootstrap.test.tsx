@@ -43,13 +43,13 @@ function mount() {
   client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(<QueryClientProvider client={client}><ToastProvider><LoginPage /></ToastProvider></QueryClientProvider>);
 }
-async function fill(code = "fictitious-activation-code-for-tests-only") {
+async function fill(code = "fictitious-activation-code-for-tests-only", password = "fictitious-password") {
   const form = within(await screen.findByRole("form", { name: "Configuração inicial" }));
   fireEvent.change(form.getByLabelText("Código de ativação"), { target: { value: code } });
   fireEvent.change(form.getByLabelText("Nome"), { target: { value: "Initial Test Admin" } });
   fireEvent.change(form.getByLabelText("E-mail"), { target: { value: "initial@example.com" } });
-  fireEvent.change(form.getByLabelText("Senha", { exact: true }), { target: { value: "fictitious-password" } });
-  fireEvent.change(form.getByLabelText("Confirmar senha"), { target: { value: "fictitious-password" } });
+  fireEvent.change(form.getByLabelText("Senha", { exact: true }), { target: { value: password } });
+  fireEvent.change(form.getByLabelText("Confirmar senha"), { target: { value: password } });
   fireEvent.click(form.getByRole("button", { name: "Criar administrador" }));
 }
 
@@ -65,6 +65,25 @@ it("requires the activation code before sending initial registration", async () 
   mount(); await fill("");
   await screen.findByText("Informe o código de ativação do servidor.");
   expect(posted).toHaveLength(0);
+});
+
+it("rejects new passwords over the supported limit before sending them", async () => {
+  mount(); await fill(undefined, "x".repeat(129));
+  expect((await screen.findAllByText("Maximo de 128 caracteres.")).length).toBeGreaterThan(0);
+  expect(posted).toHaveLength(0);
+});
+
+it("counts Unicode characters consistently with the server", async () => {
+  mount(); await fill(undefined, "😀".repeat(128));
+  await waitFor(() => expect(login).toHaveBeenCalled());
+  expect(posted).toHaveLength(1);
+});
+
+it("keeps setup open after throttling without attempting login", async () => {
+  postStatus = 429; mount(); await fill();
+  await screen.findByText("Ativação rejeitada.");
+  expect(screen.getByLabelText("Código de ativação")).toBeTruthy();
+  expect(login).not.toHaveBeenCalled();
 });
 
 it("sends activation only in the header, closes setup and logs in after creation", async () => {

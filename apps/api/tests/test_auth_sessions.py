@@ -24,7 +24,7 @@ from src.core.use_cases.auth_use_cases import AuthUseCases
 
 
 @unittest.skipUnless(os.getenv("RUN_HOMOLOG_TESTS") == "1", "Homologation opt-in required")
-class AuthSessionTests(unittest.TestCase):
+class HomologDatabaseTests(unittest.TestCase):
     def setUp(self):
         url = make_url(os.environ["DATABASE_URL"])
         if url.database != "erp_dents_homolog": self.fail("Homologation database required")
@@ -70,6 +70,7 @@ class AuthSessionTests(unittest.TestCase):
             get_current_user(token, db, self.auth)
         self.assertEqual(error.exception.status_code, 401)
 
+class AuthSessionTests(HomologDatabaseTests):
     def test_existing_user_migrates_and_legacy_token_is_rejected(self):
         legacy = self.auth.create_access_token(str(self.user.id))
         self.rejected(legacy)
@@ -178,7 +179,7 @@ class AuthSessionTests(unittest.TestCase):
     def test_local_reset_script_revokes(self):
         token = self.login()
         result = subprocess.run([sys.executable, "scripts/reset_admin_password.py", self.user.email,
-            "local-fictitious-reset"], env={**os.environ, "PGOPTIONS": f"-csearch_path={self.schema}"},
+            "--password-stdin"], input=b"local-fictitious-reset\n", env={**os.environ, "PGOPTIONS": f"-csearch_path={self.schema}"},
             capture_output=True)
         self.assertEqual(result.returncode, 0, "Isolated local password reset failed")
         self.rejected(token)

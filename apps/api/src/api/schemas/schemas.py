@@ -210,7 +210,7 @@ class UserCreateRequest(BaseModel):
     email: EmailStr
     role: UserRole
     dentist_id: UUID | None = None
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
     is_active: bool = True
 
 
@@ -223,7 +223,7 @@ class UserUpdateRequest(BaseModel):
 
 
 class SetPasswordRequest(BaseModel):
-    new_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class UserResponse(AppBaseSchema):
@@ -419,17 +419,17 @@ class NeedsBootstrapResponse(BaseModel):
 class BootstrapAdminRequest(BaseModel):
     name: str = Field(min_length=1)
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(max_length=4096)
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str = Field(min_length=1)
-    new_password: str = Field(min_length=8)
+    current_password: str = Field(min_length=1, max_length=4096)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class MessageResponse(BaseModel):

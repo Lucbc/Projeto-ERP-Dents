@@ -77,7 +77,7 @@ Não execute o comando com o texto `NOME_ANTERIOR` literalmente. A migração de
 
 ## Funcionalidades MVP
 
-- Autenticação JWT (login com e-mail/senha, hash bcrypt)
+- Autenticação JWT (login com e-mail/senha; novas senhas com bcrypt-SHA256, hashes bcrypt existentes preservados)
 - Sessões revogáveis no servidor: `POST /api/auth/logout` encerra o login atual; troca/reset de senha encerra todos os acessos da conta.
 - Bootstrap de admin inicial:
   - `GET /api/auth/needs-bootstrap`
@@ -146,6 +146,15 @@ Copy-Item .env.example .env
 ```
 
 ### 3. Ajustar variáveis mínimas
+
+No PowerShell, gere as duas chaves locais antes da primeira inicialização:
+
+```powershell
+./scripts/configure-bootstrap.ps1 -EnvFile .env -VariableName JWT_SECRET_KEY
+./scripts/configure-bootstrap.ps1 -EnvFile .env
+```
+
+Os comandos gravam valores aleatórios no arquivo sem imprimi-los e preservam valores já preenchidos. Se seu arquivo antigo ainda contém o exemplo `CHANGE_ME...`, esvazie apenas `JWT_SECRET_KEY` antes de gerar a chave. Não substitua uma chave válida de uma instalação existente. A API rejeita chave vazia, menor que 32 caracteres ou iniciada por `CHANGE_ME`. O prazo `JWT_EXPIRE_MINUTES` deve estar entre 1 e 10080 minutos.
 
 No `.env`, valide principalmente:
 
@@ -339,6 +348,7 @@ docker compose up -d --build
 Em uma instalação nova, prepare `.env` a partir de `.env.example` e gere o código no PowerShell, na pasta do projeto:
 
 ```powershell
+./scripts/configure-bootstrap.ps1 -EnvFile .env -VariableName JWT_SECRET_KEY
 ./scripts/configure-bootstrap.ps1 -EnvFile .env
 ```
 
@@ -369,8 +379,10 @@ A redefinição invalida todos os acessos existentes da conta. O usuário precis
 Com ambiente rodando:
 
 ```bash
-docker compose exec api python scripts/reset_admin_password.py admin@clinica.com NovaSenha123
+docker compose exec api python scripts/reset_admin_password.py admin@clinica.com
 ```
+
+O terminal solicita a nova senha e a confirmação sem exibi-las. O comando pode redefinir qualquer conta localizada por e-mail, apesar do nome histórico do arquivo. Não passe senha como argumento: esse formato é rejeitado sem repetir o valor na mensagem de erro. Para automação controlada, há `--password-stdin`; alimente o processo por entrada padrão, evitando `echo`, histórico ou logs com credenciais.
 
 ### Sessões e atualização para a etapa 1C.3
 
@@ -380,7 +392,26 @@ Trocar ou redefinir senha, inativar a conta, alterar e-mail, perfil ou vínculo 
 
 O botão **Sair** aguarda confirmação do servidor. Se a conexão falhar, os dados ficam ocultos e a tela oferece **Tentar sair novamente**; a saída não é confirmada enquanto a API não responder. Alterar a senha também exige novo login. Uma senha atual digitada incorretamente mantém a sessão e mostra erro de validação.
 
-A revogação é conferida nas próximas requisições autenticadas. Ela não desfaz operações já autorizadas nem apaga imediatamente dados já exibidos em outro computador parado. Tokens continuam em `localStorage`; revisão desse armazenamento e proteção de tentativas/senhas têm etapas próprias. Evidências: [homologação 1C.3](docs/homologacao-etapa-1C3.md).
+A revogação é conferida nas próximas requisições autenticadas. Ela não desfaz operações já autorizadas nem apaga imediatamente dados já exibidos em outro computador parado. Tokens continuam em `localStorage`, cuja revisão permanece pendente. Evidências: [homologação 1C.3](docs/homologacao-etapa-1C3.md).
+
+### Senhas e limites de tentativas — etapa 1C.4
+
+Novas senhas devem ter de 8 a 128 caracteres, sem caractere nulo. Espaços e Unicode são aceitos; a senha não é aparada ou normalizada. Novos cadastros, bootstrap, troca e redefinição usam bcrypt-SHA256 para considerar a senha inteira. Os hashes bcrypt existentes continuam sendo verificados, sem regravação automática. Uma senha antiga com mais de 72 bytes ainda tem a limitação do bcrypt até ser explicitamente trocada/redefinida; a atualização não consegue recuperar o trecho que o hash antigo descartou.
+
+Os limites abaixo usam janelas de 60 segundos desde a primeira tentativa e contam tentativas válidas e inválidas:
+
+| Operação | Limite |
+|---|---|
+| Login por conta, normalizada por e-mail | 10 |
+| Login por origem da conexão | 120 |
+| Ativação inicial por origem | 10 |
+| Troca de senha por usuário autenticado | 5 |
+
+Ao exceder o limite, a API retorna 429 com `Retry-After` e informa que é necessário aguardar. Não há bloqueio permanente nem necessidade de reiniciar: a janela expira automaticamente. Contadores são compartilhados no PostgreSQL, sobrevivem a reinícios e não armazenam e-mails/IPs em texto aberto. Tentativas recusadas não prorrogam a janela. Login inexistente, senha incorreta e usuário inativo recebem a mesma mensagem.
+
+A origem é o endereço da conexão recebido pela API. Os comandos Docker desabilitam interpretação automática de cabeçalhos de proxy para evitar falsificação. Computadores atrás do mesmo NAT/proxy podem compartilhar o limite de origem; o limite por conta continua independente. A instalação futura com proxy/HTTPS deverá configurar origem confiável explicitamente, sem aceitar cabeçalhos arbitrários.
+
+A migração `0010_auth_attempts` não altera senhas ou dados existentes. Mantenha a chave JWT válida no servidor após a ativação; ela não é o código descartável de bootstrap. Detalhes e testes: [homologação 1C.4](docs/homologacao-etapa-1C4.md).
 
 ### Ver logs
 

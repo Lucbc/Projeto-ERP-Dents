@@ -8,6 +8,7 @@ from src.core.domain.exceptions import ConflictError, ForbiddenError, NotFoundEr
 from src.core.permissions import PermissionAction, can_access, normalize_permissions
 from src.core.ports.repositories import RolePermissionRepository, UserRepository
 from src.core.ports.services import AuthService
+from src.core.password_policy import validate_new_password
 
 
 class UserUseCases:
@@ -57,8 +58,7 @@ class UserUseCases:
         with self._authorize(actor_id, "create") as actor:
             role = UserRole(data["role"])
             self._protect_admin(actor, role)
-            if len(data.get("password", "")) < 8:
-                raise ValidationError("A senha deve ter no mínimo 8 caracteres.")
+            validate_new_password(data.get("password", ""))
             if not data["name"].strip():
                 raise ValidationError("Nome é obrigatório.")
             if self.user_repository.get_by_email(data["email"].lower().strip()) is not None:
@@ -102,8 +102,7 @@ class UserUseCases:
         with self._authorize(actor_id, "update") as actor:
             current = self.get(user_id)
             self._protect_admin(actor, current.role)
-            if len(new_password) < 8:
-                raise ValidationError("A senha deve ter no mínimo 8 caracteres.")
+            validate_new_password(new_password)
             user = self.user_repository.update(user_id, {
                 "password_hash": self.auth_service.hash_password(new_password),
             })

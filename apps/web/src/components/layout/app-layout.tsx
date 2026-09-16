@@ -79,8 +79,8 @@ const titles: Record<string, string> = {
 const changePasswordSchema = z
   .object({
     current_password: z.string().min(1, "Informe a senha atual."),
-    new_password: z.string().min(8, "A nova senha deve ter no minimo 8 caracteres."),
-    confirm_new_password: z.string().min(8, "Confirme a nova senha."),
+    new_password: z.string().refine((value) => Array.from(value).length >= 8, "A nova senha deve ter no minimo 8 caracteres.").refine((value) => Array.from(value).length <= 128, "Maximo de 128 caracteres."),
+    confirm_new_password: z.string().refine((value) => Array.from(value).length >= 8, "Confirme a nova senha.").refine((value) => Array.from(value).length <= 128, "Maximo de 128 caracteres."),
   })
   .refine((value) => value.new_password === value.confirm_new_password, {
     message: "A confirmacao da senha nao confere.",

@@ -42,6 +42,14 @@ class AuthSessionModel(Base):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
 
 
+class AuthAttemptModel(Base):
+    __tablename__ = "auth_attempts"
+
+    key: Mapped[str] = mapped_column(Text, primary_key=True)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+
+
 class PatientModel(Base):
     __tablename__ = "patients"
 

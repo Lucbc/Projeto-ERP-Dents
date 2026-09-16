@@ -1,33 +1,56 @@
 from __future__ import annotations
 
 import sys
+import argparse
+import getpass
+import warnings
 from pathlib import Path
 
 # Support the documented direct invocation from any working directory.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from passlib.context import CryptContext
+from src.adapters.security.jwt_auth_service import JwtAuthService
+from src.core.domain.exceptions import ValidationError
 
 from src.adapters.db.database import SessionLocal
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+class SafeArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        # argparse's default error echoes unknown arguments, potentially a legacy plaintext password.
+        self.exit(2, "Argumentos invalidos. Informe o email; a senha sera solicitada no terminal.\n")
 
 
 def main() -> int:
-    if len(sys.argv) != 3:
-        print("Uso: python scripts/reset_admin_password.py <email> <nova_senha>")
+    parser = SafeArgumentParser(description="Redefine a senha e encerra as sessoes da conta.")
+    parser.add_argument("email")
+    parser.add_argument("--password-stdin", action="store_true",
+                        help="Recebe a senha por stdin para automacao; nao use argumentos ou echo.")
+    args = parser.parse_args()
+    email = args.email.strip().lower()
+    if args.password_stdin:
+        new_password = sys.stdin.readline(4098).rstrip("\r\n")
+    else:
+        if not sys.stdin.isatty():
+            print("Use um terminal interativo ou --password-stdin para automacao.")
+            return 1
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", getpass.GetPassWarning)
+                new_password = getpass.getpass("Nova senha: ")
+                confirmation = getpass.getpass("Confirme a nova senha: ")
+        except (getpass.GetPassWarning, EOFError):
+            print("Nao foi possivel ler a senha de forma oculta. Use um terminal interativo.")
+            return 1
+        if new_password != confirmation:
+            print("As senhas nao coincidem.")
+            return 1
+    try:
+        password_hash = JwtAuthService().hash_password(new_password)
+    except ValidationError as error:
+        print(str(error))
         return 1
-
-    email = sys.argv[1].strip().lower()
-    new_password = sys.argv[2]
-
-    if len(new_password) < 8:
-        print("Erro: a nova senha deve ter no mínimo 8 caracteres.")
-        return 1
-
-    password_hash = pwd_context.hash(new_password)
     with SessionLocal() as session:
         repository = SqlAlchemyUserRepository(session)
         with repository.administration_lock():

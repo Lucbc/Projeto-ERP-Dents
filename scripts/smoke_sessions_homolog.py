@@ -4,7 +4,7 @@ import secrets
 from smoke_bootstrap_homolog import docker, main
 
 
-def verify(request, email, password, first, container, ready, passed):
+def verify(request, email, password, first, container, ready, passed, sql=None, schema=None):
     def expect(method, path, payload=None, token=None, status=200):
         code, body = request(method, path, payload, token=token)
         assert code == status, f"{method} {path}: expected {status}, got {code}"

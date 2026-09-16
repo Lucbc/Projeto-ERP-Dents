@@ -1,6 +1,6 @@
 param(
     [string]$EnvFile = '.env',
-    [ValidateSet('BOOTSTRAP_TOKEN', 'HOMOLOG_BOOTSTRAP_TOKEN')]
+    [ValidateSet('BOOTSTRAP_TOKEN', 'HOMOLOG_BOOTSTRAP_TOKEN', 'JWT_SECRET_KEY')]
     [string]$VariableName = 'BOOTSTRAP_TOKEN'
 )
 
@@ -32,4 +32,8 @@ if ($entries.Count -eq 1) {
 }
 [System.IO.File]::WriteAllText($resolvedEnv, $contents, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "Codigo de ativacao gerado em $resolvedEnv (variavel $VariableName)."
-Write-Host 'Use esse valor somente na primeira configuracao. Nao publique o arquivo de ambiente.'
+if ($VariableName -eq 'JWT_SECRET_KEY') {
+    Write-Host 'Mantenha esta chave no servidor. Ela assina as sessoes; nao publique nem remova apos a ativacao.'
+} else {
+    Write-Host 'Use esse valor somente na primeira configuracao. Nao publique o arquivo de ambiente.'
+}

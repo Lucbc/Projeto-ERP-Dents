@@ -86,6 +86,8 @@ O frontend é compilado com `PUBLIC_API_URL`, cujo padrão é `http://localhost:
 
 ### R03 — P1 — HTTPS e configuração segura ainda não fazem parte da instalação
 
+**Atualização parcial:** a etapa [1C.4](./homologacao-etapa-1C4.md) rejeita chaves JWT vazias, curtas e o exemplo conhecido, e fornece geração local sem exibir valores. HTTPS, proxy, rede e instalador continuam na etapa 5.
+
 **Confirmado.** O Compose e o Nginx publicam HTTP; a API também é exposta diretamente. [docker-compose.yml](../docker-compose.yml#L36), [nginx.conf](../apps/web/nginx.conf#L1), [config.py](../apps/api/src/config.py#L27).
 
 Senhas, tokens e dados de pacientes trafegam sem proteção de transporte nesse desenho. O backend aceita segredos conhecidos (`CHANGE_ME` e o exemplo), sem rejeitar uma instalação insegura. Com o segredo conhecido e um ID de usuário válido, a assinatura JWT deixa de proteger a identidade.
@@ -117,6 +119,8 @@ Definir com a clínica quanto de trabalho pode ser perdido e em quanto tempo o s
 **Correção:** separar “processo está vivo” de “sistema está pronto”; verificar banco, versão de migração, acesso ao diretório de exames e disponibilidade de espaço. Incluir status legível, versão, último backup, logs com identificador de requisição e rotação. Tratar disco cheio, falha de permissão e banco indisponível com mensagens úteis. Alertas devem evitar dados clínicos e segredos.
 
 ### R07 — P1 — Recuperação de senha documentada falha
+
+**Atualização parcial:** importação e revogação corrigidas na 1C.3; prompt oculto/entrada padrão e rejeição de senha em argumentos entregues na [1C.4](./homologacao-etapa-1C4.md). Auditoria de recuperação permanece pendente junto à trilha de auditoria do sistema.
 
 **Reproduzido.** [reset_admin_password.py](../apps/api/scripts/reset_admin_password.py#L8) importa `src`, mas a execução por caminho coloca `scripts` no início do caminho de módulos. No ambiente isolado, o comando documentado falhou com `ModuleNotFoundError`.
 
@@ -165,6 +169,8 @@ Logout só remove o token local. Alterar ou redefinir senha modifica o hash, mas
 **Correção:** modelar sessões revogáveis ou versão de sessão por usuário, revogar após recuperação de senha, tratar expiração e falha de rede separadamente e sincronizar abas. Avaliar cookie `HttpOnly`, `Secure` e `SameSite`, incluindo proteção contra CSRF se mudar para autenticação por cookie. O token atual está em `localStorage`, acessível a JavaScript da mesma origem. [Orientação OWASP sobre armazenamento no navegador](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html).
 
 ### R12 — P2 — Faltam limites de tentativas e política consistente de senha
+
+**Atualização:** a [etapa 1C.4](./homologacao-etapa-1C4.md) implementa limites persistentes, respostas uniformes e política central para novas senhas com bcrypt-SHA256. Hashes antigos são preservados; sua limitação de 72 bytes só desaparece após troca explícita. A limitação usa janelas fixas, sem bloqueio permanente; ajuste por carga real fica na homologação final. A descrição abaixo registra o estado original.
 
 **Confirmado.** [auth_router.py](../apps/api/src/api/routers/auth_router.py#L40), [schemas.py](../apps/api/src/api/schemas/schemas.py), [jwt_auth_service.py](../apps/api/src/adapters/security/jwt_auth_service.py#L17).
 

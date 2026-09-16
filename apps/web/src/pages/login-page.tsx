@@ -23,8 +23,8 @@ const bootstrapSchema = z
     activationToken: z.string().trim().min(1, "Informe o código de ativação do servidor."),
     name: z.string().min(2, "Nome obrigatório."),
     email: z.string().email("Informe um e-mail válido."),
-    password: z.string().min(8, "Mínimo de 8 caracteres."),
-    confirmPassword: z.string().min(8, "Confirmação obrigatória."),
+    password: z.string().refine((value) => Array.from(value).length >= 8, "Mínimo de 8 caracteres.").refine((value) => Array.from(value).length <= 128, "Maximo de 128 caracteres."),
+    confirmPassword: z.string().refine((value) => Array.from(value).length >= 8, "Confirmação obrigatória.").refine((value) => Array.from(value).length <= 128, "Maximo de 128 caracteres."),
   })
   .refine((value) => value.password === value.confirmPassword, {
     message: "As senhas não coincidem.",

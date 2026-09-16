@@ -2,6 +2,12 @@
     pass
 
 
+class RateLimitError(DomainError):
+    def __init__(self, retry_after: int):
+        super().__init__("Muitas tentativas. Aguarde um minuto e tente novamente.")
+        self.retry_after = retry_after
+
+
 class ValidationError(DomainError):
     pass
 

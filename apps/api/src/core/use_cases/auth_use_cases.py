@@ -8,6 +8,7 @@ from src.core.domain.entities import User, UserRole
 from src.core.domain.exceptions import ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError
 from src.core.ports.repositories import UserRepository
 from src.core.ports.services import AuthService
+from src.core.password_policy import validate_new_password
 
 
 class AuthUseCases:
@@ -32,8 +33,7 @@ class AuthUseCases:
         if not name.strip():
             raise ValidationError("Nome é obrigatório.")
 
-        if len(password) < 8:
-            raise ValidationError("A senha deve ter no mínimo 8 caracteres.")
+        validate_new_password(password)
 
         password_hash = self.auth_service.hash_password(password)
         with self.user_repository.administration_lock():
@@ -51,13 +51,8 @@ class AuthUseCases:
 
     def login(self, email: str, password: str) -> tuple[str, User]:
         user = self.user_repository.get_by_email(email.lower().strip())
-        if user is None:
-            raise UnauthorizedError("Credenciais inválidas.")
-
-        if not user.is_active:
-            raise UnauthorizedError("Usuário inativo.")
-
-        if not self.auth_service.verify_password(password, user.password_hash):
+        valid = self.auth_service.verify_password(password, user.password_hash if user else "")
+        if user is None or not valid or not user.is_active:
             raise UnauthorizedError("Credenciais inválidas.")
 
         # Hash verification is expensive; serialize only its final recheck and session creation.
@@ -96,8 +91,7 @@ class AuthUseCases:
             if not self.auth_service.verify_password(current_password, user.password_hash):
                 raise ValidationError("Senha atual inválida.")
 
-            if len(new_password) < 8:
-                raise ValidationError("A nova senha deve ter no mínimo 8 caracteres.")
+            validate_new_password(new_password)
 
             if current_password == new_password:
                 raise ValidationError("A nova senha deve ser diferente da senha atual.")

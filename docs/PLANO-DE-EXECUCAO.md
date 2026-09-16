@@ -21,7 +21,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 0 | Ambiente isolado, primeira construção das imagens, migrações e fluxo básico real | Concluída | API/web/banco acessíveis; migrações aplicadas; login, cadastros, agenda, cobrança e exames verificados; evidência registrada |
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
-| 1C | Administração, bootstrap e autenticação | Em andamento: 1C.1, 1C.2 e 1C.3 concluídas | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados |
+| 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Pendente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** etapa 1C.3 — revogação de sessões no servidor (R11), em 16/09/2026. Evidências: [homologação 1C.3](./homologacao-etapa-1C3.md). Próximo recorte: 1C.4 — senhas, tentativas e configuração de autenticação (R12).
+**Concluída:** etapa 1C.4 — senhas, tentativas e configuração de autenticação (R12), em 16/09/2026. Evidências: [homologação 1C.4](./homologacao-etapa-1C4.md). Próximo recorte: 1D.1 — segurança e ciclo de vida dos exames.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -94,7 +94,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próximo recorte: 1C.3 — revogação de sessões no servidor (R11).** Mapear JWT, logout, troca/reset de senha e inativação; definir invalidação persistente e testar tokens antigos, sessões simultâneas e reinício. Senhas/tentativas e dependências mantêm recortes próprios.
 - Ao retomar, conferir `git status` e `git log -1`. Commit/push desta entrega são obrigatórios; o histórico Git identifica a versão publicada. Não reiniciar a revisão nem repetir testes aprovados sem mudança relevante.
 
-### Ponto de retomada atual — etapa 1C.3 concluída em 16/09/2026
+### Retomada da etapa 1C.3 (histórico)
 
 - Sessões persistentes em `auth_sessions`; JWT exige identificador associado ao usuário e sessão válida. Logout idempotente individual; senha/status/perfil/e-mail/dentista revogam sessões na mesma transação. Reinício e reativação não recuperam tokens revogados.
 - Migração `0009_auth_sessions` aplicada na homologação após testes isolados e cópia de banco `.data/homolog/pre-1C3.dump`. Tokens anteriores exigem novo login; usuários/dados/volumes preservados. A cópia não inclui exames nem valida restauração completa.
@@ -103,3 +103,14 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Evidências e comandos em `docs/homologacao-etapa-1C3.md`. Testes novos em `apps/api/tests/test_auth_sessions.py` e `scripts/smoke_sessions_homolog.py`. Git sincroniza somente código/testes/documentação, não credenciais ou dados Docker.
 - **Próximo recorte: 1C.4 — política de senhas, tentativas e configuração de autenticação (R12).** Mapear limites em bytes do bcrypt, mensagens uniformes e limitação por conta/origem; preservar hashes/credenciais existentes. Rever senha na linha de comando de recuperação. Revisão do armazenamento do token permanece explícita; não considerar resolvida por revogação.
 - Consultar `git log -1` e `git status` ao retomar. Commit/push ao concluir esta entrega; sem force push. Não repetir a revisão geral nem testes aprovados sem mudança relevante.
+
+### Ponto de retomada atual — etapa 1C.4 concluída em 16/09/2026
+
+- Novas senhas usam bcrypt-SHA256, 8 a 128 caracteres Unicode, política central aplicada em todos os caminhos. Hashes bcrypt antigos são aceitos sem regravação; limitações acima de 72 bytes permanecem até troca explícita. Exportação duplicada de segurança substituída por uma única implementação.
+- Login com resposta uniforme para conta inexistente/inativa/senha incorreta. Contadores HMAC em `auth_attempts`, serializados no PostgreSQL; 10 logins/conta, 120/origem, 10 ativações/origem e 5 trocas de senha/usuário por 60 segundos. 429 com Retry-After; cabeçalhos de proxy não são confiados pelos comandos Docker.
+- JWT vazio/curto/exemplo é rejeitado; gerador local aceita `JWT_SECRET_KEY` sem imprimir o valor. Recuperação local usa prompt oculto ou entrada padrão, rejeita senha em argumentos sem eco e não aceita fallback visível. Revogação de sessões preservada.
+- Migração `0010_auth_attempts` aplicada após testes isolados e cópia `.data/homolog/pre-1C4.dump`, somente banco. Dados, credenciais e volumes preservados; fluxo geral confirmou login anterior. Banco em head, web/API de homologação ativas.
+- Passaram 49 testes distintos de backend (38 anteriores + 11 novos), 28 frontend, 13 grupos HTTP de proteção de autenticação, 12 de sessões e 10 do fluxo geral. Testes PowerShell e build Docker aprovados. Não houve inspeção visual nova; interface validada por componentes/build.
+- Evidências, comandos e limites em `docs/homologacao-etapa-1C4.md`. Não há bloqueio progressivo/permanente; janelas fixas precisam de avaliação sob carga. NAT/proxy pode agregar origens. Recuperação ainda não tem trilha de auditoria; permanece no escopo de auditoria geral.
+- **Próximo recorte: 1D.1 — segurança e ciclo de vida dos exames.** Ler os achados sobre upload, tipo/tamanho, visualização/download, autorização e arquivos órfãos. Preparar cenários com arquivos fictícios em ambiente isolado. Dependências gerais e armazenamento de token ficam em recortes próprios de segurança; HTTPS/instalador na etapa 5.
+- Conferir `git log -1` e `git status` ao retomar. Entrega exige commit/push e igualdade local/remoto. Não publicar `.env`, `.data`, backups ou volumes. Não repetir revisão geral nem verificações aprovadas sem mudança relevante.

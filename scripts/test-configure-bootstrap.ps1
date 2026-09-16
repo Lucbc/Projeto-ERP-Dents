@@ -20,6 +20,11 @@ try {
     if (-not $updated.StartsWith($contents.TrimEnd("`r", "`n"))) { throw 'Append changed existing settings' }
     $codes = [regex]::Matches($updated, '(?m)^(?:HOMOLOG_)?BOOTSTRAP_TOKEN=([a-f0-9]{64})')
     if ($codes[0].Groups[1].Value -eq $codes[1].Groups[1].Value) { throw 'Codes unexpectedly identical' }
+    & $generatorScript -EnvFile $testEnv -VariableName JWT_SECRET_KEY
+    $jwtContents = [IO.File]::ReadAllText($testEnv)
+    if ($jwtContents -notmatch '(?m)^JWT_SECRET_KEY=[a-f0-9]{64}\r?$') { throw 'Missing JWT secret' }
+    & $generatorScript -EnvFile $testEnv -VariableName JWT_SECRET_KEY
+    if ([IO.File]::ReadAllText($testEnv) -ne $jwtContents) { throw 'Existing JWT secret changed' }
     [IO.File]::WriteAllText($duplicateEnv, "BOOTSTRAP_TOKEN=`nBOOTSTRAP_TOKEN=`n", $utf8)
     $rejected = $false
     try { & $generatorScript -EnvFile $duplicateEnv } catch { $rejected = $true }
