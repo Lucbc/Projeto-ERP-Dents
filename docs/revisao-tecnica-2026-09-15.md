@@ -156,7 +156,7 @@ O primeiro cliente que alcança a API com banco vazio pode criar o administrador
 
 ### R11 — P1 — Logout e troca de senha não encerram a validade do token
 
-**Atualização após a revisão:** parte de navegador corrigida na [etapa 1B](./homologacao-etapa-1B.md): 401, expiração, sincronização de abas e recuperação de rede. Revogação no servidor permanece pendente na etapa 1C. A descrição abaixo registra o estado original revisado.
+**Atualização após a revisão:** parte de navegador corrigida na [etapa 1B](./homologacao-etapa-1B.md). Revogação no servidor implementada na [etapa 1C.3](./homologacao-etapa-1C3.md): logout individual, invalidação por senha/status/identidade, persistência entre reinícios e testes reais. Armazenamento em `localStorage` permanece para revisão própria. A descrição abaixo registra o estado original revisado.
 
 **Confirmado.** [use-auth.tsx](../apps/web/src/hooks/use-auth.tsx#L37), [jwt_auth_service.py](../apps/api/src/adapters/security/jwt_auth_service.py#L27), [auth_use_cases.py](../apps/api/src/core/use_cases/auth_use_cases.py#L55).
 

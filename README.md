@@ -78,6 +78,7 @@ Não execute o comando com o texto `NOME_ANTERIOR` literalmente. A migração de
 ## Funcionalidades MVP
 
 - Autenticação JWT (login com e-mail/senha, hash bcrypt)
+- Sessões revogáveis no servidor: `POST /api/auth/logout` encerra o login atual; troca/reset de senha encerra todos os acessos da conta.
 - Bootstrap de admin inicial:
   - `GET /api/auth/needs-bootstrap`
   - `POST /api/auth/bootstrap-admin`
@@ -363,11 +364,23 @@ curl http://localhost:8000/api/auth/needs-bootstrap
 
 ### Reset de senha de admin
 
+A redefinição invalida todos os acessos existentes da conta. O usuário precisará entrar novamente com a nova senha.
+
 Com ambiente rodando:
 
 ```bash
 docker compose exec api python scripts/reset_admin_password.py admin@clinica.com NovaSenha123
 ```
+
+### Sessões e atualização para a etapa 1C.3
+
+A migração `0009_auth_sessions` preserva usuários e dados, mas exige novo login de quem estava conectado antes da atualização. Cada login recebe uma sessão independente no banco; sair de um computador não encerra os demais logins. Abas do mesmo navegador que compartilham a sessão saem juntas.
+
+Trocar ou redefinir senha, inativar a conta, alterar e-mail, perfil ou vínculo com dentista invalida as sessões existentes dessa conta. Reativar não recupera acessos antigos. Reiniciar o servidor preserva tanto sessões válidas quanto revogações. Sessões expiradas são descartadas do banco nos próximos logins.
+
+O botão **Sair** aguarda confirmação do servidor. Se a conexão falhar, os dados ficam ocultos e a tela oferece **Tentar sair novamente**; a saída não é confirmada enquanto a API não responder. Alterar a senha também exige novo login. Uma senha atual digitada incorretamente mantém a sessão e mostra erro de validação.
+
+A revogação é conferida nas próximas requisições autenticadas. Ela não desfaz operações já autorizadas nem apaga imediatamente dados já exibidos em outro computador parado. Tokens continuam em `localStorage`; revisão desse armazenamento e proteção de tentativas/senhas têm etapas próprias. Evidências: [homologação 1C.3](docs/homologacao-etapa-1C3.md).
 
 ### Ver logs
 

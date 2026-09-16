@@ -1,12 +1,15 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import sys
+from pathlib import Path
+
+# Support the documented direct invocation from any working directory.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from passlib.context import CryptContext
-from sqlalchemy import select
 
 from src.adapters.db.database import SessionLocal
-from src.adapters.db.models.models import UserModel
+from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -24,14 +27,15 @@ def main() -> int:
         print("Erro: a nova senha deve ter no mínimo 8 caracteres.")
         return 1
 
+    password_hash = pwd_context.hash(new_password)
     with SessionLocal() as session:
-        user = session.scalar(select(UserModel).where(UserModel.email == email))
-        if user is None:
-            print("Erro: usuário não encontrado.")
-            return 1
-
-        user.password_hash = pwd_context.hash(new_password)
-        session.commit()
+        repository = SqlAlchemyUserRepository(session)
+        with repository.administration_lock():
+            user = repository.get_by_email(email)
+            if user is None:
+                print("Erro: usuario nao encontrado.")
+                return 1
+            repository.update(user.id, {"password_hash": password_hash})
 
     print("Senha redefinida com sucesso.")
     return 0

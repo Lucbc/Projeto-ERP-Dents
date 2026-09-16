@@ -90,6 +90,15 @@ class SpecialtyRepository(ABC):
 
 class UserRepository(ABC):
     @abstractmethod
+    def create_session(self, session_id: UUID, user_id: UUID, expires_at: datetime) -> None: ...
+
+    @abstractmethod
+    def session_active(self, session_id: UUID, user_id: UUID) -> bool: ...
+
+    @abstractmethod
+    def revoke_session(self, session_id: UUID, user_id: UUID) -> None: ...
+
+    @abstractmethod
     def bootstrap_completed(self) -> bool: ...
 
     @abstractmethod

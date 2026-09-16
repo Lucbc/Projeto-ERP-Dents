@@ -116,6 +116,7 @@ export function AppLayout() {
       toast("Senha atualizada com sucesso.");
       setOpenChangePasswordModal(false);
       form.reset();
+      logout();
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
@@ -231,6 +232,7 @@ export function AppLayout() {
         title="Trocar senha"
       >
         <form className="grid gap-3" onSubmit={form.handleSubmit(handleSubmitChangePassword)}>
+          <p className="text-sm text-muted-foreground">Ao atualizar a senha, seus acessos serão encerrados em todos os computadores. Entre novamente com a nova senha.</p>
           <div>
             <label className="mb-1 block text-sm font-semibold text-foreground">Senha atual *</label>
             <Input type="password" {...form.register("current_password")} />

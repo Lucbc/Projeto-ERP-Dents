@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 from src.adapters.security.jwt_auth_service import JwtAuthService
-from src.api.deps.auth import get_current_user
+from src.api.deps.auth import get_current_user, oauth2_scheme
 from src.api.deps.db import get_db_dep
 from src.api.schemas.schemas import (
     BootstrapAdminRequest,
@@ -21,6 +21,13 @@ from src.core.use_cases.auth_use_cases import AuthUseCases
 from src.config import get_settings
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+@router.post("/logout", response_model=MessageResponse)
+def logout(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db_dep)) -> MessageResponse:
+    # Idempotent, including already revoked/expired tokens; only the signed session is affected.
+    AuthUseCases(SqlAlchemyUserRepository(db), JwtAuthService()).logout(token)
+    return MessageResponse(detail="Sessão encerrada.")
 
 
 @router.get("/needs-bootstrap", response_model=NeedsBootstrapResponse)

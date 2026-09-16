@@ -21,7 +21,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 0 | Ambiente isolado, primeira construção das imagens, migrações e fluxo básico real | Concluída | API/web/banco acessíveis; migrações aplicadas; login, cadastros, agenda, cobrança e exames verificados; evidência registrada |
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
-| 1C | Administração, bootstrap e autenticação | Em andamento: 1C.1 e 1C.2 concluídas | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados |
+| 1C | Administração, bootstrap e autenticação | Em andamento: 1C.1, 1C.2 e 1C.3 concluídas | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados |
 | 1D | Exames, erros e dependências de segurança | Pendente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** etapa 1C.2 — bootstrap exclusivo e ativação inicial (R10). Evidências: [homologação 1C.2](./homologacao-etapa-1C2.md). Próximo recorte: 1C.3 — revogação de sessões no servidor.
+**Concluída:** etapa 1C.3 — revogação de sessões no servidor (R11), em 16/09/2026. Evidências: [homologação 1C.3](./homologacao-etapa-1C3.md). Próximo recorte: 1C.4 — senhas, tentativas e configuração de autenticação (R12).
 
 ### Ponto de retomada — 15/09/2026
 
@@ -85,7 +85,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Regra permanente de commit/push registrada em AGENTS.md. Consultar `git log -1` e `git status` ao retomar; nunca publicar `.env.homolog`, `.data` ou volumes. Git sincroniza código/documentação, não os dados locais do Docker.
 - **Próximo recorte: 1C.2 — bootstrap exclusivo e ativação inicial controlada (R10).** Mapear bootstrap, segredo de instalação e experiência de primeira execução; testar disputa entre requisições em banco isolado e inicialização com banco existente. Revogação de sessões/senhas fica em recorte posterior de 1C.
 
-### Ponto de retomada atual — etapa 1C.2 concluída em 15/09/2026
+### Retomada da etapa 1C.2 (histórico)
 
 - Código local de ativação, registro persistente da instalação e criação transacional exclusiva implementados. R10 corrigido; exclusão de usuários não reabre bootstrap.
 - Migração `0008_installation_state` aplicada após testes isolados e cópia local do banco em `.data/homolog/pre-1C2.dump`. Dados e volumes anteriores preservados. Cópia não inclui exames nem valida restauração completa.
@@ -93,3 +93,13 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Evidências e comandos em `docs/homologacao-etapa-1C2.md`; instruções de ativação no README. Código de homologação em variável local ignorada; nunca publicar seu valor.
 - **Próximo recorte: 1C.3 — revogação de sessões no servidor (R11).** Mapear JWT, logout, troca/reset de senha e inativação; definir invalidação persistente e testar tokens antigos, sessões simultâneas e reinício. Senhas/tentativas e dependências mantêm recortes próprios.
 - Ao retomar, conferir `git status` e `git log -1`. Commit/push desta entrega são obrigatórios; o histórico Git identifica a versão publicada. Não reiniciar a revisão nem repetir testes aprovados sem mudança relevante.
+
+### Ponto de retomada atual — etapa 1C.3 concluída em 16/09/2026
+
+- Sessões persistentes em `auth_sessions`; JWT exige identificador associado ao usuário e sessão válida. Logout idempotente individual; senha/status/perfil/e-mail/dentista revogam sessões na mesma transação. Reinício e reativação não recuperam tokens revogados.
+- Migração `0009_auth_sessions` aplicada na homologação após testes isolados e cópia de banco `.data/homolog/pre-1C3.dump`. Tokens anteriores exigem novo login; usuários/dados/volumes preservados. A cópia não inclui exames nem valida restauração completa.
+- Passaram 38 testes distintos PostgreSQL (26 anteriores + 12 de sessões), 25 frontend, 12 grupos HTTP de ativação/sessões e 10 do fluxo geral. Login/logout conferidos no Chrome; logout removeu a sessão no banco. Nenhum schema de teste restante.
+- Recuperação local de senha agora importa corretamente o aplicativo e revoga sessões. Senha atual incorreta no formulário retorna 400 e preserva acesso. Falha de rede no logout esconde os dados e permite tentar novamente sem confirmar saída indevidamente.
+- Evidências e comandos em `docs/homologacao-etapa-1C3.md`. Testes novos em `apps/api/tests/test_auth_sessions.py` e `scripts/smoke_sessions_homolog.py`. Git sincroniza somente código/testes/documentação, não credenciais ou dados Docker.
+- **Próximo recorte: 1C.4 — política de senhas, tentativas e configuração de autenticação (R12).** Mapear limites em bytes do bcrypt, mensagens uniformes e limitação por conta/origem; preservar hashes/credenciais existentes. Rever senha na linha de comando de recuperação. Revisão do armazenamento do token permanece explícita; não considerar resolvida por revogação.
+- Consultar `git log -1` e `git status` ao retomar. Commit/push ao concluir esta entrega; sem force push. Não repetir a revisão geral nem testes aprovados sem mudança relevante.

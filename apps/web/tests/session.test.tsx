@@ -53,6 +53,67 @@ beforeEach(() => {
 afterEach(() => { cleanup(); changeSession(null); vi.useRealTimers(); });
 
 describe("session boundaries", () => {
+  it("keeps the session when the current password is incorrect during a change", async () => {
+    changeSession(tokenA);
+    api.defaults.adapter = async (config) => { throw httpError(config, 400); };
+    await expect(api.post("/api/auth/change-password", {})).rejects.toBeInstanceOf(AxiosError);
+    expect(getSession().token).toBe(tokenA);
+  });
+
+  it("waits for server logout confirmation and hides private data while waiting", async () => {
+    const adapter = api.defaults.adapter as (config: InternalAxiosRequestConfig) => Promise<any>;
+    const pending = deferred<ReturnType<typeof response>>();
+    let logoutConfig!: InternalAxiosRequestConfig;
+    api.defaults.adapter = (config) => {
+      if (config.url === "/api/auth/logout") { logoutConfig = config; return pending.promise; }
+      return adapter(config);
+    };
+    changeSession(tokenA); mount(); await screen.findByText("patients-user-a");
+    fireEvent.click(screen.getByText("Logout"));
+    await screen.findByText("Encerrando sessão no servidor...");
+    expect(screen.queryByText("patients-user-a")).toBeNull();
+    expect(getSession().token).toBe(tokenA);
+    expect(logoutConfig.headers.Authorization).toBe(`Bearer ${tokenA}`);
+    await act(async () => pending.resolve(response(logoutConfig, {})));
+    await screen.findByText("Login B");
+    expect(getSession().token).toBeNull();
+  });
+
+  it("offers retry after failed logout without claiming server revocation", async () => {
+    const adapter = api.defaults.adapter as (config: InternalAxiosRequestConfig) => Promise<any>;
+    let fail = true;
+    api.defaults.adapter = async (config) => {
+      if (config.url === "/api/auth/logout" && fail) throw new AxiosError("Network Error", "ERR_NETWORK", config);
+      return adapter(config);
+    };
+    changeSession(tokenA); mount(); await screen.findByText("patients-user-a");
+    fireEvent.click(screen.getByText("Logout"));
+    await screen.findByText("Tentar sair novamente");
+    expect(screen.queryByText("patients-user-a")).toBeNull();
+    expect(getSession().token).toBe(tokenA);
+    fail = false;
+    fireEvent.click(screen.getByText("Tentar sair novamente"));
+    await screen.findByText("Login B");
+    expect(getSession().token).toBeNull();
+  });
+
+  it("does not end a newer session when an older logout response arrives", async () => {
+    const adapter = api.defaults.adapter as (config: InternalAxiosRequestConfig) => Promise<any>;
+    const pending = deferred<ReturnType<typeof response>>();
+    let logoutConfig!: InternalAxiosRequestConfig;
+    api.defaults.adapter = (config) => {
+      if (config.url === "/api/auth/logout") { logoutConfig = config; return pending.promise; }
+      return adapter(config);
+    };
+    changeSession(tokenA); mount(); await screen.findByText("patients-user-a");
+    fireEvent.click(screen.getByText("Logout"));
+    act(() => changeSession(tokenB));
+    await screen.findByText("patients-user-b");
+    await act(async () => pending.resolve(response(logoutConfig, {})));
+    expect(getSession().token).toBe(tokenB);
+    expect(screen.getByText("patients-user-b")).toBeTruthy();
+  });
+
   it("logs out and logs in without reloading, clearing cache, mutation cache and drafts", async () => {
     changeSession(tokenA); mount();
     await screen.findByText("patients-user-a");

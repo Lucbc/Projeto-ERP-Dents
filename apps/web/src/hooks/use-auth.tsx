@@ -33,9 +33,19 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(session.token));
   const [sessionError, setSessionError] = useState(false);
+  const [logoutState, setLogoutState] = useState<"idle" | "pending" | "failed">("idle");
+  const loggingOut = useRef(false);
   const validation = useRef(0);
   useEffect(() => () => { queryClient.clear(); }, [queryClient]);
-  const logout = useCallback(() => endSession(session), [session]);
+  const logout = useCallback(() => {
+    if (!isCurrentSession(session) || loggingOut.current) return;
+    if (!session.token) { endSession(session); return; }
+    loggingOut.current = true;
+    setLogoutState("pending");
+    void api.post("/api/auth/logout").then(() => endSession(session)).catch(() => {
+      if (isCurrentSession(session)) setLogoutState("failed");
+    }).finally(() => { loggingOut.current = false; });
+  }, [session]);
 
   const refreshMe = useCallback(async () => {
     if (!session.token || !isCurrentSession(session)) return;
@@ -91,7 +101,14 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
   return (
     <QueryClientProvider client={queryClient}>
       <AuthContext.Provider value={value}>
-        {isLoading ? <div role="status" className="p-8">Carregando sessão...</div> : sessionError ? (
+        {logoutState !== "idle" ? (
+          <div role="alert" className="mx-auto mt-16 max-w-lg space-y-4 rounded-lg border p-6">
+            {logoutState === "pending" ? <p>Encerrando sessão no servidor...</p> : <>
+              <p>Não foi possível confirmar a saída no servidor. Verifique a conexão e tente novamente.</p>
+              <button onClick={logout} className="rounded bg-cyan-600 px-4 py-2 text-white">Tentar sair novamente</button>
+            </>}
+          </div>
+        ) : isLoading ? <div role="status" className="p-8">Carregando sessão...</div> : sessionError ? (
           <div role="alert" className="mx-auto mt-16 max-w-lg space-y-4 rounded-lg border p-6">
             <h1 className="text-lg font-semibold">Não foi possível validar sua sessão</h1>
             <p>Verifique a conexão com o servidor e tente novamente. Seu acesso salvo foi preservado.</p>

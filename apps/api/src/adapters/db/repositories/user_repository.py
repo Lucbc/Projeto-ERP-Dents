@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import delete, func, or_, select, text
 from sqlalchemy.orm import Session
 
-from src.adapters.db.models.models import InstallationStateModel, UserModel
+from src.adapters.db.models.models import AuthSessionModel, InstallationStateModel, UserModel
 from src.core.domain.exceptions import ConflictError
 from src.core.domain.entities import User, UserRole
 from src.core.ports.repositories import UserRepository
@@ -30,6 +30,24 @@ class SqlAlchemyUserRepository(UserRepository):
         return int(self.session.scalar(select(func.count(UserModel.id)).where(
             UserModel.role == UserRole.admin, UserModel.is_active.is_(True),
         )) or 0)
+
+    def create_session(self, session_id, user_id, expires_at) -> None:
+        # Invoked under administration_lock after rechecking the password hash.
+        self.session.execute(delete(AuthSessionModel).where(AuthSessionModel.expires_at <= func.now()))
+        self.session.add(AuthSessionModel(id=session_id, user_id=user_id, expires_at=expires_at))
+        self.session.commit()
+
+    def session_active(self, session_id, user_id) -> bool:
+        return self.session.scalar(select(AuthSessionModel.id).where(
+            AuthSessionModel.id == session_id, AuthSessionModel.user_id == user_id,
+            AuthSessionModel.expires_at > func.now(),
+        )) is not None
+
+    def revoke_session(self, session_id, user_id) -> None:
+        self.session.execute(delete(AuthSessionModel).where(
+            AuthSessionModel.id == session_id, AuthSessionModel.user_id == user_id,
+        ))
+        self.session.commit()
 
     def bootstrap_completed(self) -> bool:
         state = self.session.get(InstallationStateModel, 1)
@@ -88,6 +106,10 @@ class SqlAlchemyUserRepository(UserRepository):
         item = self.session.get(UserModel, user_id)
         if item is None:
             return None
+
+        if any(key in data and data[key] != getattr(item, key)
+               for key in ("password_hash", "is_active", "role", "dentist_id", "email")):
+            self.session.execute(delete(AuthSessionModel).where(AuthSessionModel.user_id == user_id))
 
         for key in ["name", "email", "role", "dentist_id", "password_hash", "is_active"]:
             if key in data:

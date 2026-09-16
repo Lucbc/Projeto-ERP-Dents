@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
+from datetime import datetime, timezone
 from hmac import compare_digest
 
 from src.core.domain.entities import User, UserRole
@@ -59,28 +60,50 @@ class AuthUseCases:
         if not self.auth_service.verify_password(password, user.password_hash):
             raise UnauthorizedError("Credenciais inválidas.")
 
-        token = self.auth_service.create_access_token(
-            subject=str(user.id),
-            extra_claims={"role": user.role.value, "email": user.email},
-        )
-        return token, user
+        # Hash verification is expensive; serialize only its final recheck and session creation.
+        with self.user_repository.administration_lock():
+            current = self.user_repository.get(user.id)
+            if (current is None or not current.is_active or current.password_hash != user.password_hash
+                    or current.email != user.email):
+                raise UnauthorizedError("Credenciais alteradas. Entre novamente.")
+            session_id = uuid4()
+            token = self.auth_service.create_access_token(
+                subject=str(current.id), extra_claims={"jti": str(session_id)},
+            )
+            claims = self.auth_service.decode_access_token(token)
+            if claims is None:
+                raise UnauthorizedError("Falha ao criar sessão.")
+            self.user_repository.create_session(session_id, current.id,
+                datetime.fromtimestamp(claims["exp"], timezone.utc))
+            return token, current
+
+    def logout(self, token: str) -> None:
+        claims = self.auth_service.decode_access_token(token)
+        if claims is None:
+            return
+        try:
+            session_id, user_id = UUID(str(claims["jti"])), UUID(str(claims["sub"]))
+        except (KeyError, ValueError, TypeError):
+            return
+        self.user_repository.revoke_session(session_id, user_id)
 
     def change_password(self, user_id: UUID, current_password: str, new_password: str) -> None:
-        user = self.user_repository.get(user_id)
-        if user is None:
-            raise NotFoundError("Usuário não encontrado.")
+        with self.user_repository.administration_lock():
+            user = self.user_repository.get(user_id)
+            if user is None:
+                raise NotFoundError("Usuário não encontrado.")
 
-        if not self.auth_service.verify_password(current_password, user.password_hash):
-            raise UnauthorizedError("Senha atual inválida.")
+            if not self.auth_service.verify_password(current_password, user.password_hash):
+                raise ValidationError("Senha atual inválida.")
 
-        if len(new_password) < 8:
-            raise ValidationError("A nova senha deve ter no mínimo 8 caracteres.")
+            if len(new_password) < 8:
+                raise ValidationError("A nova senha deve ter no mínimo 8 caracteres.")
 
-        if current_password == new_password:
-            raise ValidationError("A nova senha deve ser diferente da senha atual.")
+            if current_password == new_password:
+                raise ValidationError("A nova senha deve ser diferente da senha atual.")
 
-        password_hash = self.auth_service.hash_password(new_password)
-        self.user_repository.update(user_id, {"password_hash": password_hash})
+            password_hash = self.auth_service.hash_password(new_password)
+            self.user_repository.update(user_id, {"password_hash": password_hash})
 
     def me(self, user_id: UUID) -> User:
         user = self.user_repository.get(user_id)

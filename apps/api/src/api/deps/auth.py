@@ -32,15 +32,19 @@ def get_current_user(
 
     try:
         user_id = UUID(str(payload["sub"]))
-    except ValueError as exc:
+        session_id = UUID(str(payload["jti"]))
+    except (ValueError, KeyError, TypeError) as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido.") from exc
 
-    user = SqlAlchemyUserRepository(db).get(user_id)
+    repository = SqlAlchemyUserRepository(db)
+    if not repository.session_active(session_id, user_id):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sessão encerrada. Entre novamente.")
+    user = repository.get(user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário não encontrado.")
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Usuário inativo.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário inativo.")
 
     return user
 
