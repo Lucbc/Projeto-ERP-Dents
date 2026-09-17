@@ -406,6 +406,8 @@ Os consumidores atuais importam majoritariamente os módulos específicos. Entre
 
 ### R35 — P1 — Dependências e builds não são reproduzíveis nem auditados no pipeline
 
+**Atualização 1D.2:** Tratado com locks completos npm/Python, hashes, imagens fixadas, Node 24, API sem privilégios/compilador/pip, atualização compatível e auditorias de pacotes/imagens. Zero achados conhecidos nas consultas finais de 17/09/2026; avisos futuros continuam sujeitos à revisão. [Resultados e limites](./homologacao-etapa-1D2.md).
+
 **Confirmado.** [requirements.txt](../apps/api/requirements.txt#L1), [package.json](../apps/web/package.json#L1), [Dockerfile web](../apps/web/Dockerfile#L9), [Jenkinsfile](../Jenkinsfile#L1).
 
 O repositório original não tem lockfile npm; Docker e CI usam `npm ci || npm install`, mascarando falha do modo determinístico. Python fixa dependências diretas, mas não a árvore transitiva. Não há `.dockerignore`: `COPY . .` pode copiar `node_modules`, ambientes virtuais, builds e arquivos locais para imagens. A API roda como root. Build/CI ainda usam Node 20, já fora de suporte na data da revisão. [Ciclo de suporte Node.js](https://nodejs.org/en/about/eol).
@@ -419,6 +421,8 @@ Auditorias executadas:
 **Correção:** atualizar versões com testes de compatibilidade, fixar árvores de dependências e imagens de release, manter scanner contínuo e tratar exceções justificadas. Atualizar FastAPI e Starlette de forma compatível; não forçar isoladamente uma versão fora da faixa suportada. Usar `.dockerignore`, usuário sem privilégios e imagem final sem ferramentas de compilação desnecessárias.
 
 ### R36 — P1 — CI não executa testes de comportamento
+
+**Atualização 1D.2:** Workflow GitHub Actions adiciona testes web, backend com PostgreSQL/ClamAV e smokes HTTP, além de build/auditorias. Validação local: 81 testes backend e 34 frontend aprovados. A evidência da primeira execução remota será registrada na [homologação 1D.2](./homologacao-etapa-1D2.md). A cobertura acompanha as correções por etapa; isso não declara testadas todas as regras ainda pendentes da revisão.
 
 **Confirmado.** [Jenkinsfile](../Jenkinsfile#L11) chama `compileall` e build web em etapas chamadas “Lint/Test”. Não há suíte de testes encontrada nem scripts de lint/test no package.json.
 

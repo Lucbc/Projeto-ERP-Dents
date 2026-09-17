@@ -1,0 +1,13 @@
+# Direct dependencies. Regenerate the hashed universal lock with scripts/lock-dependencies.ps1.
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+sqlalchemy==2.0.54
+psycopg[binary]==3.3.5
+alembic==1.20.0
+PyJWT==2.14.0
+# Preserve compatibility with existing bcrypt and bcrypt-sha256 password hashes.
+passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
+python-multipart==0.0.32
+email-validator==2.3.0
+pip==26.2.1

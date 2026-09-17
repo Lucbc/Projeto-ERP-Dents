@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from functools import lru_cache
 
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 from passlib.context import CryptContext
 
 from src.config import get_settings
@@ -58,5 +59,5 @@ class JwtAuthService(AuthService):
     def decode_access_token(self, token: str) -> dict[str, Any] | None:
         try:
             return jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-        except JWTError:
+        except InvalidTokenError:
             return None

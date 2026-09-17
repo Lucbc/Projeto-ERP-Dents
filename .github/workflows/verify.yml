@@ -1,0 +1,68 @@
+name: Build, tests and dependency security
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 9 * * 1'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Locked tools and package audit
+        run: |
+          python -m pip install --require-hashes -r scripts/requirements-tools.txt
+          python scripts/audit_dependencies.py
+      - name: Frontend install, tests and build
+        run: |
+          npm ci --prefix apps/web
+          npm test --prefix apps/web -- --maxWorkers=1
+          npm run build --prefix apps/web
+      - name: Isolated Docker environment
+        run: |
+          python - <<'PY'
+          import secrets
+          from pathlib import Path
+          Path('.env.homolog').write_text(''.join(k+'='+secrets.token_hex(32)+'\n' for k in ('HOMOLOG_DB_PASSWORD','HOMOLOG_JWT_SECRET','HOMOLOG_BOOTSTRAP_TOKEN')))
+          PY
+          docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml up -d --build
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(90):
+              try:
+                  with urllib.request.urlopen('http://127.0.0.1:18000/health', timeout=2) as response:
+                      assert response.status == 200
+                  break
+              except Exception:
+                  if attempt == 89: raise
+                  time.sleep(2)
+          PY
+      - name: Backend and HTTP regression tests
+        run: |
+          docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml run --rm --no-deps -e RUN_HOMOLOG_TESTS=1 -e RUN_CLAMAV_TESTS=1 api python -m unittest discover -s tests -v
+          python scripts/smoke_homolog.py
+          python scripts/smoke_sessions_homolog.py
+          python scripts/smoke_auth_hardening_homolog.py
+          python scripts/smoke_exams_homolog.py
+          python scripts/smoke_exam_operations_homolog.py
+          python scripts/smoke_storage_init_homolog.py
+      - name: Runtime image security
+        run: python scripts/audit_images.py
+      - name: Stop isolated services
+        if: always()
+        run: |
+          if test -f .env.homolog; then
+            docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml stop
+          fi

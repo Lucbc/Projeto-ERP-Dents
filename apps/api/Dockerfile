@@ -1,17 +1,18 @@
-FROM python:3.12-slim
+FROM python:3.12-alpine@sha256:b64631e04e4920160c50fbe8d8df828f7f35f06f425cb44aa09bca53e708a35a
 
 WORKDIR /app
+RUN apk add --no-cache libuuid=2.42.3-r1
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r requirements.txt \
+    && python -m pip check && python -m pip uninstall -y pip setuptools
+RUN addgroup -g 10001 erp && adduser -D -H -u 10001 -G erp erp \
+    && mkdir -p /data/exams && chown erp:erp /data/exams
 
 COPY . .
+USER 10001:10001
 
 CMD ["sh", "-c", "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000 --no-proxy-headers"]

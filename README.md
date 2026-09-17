@@ -47,7 +47,7 @@ Não execute o comando com o texto `NOME_ANTERIOR` literalmente. A migração de
 - Banco: Postgres
 - Arquivos de exames: filesystem do servidor (`/data/exams/{patient_id}`)
 - Deploy: Docker Compose (dev e prod)
-- CI (exemplo): Jenkinsfile
+- CI: GitHub Actions com testes e auditoria; Jenkinsfile como exemplo complementar
 
 ## Arquitetura
 
@@ -478,12 +478,16 @@ Use Conventional Commits (sugestão, sem tooling obrigatório):
 
 ## Jenkins (opcional)
 
-Existe um `Jenkinsfile` de exemplo com estágios:
+O pipeline completo está em [`.github/workflows/verify.yml`](.github/workflows/verify.yml): instalação pelos locks, auditoria de pacotes, testes web/API/HTTP com PostgreSQL e ClamAV, build e varredura das imagens. Executa em push, pull request e semanalmente. Usa somente dados fictícios em um runner separado.
+
+Existe também um `Jenkinsfile` de exemplo com estágios:
 
 1. Checkout
-2. Lint/Test API
-3. Lint/Test web
+2. Compilação e testes unitários da API
+3. Testes e build web
 4. Docker build
+
+O exemplo Jenkins não configura PostgreSQL/ClamAV para testes integrados; estes ficam no GitHub Actions. Build e compilação não equivalem a lint nem à homologação completa.
 
 ## Observações importantes
 
@@ -535,3 +539,29 @@ Em outro ambiente, use seu projeto, arquivo de ambiente e Compose correspondente
 `EXAM_QUOTA_BYTES` define a quota total (padrão: 50 GiB), incluindo a quarentena. O gateway limita tamanho, tempo e envios simultâneos, mantendo a URL da API. Os três Compose incluem gateway e antivírus; o ClamAV tem limite de 4 GiB de RAM e precisa atualizar assinaturas pela internet. Foram usados aproximadamente 8 GiB disponíveis ao Docker na homologação.
 
 Diagnóstico, recuperação de arquivos e evidências: [operação de exames](docs/operacao-exames.md). O ensaio completo de backup/restauração continua na etapa 5; estas rotinas preservam os dados e não substituem uma cópia de segurança.
+
+### Dependências e atualização — etapa 1D.2
+
+Para desenvolver em outro computador, use `git pull --ff-only` e `./scripts/homolog.ps1 -Action up`. O Docker constrói as imagens com as versões registradas no repositório. Os computadores clientes da clínica precisarão apenas do navegador e do endereço do servidor; não precisam de Node, Python ou Docker.
+
+- Frontend: Node 24 (versão em `.node-version`) e `npm ci --prefix apps/web`. O `package-lock.json` deve acompanhar qualquer alteração de dependências; falhas de `npm ci` não têm fallback automático.
+- API fora do Docker: Python 3.12 e `python -m pip install --require-hashes --only-binary=:all: -r apps/api/requirements.txt`, em ambiente virtual. O manifesto direto é `requirements.in`; o `.txt` contém também dependências transitivas e hashes.
+- Dentro do Docker, a API roda como usuário 10001, sem compilador ou pip. Para mudar dependências, reconstrua a imagem. O serviço `exam-storage-init` prepara as permissões do volume de exames e termina com código 0; esse estado é esperado. Não altera os bytes nem segue links simbólicos.
+- PostgreSQL permanece na linha 16. A imagem derivada em `ops/postgres` aplica correções de pacotes à base fixada. Atualizar exige build, não apenas baixar a imagem oficial.
+- No ambiente DEV já existente, após mudar dependências web, renove apenas o volume anônimo de módulos: `docker compose -f docker-compose.dev.yml up -d --build --no-deps --renew-anon-volumes web`. Esse comando não renova volumes nomeados de banco ou exames.
+
+Antes de atualizar uma instalação com dados, copie banco e exames e preserve o mesmo projeto/volumes. O ensaio desta entrega preservou os dados locais; a rotina assistida de backup/restauração ainda será entregue na etapa 5.
+
+Para atualizar locks intencionalmente (desenvolvedor, com Python 3.12 e Node 24):
+
+```powershell
+./scripts/lock-dependencies.ps1
+./.data/dependency-tools/Scripts/python.exe scripts/audit_dependencies.py
+./.data/dependency-tools/Scripts/python.exe scripts/audit_images.py
+```
+
+Revise primeiro `requirements.in`/`package.json`; o script resolve as versões permitidas e grava os locks. Para atualizar também as ferramentas de auditoria, edite `scripts/requirements-tools.in` e regenere seu `.txt` com `uv pip compile --universal --python-version 3.12 --generate-hashes --no-emit-index-url`. Não edite hashes manualmente.
+
+A auditoria de imagens exige as imagens de homologação construídas. Relatórios ficam em `.data/security`, fora do Git. Pacotes com avisos fazem a auditoria falhar; nas imagens, alertas altos/críticos bloqueiam o pipeline e os demais ficam no relatório. Erros de consulta não contam como aprovação. Fixar versões exige revisão periódica: não instala futuras correções automaticamente.
+
+Resultados, comandos e limites: [homologação 1D.2](docs/homologacao-etapa-1D2.md).

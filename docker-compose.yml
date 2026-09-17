@@ -2,7 +2,8 @@ name: erp-dents-prod
 
 services:
   db:
-    image: postgres:16-alpine
+    image: erp-dents-prod-db
+    build: ./ops/postgres
     container_name: erp_dents_db
     restart: unless-stopped
     environment:
@@ -19,6 +20,7 @@ services:
       retries: 10
 
   api:
+    image: erp-dents-prod-api
     build:
       context: ./apps/api
       dockerfile: Dockerfile
@@ -39,10 +41,23 @@ services:
       - exams_data:${EXAMS_BASE_PATH:-/data/exams}
 
     depends_on:
+      exam-storage-init:
+        condition: service_completed_successfully
       clamav:
         condition: service_healthy
       db:
         condition: service_healthy
+
+  exam-storage-init:
+    image: erp-dents-prod-api
+    pull_policy: never
+    user: "0:0"
+    command: ["python", "-m", "scripts.prepare_exam_storage"]
+    environment:
+      EXAMS_BASE_PATH: ${EXAMS_BASE_PATH:-/data/exams}
+    volumes:
+      - exams_data:${EXAMS_BASE_PATH:-/data/exams}
+    restart: "no"
 
   clamav:
     image: clamav/clamav:1.4@sha256:f156095071757e3838caa50265d65e36cdf7f934a27aacf851ea6d2fadbe8200

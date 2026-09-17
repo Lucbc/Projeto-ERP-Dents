@@ -22,7 +22,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
-| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1 concluída | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
+| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1 concluída; 1D.2 validada localmente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** 1D.1 e seu complemento — reconciliação recuperável de órfãos, quota global, concorrência/timeout/proxy, manutenção periódica e antivírus local obrigatório. Evidências e roteiro em [operação de exames](./operacao-exames.md). Próximo recorte previsto: 1D.2, ainda não iniciado.
+**Em fechamento:** 1D.2 — dependências e builds reproduzíveis, base `2d179c5`. Implementação e validação local concluídas, homologação atualizada com dados preservados. Falta publicar e conferir a primeira execução do GitHub Actions. Ponto de retomada ao final deste arquivo; evidências em [homologação 1D.2](./homologacao-etapa-1D2.md).
 
 ### Ponto de retomada — 15/09/2026
 
@@ -128,7 +128,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próximo recorte: 1D.2 — dependências e builds reproduzíveis.** Inspecionar manifests/lockfiles, confrontar versões e vulnerabilidades com fontes oficiais, atualizar de forma compatível e validar regressões. Armazenamento do token permanece pendente explícito; HTTPS/instalação assistida na etapa 5.
 - Ao retomar, conferir `git status`, `git log -1` e remoto. Commit/push ao concluir, sem force push; não repetir verificações já aprovadas sem mudança relevante.
 
-### Ponto de retomada atual — complemento 1D.1 concluído em 17/09/2026
+### Retomada do complemento 1D.1 (histórico)
 
 - Solicitação do usuário: resolver as pendências de exames antes de avançar. Base `2ed2c84`. Reconciliação, quota, manutenção periódica, concorrência/tempo/proxy e antivírus implementados; não iniciar novamente esses trabalhos.
 - Órfãos sem referência e com pelo menos 24 horas são movidos para quarentena recuperável, sem descarte automático. CLI restaura bytes sem sobrepor arquivos; referências ausentes geram contagens de alerta. Uploads, exclusões e manutenção compartilham bloqueio PostgreSQL entre processos. Quota padrão de 50 GiB inclui quarentena e resíduos físicos.
@@ -139,3 +139,15 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Roteiro, comandos e limites em `docs/operacao-exames.md`. Não executar o ensaio de saturação do gateway em paralelo com uploads de outro smoke; APIs descartáveis usam a mesma porta 18001.
 - Retenção clínica, auditoria de prontuário, autorização por paciente, HTTPS e recuperação assistida permanecem nas etapas próprias. Antivírus não garante detectar toda ameaça nem validar semanticamente documentos. Este fechamento trata as pendências técnicas de arquivos, não a liberação global para produção.
 - **Próximo recorte previsto: 1D.2 — dependências e builds reproduzíveis**, ainda não iniciado. Conferir `git status`, `git log -1` e remoto ao retomar. Commit/push obrigatório nesta entrega; não publicar arquivos locais, credenciais ou backups.
+
+### Ponto de retomada atual — 1D.2, 17/09/2026
+
+- Dependências Python/npm fixadas com locks completos; bases Docker fixadas por digest. PyJWT substitui JOSE/ecdsa, mantendo HS256, senhas e sessões. Node 24, Router 7, Vite 7 e Vitest 4 homologados. Não repetir a revisão inicial de dependências.
+- API Alpine sem compilador/pip, UID 10001. Novo serviço one-shot `exam-storage-init` ajusta permissões do volume dedicado sem alterar bytes/seguir links. Saída 0 é estado normal, não falha de serviço.
+- PostgreSQL 16.15 em imagem derivada com pacotes corrigidos; `su-exec` substitui o gosu com runtime Go antigo no ponto de troca de usuário do entrypoint. Criação em banco vazio e atualização 16.13 → 16.15 verificadas, sem mudança de major ou migração de esquema.
+- Passaram 81 testes backend, 34 frontend, builds prod/dev, dez grupos HTTP gerais, sessões (12), autenticação (13), exames (12), operações (12) e antivírus indisponível (9). Smoke de permissões testou volume realmente descartável. Navegador: login/painel/pacientes/exames/prévia/rota recarregada/calendário/financeiro/logout conferidos.
+- Auditorias locais com zero avisos conhecidos em npm/Python e zero achados nas cinco imagens de execução. Relatórios em `.data/security`. Não há exceções de CVE; auditoria semanal prevista. Avisos futuros exigem nova avaliação.
+- Atualização principal realizada após cópias `.data/homolog/pre-1D2.dump` e `pre-1D2-exams.tar`; fingerprints de tabelas de negócio e SHA-256 dos arquivos coincidiram antes/depois. JWT da versão anterior funcionou e foi revogado. Dados/volumes/segredos preservados, banco em `0011_exam_file_deletions`, serviços ativos.
+- Novo workflow `.github/workflows/verify.yml` inclui dependências, frontend, backend PostgreSQL, smokes HTTP/ClamAV e imagens. Jenkins permanece exemplo complementar, com locks e testes, sem se passar por suíte integrada.
+- **Fechamento pendente:** commit/push e primeira execução remota do workflow. Atualizar aqui e no relatório com o resultado, conferir árvore limpa e igualdade local/remoto. Não publicar `.data`, `.env`, credenciais, dumps ou volumes.
+- **Próximo recorte após fechar 1D.2:** 1D.3 — tratamento de erros e fechamento de segurança, incluindo mensagens internas, exceções duplicadas e decisão sobre token no navegador. Não iniciar concorrência de agenda/cobrança antes desse fechamento; HTTPS/instalador/backup assistido seguem na etapa 5.
