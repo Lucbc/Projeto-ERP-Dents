@@ -325,6 +325,8 @@ Gerar uma cobrança usa o preço atual dos procedimentos, sem itens com preço/q
 
 ### R29 — P1 — Exclusões e falhas deixam banco e exames inconsistentes
 
+**Complemento 1D.1:** manutenção periódica, bloqueio entre upload/exclusão/reconciliação e quarentena recuperável de órfãos implementados e testados. Referências sem arquivo são sinalizadas sem apagar metadados. Retenção e auditoria clínica são decisões de produto ainda previstas em suas etapas. [Operação e recuperação](./operacao-exames.md).
+
 **Atualização 1D.1:** Parcialmente tratado: compensação de upload, fila transacional de exclusão e conflito 409 implementados. Reconciliação após crash, retenção e auditoria permanecem pendentes. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
 
 **Confirmado no fluxo.** [exam_use_cases.py](../apps/api/src/core/use_cases/exam_use_cases.py#L25), [patient_repository.py](../apps/api/src/adapters/db/repositories/patient_repository.py#L80), [models.py](../apps/api/src/adapters/db/models/models.py).
@@ -337,6 +339,8 @@ Upload grava o arquivo antes do registro no banco: falha de commit deixa órfão
 
 ### R30 — P1 — Arquivos ativos podem ser abertos na origem do ERP
 
+**Complemento 1D.1:** ClamAV local obrigatório em uploads e downloads, incluindo arquivos legados; falhas, assinaturas vencidas e resultados não confirmados bloqueiam a liberação. Prévia restrita a imagens permanece. [Evidências](./operacao-exames.md).
+
 **Atualização 1D.1:** Tratado no fluxo da aplicação: formatos/assinaturas restritos, download attachment e prévia somente PNG/JPG. Não há parser completo nem antivírus. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
 
 **Risco de execução de script identificado; não houve prova integrada no navegador.** [exams_router.py](../apps/api/src/api/routers/exams_router.py#L41), [exam_use_cases.py](../apps/api/src/core/use_cases/exam_use_cases.py#L25), [services.ts](../apps/web/src/lib/services.ts#L396).
@@ -346,6 +350,8 @@ O backend confia no nome e MIME informado pelo upload; não restringe conteúdo.
 **Correção:** permitir somente tipos necessários, verificar assinatura real do arquivo e limitar a prévia a formatos seguros. Bloquear HTML/SVG ativo conforme política; disponibilizar arquivos não visualizáveis por download controlado ou em origem isolada/sandbox. Definir CSP e `nosniff`. Arquivos devem permanecer fora da raiz pública. [Orientações de upload OWASP](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html).
 
 ### R31 — P1 — Upload sem limite pode consumir memória, disco e bloquear a API
+
+**Complemento 1D.1:** quota física de conteúdo, concorrência, prazo de recebimento e gateway implementados nos três ambientes. Ensaios de uploads simultâneos e clientes lentos/excessivos aprovados; saúde continuou disponível. Capacidade de produção será medida na etapa 6 com carga representativa. [Limites e ensaios](./operacao-exames.md).
 
 **Atualização 1D.1:** Parcialmente tratado: limites por arquivo/corpo, streaming, espaço livre, progresso e cancelamento. Quota global, concorrência, proxy e carga permanecem pendentes. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
 

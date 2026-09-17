@@ -13,6 +13,7 @@ from src.core.domain.exceptions import (
     RateLimitError,
     PayloadTooLargeError,
     StorageUnavailableError,
+    ServiceUnavailableError,
 )
 
 
@@ -35,6 +36,8 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code = 413
         elif isinstance(exc, StorageUnavailableError):
             status_code = 507
+        elif isinstance(exc, ServiceUnavailableError):
+            return JSONResponse(status_code=503, content={"detail": str(exc)}, headers={"Retry-After": "10"})
 
         if isinstance(exc, RateLimitError):
             return JSONResponse(status_code=429, content={"detail": str(exc)},

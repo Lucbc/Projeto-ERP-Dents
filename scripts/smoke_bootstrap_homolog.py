@@ -56,7 +56,11 @@ def main(session_checks=None, report_name=None, extra_env=None):
         with response:
             request.last_headers = response.headers
             raw = response.read()
-            data = raw if response.headers.get_content_type() == "application/octet-stream" else json.loads(raw) if raw else None
+            content_type = response.headers.get_content_type()
+            data = raw if content_type == "application/octet-stream" else json.loads(raw) if content_type == "application/json" and raw else None
+            if response.status >= 500:
+                # Keep diagnostics local; never print request headers or credentials.
+                (smoke.STATE / 'last-isolated-api-error.log').write_text(docker('logs', name).stderr, encoding='utf8')
             if not isinstance(data, bytes):
                 assert code not in json.dumps(data), "Activation code was exposed in response"
             return response.status, data

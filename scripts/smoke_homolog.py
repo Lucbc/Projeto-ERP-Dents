@@ -30,11 +30,18 @@ def verify_target() -> None:
     container = json.loads(result.stdout)[0]
     if container['Config']['Labels'].get('com.docker.compose.project') != 'erp-dents-homolog':
         raise RuntimeError('Alvo Docker nao pertence a homologacao.')
-    bindings = container['NetworkSettings']['Ports'].get('8000/tcp', [])
-    if {'HostIp': '127.0.0.1', 'HostPort': '18000'} not in bindings:
-        raise RuntimeError('A API de homologacao nao corresponde a porta de teste.')
+    if container['HostConfig'].get('PortBindings'):
+        raise RuntimeError('API nao deve expor portas fora do gateway.')
     if not container['State']['Running']:
         raise RuntimeError('API de homologacao nao esta em execucao.')
+    result = subprocess.run(['docker', 'inspect', 'erp-dents-homolog-gateway-1'],
+                            check=True, capture_output=True, text=True)
+    gateway = json.loads(result.stdout)[0]
+    bindings = gateway['NetworkSettings']['Ports'].get('8000/tcp') or []
+    if (gateway['Config']['Labels'].get('com.docker.compose.project') != 'erp-dents-homolog'
+            or not gateway['State']['Running']
+            or {'HostIp': '127.0.0.1', 'HostPort': '18000'} not in bindings):
+        raise RuntimeError('Gateway nao corresponde ao ambiente/porta de homologacao.')
 
 
 def request(method: str, path: str, payload=None, *, token=None, expected=200,

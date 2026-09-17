@@ -2,6 +2,8 @@
 
 Concluída em 16/09/2026, sobre a base publicada `94a7347`. Ambiente exclusivo `erp-dents-homolog`, com dados fictícios.
 
+**Complemento em 17/09/2026:** as pendências técnicas abaixo de reconciliação, quota, manutenção periódica, concorrência/proxy e antivírus foram implementadas. Consulte [operação de exames](./operacao-exames.md) para o comportamento vigente. Este relatório preserva o registro da entrega inicial.
+
 ## Mudanças entregues
 
 - Novos uploads aceitam PDF, JPG e PNG, até 20 MiB (20.971.520 bytes; interface apresenta MB). `EXAM_MAX_BYTES` configura o limite nos três arquivos Compose, entre 1 KiB e 1 GiB. A interface consulta a política do servidor. Outros formatos/tamanhos ainda dependem da necessidade da clínica; arquivos antigos continuam disponíveis para download.

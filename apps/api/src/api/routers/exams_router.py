@@ -15,6 +15,8 @@ from src.api.schemas.schemas import ExamResponse
 from src.core.use_cases.exam_use_cases import ExamUseCases
 from src.config import get_settings
 from src.adapters.db.exam_cleanup import process_exam_deletions
+from src.adapters.db.exam_maintenance import exam_storage_lock, ensure_quota
+from src.adapters.security.exam_scanner import ClamAVScanner
 
 router = APIRouter(prefix="/api", tags=["exams"])
 
@@ -56,13 +58,22 @@ def upload_exam(
     db: Session = Depends(get_db_dep),
 ):
     use_case = build_use_case(db)
-    return use_case.upload(
-        patient_id=patient_id,
-        original_filename=file.filename or "exam.bin",
-        mime_type=file.content_type or "application/octet-stream",
-        content=file.file,
-        notes=notes,
-    )
+    file.file.seek(0, 2)
+    size = file.file.tell()
+    file.file.seek(0)
+    if size > get_settings().exam_max_bytes:
+        from src.core.domain.exceptions import PayloadTooLargeError
+        raise PayloadTooLargeError("Arquivo excede o limite de envio.")
+    ClamAVScanner(host=get_settings().clamav_host).scan(file.file)
+    with exam_storage_lock(db.get_bind()):
+        ensure_quota(use_case.exam_storage, size, get_settings().exam_quota_bytes)
+        return use_case.upload(
+            patient_id=patient_id,
+            original_filename=file.filename or "exam.bin",
+            mime_type=file.content_type or "application/octet-stream",
+            content=file.file,
+            notes=notes,
+        )
 
 
 @router.get(
@@ -72,6 +83,8 @@ def upload_exam(
 def download_exam(exam_id: UUID, db: Session = Depends(get_db_dep)):
     use_case = build_use_case(db)
     exam, file_path = use_case.get_download(exam_id)
+    with file_path.open("rb") as stream:
+        ClamAVScanner(host=get_settings().clamav_host).scan(stream)
     return FileResponse(
         path=file_path,
         media_type="application/octet-stream",
@@ -89,6 +102,7 @@ def download_exam(exam_id: UUID, db: Session = Depends(get_db_dep)):
 )
 def delete_exam(exam_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
     use_case = build_use_case(db)
-    use_case.delete(exam_id)
-    process_exam_deletions(db, FileSystemExamStorage(), limit=10)
+    with exam_storage_lock(db.get_bind()):
+        use_case.delete(exam_id)
+        process_exam_deletions(db, FileSystemExamStorage(), limit=10)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -84,8 +84,10 @@ def update_patient(
 )
 def delete_patient(patient_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
     use_case = PatientUseCases(SqlAlchemyPatientRepository(db))
-    use_case.delete(patient_id)
     from src.adapters.db.exam_cleanup import process_exam_deletions
+    from src.adapters.db.exam_maintenance import exam_storage_lock
     from src.adapters.storage.filesystem_exam_storage import FileSystemExamStorage
-    process_exam_deletions(db, FileSystemExamStorage(), limit=100)
+    with exam_storage_lock(db.get_bind()):
+        use_case.delete(patient_id)
+        process_exam_deletions(db, FileSystemExamStorage(), limit=100)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

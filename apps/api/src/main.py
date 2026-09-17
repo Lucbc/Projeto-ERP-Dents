@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import asyncio
+import logging
+from starlette.concurrency import run_in_threadpool
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,14 +43,42 @@ app.add_middleware(
 register_exception_handlers(app)
 
 
-@app.on_event("startup")
-def startup_event() -> None:
+def maintenance_cycle():
     Path(settings.exams_base_path).mkdir(parents=True, exist_ok=True)
     from src.adapters.db.database import SessionLocal
-    from src.adapters.db.exam_cleanup import process_exam_deletions
+    from src.adapters.db.exam_maintenance import maintain_exams
     from src.adapters.storage.filesystem_exam_storage import FileSystemExamStorage
     with SessionLocal() as db:
-        process_exam_deletions(db, FileSystemExamStorage())
+        report = maintain_exams(db, FileSystemExamStorage())
+        logger = logging.getLogger(__name__)
+        if any(report[key] for key in ('pending_failures', 'missing_referenced', 'unsafe_entries', 'quarantined')):
+            logger.warning("Exam maintenance counts: %s", report)
+        else:
+            logger.info("Exam maintenance counts: %s", report)
+
+
+async def maintenance_loop():
+    while True:
+        try:
+            await run_in_threadpool(maintenance_cycle)
+        except Exception:
+            # No file names or database URLs in logs. Next cycle retries safely.
+            logging.getLogger(__name__).warning("Exam maintenance unavailable; will retry.")
+        await asyncio.sleep(settings.exam_maintenance_seconds)
+
+
+@app.on_event("startup")
+async def startup_event():
+    app.state.maintenance_task = asyncio.create_task(maintenance_loop())
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    app.state.maintenance_task.cancel()
+    try:
+        await app.state.maintenance_task
+    except asyncio.CancelledError:
+        pass
 
 
 @app.get("/health")

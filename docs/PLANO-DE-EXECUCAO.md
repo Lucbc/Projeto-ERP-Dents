@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** 1D.1 — segurança e ciclo de vida dos exames. Evidências e limites em [homologação 1D.1](./homologacao-etapa-1D1.md). **Próximo recorte: 1D.2 — dependências e builds reproduzíveis.**
+**Concluída:** 1D.1 e seu complemento — reconciliação recuperável de órfãos, quota global, concorrência/timeout/proxy, manutenção periódica e antivírus local obrigatório. Evidências e roteiro em [operação de exames](./operacao-exames.md). Próximo recorte previsto: 1D.2, ainda não iniciado.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -116,7 +116,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Conferir `git log -1` e `git status` ao retomar. Entrega exige commit/push e igualdade local/remoto. Não publicar `.env`, `.data`, backups ou volumes. Não repetir revisão geral nem verificações aprovadas sem mudança relevante.
 
 
-### Ponto de retomada atual — etapa 1D.1 concluída
+### Retomada da entrega inicial 1D.1 (histórico)
 
 - Implementação e testes em 16/09/2026; fechamento documental em 17/09/2026. Base publicada `94a7347` (1C.4).
 - Uploads PDF/JPG/PNG com limite padrão de 20 MiB configurável por `EXAM_MAX_BYTES`; política consultada pela interface. Sem resposta à preferência de formatos adicionais; padrão comunicado e adotado, arquivos antigos preservados.
@@ -127,3 +127,15 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Limitações: assinatura não é parser/antivírus; órfãos após crash exigem reconciliação futura; quota, proxy, carga, auditoria e retenção pendentes. R29/R31/R33 parcialmente tratados; R30 tratado no fluxo da aplicação. Detalhes em `docs/homologacao-etapa-1D1.md`.
 - **Próximo recorte: 1D.2 — dependências e builds reproduzíveis.** Inspecionar manifests/lockfiles, confrontar versões e vulnerabilidades com fontes oficiais, atualizar de forma compatível e validar regressões. Armazenamento do token permanece pendente explícito; HTTPS/instalação assistida na etapa 5.
 - Ao retomar, conferir `git status`, `git log -1` e remoto. Commit/push ao concluir, sem force push; não repetir verificações já aprovadas sem mudança relevante.
+
+### Ponto de retomada atual — complemento 1D.1 concluído em 17/09/2026
+
+- Solicitação do usuário: resolver as pendências de exames antes de avançar. Base `2ed2c84`. Reconciliação, quota, manutenção periódica, concorrência/tempo/proxy e antivírus implementados; não iniciar novamente esses trabalhos.
+- Órfãos sem referência e com pelo menos 24 horas são movidos para quarentena recuperável, sem descarte automático. CLI restaura bytes sem sobrepor arquivos; referências ausentes geram contagens de alerta. Uploads, exclusões e manutenção compartilham bloqueio PostgreSQL entre processos. Quota padrão de 50 GiB inclui quarentena e resíduos físicos.
+- ClamAV local obrigatório em uploads e downloads legados; detecção bloqueia e indisponibilidade/assinaturas acima de sete dias falham de forma fechada. FreshClam atualizado e verificado; serviço sem porta publicada e com limite de 4 GiB de RAM.
+- Três Compose incluem gateway com limite alinhado ao arquivo, duas vagas de envio, timeout e DNS dinâmico da API. A URL externa continua a mesma; API deixa de publicar porta diretamente. Middleware mantém limites próprios mesmo em acesso interno. O orçamento de autenticação por origem é compartilhado pelo gateway; limite por conta permanece.
+- Passaram 78 testes de backend na suíte completa, 14 novamente após ajustes finais, HTTP de exames/antivírus indisponível/quota concorrente/exclusão bloqueada e manutenção periódica real. Gateway passou 413/503/408 e 80 chamadas de saúde com oito clientes, p95 de 0,093 s. Fluxo geral: dez grupos aprovados. Sem alterações de frontend ou nova inspeção visual.
+- Banco permanece em `0011_exam_file_deletions`. Cópias locais prévias de banco e exames em `.data/homolog/pre-1D1-complement.*`; não publicadas. Não equivalem a ensaio completo de restauração. Volumes/dados anteriores preservados.
+- Roteiro, comandos e limites em `docs/operacao-exames.md`. Não executar o ensaio de saturação do gateway em paralelo com uploads de outro smoke; APIs descartáveis usam a mesma porta 18001.
+- Retenção clínica, auditoria de prontuário, autorização por paciente, HTTPS e recuperação assistida permanecem nas etapas próprias. Antivírus não garante detectar toda ameaça nem validar semanticamente documentos. Este fechamento trata as pendências técnicas de arquivos, não a liberação global para produção.
+- **Próximo recorte previsto: 1D.2 — dependências e builds reproduzíveis**, ainda não iniciado. Conferir `git status`, `git log -1` e remoto ao retomar. Commit/push obrigatório nesta entrega; não publicar arquivos locais, credenciais ou backups.

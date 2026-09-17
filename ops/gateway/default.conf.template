@@ -1,0 +1,21 @@
+limit_conn_zone $server_name zone=exam_uploads:1m;
+server {
+  listen 8000;
+  server_name _;
+  resolver 127.0.0.11 valid=10s ipv6=off;
+  set $erp_api http://api:8000;
+  client_max_body_size ${EXAM_BODY_LIMIT};
+  client_body_timeout 30s;
+  proxy_connect_timeout 5s;
+  proxy_read_timeout 120s;
+  proxy_send_timeout 30s;
+  location ~ ^/api/patients/[^/]+/exams/?$ {
+    limit_conn exam_uploads 2;
+    limit_conn_status 503;
+    proxy_request_buffering off;
+    proxy_pass $erp_api;
+  }
+  location / {
+    proxy_pass $erp_api;
+  }
+}

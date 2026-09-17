@@ -24,7 +24,7 @@ from src.core.use_cases.exam_use_cases import ExamUseCases
 PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=")
 
 
-class ExamTests(HomologDatabaseTests):
+class ExamFixture(HomologDatabaseTests):
     def setUp(self):
         super().setUp()
         self.directory = tempfile.TemporaryDirectory(prefix="erp-exam-test-")
@@ -43,6 +43,8 @@ class ExamTests(HomologDatabaseTests):
     def files(self):
         return [p for p in Path(self.directory.name).rglob("*") if p.is_file()]
 
+
+class ExamTests(ExamFixture):
     def test_detected_mime_and_sanitized_name_preserve_original_bytes(self):
         exam = self.upload(name="C:\\fakepath\\test.png")
         self.assertEqual(exam.original_filename, "test.png")

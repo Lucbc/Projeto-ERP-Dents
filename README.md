@@ -522,7 +522,7 @@ http://localhost:8000/docs
 
 Novos envios aceitam PDF, JPG e PNG até 20 MiB por arquivo. Defina `EXAM_MAX_BYTES=20971520` no arquivo de ambiente do servidor (ou `.env.homolog` na homologação) e recrie a API para alterar o limite. A tela consulta o valor configurado e oferece progresso e cancelamento. Cancelar pode ocorrer após o processamento; confira a lista atualizada.
 
-A prévia é exclusiva para PNG/JPG. PDFs e arquivos antigos ficam disponíveis por download. A verificação de assinatura não substitui antivírus nem validação completa do documento.
+A prévia é exclusiva para PNG/JPG. PDFs e arquivos antigos ficam disponíveis por download. O ClamAV local verifica novos envios e downloads, inclusive legados; se estiver indisponível ou desatualizado, o arquivo não é liberado. A verificação não garante que todo documento esteja correto ou seja renderizável.
 
 Exclusões confirmadas no banco entram em uma fila de remoção física, retomada na inicialização da API e nas exclusões. Para tentar novamente manualmente na homologação:
 
@@ -530,4 +530,8 @@ Exclusões confirmadas no banco entram em uma fila de remoção física, retomad
 docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml exec api python -m scripts.cleanup_exam_files
 ```
 
-Em outro ambiente, use seu projeto, arquivo de ambiente e Compose correspondentes. O comando processa até 1.000 intenções registradas; não apaga órfãos sem registro. Reconciliação após interrupção abrupta, quota global e backup completo de banco/exames permanecem pendentes. Evidências e limites: [homologação 1D.1](docs/homologacao-etapa-1D1.md).
+Em outro ambiente, use seu projeto, arquivo de ambiente e Compose correspondentes. O comando acima processa até 1.000 intenções registradas. A manutenção automática, a cada cinco minutos, também move órfãos com pelo menos 24 horas para uma quarentena recuperável, sem apagá-los.
+
+`EXAM_QUOTA_BYTES` define a quota total (padrão: 50 GiB), incluindo a quarentena. O gateway limita tamanho, tempo e envios simultâneos, mantendo a URL da API. Os três Compose incluem gateway e antivírus; o ClamAV tem limite de 4 GiB de RAM e precisa atualizar assinaturas pela internet. Foram usados aproximadamente 8 GiB disponíveis ao Docker na homologação.
+
+Diagnóstico, recuperação de arquivos e evidências: [operação de exames](docs/operacao-exames.md). O ensaio completo de backup/restauração continua na etapa 5; estas rotinas preservam os dados e não substituem uma cópia de segurança.

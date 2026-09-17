@@ -14,6 +14,9 @@ class Settings:
     exams_base_path: str
     bootstrap_token: str = ""
     exam_max_bytes: int = 20 * 1024 * 1024
+    exam_quota_bytes: int = 50 * 1024 * 1024 * 1024
+    clamav_host: str = "clamav"
+    exam_maintenance_seconds: int = 300
 
     @property
     def cors_origins(self) -> list[str]:
@@ -31,6 +34,12 @@ def get_settings() -> Settings:
     exam_limit = int(os.getenv("EXAM_MAX_BYTES", str(20 * 1024 * 1024)))
     if not 1024 <= exam_limit <= 1024 * 1024 * 1024:
         raise ValueError("EXAM_MAX_BYTES deve estar entre 1024 e 1073741824.")
+    quota = int(os.getenv("EXAM_QUOTA_BYTES", str(50 * 1024 * 1024 * 1024)))
+    if quota < exam_limit:
+        raise ValueError("EXAM_QUOTA_BYTES deve ser pelo menos EXAM_MAX_BYTES.")
+    maintenance_seconds = int(os.getenv("EXAM_MAINTENANCE_SECONDS", "300"))
+    if not 10 <= maintenance_seconds <= 3600:
+        raise ValueError("EXAM_MAINTENANCE_SECONDS deve estar entre 10 e 3600.")
     return Settings(
         database_url=os.getenv(
             "DATABASE_URL", "postgresql+psycopg://erp_user:erp_password@db:5432/erp_dents"
@@ -41,4 +50,7 @@ def get_settings() -> Settings:
         exams_base_path=os.getenv("EXAMS_BASE_PATH", "/data/exams"),
         bootstrap_token=os.getenv("BOOTSTRAP_TOKEN", ""),
         exam_max_bytes=exam_limit,
+        exam_quota_bytes=quota,
+        clamav_host=os.getenv("CLAMAV_HOST", "clamav"),
+        exam_maintenance_seconds=maintenance_seconds,
     )

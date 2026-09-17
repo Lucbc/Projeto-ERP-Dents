@@ -16,6 +16,10 @@ class StorageUnavailableError(DomainError):
     pass
 
 
+class ServiceUnavailableError(DomainError):
+    pass
+
+
 class ValidationError(DomainError):
     pass
 
