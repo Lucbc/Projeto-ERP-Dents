@@ -422,7 +422,7 @@ Auditorias executadas:
 
 ### R36 — P1 — CI não executa testes de comportamento
 
-**Atualização 1D.2:** Workflow GitHub Actions adiciona testes web, backend com PostgreSQL/ClamAV e smokes HTTP, além de build/auditorias. Validação local: 81 testes backend e 34 frontend aprovados. A evidência da primeira execução remota será registrada na [homologação 1D.2](./homologacao-etapa-1D2.md). A cobertura acompanha as correções por etapa; isso não declara testadas todas as regras ainda pendentes da revisão.
+**Atualização 1D.2:** Workflow GitHub Actions adiciona testes web, backend com PostgreSQL/ClamAV e smokes HTTP, além de build/auditorias. Validação local e remota aprovadas: 81 testes backend e 34 frontend, com [execução 35260375483](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35260375483) concluída em 6min42s. Detalhes na [homologação 1D.2](./homologacao-etapa-1D2.md). A cobertura acompanha as correções por etapa; isso não declara testadas todas as regras ainda pendentes da revisão.
 
 **Confirmado.** [Jenkinsfile](../Jenkinsfile#L11) chama `compileall` e build web em etapas chamadas “Lint/Test”. Não há suíte de testes encontrada nem scripts de lint/test no package.json.
 

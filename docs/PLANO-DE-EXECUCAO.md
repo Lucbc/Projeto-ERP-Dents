@@ -22,7 +22,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
-| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1 concluída; 1D.2 validada localmente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
+| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1 e 1D.2 concluídas | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Em fechamento:** 1D.2 — dependências e builds reproduzíveis, base `2d179c5`. Implementação e validação local concluídas, homologação atualizada com dados preservados. Falta publicar e conferir a primeira execução do GitHub Actions. Ponto de retomada ao final deste arquivo; evidências em [homologação 1D.2](./homologacao-etapa-1D2.md).
+**Concluída:** 1D.2 — dependências e builds reproduzíveis, implementação publicada em `a3b281e`, validação local e GitHub Actions aprovadas. Homologação atualizada com dados preservados. Próximo recorte: 1D.3 — tratamento de erros e fechamento de segurança. Ponto de retomada ao final deste arquivo; evidências em [homologação 1D.2](./homologacao-etapa-1D2.md).
 
 ### Ponto de retomada — 15/09/2026
 
@@ -149,5 +149,5 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Auditorias locais com zero avisos conhecidos em npm/Python e zero achados nas cinco imagens de execução. Relatórios em `.data/security`. Não há exceções de CVE; auditoria semanal prevista. Avisos futuros exigem nova avaliação.
 - Atualização principal realizada após cópias `.data/homolog/pre-1D2.dump` e `pre-1D2-exams.tar`; fingerprints de tabelas de negócio e SHA-256 dos arquivos coincidiram antes/depois. JWT da versão anterior funcionou e foi revogado. Dados/volumes/segredos preservados, banco em `0011_exam_file_deletions`, serviços ativos.
 - Novo workflow `.github/workflows/verify.yml` inclui dependências, frontend, backend PostgreSQL, smokes HTTP/ClamAV e imagens. Jenkins permanece exemplo complementar, com locks e testes, sem se passar por suíte integrada.
-- **Fechamento pendente:** commit/push e primeira execução remota do workflow. Atualizar aqui e no relatório com o resultado, conferir árvore limpa e igualdade local/remoto. Não publicar `.data`, `.env`, credenciais, dumps ou volumes.
+- **Publicação e validação remota:** implementação `a3b281e` enviada ao `origin/main`; [GitHub Actions 35260375483](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35260375483) aprovado em 6min42s, incluindo Docker limpo, 81 testes backend, 34 frontend, smokes e auditorias. Fechamento posterior somente documental. Ao retomar, consultar `git log -1`, `git status` e remoto; não publicar `.data`, `.env`, credenciais, dumps ou volumes.
 - **Próximo recorte após fechar 1D.2:** 1D.3 — tratamento de erros e fechamento de segurança, incluindo mensagens internas, exceções duplicadas e decisão sobre token no navegador. Não iniciar concorrência de agenda/cobrança antes desse fechamento; HTTPS/instalador/backup assistido seguem na etapa 5.

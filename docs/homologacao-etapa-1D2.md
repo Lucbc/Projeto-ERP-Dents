@@ -1,6 +1,8 @@
 # Homologação 1D.2 — dependências e builds
 
-Data: 17/09/2026. Base publicada: `2d179c5`. Ambiente: `erp-dents-homolog`, exclusivamente fictício. Validação local concluída; primeira execução remota do workflow será registrada após a publicação.
+Data: 17/09/2026. Base publicada: `2d179c5`; implementação publicada em `a3b281e`. Ambiente: `erp-dents-homolog`, exclusivamente fictício. Validação local e primeira execução remota concluídas.
+
+**GitHub Actions aprovado:** [execução 35260375483](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35260375483), commit `a3b281e530003a80be012bd27e7eb355549046c8`, job completo em 6min42s. Passaram instalação/auditoria de pacotes, 34 testes web e build, criação do Docker do zero, 81 testes backend e todos os smokes HTTP previstos, auditoria das cinco imagens e encerramento dos serviços do runner. O ambiente local permaneceu ativo. O commit posterior de fechamento altera somente documentação; não requer repetir a suíte.
 
 ## Resultado
 
