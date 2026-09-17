@@ -18,6 +18,7 @@ from src.api.routers.procedures_router import router as procedures_router
 from src.api.routers.specialties_router import router as specialties_router
 from src.api.routers.users_router import router as users_router
 from src.config import get_settings
+from src.api.upload_limit import ExamUploadLimitMiddleware
 
 settings = get_settings()
 
@@ -27,6 +28,7 @@ app = FastAPI(
     description="API da clÃ­nica de ortodontia (MVP).",
 )
 
+app.add_middleware(ExamUploadLimitMiddleware, max_bytes=settings.exam_max_bytes)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -41,6 +43,11 @@ register_exception_handlers(app)
 @app.on_event("startup")
 def startup_event() -> None:
     Path(settings.exams_base_path).mkdir(parents=True, exist_ok=True)
+    from src.adapters.db.database import SessionLocal
+    from src.adapters.db.exam_cleanup import process_exam_deletions
+    from src.adapters.storage.filesystem_exam_storage import FileSystemExamStorage
+    with SessionLocal() as db:
+        process_exam_deletions(db, FileSystemExamStorage())
 
 
 @app.get("/health")

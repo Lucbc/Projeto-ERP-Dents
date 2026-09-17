@@ -22,7 +22,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
-| 1D | Exames, erros e dependências de segurança | Pendente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
+| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1 concluída | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** etapa 1C.4 — senhas, tentativas e configuração de autenticação (R12), em 16/09/2026. Evidências: [homologação 1C.4](./homologacao-etapa-1C4.md). Próximo recorte: 1D.1 — segurança e ciclo de vida dos exames.
+**Concluída:** 1D.1 — segurança e ciclo de vida dos exames. Evidências e limites em [homologação 1D.1](./homologacao-etapa-1D1.md). **Próximo recorte: 1D.2 — dependências e builds reproduzíveis.**
 
 ### Ponto de retomada — 15/09/2026
 
@@ -104,7 +104,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próximo recorte: 1C.4 — política de senhas, tentativas e configuração de autenticação (R12).** Mapear limites em bytes do bcrypt, mensagens uniformes e limitação por conta/origem; preservar hashes/credenciais existentes. Rever senha na linha de comando de recuperação. Revisão do armazenamento do token permanece explícita; não considerar resolvida por revogação.
 - Consultar `git log -1` e `git status` ao retomar. Commit/push ao concluir esta entrega; sem force push. Não repetir a revisão geral nem testes aprovados sem mudança relevante.
 
-### Ponto de retomada atual — etapa 1C.4 concluída em 16/09/2026
+### Retomada da etapa 1C.4 (histórico)
 
 - Novas senhas usam bcrypt-SHA256, 8 a 128 caracteres Unicode, política central aplicada em todos os caminhos. Hashes bcrypt antigos são aceitos sem regravação; limitações acima de 72 bytes permanecem até troca explícita. Exportação duplicada de segurança substituída por uma única implementação.
 - Login com resposta uniforme para conta inexistente/inativa/senha incorreta. Contadores HMAC em `auth_attempts`, serializados no PostgreSQL; 10 logins/conta, 120/origem, 10 ativações/origem e 5 trocas de senha/usuário por 60 segundos. 429 com Retry-After; cabeçalhos de proxy não são confiados pelos comandos Docker.
@@ -114,3 +114,16 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Evidências, comandos e limites em `docs/homologacao-etapa-1C4.md`. Não há bloqueio progressivo/permanente; janelas fixas precisam de avaliação sob carga. NAT/proxy pode agregar origens. Recuperação ainda não tem trilha de auditoria; permanece no escopo de auditoria geral.
 - **Próximo recorte: 1D.1 — segurança e ciclo de vida dos exames.** Ler os achados sobre upload, tipo/tamanho, visualização/download, autorização e arquivos órfãos. Preparar cenários com arquivos fictícios em ambiente isolado. Dependências gerais e armazenamento de token ficam em recortes próprios de segurança; HTTPS/instalador na etapa 5.
 - Conferir `git log -1` e `git status` ao retomar. Entrega exige commit/push e igualdade local/remoto. Não publicar `.env`, `.data`, backups ou volumes. Não repetir revisão geral nem verificações aprovadas sem mudança relevante.
+
+
+### Ponto de retomada atual — etapa 1D.1 concluída
+
+- Implementação e testes em 16/09/2026; fechamento documental em 17/09/2026. Base publicada `94a7347` (1C.4).
+- Uploads PDF/JPG/PNG com limite padrão de 20 MiB configurável por `EXAM_MAX_BYTES`; política consultada pela interface. Sem resposta à preferência de formatos adicionais; padrão comunicado e adotado, arquivos antigos preservados.
+- Limite do corpo antes do multipart, streaming, validação de marcadores/extensão, download attachment e prévia somente de imagens. Progresso/cancelamento e erros tratados na interface.
+- Migração `0011_exam_file_deletions` persiste intenção de limpeza após commit; falhas são retomáveis na inicialização, exclusões e CLI. Compensação preserva arquivo quando o resultado do commit é incerto. Paciente com consulta retorna 409.
+- Passaram 64 testes distintos de backend, 34 frontend, 12 grupos HTTP isolados e 10 gerais. Build Docker aprovado; política e modal de imagem conferidos no Chrome. Banco em head; zero schemas de teste e zero itens pendentes de limpeza na conferência final.
+- Cópia prévia `.data/homolog/pre-1D1.dump` somente do banco; dados/volumes preservados. Não comprova restauração dos exames. Credenciais/backups/dados locais continuam fora do Git.
+- Limitações: assinatura não é parser/antivírus; órfãos após crash exigem reconciliação futura; quota, proxy, carga, auditoria e retenção pendentes. R29/R31/R33 parcialmente tratados; R30 tratado no fluxo da aplicação. Detalhes em `docs/homologacao-etapa-1D1.md`.
+- **Próximo recorte: 1D.2 — dependências e builds reproduzíveis.** Inspecionar manifests/lockfiles, confrontar versões e vulnerabilidades com fontes oficiais, atualizar de forma compatível e validar regressões. Armazenamento do token permanece pendente explícito; HTTPS/instalação assistida na etapa 5.
+- Ao retomar, conferir `git status`, `git log -1` e remoto. Commit/push ao concluir, sem force push; não repetir verificações já aprovadas sem mudança relevante.

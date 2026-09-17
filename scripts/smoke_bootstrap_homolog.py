@@ -24,7 +24,7 @@ def docker(*args, check=True):
     return result
 
 
-def main(session_checks=None, report_name=None):
+def main(session_checks=None, report_name=None, extra_env=None):
     smoke.verify_target()
     db_info = json.loads(docker("inspect", "erp-dents-homolog-db-1").stdout)[0]
     db_env = dict(line.split("=", 1) for line in db_info["Config"]["Env"] if "=" in line)
@@ -50,14 +50,15 @@ def main(session_checks=None, report_name=None):
         if activation is not None: headers["X-Bootstrap-Token"] = activation
         if token: headers["Authorization"] = "Bearer " + token
         req = Request("http://127.0.0.1:18001" + path, method=method, headers=headers,
-                      data=json.dumps(payload).encode() if payload is not None else None)
+                      data=payload if isinstance(payload, bytes) else json.dumps(payload).encode() if payload is not None else None)
         try: response = urlopen(req, timeout=10)
         except HTTPError as error: response = error
         with response:
             request.last_headers = response.headers
             raw = response.read()
-            data = json.loads(raw) if raw else None
-            assert code not in json.dumps(data), "Activation code was exposed in response"
+            data = raw if response.headers.get_content_type() == "application/octet-stream" else json.loads(raw) if raw else None
+            if not isinstance(data, bytes):
+                assert code not in json.dumps(data), "Activation code was exposed in response"
             return response.status, data
 
     def ready():
@@ -79,6 +80,7 @@ def main(session_checks=None, report_name=None):
         env = {"DATABASE_URL": original["DATABASE_URL"], "JWT_SECRET_KEY": secrets.token_hex(32),
                "BOOTSTRAP_TOKEN": code, "PGOPTIONS": "-csearch_path=" + schema,
                "CORS_ORIGINS": "http://localhost:18081", "EXAMS_BASE_PATH": "/tmp/bootstrap-exams"}
+        env.update(extra_env or {})
         env_file.write_text("\n".join(key + "=" + value for key, value in env.items()) + "\n", encoding="utf8")
         docker("run", "-d", "--name", name, "--label", "com.docker.compose.project=erp-dents-homolog",
                "--network", "erp-dents-homolog_default", "--env-file", str(env_file),

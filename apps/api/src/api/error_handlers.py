@@ -11,6 +11,8 @@ from src.core.domain.exceptions import (
     UnauthorizedError,
     ValidationError,
     RateLimitError,
+    PayloadTooLargeError,
+    StorageUnavailableError,
 )
 
 
@@ -29,6 +31,10 @@ def register_exception_handlers(app: FastAPI) -> None:
             status_code = 404
         elif isinstance(exc, ConflictError):
             status_code = 409
+        elif isinstance(exc, PayloadTooLargeError):
+            status_code = 413
+        elif isinstance(exc, StorageUnavailableError):
+            status_code = 507
 
         if isinstance(exc, RateLimitError):
             return JSONResponse(status_code=429, content={"detail": str(exc)},

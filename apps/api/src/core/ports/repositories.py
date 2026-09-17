@@ -178,6 +178,9 @@ class AppointmentRepository(ABC):
 
 class ExamRepository(ABC):
     @abstractmethod
+    def file_referenced(self, patient_id: UUID, stored_filename: str) -> bool: ...
+
+    @abstractmethod
     def list_by_patient(self, patient_id: UUID) -> list[Exam]: ...
 
     @abstractmethod

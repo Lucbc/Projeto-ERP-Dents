@@ -325,6 +325,8 @@ Gerar uma cobrança usa o preço atual dos procedimentos, sem itens com preço/q
 
 ### R29 — P1 — Exclusões e falhas deixam banco e exames inconsistentes
 
+**Atualização 1D.1:** Parcialmente tratado: compensação de upload, fila transacional de exclusão e conflito 409 implementados. Reconciliação após crash, retenção e auditoria permanecem pendentes. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
+
 **Confirmado no fluxo.** [exam_use_cases.py](../apps/api/src/core/use_cases/exam_use_cases.py#L25), [patient_repository.py](../apps/api/src/adapters/db/repositories/patient_repository.py#L80), [models.py](../apps/api/src/adapters/db/models/models.py).
 
 Upload grava o arquivo antes do registro no banco: falha de commit deixa órfão. Exclusão remove o arquivo antes de confirmar o banco: falha de commit deixa registro sem arquivo. Excluir paciente sem agendamentos elimina metadados de exames por cascata, mas não os arquivos físicos. Se houver agendamentos, FKs restritivas podem bloquear a exclusão e gerar erro 500 não tratado.
@@ -335,6 +337,8 @@ Upload grava o arquivo antes do registro no banco: falha de commit deixa órfão
 
 ### R30 — P1 — Arquivos ativos podem ser abertos na origem do ERP
 
+**Atualização 1D.1:** Tratado no fluxo da aplicação: formatos/assinaturas restritos, download attachment e prévia somente PNG/JPG. Não há parser completo nem antivírus. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
+
 **Risco de execução de script identificado; não houve prova integrada no navegador.** [exams_router.py](../apps/api/src/api/routers/exams_router.py#L41), [exam_use_cases.py](../apps/api/src/core/use_cases/exam_use_cases.py#L25), [services.ts](../apps/web/src/lib/services.ts#L396).
 
 O backend confia no nome e MIME informado pelo upload; não restringe conteúdo. O frontend baixa como Blob e abre qualquer arquivo. Um HTML com script, por exemplo, pode ser renderizado como documento ativo. URLs Blob carregam a origem de quem as criou; junto com JWT em `localStorage`, isso forma um caminho de risco para sessão/dados. `noopener` não torna o conteúdo um documento isolado da origem. [Comportamento de Blob URLs](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/blob).
@@ -342,6 +346,8 @@ O backend confia no nome e MIME informado pelo upload; não restringe conteúdo.
 **Correção:** permitir somente tipos necessários, verificar assinatura real do arquivo e limitar a prévia a formatos seguros. Bloquear HTML/SVG ativo conforme política; disponibilizar arquivos não visualizáveis por download controlado ou em origem isolada/sandbox. Definir CSP e `nosniff`. Arquivos devem permanecer fora da raiz pública. [Orientações de upload OWASP](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html).
 
 ### R31 — P1 — Upload sem limite pode consumir memória, disco e bloquear a API
+
+**Atualização 1D.1:** Parcialmente tratado: limites por arquivo/corpo, streaming, espaço livre, progresso e cancelamento. Quota global, concorrência, proxy e carga permanecem pendentes. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
 
 **Confirmado.** [exams_router.py](../apps/api/src/api/routers/exams_router.py#L48) lê todo o conteúdo com `await file.read()` e depois executa operações síncronas de banco/disco dentro da função `async`. O processo padrão da API é único. O frontend aplica timeout genérico de 15 segundos, sem progresso nem estratégia para arquivo grande.
 
@@ -358,6 +364,8 @@ Dados de saúde vinculados à pessoa são dados pessoais sensíveis na LGPD; med
 ## 9. Código morto, duplicações e qualidade
 
 ### R33 — P2 — Há implementações antigas duplicadas em `__init__.py`
+
+**Atualização 1D.1:** Segurança e armazenamento reexportam as implementações canônicas. Os demais módulos ainda precisam de revisão. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
 
 **Confirmado, inclusive por identidade de classes em execução.** Cerca de 551 linhas, incluindo espaços, em oito inicializadores repetem implementações mantidas em módulos próprios:
 

@@ -278,6 +278,16 @@ class FinancialEntryModel(Base):
     appointment: Mapped[AppointmentModel | None] = relationship("AppointmentModel")
 
 
+class ExamFileDeletionModel(Base):
+    __tablename__ = "exam_file_deletions"
+    __table_args__ = (UniqueConstraint("patient_id", "stored_filename", name="uq_exam_file_deletion"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    stored_filename: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class ExamModel(Base):
     __tablename__ = "exams"
 

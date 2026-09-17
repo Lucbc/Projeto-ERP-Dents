@@ -8,6 +8,14 @@ class RateLimitError(DomainError):
         self.retry_after = retry_after
 
 
+class PayloadTooLargeError(DomainError):
+    pass
+
+
+class StorageUnavailableError(DomainError):
+    pass
+
+
 class ValidationError(DomainError):
     pass
 

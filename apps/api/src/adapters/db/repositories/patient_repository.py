@@ -3,7 +3,10 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from src.adapters.db.models.models import PatientModel
+from src.adapters.db.models.models import PatientModel, ExamModel
+from src.adapters.db.exam_cleanup import queue_exam_file
+from sqlalchemy.exc import IntegrityError
+from src.core.domain.exceptions import ConflictError
 from src.core.domain.entities import Patient
 from src.core.ports.repositories import PatientRepository
 
@@ -78,12 +81,21 @@ class SqlAlchemyPatientRepository(PatientRepository):
         return self._to_entity(item)
 
     def delete(self, patient_id) -> bool:
-        item = self.session.get(PatientModel, patient_id)
+        item = self.session.scalar(select(PatientModel).where(PatientModel.id == patient_id).with_for_update())
         if item is None:
             return False
 
-        self.session.delete(item)
-        self.session.commit()
+        try:
+            for exam in self.session.scalars(select(ExamModel).where(ExamModel.patient_id == patient_id)):
+                queue_exam_file(self.session, patient_id, exam.stored_filename)
+            self.session.delete(item)
+            self.session.commit()
+        except IntegrityError as error:
+            self.session.rollback()
+            raise ConflictError("Paciente possui registros vinculados. Inative o cadastro em vez de excluí-lo.") from error
+        except Exception:
+            self.session.rollback()
+            raise
         return True
 
     def _to_entity(self, model: PatientModel) -> Patient:

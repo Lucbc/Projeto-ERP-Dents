@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
 import { z } from "zod";
+import { useEffect, useRef, useState } from "react";
+import axios from "axios";
+import { Modal } from "@/components/ui/modal";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -18,7 +21,7 @@ const uploadSchema = z.object({
   file: z
     .any()
     .refine((value) => value && value.length > 0, "Selecione um arquivo para upload."),
-  notes: z.string().optional(),
+  notes: z.string().max(2000, "Máximo de 2000 caracteres.").optional(),
 });
 
 type UploadForm = z.infer<typeof uploadSchema>;
@@ -28,6 +31,13 @@ export function PatientExamsPage() {
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
+  const [progress, setProgress] = useState(0);
+  const uploadController = useRef<AbortController>();
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
+  const previewRequest = useRef(0);
+  useEffect(() => () => { uploadController.current?.abort(); previewRequest.current++; }, []);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
+  const policyQuery = useQuery({ queryKey: ["exams", "upload-policy"], queryFn: examService.uploadPolicy });
 
   const form = useForm<UploadForm>({
     resolver: zodResolver(uploadSchema),
@@ -51,14 +61,25 @@ export function PatientExamsPage() {
   const uploadMutation = useMutation({
     mutationFn: (values: UploadForm) => {
       const file = values.file[0] as File;
-      return examService.upload(patientId!, file, values.notes);
+      const policy = policyQuery.data;
+      if (!policy || file.size > policy.max_bytes || file.size === 0) {
+        throw new Error("Confira o tamanho do arquivo e aguarde o limite de envio carregar.");
+      }
+      if (!policy.extensions.some((extension) => file.name.toLowerCase().endsWith(extension))) {
+        throw new Error("Envie um PDF, JPG ou PNG.");
+      }
+      uploadController.current = new AbortController();
+      setProgress(0);
+      return examService.upload(patientId!, file, values.notes, { signal: uploadController.current.signal, onProgress: setProgress });
     },
     onSuccess: () => {
       toast("Exame enviado com sucesso.");
       form.reset({ notes: "" });
       void queryClient.invalidateQueries({ queryKey: ["exams", patientId] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => toast(axios.isCancel(error) ? "Envio interrompido. Confira a lista de exames."
+      : error instanceof Error && !axios.isAxiosError(error) ? error.message : getApiErrorMessage(error), "error"),
+    onSettled: () => { void queryClient.invalidateQueries({ queryKey: ["exams", patientId] }); },
   });
 
   const deleteMutation = useMutation({
@@ -101,13 +122,17 @@ export function PatientExamsPage() {
       {canCreate && (
         <Card>
           <h3 className="font-semibold text-slate-800">Upload de exame</h3>
+          <p className="text-sm text-slate-500">PDF, JPG ou PNG. {policyQuery.data
+            ? `Limite por arquivo: ${(policyQuery.data.max_bytes / 1024 / 1024).toFixed(1)} MB.`
+            : "Carregando limite de envio..."}</p>
+          {policyQuery.isError && <ErrorState message="Não foi possível consultar o limite de envio. Recarregue a página." />}
           <form
             className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]"
             onSubmit={form.handleSubmit((values) => uploadMutation.mutate(values))}
           >
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">Arquivo *</label>
-              <Input type="file" {...form.register("file")} />
+              <Input type="file" accept=".pdf,.jpg,.jpeg,.png" {...form.register("file")} />
               {form.formState.errors.file && (
                 <p className="mt-1 text-xs text-red-600">{form.formState.errors.file.message as string}</p>
               )}
@@ -119,11 +144,15 @@ export function PatientExamsPage() {
             </div>
 
             <div className="self-end">
-              <Button type="submit" disabled={uploadMutation.isPending}>
+              <Button type="submit" disabled={uploadMutation.isPending || !policyQuery.data}>
                 {uploadMutation.isPending ? "Enviando..." : "Enviar"}
               </Button>
             </div>
           </form>
+          {uploadMutation.isPending && <div className="mt-3 space-x-3" role="status">
+            <span>{progress}% enviado{progress === 100 ? " — processando no servidor" : ""}</span>
+            <Button variant="outline" onClick={() => uploadController.current?.abort()}>Cancelar envio</Button>
+          </div>}
         </Card>
       )}
 
@@ -161,19 +190,23 @@ export function PatientExamsPage() {
                             <Button
                               variant="outline"
                               onClick={() => {
-                                void examService.download(exam.id, exam.original_filename);
+                                void examService.download(exam.id, exam.original_filename)
+                                  .catch(() => toast("Não foi possível baixar o exame. Tente novamente.", "error"));
                               }}
                             >
                               Baixar
                             </Button>
-                            <Button
+                            {["image/png", "image/jpeg"].includes(exam.mime_type) && <Button
                               variant="outline"
                               onClick={() => {
-                                void examService.openInBrowser(exam.id);
+                                const request = ++previewRequest.current;
+                                void examService.previewImage(exam.id, exam.mime_type).then((blob) => {
+                                  if (request === previewRequest.current) setPreview({ url: URL.createObjectURL(blob), name: exam.original_filename });
+                                }).catch(() => toast("Não foi possível visualizar a imagem. Tente baixar o arquivo.", "error"));
                               }}
                             >
-                              Abrir
-                            </Button>
+                              Visualizar imagem
+                            </Button>}
                             {canDelete && (
                               <Button
                                 variant="danger"
@@ -197,6 +230,10 @@ export function PatientExamsPage() {
           </>
         )}
       </Card>
+      <Modal open={Boolean(preview)} title={preview?.name ?? "Imagem do exame"} onClose={() => { previewRequest.current++; setPreview(null); }}>
+        {preview && <img src={preview.url} alt={preview.name} className="max-h-[70vh] max-w-full object-contain"
+          onError={() => { setPreview(null); toast("Imagem inválida para prévia. Use o download.", "error"); }} />}
+      </Modal>
     </div>
   );
 }

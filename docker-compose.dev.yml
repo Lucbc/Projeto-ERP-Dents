@@ -31,6 +31,7 @@ services:
       JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
       CORS_ORIGINS: ${CORS_ORIGINS}
       EXAMS_BASE_PATH: ${EXAMS_BASE_PATH}
+      EXAM_MAX_BYTES: ${EXAM_MAX_BYTES:-20971520}
       TZ: ${TZ}
     volumes:
       - ./apps/api:/app

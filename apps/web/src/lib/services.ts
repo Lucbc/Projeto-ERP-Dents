@@ -372,34 +372,39 @@ async function fetchExamBlob(examId: string): Promise<Blob> {
 }
 
 export const examService = {
+  async uploadPolicy() {
+    return (await api.get<{ max_bytes: number; extensions: string[] }>("/api/exams/upload-policy")).data;
+  },
   async listByPatient(patientId: string) {
     const response = await api.get<Exam[]>(`/api/patients/${patientId}/exams`);
     return response.data;
   },
-  async upload(patientId: string, file: File, notes?: string) {
+  async upload(patientId: string, file: File, notes?: string, options?: { signal: AbortSignal; onProgress: (value: number) => void }) {
     const formData = new FormData();
     formData.append("file", file);
     if (notes) formData.append("notes", notes);
 
     const response = await api.post<Exam>(`/api/patients/${patientId}/exams`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      signal: options?.signal,
+      timeout: 120000,
+      onUploadProgress: (event) => options?.onProgress(event.total ? Math.round(event.loaded * 100 / event.total) : 0),
     });
     return response.data;
   },
   async download(examId: string, filename: string) {
     const blob = await fetchExamBlob(examId);
-    const url = window.URL.createObjectURL(blob);
+    const url = window.URL.createObjectURL(new Blob([blob], { type: "application/octet-stream" }));
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = filename;
     anchor.click();
-    window.URL.revokeObjectURL(url);
+    window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
   },
-  async openInBrowser(examId: string) {
+  async previewImage(examId: string, mimeType: string) {
+    if (!["image/png", "image/jpeg"].includes(mimeType)) throw new Error("Prévia indisponível para este formato.");
     const blob = await fetchExamBlob(examId);
-    const url = window.URL.createObjectURL(blob);
-    window.open(url, "_blank", "noopener,noreferrer");
-    window.setTimeout(() => window.URL.revokeObjectURL(url), 4000);
+    return new Blob([blob], { type: mimeType });
   },
   async remove(examId: string) {
     await api.delete(`/api/exams/${examId}`);

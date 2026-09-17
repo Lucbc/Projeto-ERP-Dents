@@ -26,6 +26,7 @@ services:
       BOOTSTRAP_TOKEN: ${HOMOLOG_BOOTSTRAP_TOKEN:-}
       CORS_ORIGINS: http://localhost:18080,http://127.0.0.1:18080
       EXAMS_BASE_PATH: /data/exams
+      EXAM_MAX_BYTES: ${EXAM_MAX_BYTES:-20971520}
       TZ: America/Sao_Paulo
     volumes:
       - exams_data:/data/exams

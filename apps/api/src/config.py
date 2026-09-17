@@ -13,6 +13,7 @@ class Settings:
     cors_origins_raw: str
     exams_base_path: str
     bootstrap_token: str = ""
+    exam_max_bytes: int = 20 * 1024 * 1024
 
     @property
     def cors_origins(self) -> list[str]:
@@ -27,6 +28,9 @@ def get_settings() -> Settings:
     expiry = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
     if not 1 <= expiry <= 10080:
         raise ValueError("JWT_EXPIRE_MINUTES deve estar entre 1 e 10080.")
+    exam_limit = int(os.getenv("EXAM_MAX_BYTES", str(20 * 1024 * 1024)))
+    if not 1024 <= exam_limit <= 1024 * 1024 * 1024:
+        raise ValueError("EXAM_MAX_BYTES deve estar entre 1024 e 1073741824.")
     return Settings(
         database_url=os.getenv(
             "DATABASE_URL", "postgresql+psycopg://erp_user:erp_password@db:5432/erp_dents"
@@ -36,4 +40,5 @@ def get_settings() -> Settings:
         cors_origins_raw=os.getenv("CORS_ORIGINS", "http://localhost:3000"),
         exams_base_path=os.getenv("EXAMS_BASE_PATH", "/data/exams"),
         bootstrap_token=os.getenv("BOOTSTRAP_TOKEN", ""),
+        exam_max_bytes=exam_limit,
     )

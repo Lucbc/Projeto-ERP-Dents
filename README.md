@@ -1,4 +1,4 @@
-﻿# ERP Dents (MVP)
+# ERP Dents (MVP)
 
 Monorepo para clínica pequena de ortodontia com arquitetura cliente-servidor, backend FastAPI (Clean Architecture Hexagonal), frontend React e persistência em Postgres + filesystem para exames.
 
@@ -91,7 +91,7 @@ Não execute o comando com o texto `NOME_ANTERIOR` literalmente. A migração de
 - Exames por paciente:
   - Listagem
   - Upload multipart
-  - Download/abrir no navegador
+  - Download; prévia de imagens PNG/JPG
 - Regra de conflito de agenda:
   - Bloqueia overlap para o mesmo dentista quando `status != cancelled`
 
@@ -516,3 +516,18 @@ docker compose up -d --build
 ```text
 http://localhost:8000/docs
 ```
+
+
+### Exames — etapa 1D.1
+
+Novos envios aceitam PDF, JPG e PNG até 20 MiB por arquivo. Defina `EXAM_MAX_BYTES=20971520` no arquivo de ambiente do servidor (ou `.env.homolog` na homologação) e recrie a API para alterar o limite. A tela consulta o valor configurado e oferece progresso e cancelamento. Cancelar pode ocorrer após o processamento; confira a lista atualizada.
+
+A prévia é exclusiva para PNG/JPG. PDFs e arquivos antigos ficam disponíveis por download. A verificação de assinatura não substitui antivírus nem validação completa do documento.
+
+Exclusões confirmadas no banco entram em uma fila de remoção física, retomada na inicialização da API e nas exclusões. Para tentar novamente manualmente na homologação:
+
+```powershell
+docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml exec api python -m scripts.cleanup_exam_files
+```
+
+Em outro ambiente, use seu projeto, arquivo de ambiente e Compose correspondentes. O comando processa até 1.000 intenções registradas; não apaga órfãos sem registro. Reconciliação após interrupção abrupta, quota global e backup completo de banco/exames permanecem pendentes. Evidências e limites: [homologação 1D.1](docs/homologacao-etapa-1D1.md).
