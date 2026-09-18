@@ -28,7 +28,8 @@ Em caso de bloqueio, identificar as consultas conflitantes no ambiente autorizad
 - **10 grupos do fluxo geral aprovados**, incluindo consulta/procedimentos, cobrança e exame.
 - **Chrome/HTTPS:** formulário aberto antes de outro operador reservar o horário; envio recebeu 409 real, mensagem apareceu e datas/notas do rascunho foram preservadas. Captura local conferida. Fixtures removidas pela API ao terminar. Sem mudança no código frontend.
 - **Atualização principal:** cópias `.data/homolog/pre-2A1.dump` e `pre-2A1-exams.tar`; fingerprints das tabelas de negócio e bytes dos exames coincidiram antes/depois. Migração em `0012_appointment_exclusion`, com três restrições presentes.
-- **Suíte backend completa: 108 testes aprovados**, incluindo PostgreSQL e ClamAV. CI remoto: registrar resultado no fechamento antes de considerar a entrega concluída.
+- **Suíte backend completa: 108 testes aprovados**, incluindo PostgreSQL e ClamAV.
+- **Validação remota aprovada:** implementação `db08833`, [GitHub Actions 35371561463](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35371561463), em 8min25s. Confirmados 108 testes backend, 42 frontend, smokes HTTP, builds e auditorias. Homologação local sem schemas de teste restantes. Etapa 2A.1 concluída; fechamento posterior somente documental.
 
 Comandos principais:
 
