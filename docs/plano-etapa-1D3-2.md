@@ -85,6 +85,6 @@ A restrição inicial a um recorte foi substituída pela autorização do usuár
 | Interface | Recarregar página, link direto, reconexão, falha de logout, cache e formulários sem dados da sessão anterior |
 | Operação | Smokes e CI atualizados, limites de upload mantidos, cópias e comparação de dados/arquivos, logs sem credenciais |
 
-## Validação desta entrega documental
+## Validação da preparação (histórico)
 
-Mapeamento baseado nos arquivos do repositório; referências técnicas consultadas em 17/09/2026. Revisão do diff e `git diff --check` são os checks desta entrega. Suítes e builds não precisam ser repetidos por alteração apenas documental. Implementação, Docker e testes da nova autenticação permanecem pendentes.
+Mapeamento baseado nos arquivos do repositório; referências técnicas consultadas em 17/09/2026. A preparação inicial foi documental. A implementação e homologação posteriores estão concluídas: [evidências da 1D.3.2](./homologacao-etapa-1D3-2.md).

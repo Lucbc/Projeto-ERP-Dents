@@ -22,7 +22,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
-| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1, 1D.2 e 1D.3.1 concluídas; preparação da 1D.3.2 iniciada | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
+| 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Em andamento:** 1D.3.2 — implementação integrada na homologação; 97 testes backend, 42 frontend, smokes HTTP e HTTPS aprovados. Conferência visual no Chrome aguarda confiança no certificado local; CI remoto também pendente. [Evidências e limitações](./homologacao-etapa-1D3-2.md). Não declarar a fase concluída antes desses checks.
+**Concluída:** 1D.3.2 — implementação `2ac8d60`, 97 testes backend, 42 frontend, smokes HTTP/HTTPS, Chrome e CI aprovados. [Evidências e limitações](./homologacao-etapa-1D3-2.md). Próximo recorte: **2A.1 — concorrência de agenda**. Instalação assistida/certificados da clínica/backup permanecem na etapa 5.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -172,7 +172,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Token continua em localStorage; nenhuma alteração em código executável, serviços, banco ou volumes nesta entrega. Suítes/builds não repetidos; validação documental por revisão do diff e `git diff --check`. Última homologação de execução continua sendo a 1D.3.1.
 - Publicar estes dois documentos com commit/push; conferir `git status`, `git log -1` e igualdade HEAD/remoto ao retomar. Não repetir revisão geral nem publicar `.env`, `.data`, credenciais ou backups.
 
-### Ponto de retomada atual — implementação da 1D.3.2 em 18/09/2026
+### Implementação da 1D.3.2 em 18/09/2026 (histórico)
 
 - Usuário ampliou a autorização para executar a fase inteira. Cookie/CSRF, metadados de sessão, coordenação entre abas e HTTPS implementados; homologação atualizada em `https://localhost:18443`. Dados de negócio e arquivos preservados, sem migração de esquema.
 - Não há JWT no login/localStorage; apenas marcador não autenticante. API rejeita bearer e JWT legado como cookie. Sessões anteriores exigem novo login; senhas existentes mantidas. Logout revoga sem apagar cookie para evitar corrida com respostas antigas.
@@ -180,3 +180,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Pendência local: Windows pede confirmação da CA `ERP Dents Homolog Local CA`, em `certutil -user -addstore Root .data/tls/homolog/ca.crt`; usuário já foi solicitado. Não automatizar aprovação de permissão de segurança nem ignorar certificado. Após confiar, rodar `scripts/smoke_browser_homolog.cjs` com Playwright e Chrome. O teste HTTP HTTPS já validou a cadeia com CA explícita.
 - Publicar implementação e acompanhar CI; depois registrar resultado e fechar documentação. Não repetir a revisão ou a suíte inteira sem mudança/falha que justifique. Próxima fase de negócio só após fechar esta validação.
 - Cópias locais `.data/homolog/pre-1D3-2.dump`, `pre-1D3-2-exams.tar` e fingerprints; certificados em `.data/tls`. Nada disso vai ao Git. Outra máquina precisa preparar seus próprios dados/segredos/certificados.
+
+### Ponto de retomada atual — 1D.3.2 concluída em 18/09/2026
+
+- Implementação `2ac8d60` publicada no `origin/main`. [CI 35339487918](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35339487918) aprovado em 7min45s: 97 testes backend, 42 frontend, HTTP, TLS/cookies, gateway, builds e auditorias. Cinco imagens sem achados conhecidos na consulta.
+- Confiança no certificado local resolvida; Chrome abriu HTTPS sem bypass. Smoke de navegador aprovado: login, painel/pacientes carregados, duas abas/reload, cookie HttpOnly/Secure e invisível ao JavaScript, nenhuma credencial no localStorage, falha de saída/retry e revogação. Capturas locais conferidas. Pendência de confirmação mencionada no histórico acima não está mais ativa.
+- Homologação ativa em **https://localhost:18443**. Banco em `0011_exam_file_deletions`; zero schemas de teste; dados/arquivos idênticos à cópia anterior. Inicializador de permissões com saída 0 é esperado. Nenhuma migração nova ou remoção de volume.
+- Etapa 1D encerrada no escopo previsto. Roteiro de HTTPS/configuração: `docs/sessao-e-https.md`. A instalação assistida, distribuição/renovação do certificado nos computadores da clínica e recuperação completa continuam na etapa 5; revisões de interação/telas na etapa 3. Produção real não foi implantada.
+- **Próximo recorte: 2A.1 — concorrência de agenda.** Mapear criação/edição/cancelamento e verificar duas reservas simultâneas do mesmo dentista/intervalo em PostgreSQL isolado. Definir proteção transacional e cenários de alteração concorrente antes de mudar o banco. Cobrança idempotente vem em recorte separado de 2A. Não repetir a revisão geral.
+- Fechamento posterior ao CI altera somente documentação e espera de carregamento no smoke manual, executado novamente com sucesso. Ao retomar, conferir `git status`, `git log -1` e remoto. Commit/push obrigatório; não publicar dados, credenciais, backups ou certificados locais.

@@ -2,7 +2,7 @@
 
 ## Estado em 18/09/2026
 
-Implementação integrada e testes locais de API/banco/frontend aprovados. **Fechamento pendente da conferência visual com certificado confiável no Chrome e do CI remoto.** O Windows solicitou confirmação interativa da CA local; solicitação encaminhada ao usuário. Não foi ignorado aviso de certificado. O teste HTTPS via biblioteca padrão validou a cadeia com a CA explícita.
+**Concluída.** Implementação integrada, testes locais de API/banco/frontend e conferência no Chrome aprovados. HTTPS abriu com certificado confiável, sem ignorar avisos. O teste HTTP também validou a cadeia com a CA explícita. Implementação publicada em `2ac8d60`; [GitHub Actions 35339487918](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35339487918) aprovado em 7min45s, com 97 testes backend, 42 frontend, smokes/builds/auditorias e cinco imagens de execução sem achados conhecidos na consulta.
 
 Base anterior: `8b17026`. Usuário autorizou executar a fase inteira após a preparação inicial. Contrato/configuração: [sessão e HTTPS](./sessao-e-https.md). Planejamento original: [1D.3.2](./plano-etapa-1D3-2.md).
 
@@ -31,15 +31,16 @@ Base anterior: `8b17026`. Usuário autorizou executar a fase inteira após a pre
 | HTTPS/cookie real | Cadeia TLS, SPA, flags, CSRF de login, abas antigas e revogação aprovados por `smoke_cookie_homolog.py` |
 | Gateway através de HTTPS | 80 requisições de saúde/oito clientes; p95 2,078 s; rejeições 413/503/408 confirmadas |
 | Preservação na atualização | Fingerprints das tabelas de negócio e SHA-256 dos arquivos idênticos; login/logout com credenciais existentes aprovados |
-| Chrome | Script preparado; primeira tentativa parou na confiança TLS. Aguardando confirmação local da CA, sem bypass |
+| Chrome | HTTPS confiável, login, painel/pacientes carregados, cookie invisível ao JavaScript, ausência de JWT no armazenamento, duas abas, reload, falha de logout/retry e revogação aprovados |
 
 Os testes locais usam exclusivamente `erp-dents-homolog` e dados fictícios. Cópias prévias de banco/exames e fingerprints ficam em `.data/homolog/pre-1D3-2*`, ignorados pelo Git; não constituem ensaio completo de restauração. Certificados e capturas também são locais.
 
-## Pendências de fechamento
+## Fechamento e ponto de parada
 
-1. Concluir a confiança da CA local no Windows e executar `scripts/smoke_browser_homolog.cjs`, verificando login, duas abas, reload, invisibilidade do cookie ao JavaScript e recuperação de logout.
-2. Acompanhar GitHub Actions do commit publicado, corrigindo eventuais falhas antes de declarar a fase concluída.
-3. Atualizar este relatório e o ponto de retomada com as evidências finais; confirmar árvore limpa e HEAD igual ao remoto.
+- `scripts/smoke_browser_homolog.cjs` aprovado no Chrome com TLS confiável; capturas locais de painel carregado e saída conferidas. O script espera indicadores/tabela carregados antes de prosseguir. Nenhuma alteração adicional de execução após o commit validado pelo CI; fechamento inclui documentação e esse refinamento do smoke manual.
+- Comparação final de registros/arquivos repetida após atualização: idênticos. Banco em `0011_exam_file_deletions`, zero schemas de teste restantes. Serviços ativos; saída 0 do inicializador de permissões é normal.
+- Acesso local: **https://localhost:18443**. Certificado de homologação atual válido até 17/12/2026; não é certificado de produção.
+- Próximo recorte: **2A.1 — concorrência de agenda**. Não iniciar essa implementação nesta entrega. Commit/push do fechamento e comparação de HEAD/remoto obrigatórios; consultar histórico Git ao retomar.
 
 ## Limites que permanecem em outras etapas
 
