@@ -26,7 +26,7 @@ Antes da atualização principal foram salvos banco, exames e fingerprints em `.
 - Suíte backend completa: **119 testes aprovados**, incluindo PostgreSQL e ClamAV.
 - Chrome/HTTPS: resposta perdida depois de commit, rascunho preservado, reenvio com a mesma chave e mesmo ID; consulta à API confirma exatamente uma cobrança. Captura conferida. Teste corrigido para usar CA explícita no Node e papel acessível `status` da notificação de sucesso; callback de interceptação trata erros sem imprimir cabeçalhos. Sessão de teste interrompido revogada e fixtures removidas.
 - Homologação principal em `0013_financial_generation`; fingerprints confirmaram registros anteriores e bytes dos exames preservados após atualização e smokes. Registros de repetição dos testes permanecem sem referência após limpar as cobranças fictícias.
-- CI remoto: registrar resultado no fechamento antes de considerar concluída.
+- **CI remoto aprovado:** implementação `d5d2484`, [GitHub Actions 35404599297](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35404599297), em 7min44s. Confirmados 119 testes backend, 42 frontend, smokes HTTP, builds e auditorias. Zero schemas de teste restantes na homologação local. Etapa 2A.2 concluída; fechamento posterior somente documental.
 
 Comandos específicos:
 
