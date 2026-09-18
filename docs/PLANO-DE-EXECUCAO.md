@@ -23,7 +23,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
-| 2A | Concorrência de agenda e cobrança | Em andamento: 2A.1 concluída; 2A.2 pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
+| 2A | Concorrência de agenda e cobrança | Em andamento: 2A.1 concluída; 2A.2 em validação | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** [2A.1 — concorrência de agenda](./homologacao-etapa-2A1.md). PostgreSQL impede sobreposição por dentista/paciente; criação/edição/reativação simultâneas e migração com dados existentes homologadas. Próxima subetapa: **2A.2 — geração idempotente de cobrança**, ainda não iniciada. Edição com controle de versão permanece na 2B.
+**Em andamento: 2A.2 — geração idempotente de cobrança**, base `b1e36c7`. Proteger um lançamento ativo por consulta no PostgreSQL e persistir chaves de repetição da geração, com testes concorrentes e atualização preservando dados. Última entrega concluída: [2A.1](./homologacao-etapa-2A1.md). Edição com controle de versão e histórico financeiro permanecem na 2B.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -190,7 +190,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próximo recorte: 2A.1 — concorrência de agenda.** Mapear criação/edição/cancelamento e verificar duas reservas simultâneas do mesmo dentista/intervalo em PostgreSQL isolado. Definir proteção transacional e cenários de alteração concorrente antes de mudar o banco. Cobrança idempotente vem em recorte separado de 2A. Não repetir a revisão geral.
 - Fechamento posterior ao CI altera somente documentação e espera de carregamento no smoke manual, executado novamente com sucesso. Ao retomar, conferir `git status`, `git log -1` e remoto. Commit/push obrigatório; não publicar dados, credenciais, backups ou certificados locais.
 
-### Ponto de retomada atual — 2A.1 concluída em 18/09/2026
+### Retomada da 2A.1 — concluída em 18/09/2026 (histórico)
 
 - Base `968acd3`. R16 reproduzido em PostgreSQL: duas reservas aceitas quando ambas passam a consulta anterior ao commit. Migração `0012_appointment_exclusion` implementa exclusão GiST por dentista/paciente (exceto cancelados), intervalo `[início, fim)` e fim maior que início. SQLSTATE `23P01` traduzido para 409 seguro.
 - Migração interrompe sem alterar consultas se encontrar dados antigos inválidos/sobrepostos. Extensão `btree_gist` em `public`; não é removida pelo downgrade. Janela de atualização necessária pelo bloqueio da tabela durante preflight/DDL.
@@ -198,3 +198,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Homologação principal já em `0012_appointment_exclusion`, três restrições conferidas. Cópias locais `pre-2A1.dump`, `pre-2A1-exams.tar` e fingerprints; dados/arquivos anteriores idênticos após migração e smokes. Nunca publicar essas cópias.
 - Evidências: `docs/homologacao-etapa-2A1.md`. Testes: `test_appointment_concurrency.py`, `smoke_agenda_homolog.py` e smoke manual de navegador. Sem alteração de frontend. Rolagem horizontal da lista permanece na etapa 3; perda de campos em duas edições da mesma consulta, na 2B.
 - Homologação ativa em **https://localhost:18443**, sem schemas descartáveis restantes. Fechamento posterior ao CI somente documental; conferir árvore limpa e HEAD remoto ao retomar. Próxima subetapa será **2A.2 — geração idempotente de cobrança**: reproduzir solicitações simultâneas/repetidas e definir garantia transacional antes de alterar a geração. Não repetir a revisão geral nem considerar toda a 2A concluída.
+
+### Ponto de retomada atual — 2A.2 em validação em 18/09/2026
+
+- Base `b1e36c7`. R17 reproduzido e corrigido: migração `0013_financial_generation` instala índice único parcial de cobrança ativa por consulta e tabela persistente de repetição. Preflight recusa duplicações antigas sem alterar cobranças; exige janela pelo bloqueio da tabela.
+- Geração aceita UUID opcional `idempotency_key`; mesma chave/parâmetros recupera o mesmo lançamento no estado atual, parâmetros diferentes geram 409. Chave e cobrança na mesma transação. Cancelamento libera nova operação, mas repetição antiga continua ligada ao cancelado; exclusão deixa registro sem referência que impede recriação tardia. Clientes sem chave mantêm conflito sequencial.
+- Frontend mantém chave na memória após falha com os mesmos dados; troca ao mudar parâmetros ou após sucesso. Recarregar perde a chave local, mas unicidade continua impedindo duplicação. Sem parcelamento, versionamento ou histórico financeiro completo nesta entrega.
+- Passaram 11 testes focados, 119 na suíte backend completa, 42 frontend, builds API/web, 11 grupos HTTP financeiros e 10 gerais. Chrome confirmou perda de resposta após commit e recuperação do mesmo ID com exatamente uma cobrança; captura conferida. Node do teste requer `NODE_EXTRA_CA_CERTS` com a CA local; não há aprovação de certificado pendente.
+- Homologação principal atualizada, dados anteriores/exames preservados por fingerprints; cópias locais `pre-2A2.dump`, `pre-2A2-exams.tar` e estado. Registros novos de repetição dos testes ficam sem referência após limpeza das fixtures. Não publicar `.data`, segredos ou certificados.
+- Evidências/contrato/comandos: `docs/homologacao-etapa-2A2.md`. Publicar implementação, acompanhar CI e registrar fechamento; conferir HEAD local/remoto. Próxima etapa após aprovação: **2B — edição concorrente e histórico financeiro**, a dividir em recortes pequenos antes de implementar. Não repetir a revisão geral.

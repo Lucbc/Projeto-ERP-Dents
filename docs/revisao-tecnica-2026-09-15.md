@@ -223,6 +223,8 @@ O fluxo consulta conflitos e depois insere. Duas recepcionistas podem consultar 
 
 ### R17 — P1 — Uma consulta pode gerar cobranças duplicadas simultâneas
 
+**Atualização 2A.2:** proteção PostgreSQL e chaves de repetição implementadas; evidências e limites em [homologação 2A.2](./homologacao-etapa-2A2.md). Descrição original abaixo preservada como histórico.
+
 **Risco identificado no desenho transacional.** [financial_use_cases.py](../apps/api/src/core/use_cases/financial_use_cases.py#L148), [financial_repository.py](../apps/api/src/adapters/db/repositories/financial_repository.py#L89), [models.py](../apps/api/src/adapters/db/models/models.py).
 
 A regra de um lançamento ativo por consulta usa consulta prévia, seguida de criação. `appointment_id` tem índice comum, sem unicidade parcial. Duplo clique/reenvio após timeout ou dois PCs podem passar pela verificação ao mesmo tempo.

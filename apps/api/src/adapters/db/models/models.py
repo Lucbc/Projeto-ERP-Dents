@@ -16,6 +16,7 @@ from sqlalchemy import (
     JSON,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -239,6 +240,8 @@ class FinancialEntryModel(Base):
         Index("ix_financial_entries_type_due_date", "entry_type", "due_date"),
         Index("ix_financial_entries_patient_due_date", "patient_id", "due_date"),
         Index("ix_financial_entries_dentist_due_date", "dentist_id", "due_date"),
+        Index("uq_financial_active_appointment", "appointment_id", unique=True,
+              postgresql_where=text("status <> 'cancelled' AND appointment_id IS NOT NULL")),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -279,6 +282,14 @@ class FinancialEntryModel(Base):
     patient: Mapped[PatientModel | None] = relationship("PatientModel")
     dentist: Mapped[DentistModel | None] = relationship("DentistModel")
     appointment: Mapped[AppointmentModel | None] = relationship("AppointmentModel")
+
+
+class FinancialGenerationModel(Base):
+    __tablename__ = "financial_generations"
+    key: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    request_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    entry_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("financial_entries.id", ondelete="SET NULL"), nullable=True)
 
 
 class ExamFileDeletionModel(Base):

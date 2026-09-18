@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -284,16 +284,26 @@ export function FinancialPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
+  const generationAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const generateFromAppointmentMutation = useMutation({
-    mutationFn: (payload: GenerateFromAppointmentForm) =>
-      financialService.generateFromAppointment(payload.appointment_id, {
+    mutationFn: (payload: GenerateFromAppointmentForm) => {
+      const request = {
         due_date: nullable(payload.due_date),
         status: payload.status,
         paid_at: payload.paid_at ? fromInputDateTime(payload.paid_at) : null,
         payment_method: payload.payment_method || null,
         notes: nullable(payload.notes),
-      }),
+      };
+      const fingerprint = JSON.stringify([payload.appointment_id, request]);
+      if (generationAttempt.current?.fingerprint !== fingerprint) {
+        generationAttempt.current = { fingerprint, key: crypto.randomUUID() };
+      }
+      return financialService.generateFromAppointment(payload.appointment_id, {
+        ...request, idempotency_key: generationAttempt.current.key,
+      });
+    },
     onSuccess: () => {
+      generationAttempt.current = null;
       toast("Lancamento financeiro gerado com base na consulta.");
       setOpenGenerateModal(false);
       generateForm.reset();

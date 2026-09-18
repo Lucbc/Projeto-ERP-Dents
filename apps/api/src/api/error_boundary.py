@@ -13,6 +13,8 @@ def failure_response(exc, request_id):
         status, message = 409, "Conflito de agenda: o dentista ou paciente já possui consulta nesse horário. Atualize a agenda e escolha outro horário."
     elif isinstance(exc, IntegrityError) and state == "23505":
         status, message = 409, "Já existe um registro com esses dados. Revise o cadastro."
+        if getattr(getattr(exc.orig, "diag", None), "constraint_name", None) == "uq_financial_active_appointment":
+            message = "Esta consulta já possui um lançamento financeiro ativo. Atualize o financeiro."
     elif isinstance(exc, IntegrityError) and state == "23503":
         status, message = 409, "O registro possui vínculos ou uma referência não está mais disponível. Atualize os dados e confira os vínculos."
     elif isinstance(exc, IntegrityError) and state in ("23502", "23514"):

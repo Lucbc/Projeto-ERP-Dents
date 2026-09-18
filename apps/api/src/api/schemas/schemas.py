@@ -332,6 +332,7 @@ class FinancialEntryUpdateRequest(BaseModel):
 
 
 class FinancialGenerateFromAppointmentRequest(BaseModel):
+    idempotency_key: UUID | None = None
     due_date: date | None = None
     paid_at: datetime | None = None
     status: FinancialEntryStatus = FinancialEntryStatus.pending

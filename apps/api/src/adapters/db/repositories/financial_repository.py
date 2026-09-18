@@ -5,8 +5,10 @@ from uuid import UUID
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
-from src.adapters.db.models.models import DentistModel, FinancialEntryModel, PatientModel
+from src.adapters.db.models.models import DentistModel, FinancialEntryModel, FinancialGenerationModel, PatientModel
+from src.core.domain.exceptions import ConflictError
 from src.core.domain.entities import (
     FinancialEntry,
     FinancialEntryStatus,
@@ -101,6 +103,38 @@ class SqlAlchemyFinancialRepository(FinancialRepository):
         if row is None:
             return None
         return self._to_entity(row[0], patient_name=row[1], dentist_name=row[2])
+
+    def get_generation(self, key: UUID, request_hash: str) -> FinancialEntry | None:
+        receipt = self.session.get(FinancialGenerationModel, key)
+        if receipt is None:
+            return None
+        if receipt.request_hash != request_hash:
+            raise ConflictError("Esta chave de repeticao ja foi usada com outros dados.")
+        entry = self.get(receipt.entry_id) if receipt.entry_id else None
+        if entry is None:
+            raise ConflictError("O lancamento desta operacao foi excluido. Atualize o financeiro antes de continuar.")
+        return entry
+
+    def create_generated(self, data: dict, key: UUID | None, request_hash: str) -> FinancialEntry:
+        try:
+            item = FinancialEntryModel(**data)
+            self.session.add(item)
+            self.session.flush()
+            if key is not None:
+                self.session.add(FinancialGenerationModel(key=key, request_hash=request_hash, entry_id=item.id))
+            self.session.commit()
+            self.session.refresh(item)
+            return self._to_entity(item)
+        except IntegrityError as exc:
+            self.session.rollback()
+            constraint = getattr(getattr(exc.orig, 'diag', None), 'constraint_name', None)
+            if getattr(exc.orig, 'sqlstate', None) != '23505' or constraint not in (
+                'uq_financial_active_appointment', 'financial_generations_pkey'):
+                raise
+            existing = self.get_generation(key, request_hash) if key is not None else None
+            if existing is not None:
+                return existing
+            raise ConflictError("A consulta ja possui um lancamento financeiro ativo.") from None
 
     def create(self, data: dict) -> FinancialEntry:
         item = FinancialEntryModel(**data)

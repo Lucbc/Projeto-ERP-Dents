@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from uuid import UUID
+import hashlib
+import json
 
 from src.core.domain.entities import (
     FinancialEntry,
@@ -146,13 +148,17 @@ class FinancialUseCases:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
 
     def generate_from_appointment(self, appointment_id: UUID, data: dict) -> FinancialEntry:
+        key = data.get("idempotency_key")
+        request_hash = hashlib.sha256(json.dumps(
+            {"appointment_id": str(appointment_id), **{k: v for k, v in data.items() if k != "idempotency_key"}},
+            sort_keys=True, default=str).encode()).hexdigest()
+        if key is not None:
+            existing = self.financial_repository.get_generation(key, request_hash)
+            if existing is not None:
+                return existing
         appointment = self.appointment_repository.get(appointment_id)
         if appointment is None:
             raise NotFoundError("Consulta nao encontrada.")
-
-        existing = self.financial_repository.get_by_appointment(appointment_id)
-        if existing is not None:
-            raise ConflictError("Esta consulta ja possui lancamento financeiro vinculado.")
 
         if not appointment.procedure_ids:
             raise ValidationError("A consulta nao possui procedimentos vinculados.")
@@ -188,10 +194,10 @@ class FinancialUseCases:
             "notes": data.get("notes"),
         }
 
-        normalized = self._normalize_input(payload)
-        return self.financial_repository.create(normalized)
+        normalized = self._normalize_input(payload, check_appointment_conflict=False)
+        return self.financial_repository.create_generated(normalized, key, request_hash)
 
-    def _normalize_input(self, data: dict, current_id: UUID | None = None) -> dict:
+    def _normalize_input(self, data: dict, current_id: UUID | None = None, check_appointment_conflict: bool = True) -> dict:
         normalized: dict = {}
 
         entry_type = self._normalize_entry_type(data.get("entry_type"))
@@ -250,7 +256,7 @@ class FinancialUseCases:
             if not procedure_ids:
                 procedure_ids = list(appointment.procedure_ids)
 
-            existing = self.financial_repository.get_by_appointment(appointment_id)
+            existing = self.financial_repository.get_by_appointment(appointment_id) if check_appointment_conflict else None
             if existing is not None and existing.id != current_id:
                 raise ConflictError("A consulta ja possui um lancamento financeiro ativo.")
 

@@ -101,6 +101,7 @@ export interface FinancialPayload {
 }
 
 export interface GenerateFromAppointmentPayload {
+  idempotency_key?: string;
   due_date?: string | null;
   paid_at?: string | null;
   status?: FinancialEntryStatus;

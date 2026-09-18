@@ -56,6 +56,7 @@ jobs:
           python scripts/smoke_homolog.py
           python scripts/smoke_cookie_homolog.py
           python scripts/smoke_agenda_homolog.py
+          python scripts/smoke_financial_homolog.py
           python scripts/smoke_errors_homolog.py
           python scripts/smoke_sessions_homolog.py
           python scripts/smoke_auth_hardening_homolog.py
