@@ -22,7 +22,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
-| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1 e 1D.2 concluídas | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
+| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1, 1D.2 e 1D.3.1 concluídas; 1D.3.2 pendente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Em fechamento:** 1D.3.1 — erros e recuperação, base `ab27cad`, validada localmente. Falta publicar e conferir o CI. Migração de sessão/cookie fica em 1D.3.2, incluindo CSRF e transporte seguro. Evidências em [homologação 1D.3.1](./homologacao-etapa-1D3-1.md).
+**Concluída:** 1D.3.1 — erros e recuperação, implementação publicada em `131ed9a`, validação local e CI aprovados. Próxima entrega: 1D.3.2 — sessão/cookie, incluindo CSRF e transporte seguro. Evidências em [homologação 1D.3.1](./homologacao-etapa-1D3-1.md).
 
 ### Ponto de retomada — 15/09/2026
 
@@ -152,7 +152,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Publicação e validação remota:** implementação `a3b281e` enviada ao `origin/main`; [GitHub Actions 35260375483](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35260375483) aprovado em 6min42s, incluindo Docker limpo, 81 testes backend, 34 frontend, smokes e auditorias. Fechamento posterior somente documental. Ao retomar, consultar `git log -1`, `git status` e remoto; não publicar `.data`, `.env`, credenciais, dumps ou volumes.
 - **Próximo recorte após fechar 1D.2:** 1D.3 — tratamento de erros e fechamento de segurança, incluindo mensagens internas, exceções duplicadas e decisão sobre token no navegador. Não iniciar concorrência de agenda/cobrança antes desse fechamento; HTTPS/instalador/backup assistido seguem na etapa 5.
 
-### Ponto de retomada atual — 1D.3.1 validada localmente
+### Ponto de retomada atual — 1D.3.1 concluída em 17/09/2026
 
 - Escopo comunicado: erros e recuperação nesta entrega; sessão/cookie/CSRF em recorte separado 1D.3.2. Não declarar removido o token de localStorage.
 - Implementados middleware de falhas com mensagens seguras, referência gerada no servidor e no-store; validação sem input/ctx; rollback explícito da dependência de banco; reexports canônicos das exceções/handlers. PostgreSQL com logs sem statement/parâmetros/detalhes de linhas.
@@ -160,5 +160,5 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Corrigido erro adicional na exclusão de procedimento referenciado: `passive_deletes="all"` deixa a FK impedir a operação, preservando vínculos e retornando 409. Sem migração de banco.
 - Passaram 87 testes backend distintos (86 na suíte + um novo caso de streaming no grupo focado), 38 frontend, dez grupos HTTP de erros e dez gerais. Builds aprovados. Chrome confirmou falha real de agenda com API parada, recuperação sem novo login e formulário preservado ao recarregar cadastros. API religada e homologação atualizada.
 - Cópias locais `pre-1D3-1.dump`/`pre-1D3-1-exams.tar`; registros/bytes preservados, banco em `0011_exam_file_deletions`. Sessão de teste expirou durante pausa do usuário; login com credenciais existentes aprovado, sem reset. Não publicar dados/segredos.
-- Testes novos: `test_error_handling.py`, `errors.test.tsx`, `smoke_errors_homolog.py`; workflow inclui o smoke de erros. Falta commit/push e resultado remoto, depois fechar esta entrega. Conferir árvore e remoto.
+- Testes novos: `test_error_handling.py`, `errors.test.tsx`, `smoke_errors_homolog.py`; workflow inclui o smoke de erros. Implementação `131ed9a` publicada; [CI 35298005705](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35298005705) aprovado em 6min53s com os 87 testes backend juntos, 38 frontend, smokes/builds/auditorias. Cinco imagens sem achados na consulta. Commit posterior apenas documental. Conferir árvore e remoto ao retomar; não repetir esta etapa sem novo motivo.
 - Próxima entrega: **1D.3.2 — sessão por cookie protegido, CSRF e transporte**. Token continua em localStorage e risco está explícito no relatório. Não considerar toda a 1D.3 concluída. Revisão dos demais estados de tela/modais permanece na etapa 3; R37 está parcialmente tratado.

@@ -1,6 +1,8 @@
 # Etapa 1D.3.1 — erros e recuperação
 
-Base: `ab27cad`. Ambiente exclusivo: `erp-dents-homolog`, dados fictícios. Validação local concluída em 17/09/2026; publicação e execução remota serão registradas no fechamento.
+Base: `ab27cad`. Implementação publicada em `131ed9a`. Ambiente exclusivo: `erp-dents-homolog`, dados fictícios. Validação local e remota concluída em 17/09/2026 (horário de São Paulo).
+
+**GitHub Actions aprovado:** [execução 35298005705](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35298005705), commit `131ed9a7b5db2e08c5fcd24619858ef1018f2d9f`, job em **6min53s**. Suíte final de **87 testes backend e 38 frontend**, smokes HTTP (incluindo os novos erros reais), builds, auditorias de pacotes e das cinco imagens aprovados. As cinco imagens retornaram zero achados na consulta. Fechamento posterior somente documental, sem alteração de código testado.
 
 ## Mudanças
 
@@ -20,7 +22,7 @@ Base: `ab27cad`. Ambiente exclusivo: `erp-dents-homolog`, dados fictícios. Vali
 - Frontend: **38 testes aprovados**, incluindo erro/recuperação da agenda, 422, respostas de proxy e disputa entre temporizadores. TypeScript/Vite e Nginx aprovados; aviso anterior de bundle acima de 500 kB permanece.
 - Testes novos de API verificam classificação, CORS, referência não controlada pelo cliente, no-store, privacidade das respostas/logs do handler, identidade das exceções, conexão PostgreSQL realmente indisponível e interrupção de streaming.
 - Smoke HTTP: duplicidade real de especialidade, gravação posterior ao erro, validação com conteúdo fictício privado e exclusão de procedimento referenciado; registros preservados. O ensaio ocorre em schema/API descartáveis, sem alterar os dados principais.
-- Backend: **87 testes distintos aprovados localmente** — suíte de 86 e, após incluir o cenário de streaming, seis testes focados (cinco repetidos + um novo). O ajuste final de exclusão do ORM foi verificado novamente pelo smoke HTTP com PostgreSQL real. O CI executará os 87 juntos na versão final.
+- Backend: **87 testes distintos aprovados localmente** — suíte de 86 e, após incluir o cenário de streaming, seis testes focados (cinco repetidos + um novo). O ajuste final de exclusão do ORM foi verificado novamente pelo smoke HTTP com PostgreSQL real. O CI executou os 87 juntos na versão final, todos aprovados.
 - Smoke de erros: **dez grupos aprovados**, incluindo preparação/limpeza do ambiente isolado; fluxo geral: **dez grupos aprovados**, com cadastro, agenda, financeiro e bytes de exame. A verificação de privacidade confirmou ausência do marcador fictício de cadastro duplicado nos logs novos da API e do PostgreSQL.
 - Atualização principal: cópias locais `.data/homolog/pre-1D3-1.dump` e `pre-1D3-1-exams.tar`; fingerprints das tabelas de negócio e hashes dos arquivos coincidiram antes/depois. Banco permanece em `0011_exam_file_deletions`, sem nova migração. Volumes preservados.
 - A sessão do roteiro pré-atualização expirou durante a interrupção entre mensagens do usuário. Confirmada a expiração prevista; um novo login com as mesmas credenciais e o logout passaram. Não foi necessário redefinir senha ou segredo.
