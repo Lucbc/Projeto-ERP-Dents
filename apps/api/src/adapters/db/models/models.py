@@ -171,7 +171,9 @@ class RolePermissionModel(Base):
 
 class AppointmentModel(Base):
     __tablename__ = "appointments"
+    # PostgreSQL GiST exclusion constraints are installed by migration 0012.
     __table_args__ = (
+        CheckConstraint("end_at > start_at", name="ck_appointments_positive_interval"),
         Index("ix_appointments_dentist_start", "dentist_id", "start_at"),
         Index("ix_appointments_patient_start", "patient_id", "start_at"),
     )

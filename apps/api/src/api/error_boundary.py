@@ -9,7 +9,9 @@ from sqlalchemy.exc import IntegrityError, OperationalError, TimeoutError as Poo
 def failure_response(exc, request_id):
     state = getattr(getattr(exc, "orig", None), "sqlstate", None)
     status, message = 500, "Não foi possível concluir a operação. Confira os dados antes de tentar novamente."
-    if isinstance(exc, IntegrityError) and state == "23505":
+    if isinstance(exc, IntegrityError) and state == "23P01":
+        status, message = 409, "Conflito de agenda: o dentista ou paciente já possui consulta nesse horário. Atualize a agenda e escolha outro horário."
+    elif isinstance(exc, IntegrityError) and state == "23505":
         status, message = 409, "Já existe um registro com esses dados. Revise o cadastro."
     elif isinstance(exc, IntegrityError) and state == "23503":
         status, message = 409, "O registro possui vínculos ou uma referência não está mais disponível. Atualize os dados e confira os vínculos."

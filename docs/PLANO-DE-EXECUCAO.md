@@ -23,7 +23,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
-| 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
+| 2A | Concorrência de agenda e cobrança | Em andamento: 2A.1 em validação; 2A.2 pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** 1D.3.2 — implementação `2ac8d60`, 97 testes backend, 42 frontend, smokes HTTP/HTTPS, Chrome e CI aprovados. [Evidências e limitações](./homologacao-etapa-1D3-2.md). Próximo recorte: **2A.1 — concorrência de agenda**. Instalação assistida/certificados da clínica/backup permanecem na etapa 5.
+**Em andamento:** 2A.1 — concorrência de agenda. Implementar restrições PostgreSQL para sobreposição por dentista/paciente, testar criação/edição/reativação simultâneas e migração com dados existentes. Não alterar automaticamente reservas conflitantes. Cobrança idempotente fica na 2A.2; edição com controle de versão na 2B. Última entrega concluída: [1D.3.2](./homologacao-etapa-1D3-2.md).
 
 ### Ponto de retomada — 15/09/2026
 
@@ -181,7 +181,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Publicar implementação e acompanhar CI; depois registrar resultado e fechar documentação. Não repetir a revisão ou a suíte inteira sem mudança/falha que justifique. Próxima fase de negócio só após fechar esta validação.
 - Cópias locais `.data/homolog/pre-1D3-2.dump`, `pre-1D3-2-exams.tar` e fingerprints; certificados em `.data/tls`. Nada disso vai ao Git. Outra máquina precisa preparar seus próprios dados/segredos/certificados.
 
-### Ponto de retomada atual — 1D.3.2 concluída em 18/09/2026
+### Retomada da 1D.3.2 — concluída em 18/09/2026 (histórico)
 
 - Implementação `2ac8d60` publicada no `origin/main`. [CI 35339487918](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35339487918) aprovado em 7min45s: 97 testes backend, 42 frontend, HTTP, TLS/cookies, gateway, builds e auditorias. Cinco imagens sem achados conhecidos na consulta.
 - Confiança no certificado local resolvida; Chrome abriu HTTPS sem bypass. Smoke de navegador aprovado: login, painel/pacientes carregados, duas abas/reload, cookie HttpOnly/Secure e invisível ao JavaScript, nenhuma credencial no localStorage, falha de saída/retry e revogação. Capturas locais conferidas. Pendência de confirmação mencionada no histórico acima não está mais ativa.
@@ -189,3 +189,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Etapa 1D encerrada no escopo previsto. Roteiro de HTTPS/configuração: `docs/sessao-e-https.md`. A instalação assistida, distribuição/renovação do certificado nos computadores da clínica e recuperação completa continuam na etapa 5; revisões de interação/telas na etapa 3. Produção real não foi implantada.
 - **Próximo recorte: 2A.1 — concorrência de agenda.** Mapear criação/edição/cancelamento e verificar duas reservas simultâneas do mesmo dentista/intervalo em PostgreSQL isolado. Definir proteção transacional e cenários de alteração concorrente antes de mudar o banco. Cobrança idempotente vem em recorte separado de 2A. Não repetir a revisão geral.
 - Fechamento posterior ao CI altera somente documentação e espera de carregamento no smoke manual, executado novamente com sucesso. Ao retomar, conferir `git status`, `git log -1` e remoto. Commit/push obrigatório; não publicar dados, credenciais, backups ou certificados locais.
+
+### Ponto de retomada atual — 2A.1 em validação em 18/09/2026
+
+- Base `968acd3`. R16 reproduzido em PostgreSQL: duas reservas aceitas quando ambas passam a consulta anterior ao commit. Migração `0012_appointment_exclusion` implementa exclusão GiST por dentista/paciente (exceto cancelados), intervalo `[início, fim)` e fim maior que início. SQLSTATE `23P01` traduzido para 409 seguro.
+- Migração interrompe sem alterar consultas se encontrar dados antigos inválidos/sobrepostos. Extensão `btree_gist` em `public`; não é removida pelo downgrade. Janela de atualização necessária pelo bloqueio da tabela durante preflight/DDL.
+- Passaram 11 testes focados com barreiras/conexões separadas, 12 grupos HTTP e 10 do fluxo geral. Chrome confirmou 409 real com rascunho/datas preservados; fixtures removidas. Suíte backend completa aprovada: 108 testes; CI ainda deve ser acompanhado após publicar.
+- Homologação principal já em `0012_appointment_exclusion`, três restrições conferidas. Cópias locais `pre-2A1.dump`, `pre-2A1-exams.tar` e fingerprints; dados/arquivos anteriores idênticos após migração e smokes. Nunca publicar essas cópias.
+- Evidências: `docs/homologacao-etapa-2A1.md`. Testes: `test_appointment_concurrency.py`, `smoke_agenda_homolog.py` e smoke manual de navegador. Sem alteração de frontend. Rolagem horizontal da lista permanece na etapa 3; perda de campos em duas edições da mesma consulta, na 2B.
+- Fechar suíte/CI, publicar commit/push e conferir HEAD remoto antes de avançar. Próxima subetapa será **2A.2 — geração idempotente de cobrança**; não considerar toda a 2A concluída.

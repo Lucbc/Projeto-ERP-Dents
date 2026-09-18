@@ -94,7 +94,7 @@ class ErrorHandlingTests(unittest.TestCase):
         self.assertEqual(call(self.app, '/conflict')[0], 409)
 
     def test_infrastructure_failures_are_classified_without_raw_database_details(self):
-        cases = [(IntegrityError, '23505', 409), (IntegrityError, '23503', 409),
+        cases = [(IntegrityError, '23P01', 409), (IntegrityError, '23505', 409), (IntegrityError, '23503', 409),
                  (IntegrityError, '23514', 422), (OperationalError, '40001', 409),
                  (OperationalError, '40P01', 409), (OperationalError, '08006', 503),
                  (ProgrammingError, '42601', 500)]

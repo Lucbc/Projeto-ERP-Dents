@@ -213,6 +213,8 @@ O QueryClient é global e não é limpo no logout. As chaves de dados não inclu
 
 ### R16 — P1 — Conflito de agenda não é garantido sob concorrência
 
+**Atualização 2A.1:** restrições de exclusão por dentista/paciente e intervalo positivo implementadas no PostgreSQL; testes reproduzem a corrida anterior e verificam a proteção. [Evidências e estado da homologação](./homologacao-etapa-2A1.md). A descrição abaixo registra o problema original.
+
 **Risco identificado no desenho transacional.** [appointment_use_cases.py](../apps/api/src/core/use_cases/appointment_use_cases.py#L56), [appointment_repository.py](../apps/api/src/adapters/db/repositories/appointment_repository.py#L63), [models.py](../apps/api/src/adapters/db/models/models.py#L171).
 
 O fluxo consulta conflitos e depois insere. Duas recepcionistas podem consultar simultaneamente, ambas obterem “livre” e ambas gravarem. Os modelos e migrações não têm restrições de exclusão por intervalo nem outra serialização equivalente.

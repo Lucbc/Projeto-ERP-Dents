@@ -55,6 +55,7 @@ jobs:
           docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml run --rm --no-deps -e RUN_HOMOLOG_TESTS=1 -e RUN_CLAMAV_TESTS=1 api python -m unittest discover -s tests -v
           python scripts/smoke_homolog.py
           python scripts/smoke_cookie_homolog.py
+          python scripts/smoke_agenda_homolog.py
           python scripts/smoke_errors_homolog.py
           python scripts/smoke_sessions_homolog.py
           python scripts/smoke_auth_hardening_homolog.py
