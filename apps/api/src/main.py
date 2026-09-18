@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.error_handlers import register_exception_handlers
+from src.api.error_boundary import SafeErrorMiddleware
 from src.api.routers.appointments_router import router as appointments_router
 from src.api.routers.auth_router import router as auth_router
 from src.api.routers.consultations_router import router as consultations_router
@@ -28,10 +29,11 @@ settings = get_settings()
 app = FastAPI(
     title="ERP Dents API",
     version="0.1.0",
-    description="API da clÃ­nica de ortodontia (MVP).",
+    description="API da clínica de ortodontia (MVP).",
 )
 
 app.add_middleware(ExamUploadLimitMiddleware, max_bytes=settings.exam_max_bytes)
+app.add_middleware(SafeErrorMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

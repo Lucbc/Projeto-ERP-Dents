@@ -113,6 +113,7 @@ class ProcedureModel(Base):
     appointment_links: Mapped[list["AppointmentProcedureModel"]] = relationship(
         "AppointmentProcedureModel",
         back_populates="procedure",
+        passive_deletes="all",
     )
 
 

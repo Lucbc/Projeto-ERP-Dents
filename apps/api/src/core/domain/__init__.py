@@ -1,23 +1,12 @@
-﻿class DomainError(Exception):
-    pass
+"""Compatibility exports; exceptions have one canonical identity."""
+from .exceptions import (
+    ConflictError, DomainError, ForbiddenError, NotFoundError,
+    PayloadTooLargeError, RateLimitError, ServiceUnavailableError,
+    StorageUnavailableError, UnauthorizedError, ValidationError,
+)
 
-
-class ValidationError(DomainError):
-    pass
-
-
-class ConflictError(DomainError):
-    pass
-
-
-class NotFoundError(DomainError):
-    pass
-
-
-class UnauthorizedError(DomainError):
-    pass
-
-
-class ForbiddenError(DomainError):
-    pass
-
+__all__ = [
+    "ConflictError", "DomainError", "ForbiddenError", "NotFoundError",
+    "PayloadTooLargeError", "RateLimitError", "ServiceUnavailableError",
+    "StorageUnavailableError", "UnauthorizedError", "ValidationError",
+]

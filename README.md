@@ -565,3 +565,9 @@ Revise primeiro `requirements.in`/`package.json`; o script resolve as versões p
 A auditoria de imagens exige as imagens de homologação construídas. Relatórios ficam em `.data/security`, fora do Git. Pacotes com avisos fazem a auditoria falhar; nas imagens, alertas altos/críticos bloqueiam o pipeline e os demais ficam no relatório. Erros de consulta não contam como aprovação. Fixar versões exige revisão periódica: não instala futuras correções automaticamente.
 
 Resultados, comandos e limites: [homologação 1D.2](docs/homologacao-etapa-1D2.md).
+
+### Erros e recuperação — etapa 1D.3.1
+
+Conflitos de cadastro ou registros em uso recebem orientação sem expor detalhes do banco. Em falhas internas, a mensagem traz uma referência para o responsável pelo sistema. Confira se a gravação foi realizada antes de tentar novamente; não há repetição automática de gravações.
+
+A agenda mostra carregamento e falha separadamente de uma agenda vazia, com opção de recarregar. Detalhes, testes e limites: [homologação 1D.3.1](docs/homologacao-etapa-1D3-1.md). A migração do token para cookie protegido está prevista na 1D.3.2 e ainda não foi aplicada.

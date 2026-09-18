@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** 1D.2 — dependências e builds reproduzíveis, implementação publicada em `a3b281e`, validação local e GitHub Actions aprovadas. Homologação atualizada com dados preservados. Próximo recorte: 1D.3 — tratamento de erros e fechamento de segurança. Ponto de retomada ao final deste arquivo; evidências em [homologação 1D.2](./homologacao-etapa-1D2.md).
+**Em fechamento:** 1D.3.1 — erros e recuperação, base `ab27cad`, validada localmente. Falta publicar e conferir o CI. Migração de sessão/cookie fica em 1D.3.2, incluindo CSRF e transporte seguro. Evidências em [homologação 1D.3.1](./homologacao-etapa-1D3-1.md).
 
 ### Ponto de retomada — 15/09/2026
 
@@ -140,7 +140,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Retenção clínica, auditoria de prontuário, autorização por paciente, HTTPS e recuperação assistida permanecem nas etapas próprias. Antivírus não garante detectar toda ameaça nem validar semanticamente documentos. Este fechamento trata as pendências técnicas de arquivos, não a liberação global para produção.
 - **Próximo recorte previsto: 1D.2 — dependências e builds reproduzíveis**, ainda não iniciado. Conferir `git status`, `git log -1` e remoto ao retomar. Commit/push obrigatório nesta entrega; não publicar arquivos locais, credenciais ou backups.
 
-### Ponto de retomada atual — 1D.2, 17/09/2026
+### Retomada da 1D.2 — 17/09/2026 (histórico)
 
 - Dependências Python/npm fixadas com locks completos; bases Docker fixadas por digest. PyJWT substitui JOSE/ecdsa, mantendo HS256, senhas e sessões. Node 24, Router 7, Vite 7 e Vitest 4 homologados. Não repetir a revisão inicial de dependências.
 - API Alpine sem compilador/pip, UID 10001. Novo serviço one-shot `exam-storage-init` ajusta permissões do volume dedicado sem alterar bytes/seguir links. Saída 0 é estado normal, não falha de serviço.
@@ -151,3 +151,14 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Novo workflow `.github/workflows/verify.yml` inclui dependências, frontend, backend PostgreSQL, smokes HTTP/ClamAV e imagens. Jenkins permanece exemplo complementar, com locks e testes, sem se passar por suíte integrada.
 - **Publicação e validação remota:** implementação `a3b281e` enviada ao `origin/main`; [GitHub Actions 35260375483](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35260375483) aprovado em 6min42s, incluindo Docker limpo, 81 testes backend, 34 frontend, smokes e auditorias. Fechamento posterior somente documental. Ao retomar, consultar `git log -1`, `git status` e remoto; não publicar `.data`, `.env`, credenciais, dumps ou volumes.
 - **Próximo recorte após fechar 1D.2:** 1D.3 — tratamento de erros e fechamento de segurança, incluindo mensagens internas, exceções duplicadas e decisão sobre token no navegador. Não iniciar concorrência de agenda/cobrança antes desse fechamento; HTTPS/instalador/backup assistido seguem na etapa 5.
+
+### Ponto de retomada atual — 1D.3.1 validada localmente
+
+- Escopo comunicado: erros e recuperação nesta entrega; sessão/cookie/CSRF em recorte separado 1D.3.2. Não declarar removido o token de localStorage.
+- Implementados middleware de falhas com mensagens seguras, referência gerada no servidor e no-store; validação sem input/ctx; rollback explícito da dependência de banco; reexports canônicos das exceções/handlers. PostgreSQL com logs sem statement/parâmetros/detalhes de linhas.
+- Interface interpreta 422, oculta mensagens técnicas 5xx, mostra falha/carregamento da agenda com recuperação e mantém cadastros do formulário durante falha. Temporizador de toast corrigido. UTF-8 de descrição da API e notificação de permissões corrigido.
+- Corrigido erro adicional na exclusão de procedimento referenciado: `passive_deletes="all"` deixa a FK impedir a operação, preservando vínculos e retornando 409. Sem migração de banco.
+- Passaram 87 testes backend distintos (86 na suíte + um novo caso de streaming no grupo focado), 38 frontend, dez grupos HTTP de erros e dez gerais. Builds aprovados. Chrome confirmou falha real de agenda com API parada, recuperação sem novo login e formulário preservado ao recarregar cadastros. API religada e homologação atualizada.
+- Cópias locais `pre-1D3-1.dump`/`pre-1D3-1-exams.tar`; registros/bytes preservados, banco em `0011_exam_file_deletions`. Sessão de teste expirou durante pausa do usuário; login com credenciais existentes aprovado, sem reset. Não publicar dados/segredos.
+- Testes novos: `test_error_handling.py`, `errors.test.tsx`, `smoke_errors_homolog.py`; workflow inclui o smoke de erros. Falta commit/push e resultado remoto, depois fechar esta entrega. Conferir árvore e remoto.
+- Próxima entrega: **1D.3.2 — sessão por cookie protegido, CSRF e transporte**. Token continua em localStorage e risco está explícito no relatório. Não considerar toda a 1D.3 concluída. Revisão dos demais estados de tela/modais permanece na etapa 3; R37 está parcialmente tratado.

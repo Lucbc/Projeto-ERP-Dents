@@ -87,7 +87,7 @@ export function PermissionsPage() {
       setSavingRole(payload.role);
     },
     onSuccess: (_, payload) => {
-      toast(`PermissÃµes de ${userRoleLabels[payload.role]} atualizadas.`);
+      toast(`Permissões de ${userRoleLabels[payload.role]} atualizadas.`);
       void queryClient.invalidateQueries({ queryKey: ["permissions"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -124,23 +124,23 @@ export function PermissionsPage() {
   };
 
   if (permissionsQuery.isLoading) {
-    return <LoadingState message="Carregando permissÃµes..." />;
+    return <LoadingState message="Carregando permissões..." />;
   }
 
   if (permissionsQuery.isError) {
-    return <ErrorState message="Erro ao carregar permissÃµes." />;
+    return <ErrorState message="Erro ao carregar permissões." />;
   }
 
   if (!permissionsQuery.data || permissionsQuery.data.items.length === 0) {
-    return <EmptyState message="Nenhuma permissÃ£o cadastrada." />;
+    return <EmptyState message="Nenhuma permissão cadastrada." />;
   }
 
   return (
     <div className="space-y-4">
       <Card>
-        <h2 className="font-display text-xl font-semibold text-slate-800">PermissÃµes por Perfil</h2>
+        <h2 className="font-display text-xl font-semibold text-slate-800">Permissões por Perfil</h2>
         <p className="text-sm text-slate-500">
-          O perfil Administrador sempre possui acesso total e nÃ£o pode ser alterado.
+          O perfil Administrador sempre possui acesso total e não pode ser alterado.
         </p>
       </Card>
 
@@ -163,7 +163,7 @@ export function PermissionsPage() {
               <div>
                 <h3 className="font-semibold text-slate-800">{userRoleLabels[role]}</h3>
                 <p className="text-xs text-slate-500">
-                  {isOpen ? "Clique para recolher as permissÃµes." : "Clique para expandir as permissÃµes."}
+                  {isOpen ? "Clique para recolher as permissões." : "Clique para expandir as permissões."}
                 </p>
               </div>
               <ChevronDown
@@ -175,12 +175,12 @@ export function PermissionsPage() {
             {isOpen && (
               <>
                 <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <p className="text-sm text-slate-500">Marque as aÃ§Ãµes permitidas para este perfil.</p>
+                  <p className="text-sm text-slate-500">Marque as ações permitidas para este perfil.</p>
                   <Button
                     onClick={() => saveRole(role)}
                     disabled={savingRole === role || updateMutation.isPending}
                   >
-                    {savingRole === role ? "Salvando..." : "Salvar PermissÃµes"}
+                    {savingRole === role ? "Salvando..." : "Salvar Permissões"}
                   </Button>
                 </div>
 

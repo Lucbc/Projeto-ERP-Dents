@@ -1,4 +1,4 @@
-﻿import { createContext, type PropsWithChildren, useContext, useMemo, useState } from "react";
+import { createContext, type PropsWithChildren, useContext, useMemo, useState, useRef, useEffect, useCallback } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -17,19 +17,23 @@ const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 export function ToastProvider({ children }: PropsWithChildren) {
   const [toastData, setToastData] = useState<ToastData | null>(null);
+  const timer = useRef<number>();
+  useEffect(() => () => window.clearTimeout(timer.current), []);
 
-  const toast = (message: string, variant: ToastVariant = "success") => {
+  const toast = useCallback((message: string, variant: ToastVariant = "success") => {
+    window.clearTimeout(timer.current);
     setToastData({ message, variant });
-    window.setTimeout(() => setToastData(null), 3500);
-  };
+    timer.current = window.setTimeout(() => setToastData(null), 3500);
+  }, []);
 
-  const value = useMemo(() => ({ toast }), []);
+  const value = useMemo(() => ({ toast }), [toast]);
 
   return (
     <ToastContext.Provider value={value}>
       {children}
       {toastData && (
         <div
+          role={toastData.variant === "error" ? "alert" : "status"}
           className={cn(
             "fixed bottom-5 right-5 z-50 rounded-lg px-4 py-3 text-sm font-semibold text-white shadow-lg",
             toastData.variant === "success" ? "bg-emerald-600" : "bg-red-600",

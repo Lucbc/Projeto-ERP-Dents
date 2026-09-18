@@ -6,3 +6,6 @@ RUN apk add --no-cache libssl3=3.5.8-r0 libcrypto3=3.5.8-r0 libuuid=2.42.3-r1 su
     && grep -q 'exec gosu postgres' /usr/local/bin/docker-entrypoint.sh \
     && sed -i 's/exec gosu postgres/exec su-exec postgres/' /usr/local/bin/docker-entrypoint.sh \
     && rm /usr/local/bin/gosu
+
+# Avoid SQL statements, parameter values and failing row details in logs.
+CMD ["postgres", "-c", "log_error_verbosity=terse", "-c", "log_min_error_statement=panic", "-c", "log_parameter_max_length_on_error=0"]

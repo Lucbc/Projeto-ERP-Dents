@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 
 from src.core.domain.exceptions import (
     ConflictError,
@@ -18,6 +19,16 @@ from src.core.domain.exceptions import (
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_handler(_: Request, exc: RequestValidationError) -> JSONResponse:
+        # Input/context can contain passwords or clinical text. Never echo them.
+        messages = {"missing": "Campo obrigatório.", "json_invalid": "O conteúdo enviado não é válido.",
+                    "string_too_short": "O texto informado é muito curto.", "string_too_long": "O texto informado é muito longo."}
+        errors = [{"loc": error["loc"], "type": error["type"],
+                   "msg": messages.get(error["type"], "Valor inválido. Revise este campo.")}
+                  for error in exc.errors()]
+        return JSONResponse(status_code=422, content={"detail": errors})
+
     @app.exception_handler(DomainError)
     async def domain_exception_handler(_: Request, exc: DomainError) -> JSONResponse:
         status_code = 400

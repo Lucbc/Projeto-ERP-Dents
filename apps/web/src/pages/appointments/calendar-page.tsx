@@ -478,13 +478,19 @@ export function CalendarPage() {
               <option value={Views.WEEK}>Semana</option>
               <option value={Views.MONTH}>Mes</option>
             </Select>
-            {canCreate && <Button onClick={openCreateModal}>Nova consulta</Button>}
+            {canCreate && <Button disabled={appointmentsQuery.isPending || appointmentsQuery.isError} onClick={openCreateModal}>Nova consulta</Button>}
           </div>
         </div>
       </Card>
 
       <Card>
-        <div className="h-[720px]">
+        {appointmentsQuery.isPending ? <p role="status">Carregando agenda...</p> : appointmentsQuery.isError ? (
+          <div role="alert" className="space-y-3">
+            <p>Não foi possível carregar a agenda. As consultas não puderam ser verificadas.</p>
+            <p>{getApiErrorMessage(appointmentsQuery.error)}</p>
+            <Button disabled={appointmentsQuery.isFetching} onClick={() => void appointmentsQuery.refetch()}>Tentar novamente</Button>
+          </div>
+        ) : <div className="h-[720px]">
           <Calendar
             localizer={localizer}
             events={events}
@@ -535,7 +541,7 @@ export function CalendarPage() {
               };
             }}
           />
-        </div>
+        </div>}
       </Card>
 
       <Modal
@@ -544,6 +550,14 @@ export function CalendarPage() {
         title={editingAppointment ? "Editar consulta" : "Nova consulta"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {[patientsQuery, dentistsQuery, proceduresQuery].some((query) => query.isError) && (
+            <div role="alert" className="md:col-span-2">
+              <p>Não foi possível carregar todos os cadastros da consulta. Os campos preenchidos foram preservados.</p>
+              <Button type="button" onClick={() => {
+                for (const query of [patientsQuery, dentistsQuery, proceduresQuery]) if (query.isError) void query.refetch();
+              }}>Recarregar cadastros</Button>
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Paciente *</label>
             <Select {...form.register("patient_id")}>
@@ -577,7 +591,9 @@ export function CalendarPage() {
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Procedimentos</label>
             <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-slate-200 p-2">
-              {procedures.length === 0 ? (
+              {proceduresQuery.isPending ? <p className="text-sm text-slate-500">Carregando procedimentos...</p>
+                : proceduresQuery.isError ? <p className="text-sm text-slate-500">Procedimentos indisponíveis. Recarregue os cadastros.</p>
+                : procedures.length === 0 ? (
                 <p className="text-sm text-slate-500">Nenhum procedimento cadastrado.</p>
               ) : (
                 procedures.map((procedure) => {

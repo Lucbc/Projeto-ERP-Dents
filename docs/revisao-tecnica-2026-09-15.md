@@ -371,6 +371,8 @@ Dados de saúde vinculados à pessoa são dados pessoais sensíveis na LGPD; med
 
 ### R33 — P2 — Há implementações antigas duplicadas em `__init__.py`
 
+**Atualização 1D.3.1:** Exceções de domínio e registro de handlers HTTP agora reexportam as definições canônicas. A mesma exceção é reconhecida independentemente do caminho de importação. Restantes inicializadores da tabela abaixo ainda exigem revisão.
+
 **Atualização 1D.1:** Segurança e armazenamento reexportam as implementações canônicas. Os demais módulos ainda precisam de revisão. Evidências: [homologação 1D.1](./homologacao-etapa-1D1.md).
 
 **Confirmado, inclusive por identidade de classes em execução.** Cerca de 551 linhas, incluindo espaços, em oito inicializadores repetem implementações mantidas em módulos próprios:
@@ -429,6 +431,8 @@ Auditorias executadas:
 **Correção:** adicionar primeiro testes de regras e integração PostgreSQL para os bloqueadores deste relatório, migração de banco vazio/versão anterior e fluxos principais por perfil. Testar concorrência com conexões separadas, falha de persistência de exames e recuperação. Renomear etapas para refletir o que realmente validam e falhar explicitamente quando uma verificação falhar.
 
 ### R37 — P2 — Falhas de banco e erros de interface recebem tratamento insuficiente
+
+**Atualização 1D.3.1:** Parcialmente tratado: classificação segura de falhas de banco/disco, rollback, mensagens 422 sem eco de dados, referência de diagnóstico, agenda com recuperação e disputa de temporizadores corrigidos. Exclusão de procedimento em uso preserva vínculos e retorna 409. Proteção contra descarte de formulário, demais telas e revisão geral de interação permanecem na etapa 3. [Escopo e evidências](./homologacao-etapa-1D3-1.md).
 
 **Confirmado.** [error_handlers.py](../apps/api/src/api/error_handlers.py#L16) só trata erros de domínio. Violação de FK/unique, indisponibilidade do banco e falha de disco não são traduzidas. Por exemplo, cadastrar especialidade com nome idêntico ou excluir procedimento em uso pode terminar em erro interno.
 
