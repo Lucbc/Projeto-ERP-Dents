@@ -37,6 +37,7 @@ pnpm-debug.log*
 dist/
 build/
 coverage/
+*.tsbuildinfo
 
 # Alembic temp
 alembic/versions/__pycache__/

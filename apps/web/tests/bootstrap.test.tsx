@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { LoginPage } from "../src/pages/login-page";
 import { ToastProvider } from "../src/components/ui/toast";
-import { api } from "../src/lib/api";
+import { api, sessionTransport } from "../src/lib/api";
 import { changeSession } from "../src/lib/session";
 
 const { login } = vi.hoisted(() => ({ login: vi.fn() }));
@@ -17,6 +17,13 @@ let posted: InternalAxiosRequestConfig[] = [];
 let client: QueryClient;
 
 beforeEach(() => {
+  Object.defineProperty(navigator, "locks", { configurable: true, value: {
+    request: async (_name: string, work: () => Promise<unknown>) => await work(),
+  } });
+  sessionTransport.defaults.adapter = async (config) => {
+    if (config.url === "/api/auth/challenge") return { config, status: 200, statusText: "OK", headers: {}, data: { csrf_token: "fictitious-csrf" } };
+    return (api.defaults.adapter as (config: InternalAxiosRequestConfig) => Promise<any>)(config);
+  };
   pending = true;
   postStatus = 200;
   failStatusAfterCreation = false;

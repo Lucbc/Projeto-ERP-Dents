@@ -1,9 +1,10 @@
-import axios, { type InternalAxiosRequestConfig } from "axios";
+import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from "axios";
 import { endSession, getSession, isCurrentSession, type SessionSnapshot } from "./session";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000",
+  baseURL: import.meta.env.VITE_API_URL || "",
   timeout: 15000,
+  withCredentials: true,
 });
 
 const requests = new WeakMap<InternalAxiosRequestConfig, {
@@ -14,9 +15,12 @@ const publicPaths = new Set(["/api/auth/login", "/api/auth/bootstrap-admin", "/a
 api.interceptors.request.use((config) => {
   const session = getSession();
   if (!isCurrentSession(session)) throw new axios.CanceledError("Sessão alterada.");
-  const authenticated = Boolean(session.token) && !publicPaths.has(config.url ?? "");
-  if (authenticated) config.headers.Authorization = `Bearer ${session.token}`;
-  else config.headers.delete("Authorization");
+  const authenticated = Boolean(session.sessionId) && !publicPaths.has(config.url ?? "");
+  config.headers.delete("Authorization");
+  if (authenticated) {
+    config.headers["X-Session-ID"] = session.sessionId;
+    config.headers["X-CSRF-Token"] = session.csrfToken;
+  }
   const controller = new AbortController();
   const original = config.signal;
   const abort = () => controller.abort();
@@ -53,6 +57,21 @@ api.interceptors.response.use((response) => {
   }
   return Promise.reject(error);
 });
+
+// Serialize cookie-changing login across tabs; wait for Set-Cookie processing.
+export async function withSessionLock<T>(work: () => Promise<T>): Promise<T> {
+  if (!navigator.locks) return Promise.reject(new Error("Use um navegador atualizado e acesso HTTPS."));
+  return await navigator.locks.request("erp-dents-session", work);
+}
+
+export const sessionTransport = axios.create({ baseURL: api.defaults.baseURL, withCredentials: true, timeout: 15000 });
+export function authPost<T>(path: string, data?: unknown, config?: AxiosRequestConfig) {
+  return withSessionLock(async () => {
+    const challenge = await sessionTransport.get<{ csrf_token: string }>("/api/auth/challenge");
+    return sessionTransport.post<T>(path, data, { ...config, headers: { ...config?.headers,
+      "X-CSRF-Token": challenge.data.csrf_token } });
+  });
+}
 
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {

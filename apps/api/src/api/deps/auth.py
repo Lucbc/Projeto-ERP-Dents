@@ -4,7 +4,7 @@ from collections.abc import Callable
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from src.api.browser_session import get_cookie_token
 from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.role_permission_repository import SqlAlchemyRolePermissionRepository
@@ -14,7 +14,7 @@ from src.api.deps.db import get_db_dep
 from src.core.domain.entities import User, UserRole
 from src.core.permissions import PermissionAction, PermissionResource, can_access, normalize_permissions
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+
 
 
 def get_auth_service() -> JwtAuthService:
@@ -22,7 +22,7 @@ def get_auth_service() -> JwtAuthService:
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    token: str = Depends(get_cookie_token),
     db: Session = Depends(get_db_dep),
     auth_service: JwtAuthService = Depends(get_auth_service),
 ) -> User:

@@ -23,6 +23,7 @@ from src.api.routers.specialties_router import router as specialties_router
 from src.api.routers.users_router import router as users_router
 from src.config import get_settings
 from src.api.upload_limit import ExamUploadLimitMiddleware
+from src.api.browser_session import BrowserSessionMiddleware
 
 settings = get_settings()
 
@@ -33,10 +34,11 @@ app = FastAPI(
 )
 
 app.add_middleware(ExamUploadLimitMiddleware, max_bytes=settings.exam_max_bytes)
+app.add_middleware(BrowserSessionMiddleware)
 app.add_middleware(SafeErrorMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=[settings.public_origin],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

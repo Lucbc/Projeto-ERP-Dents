@@ -182,10 +182,11 @@ export interface ListResponse<T> {
   total: number;
 }
 
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
+export interface SessionResponse {
+  session_id: string | null;
+  csrf_token: string;
+  expires_at: number | null;
+  user: User | null;
 }
 
 export interface RolePermission {

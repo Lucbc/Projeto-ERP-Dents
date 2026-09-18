@@ -45,25 +45,17 @@ def main(session_checks=None, report_name=None, extra_env=None):
                       "-d", "erp_dents_homolog", "-v", "ON_ERROR_STOP=1", "-tAc", statement).stdout.strip()
 
     def request(method, path, payload=None, activation=None, token=None, extra_headers=None):
-        headers = {"Content-Type": "application/json"}
-        headers.update(extra_headers or {})
-        if activation is not None: headers["X-Bootstrap-Token"] = activation
-        if token: headers["Authorization"] = "Bearer " + token
-        req = Request("http://127.0.0.1:18001" + path, method=method, headers=headers,
-                      data=payload if isinstance(payload, bytes) else json.dumps(payload).encode() if payload is not None else None)
-        try: response = urlopen(req, timeout=10)
-        except HTTPError as error: response = error
-        with response:
-            request.last_headers = response.headers
-            raw = response.read()
-            content_type = response.headers.get_content_type()
-            data = raw if content_type == "application/octet-stream" else json.loads(raw) if content_type == "application/json" and raw else None
-            if response.status >= 500:
-                # Keep diagnostics local; never print request headers or credentials.
-                (smoke.STATE / 'last-isolated-api-error.log').write_text(docker('logs', name).stderr, encoding='utf8')
-            if not isinstance(data, bytes):
-                assert code not in json.dumps(data), "Activation code was exposed in response"
-            return response.status, data
+        from cookie_client import CookieClient
+        headers = dict(extra_headers or {})
+        if activation is not None: headers['X-Bootstrap-Token'] = activation
+        status, data, response_headers = CookieClient('http://127.0.0.1:18001').request(
+            method, path, payload, token, headers, timeout=10)
+        request.last_headers = response_headers
+        if status >= 500:
+            (smoke.STATE / 'last-isolated-api-error.log').write_text(docker('logs', name).stderr, encoding='utf8')
+        if isinstance(data, dict):
+            assert code not in json.dumps({k:v for k,v in data.items() if k != 'session'})
+        return status, data
 
     def ready():
         for _ in range(40):
@@ -106,7 +98,7 @@ def main(session_checks=None, report_name=None, extra_env=None):
         passed("concurrent HTTP registrations create exactly one administrator")
         status, login = request("POST", "/api/auth/login", {"email": winner["email"], "password": password})
         assert status == 200
-        token = login["access_token"]
+        token = login["session"]
         assert request("GET", "/api/auth/me", token=token)[1]["role"] == "admin"
         assert request("GET", "/api/users", token=token)[1]["total"] == 1
         passed("initial account logs in with admin access and only one user exists")

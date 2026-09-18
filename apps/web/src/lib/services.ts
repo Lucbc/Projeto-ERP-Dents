@@ -1,4 +1,4 @@
-import { api } from "@/lib/api";
+import { api, authPost } from "@/lib/api";
 import type {
   Appointment,
   ConsultationPatientDetailResponse,
@@ -18,7 +18,6 @@ import type {
   RolePermission,
   RolePermissionListResponse,
   Specialty,
-  TokenResponse,
   User,
   UserRole,
 } from "@/types";
@@ -150,13 +149,9 @@ export const authService = {
     return response.data;
   },
   async bootstrapAdmin(payload: { name: string; email: string; password: string }, activationToken: string) {
-    const response = await api.post<User>("/api/auth/bootstrap-admin", payload, {
+    const response = await authPost<User>("/api/auth/bootstrap-admin", payload, {
       headers: { "X-Bootstrap-Token": activationToken },
     });
-    return response.data;
-  },
-  async login(payload: { email: string; password: string }) {
-    const response = await api.post<TokenResponse>("/api/auth/login", payload);
     return response.data;
   },
   async me() {

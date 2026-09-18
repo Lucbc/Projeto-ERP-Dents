@@ -46,31 +46,12 @@ def verify_target() -> None:
 
 def request(method: str, path: str, payload=None, *, token=None, expected=200,
             raw=False, content_type='application/json', extra_headers=None):
-    headers = dict(extra_headers or {})
-    if token:
-        headers['Authorization'] = 'Bearer ' + token
-    if isinstance(payload, bytes):
-        body = payload
-    elif payload is not None:
-        body = json.dumps(payload).encode()
-    else:
-        body = None
-    if body is not None:
-        headers['Content-Type'] = content_type
-    req = Request(API + path, data=body, headers=headers, method=method)
-    try:
-        response = urlopen(req, timeout=20)
-    except HTTPError as error:
-        response = error
-    with response:
-        status = response.status
-        data = response.read()
+    from cookie_client import CookieClient
+    headers = {'Content-Type': content_type, **(extra_headers or {})}
+    status, data, _ = CookieClient(API).request(method, path, payload, token, headers)
     if status != expected:
-        # Nao reproduzir corpo de resposta: pode conter dados/segredos.
         raise AssertionError(f'{method} {path}: esperado {expected}, recebido {status}')
-    if raw:
-        return data
-    return json.loads(data) if data else None
+    return data if raw or data else None
 
 
 def main() -> None:
@@ -110,7 +91,7 @@ def main() -> None:
         raise RuntimeError('Banco ja inicializado sem credenciais locais. Nao resetar automaticamente.')
 
     login = request('POST', '/api/auth/login', credentials)
-    token = login['access_token']
+    token = login['session']
     assert request('GET', '/api/auth/me', token=token)['id'] == login['user']['id']
     passed('login e identidade do administrador')
     request('GET', '/api/patients', expected=401)
@@ -161,7 +142,7 @@ def main() -> None:
         reception = create('users', {'name': 'Recepcao Teste', 'email': f'recepcao.{suffix}@example.com',
                                      'password': reception_password, 'role': 'reception'})
         reception_token = request('POST', '/api/auth/login',
-                                  {'email': reception['email'], 'password': reception_password})['access_token']
+                                  {'email': reception['email'], 'password': reception_password})['session']
         request('GET', '/api/users', token=reception_token, expected=403)
         request('GET', '/api/patients', token=reception_token)
         passed('perfil recepcao le pacientes e nao administra usuarios')

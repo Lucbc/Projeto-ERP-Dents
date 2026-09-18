@@ -7,7 +7,7 @@ from smoke_bootstrap_homolog import main, docker
 def checks(request, email, password, token, container, ready, passed, sql, schema):
     def expect(method, path, payload=None, status=200):
         code, body = request(method, path, payload, token=token,
-                             extra_headers={'Origin': 'http://localhost:18081'})
+                             extra_headers={'Origin': 'https://localhost:18443'})
         assert code == status, f'{method} expected {status}, got {code}'
         return body
     name = 'Fictitious-private-marker-' + uuid4().hex
@@ -15,7 +15,7 @@ def checks(request, email, password, token, container, ready, passed, sql, schem
     duplicate = expect('POST', '/api/specialties', {'name': name}, 409)
     assert name not in json.dumps(duplicate)
     assert request.last_headers['Cache-Control'] == 'no-store'
-    assert request.last_headers['Access-Control-Allow-Origin'] == 'http://localhost:18081'
+    assert request.last_headers['Access-Control-Allow-Origin'] == 'https://localhost:18443'
     assert request.last_headers['X-Request-ID'] == duplicate['request_id']
     expect('POST', '/api/specialties', {'name': name+'-next'}, 201)
     assert expect('GET', '/api/specialties')['total'] == 2

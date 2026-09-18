@@ -22,7 +22,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1A | Isolamento dos ambientes e contexto de build | Concluída | Produção, desenvolvimento e homologação resolvem volumes diferentes; arquivos locais não entram no build |
 | 1B | Sessão e cache no navegador | Concluída | Troca de usuário/abas sem dados da sessão anterior; expiração/rede tratadas corretamente |
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
-| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1, 1D.2 e 1D.3.1 concluídas; 1D.3.2 pendente | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
+| 1D | Exames, erros e dependências de segurança | Em andamento: 1D.1, 1D.2 e 1D.3.1 concluídas; preparação da 1D.3.2 iniciada | Limites/tipos e visualização seguros; ciclo de vida consistente; dependências compatíveis verificadas |
 | 2A | Concorrência de agenda e cobrança | Pendente | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída:** 1D.3.1 — erros e recuperação, implementação publicada em `131ed9a`, validação local e CI aprovados. Próxima entrega: 1D.3.2 — sessão/cookie, incluindo CSRF e transporte seguro. Evidências em [homologação 1D.3.1](./homologacao-etapa-1D3-1.md).
+**Em andamento:** 1D.3.2 — implementação integrada na homologação; 97 testes backend, 42 frontend, smokes HTTP e HTTPS aprovados. Conferência visual no Chrome aguarda confiança no certificado local; CI remoto também pendente. [Evidências e limitações](./homologacao-etapa-1D3-2.md). Não declarar a fase concluída antes desses checks.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -152,7 +152,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Publicação e validação remota:** implementação `a3b281e` enviada ao `origin/main`; [GitHub Actions 35260375483](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35260375483) aprovado em 6min42s, incluindo Docker limpo, 81 testes backend, 34 frontend, smokes e auditorias. Fechamento posterior somente documental. Ao retomar, consultar `git log -1`, `git status` e remoto; não publicar `.data`, `.env`, credenciais, dumps ou volumes.
 - **Próximo recorte após fechar 1D.2:** 1D.3 — tratamento de erros e fechamento de segurança, incluindo mensagens internas, exceções duplicadas e decisão sobre token no navegador. Não iniciar concorrência de agenda/cobrança antes desse fechamento; HTTPS/instalador/backup assistido seguem na etapa 5.
 
-### Ponto de retomada atual — 1D.3.1 concluída em 17/09/2026
+### Retomada da 1D.3.1 — concluída em 17/09/2026 (histórico)
 
 - Escopo comunicado: erros e recuperação nesta entrega; sessão/cookie/CSRF em recorte separado 1D.3.2. Não declarar removido o token de localStorage.
 - Implementados middleware de falhas com mensagens seguras, referência gerada no servidor e no-store; validação sem input/ctx; rollback explícito da dependência de banco; reexports canônicos das exceções/handlers. PostgreSQL com logs sem statement/parâmetros/detalhes de linhas.
@@ -162,3 +162,21 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Cópias locais `pre-1D3-1.dump`/`pre-1D3-1-exams.tar`; registros/bytes preservados, banco em `0011_exam_file_deletions`. Sessão de teste expirou durante pausa do usuário; login com credenciais existentes aprovado, sem reset. Não publicar dados/segredos.
 - Testes novos: `test_error_handling.py`, `errors.test.tsx`, `smoke_errors_homolog.py`; workflow inclui o smoke de erros. Implementação `131ed9a` publicada; [CI 35298005705](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35298005705) aprovado em 6min53s com os 87 testes backend juntos, 38 frontend, smokes/builds/auditorias. Cinco imagens sem achados na consulta. Commit posterior apenas documental. Conferir árvore e remoto ao retomar; não repetir esta etapa sem novo motivo.
 - Próxima entrega: **1D.3.2 — sessão por cookie protegido, CSRF e transporte**. Token continua em localStorage e risco está explícito no relatório. Não considerar toda a 1D.3 concluída. Revisão dos demais estados de tela/modais permanece na etapa 3; R37 está parcialmente tratado.
+
+### Preparação da 1D.3.2 em 17/09/2026 (histórico)
+
+- Usuário autorizou iniciar a próxima fase, informando 19% de uso restante. Recorte limitado a mapeamento e plano de implementação para deixar uma entrega completa e retomável; nenhuma mudança parcial no login.
+- Documento: [plano da 1D.3.2](./plano-etapa-1D3-2.md). Contém arquivos, contratos atuais, proposta de cookie/CSRF, riscos de concorrência entre abas, transição e matriz de aceite.
+- Dependência identificada: web/API atualmente em origens distintas e sem TLS configurado. Preparar endereço HTTPS único e proxy `/api` sem contornar o gateway de uploads. Automação da instalação nos computadores permanece na etapa 5.
+- Próximo trabalho: **1D.3.2a**, somente transporte/configuração e homologação isolada, mantendo autenticação atual funcional. Cookie/CSRF e frontend têm recortes posteriores coordenados; não iniciar todos de uma vez.
+- Token continua em localStorage; nenhuma alteração em código executável, serviços, banco ou volumes nesta entrega. Suítes/builds não repetidos; validação documental por revisão do diff e `git diff --check`. Última homologação de execução continua sendo a 1D.3.1.
+- Publicar estes dois documentos com commit/push; conferir `git status`, `git log -1` e igualdade HEAD/remoto ao retomar. Não repetir revisão geral nem publicar `.env`, `.data`, credenciais ou backups.
+
+### Ponto de retomada atual — implementação da 1D.3.2 em 18/09/2026
+
+- Usuário ampliou a autorização para executar a fase inteira. Cookie/CSRF, metadados de sessão, coordenação entre abas e HTTPS implementados; homologação atualizada em `https://localhost:18443`. Dados de negócio e arquivos preservados, sem migração de esquema.
+- Não há JWT no login/localStorage; apenas marcador não autenticante. API rejeita bearer e JWT legado como cookie. Sessões anteriores exigem novo login; senhas existentes mantidas. Logout revoga sem apagar cookie para evitar corrida com respostas antigas.
+- Passaram 97 testes backend, 42 frontend, smokes de sessões/erros/tentativas/fluxo geral/exames/operações/antivírus e TLS/cookies. Limites 413/503/408 confirmados através do HTTPS. Inicialização sem metadados/conexão não oferece saída que não possa confirmar. [Relatório](./homologacao-etapa-1D3-2.md) e [operação HTTPS](./sessao-e-https.md).
+- Pendência local: Windows pede confirmação da CA `ERP Dents Homolog Local CA`, em `certutil -user -addstore Root .data/tls/homolog/ca.crt`; usuário já foi solicitado. Não automatizar aprovação de permissão de segurança nem ignorar certificado. Após confiar, rodar `scripts/smoke_browser_homolog.cjs` com Playwright e Chrome. O teste HTTP HTTPS já validou a cadeia com CA explícita.
+- Publicar implementação e acompanhar CI; depois registrar resultado e fechar documentação. Não repetir a revisão ou a suíte inteira sem mudança/falha que justifique. Próxima fase de negócio só após fechar esta validação.
+- Cópias locais `.data/homolog/pre-1D3-2.dump`, `pre-1D3-2-exams.tar` e fingerprints; certificados em `.data/tls`. Nada disso vai ao Git. Outra máquina precisa preparar seus próprios dados/segredos/certificados.

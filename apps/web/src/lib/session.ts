@@ -1,14 +1,18 @@
-export const TOKEN_STORAGE_KEY = "erp_dents_token";
-
+// Only a non-authenticating marker is shared across tabs. JWT stays HttpOnly.
+export const SESSION_STORAGE_KEY = "erp_dents_session_marker";
+localStorage.removeItem("erp_dents_token");
 export interface SessionSnapshot {
-  token: string | null;
+  sessionId: string | null; // UI marker, never an authentication credential
+  csrfToken: string | null;
+  expiresAt: number | null;
+  ready: boolean;
   revision: number;
   signal: AbortSignal;
 }
-
 let controller = new AbortController();
 let snapshot: SessionSnapshot = {
-  token: localStorage.getItem(TOKEN_STORAGE_KEY), revision: 0, signal: controller.signal,
+  sessionId: localStorage.getItem(SESSION_STORAGE_KEY), csrfToken: null, expiresAt: null,
+  ready: false, revision: 0, signal: controller.signal,
 };
 const listeners = new Set<() => void>();
 export const getSession = () => snapshot;
@@ -16,53 +20,39 @@ export const subscribeSession = (listener: () => void) => {
   listeners.add(listener);
   return () => { listeners.delete(listener); };
 };
-
-function adopt(token: string | null) {
-  if (token === snapshot.token) return;
+function adopt(sessionId: string | null, csrfToken: string | null, expiresAt: number | null, ready: boolean) {
+  if (sessionId === snapshot.sessionId && csrfToken === snapshot.csrfToken
+      && ready === snapshot.ready && expiresAt === snapshot.expiresAt) return;
   const previous = controller;
   controller = new AbortController();
-  snapshot = { token, revision: snapshot.revision + 1, signal: controller.signal };
+  snapshot = { sessionId, csrfToken, expiresAt, ready, revision: snapshot.revision + 1, signal: controller.signal };
   previous.abort();
   listeners.forEach((listener) => listener());
 }
-
-export function syncSession() { adopt(localStorage.getItem(TOKEN_STORAGE_KEY)); }
-
-export function changeSession(token: string | null) {
-  if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token);
-  else localStorage.removeItem(TOKEN_STORAGE_KEY);
-  adopt(token);
+export function syncSession() {
+  const marker = localStorage.getItem(SESSION_STORAGE_KEY);
+  if (marker !== snapshot.sessionId) adopt(marker, null, null, false);
 }
-
+export function changeSession(sessionId: string | null, csrfToken: string | null = null, expiresAt: number | null = null) {
+  if (sessionId) localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+  else localStorage.removeItem(SESSION_STORAGE_KEY);
+  adopt(sessionId, csrfToken, expiresAt, true);
+}
 export function isCurrentSession(session: SessionSnapshot) {
-  // Another tab can update storage before its event reaches this tab.
   syncSession();
   return session === snapshot;
 }
-
 export function endSession(session: SessionSnapshot) {
   if (isCurrentSession(session)) changeSession(null);
 }
-
-export function sessionExpiresAt(token: string): number | null {
-  try {
-    const encoded = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-    const { exp } = JSON.parse(atob(encoded));
-    return typeof exp === "number" && Number.isFinite(exp) ? exp * 1000 : null;
-  } catch {
-    return null; // Only the server validates authenticity; this is a UI timer.
-  }
-}
-
 export function watchSession() {
   const storage = (event: StorageEvent) => {
-    if (event.storageArea === localStorage && (event.key === TOKEN_STORAGE_KEY || event.key === null)) syncSession();
+    if (event.storageArea === localStorage && (event.key === SESSION_STORAGE_KEY || event.key === null)) syncSession();
   };
   const resume = () => {
     syncSession();
     const current = getSession();
-    const expires = current.token ? sessionExpiresAt(current.token) : null;
-    if (expires !== null && expires <= Date.now()) endSession(current);
+    if (current.expiresAt !== null && current.expiresAt <= Date.now()) endSession(current);
   };
   window.addEventListener("storage", storage);
   window.addEventListener("focus", resume);

@@ -23,6 +23,9 @@ if (-not (Test-Path -LiteralPath $envPath)) {
 }
 
 if ($Action -eq 'up') {
+    if (-not (Test-Path -LiteralPath (Join-Path $projectRoot '.data/tls/homolog/server.crt'))) {
+        throw 'Prepare o TLS local com python scripts/prepare_homolog_tls.py e execute novamente.'
+    }
     & (Join-Path $PSScriptRoot 'configure-bootstrap.ps1') -EnvFile $envPath -VariableName 'HOMOLOG_BOOTSTRAP_TOKEN'
 }
 
@@ -46,6 +49,6 @@ try {
 }
 if ($dockerExitCode -ne 0) { throw "Docker falhou na acao '$Action' (codigo $dockerExitCode)." }
 if ($Action -eq 'up') {
-    Write-Host 'Homologacao: http://localhost:18080 | API: http://localhost:18000'
+    Write-Host 'Homologacao: https://localhost:18443 | Confie na CA local conforme docs/sessao-e-https.md'
     Write-Host 'A inicializacao da API/migracoes ainda deve ser verificada. Use somente dados ficticios.'
 }

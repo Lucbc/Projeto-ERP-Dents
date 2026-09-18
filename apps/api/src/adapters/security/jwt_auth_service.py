@@ -49,6 +49,7 @@ class JwtAuthService(AuthService):
         now = datetime.now(timezone.utc)
         payload: dict[str, Any] = {
             "sub": subject,
+            "transport": "cookie-v1",
             "iat": int(now.timestamp()),
             "exp": int((now + timedelta(minutes=self.expire_minutes)).timestamp()),
         }

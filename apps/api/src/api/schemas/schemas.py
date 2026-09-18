@@ -436,7 +436,8 @@ class MessageResponse(BaseModel):
     detail: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: UserResponse
+class SessionResponse(BaseModel):
+    session_id: str | None
+    csrf_token: str
+    expires_at: int | None
+    user: UserResponse | None

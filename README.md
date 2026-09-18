@@ -15,12 +15,14 @@ Para continuar o desenvolvimento em outro computador, atualize sua cópia com `g
 Para homologar neste computador Windows, com Docker ativo:
 
 ```powershell
+python scripts/prepare_homolog_tls.py
 ./scripts/homolog.ps1 -Action up
 ./scripts/homolog.ps1 -Action status
 ```
 
-- Interface: `http://localhost:18080`
-- API: `http://localhost:18000`
+- Interface/API: `https://localhost:18443`
+- Prepare a confiança na CA local conforme [sessão e HTTPS](docs/sessao-e-https.md). Não ignore avisos de certificado.
+- Porta `18000` permanece apenas para diagnóstico local da API.
 - Somente dados fictícios. As portas estão restritas a este computador.
 - O script gera `.env.homolog` com segredos aleatórios na primeira execução e preserva o arquivo nas seguintes.
 - `./scripts/homolog.ps1 -Action stop` para os containers e preserva os dados; `-Action logs` mostra diagnóstico.
@@ -159,8 +161,11 @@ Os comandos gravam valores aleatórios no arquivo sem imprimi-los e preservam va
 No `.env`, valide principalmente:
 
 - `JWT_SECRET_KEY` (troque por segredo forte)
-- `VITE_API_URL` (dev normalmente `http://localhost:8000`)
-- `CORS_ORIGINS` (inclua origem do frontend)
+- `PUBLIC_ORIGIN=https://localhost:19443`
+- `TLS_DIRECTORY=./.data/tls/dev`
+- `VITE_API_URL` vazio (API pela mesma origem)
+
+Prepare o certificado com `python scripts/prepare_homolog_tls.py --environment dev` e confie na CA desse ambiente: [roteiro HTTPS](docs/sessao-e-https.md).
 
 ### 4. Subir tudo com 1 comando
 
@@ -176,13 +181,13 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 ### 5. Acessar
 
-- Web: `http://localhost:3000`
+- Web: `https://localhost:19443`
 - API health: `http://localhost:8000/health`
 - Swagger: `http://localhost:8000/docs`
 
 ### 6. Criar admin inicial
 
-1. Abra `http://localhost:3000`
+1. Abra `https://localhost:19443`
 2. Na tela de login, se o banco estiver vazio, aparecerá "Criar admin inicial"
 3. Crie o admin
 4. Faça login
@@ -249,11 +254,11 @@ cp .env.example .env
 Ajuste os campos principais:
 
 - `JWT_SECRET_KEY`: obrigatório trocar
-- `PUBLIC_API_URL`: URL que o navegador cliente usará para API
-  - Exemplo: `http://192.168.0.50:8000`
-- `CORS_ORIGINS`: inclua origem do web em produção
-  - Exemplo: `http://192.168.0.50:8080`
-- `WEB_PROD_PORT`: padrão `8080`
+- `PUBLIC_ORIGIN`: endereço único HTTPS, por exemplo `https://erp.clinica.local`
+- `HTTPS_PORT`: padrão `443`
+- `TLS_DIRECTORY`: diretório local com `server.crt` e `server.key` válidos para esse endereço
+
+Configure resolução do nome e confiança no certificado nos computadores antes de acessar. Consulte [sessão e HTTPS](docs/sessao-e-https.md). A instalação assistida completa ainda está na etapa 5.
 
 ## 4. Subir produção
 
@@ -279,15 +284,14 @@ Use o IP da rede local (exemplo `192.168.0.50`).
 
 ## 6. Acesso dos outros PCs na rede
 
-- Web: `http://IP_DO_SERVIDOR:8080`
-- API/Docs: `http://IP_DO_SERVIDOR:8000/docs`
+- Abra o endereço configurado em `PUBLIC_ORIGIN`, por exemplo `https://erp.clinica.local`.
+- Web/API compartilham esse endereço; portas internas não são publicadas em produção.
 
 ## 7. Firewall/portas
 
 Liberar (se necessário):
 
-- `8080/tcp` (frontend)
-- `8000/tcp` (API)
+- `443/tcp` (ou `HTTPS_PORT`) para os computadores autorizados da rede local.
 
 ## Backup
 
@@ -330,7 +334,7 @@ docker compose up -d --build
 
 Erro comum: `port is already allocated`.
 
-1. Troque portas no `.env` (`WEB_PORT`, `API_PORT`, `WEB_PROD_PORT`, `POSTGRES_PORT`)
+1. Troque portas no `.env` (`HTTPS_PORT` em produção; portas de diagnóstico local em desenvolvimento)
 2. Suba novamente:
 
 ```bash
@@ -392,7 +396,7 @@ Trocar ou redefinir senha, inativar a conta, alterar e-mail, perfil ou vínculo 
 
 O botão **Sair** aguarda confirmação do servidor. Se a conexão falhar, os dados ficam ocultos e a tela oferece **Tentar sair novamente**; a saída não é confirmada enquanto a API não responder. Alterar a senha também exige novo login. Uma senha atual digitada incorretamente mantém a sessão e mostra erro de validação.
 
-A revogação é conferida nas próximas requisições autenticadas. Ela não desfaz operações já autorizadas nem apaga imediatamente dados já exibidos em outro computador parado. Tokens continuam em `localStorage`, cuja revisão permanece pendente. Evidências: [homologação 1C.3](docs/homologacao-etapa-1C3.md).
+A revogação é conferida nas próximas requisições autenticadas. Ela não desfaz operações já autorizadas nem apaga imediatamente dados já exibidos em outro computador parado. Desde a etapa 1D.3.2, a credencial fica em cookie HttpOnly/Secure; apenas um marcador sem poder de autenticação permanece em localStorage. Veja [sessão e HTTPS](docs/sessao-e-https.md). Evidências: [homologação 1C.3](docs/homologacao-etapa-1C3.md).
 
 ### Senhas e limites de tentativas — etapa 1C.4
 
@@ -409,7 +413,7 @@ Os limites abaixo usam janelas de 60 segundos desde a primeira tentativa e conta
 
 Ao exceder o limite, a API retorna 429 com `Retry-After` e informa que é necessário aguardar. Não há bloqueio permanente nem necessidade de reiniciar: a janela expira automaticamente. Contadores são compartilhados no PostgreSQL, sobrevivem a reinícios e não armazenam e-mails/IPs em texto aberto. Tentativas recusadas não prorrogam a janela. Login inexistente, senha incorreta e usuário inativo recebem a mesma mensagem.
 
-A origem é o endereço da conexão recebido pela API. Os comandos Docker desabilitam interpretação automática de cabeçalhos de proxy para evitar falsificação. Computadores atrás do mesmo NAT/proxy podem compartilhar o limite de origem; o limite por conta continua independente. A instalação futura com proxy/HTTPS deverá configurar origem confiável explicitamente, sem aceitar cabeçalhos arbitrários.
+A origem é o endereço da conexão recebido pela API. Os comandos Docker desabilitam interpretação automática de cabeçalhos de proxy para evitar falsificação. Computadores atrás do mesmo NAT/proxy podem compartilhar o limite de origem; o limite por conta continua independente. A origem pública HTTPS é configurada explicitamente em `PUBLIC_ORIGIN`; cabeçalhos de proxy arbitrários não são aceitos como identidade da conexão.
 
 A migração `0010_auth_attempts` não altera senhas ou dados existentes. Mantenha a chave JWT válida no servidor após a ativação; ela não é o código descartável de bootstrap. Detalhes e testes: [homologação 1C.4](docs/homologacao-etapa-1C4.md).
 
@@ -429,12 +433,12 @@ docker compose logs -f
 
 ### CORS bloqueando requisições
 
-Ajuste `CORS_ORIGINS` no `.env` com os domínios corretos do frontend.
+Confira `PUBLIC_ORIGIN`: deve corresponder exatamente ao endereço HTTPS aberto pelo navegador, incluindo porta não padrão. A API e a interface usam a mesma origem.
 
 Exemplo:
 
 ```env
-CORS_ORIGINS=http://localhost:3000,http://192.168.0.50:8080
+PUBLIC_ORIGIN=https://erp.clinica.local
 ```
 
 Depois:
@@ -449,8 +453,8 @@ docker compose up -d --build
   - Hot reload API e web
   - Volumes para código + persistência
 - `docker-compose.yml`
-  - Web em Nginx (porta 80 interna, exposta em `WEB_PROD_PORT`)
-  - API em `8000`
+  - Entrada HTTPS em `HTTPS_PORT` (443 por padrão)
+  - Web, gateway de uploads e API acessíveis somente pela rede interna Docker
   - Volumes persistentes para Postgres e exames
 
 ## Variáveis de ambiente (resumo)
@@ -462,10 +466,10 @@ Principais:
 - `DATABASE_URL`
 - `JWT_SECRET_KEY`
 - `JWT_EXPIRE_MINUTES`
-- `CORS_ORIGINS`
+- `PUBLIC_ORIGIN`
+- `TLS_DIRECTORY` e `HTTPS_PORT`
 - `EXAMS_BASE_PATH`
-- `VITE_API_URL` (dev)
-- `PUBLIC_API_URL` (build produção do frontend)
+- Frontend usa a mesma origem; não precisa de uma URL separada da API
 
 ## Convenção de commits (sugestão)
 

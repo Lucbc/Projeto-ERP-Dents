@@ -4,17 +4,16 @@ import {
 } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import axios from "axios";
-import { api } from "@/lib/api";
+import { api, sessionTransport, withSessionLock } from "@/lib/api";
 import { createQueryClient } from "@/lib/query-client";
 import {
-  changeSession, endSession, getSession, isCurrentSession, sessionExpiresAt,
+  changeSession, endSession, getSession, isCurrentSession,
   subscribeSession, watchSession, type SessionSnapshot,
 } from "@/lib/session";
-import type { TokenResponse, User } from "@/types";
+import type { SessionResponse, User } from "@/types";
 
 interface AuthContextValue {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -31,15 +30,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
 function SessionScope({ children, session }: PropsWithChildren<{ session: SessionSnapshot }>) {
   const [queryClient] = useState(createQueryClient);
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(Boolean(session.token));
+  const [isLoading, setIsLoading] = useState(!session.ready || Boolean(session.sessionId));
   const [sessionError, setSessionError] = useState(false);
   const [logoutState, setLogoutState] = useState<"idle" | "pending" | "failed">("idle");
   const loggingOut = useRef(false);
   const validation = useRef(0);
   useEffect(() => () => { queryClient.clear(); }, [queryClient]);
   const logout = useCallback(() => {
-    if (!isCurrentSession(session) || loggingOut.current) return;
-    if (!session.token) { endSession(session); return; }
+    if (!isCurrentSession(session) || !session.ready || loggingOut.current) return;
+    if (!session.sessionId) { endSession(session); return; }
     loggingOut.current = true;
     setLogoutState("pending");
     void api.post("/api/auth/logout").then(() => endSession(session)).catch(() => {
@@ -48,7 +47,20 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
   }, [session]);
 
   const refreshMe = useCallback(async () => {
-    if (!session.token || !isCurrentSession(session)) return;
+    if (!isCurrentSession(session)) return;
+    if (!session.ready) {
+      setIsLoading(true);
+      setSessionError(false);
+      try {
+        await withSessionLock(async () => {
+          if (!isCurrentSession(session)) return;
+          const response = await sessionTransport.get<SessionResponse>("/api/auth/session");
+          if (isCurrentSession(session)) changeSession(response.data.session_id, response.data.csrf_token, response.data.expires_at);
+        });
+      } catch { if (isCurrentSession(session)) { setSessionError(true); setIsLoading(false); } }
+      return;
+    }
+    if (!session.sessionId) { setIsLoading(false); return; }
     const attempt = ++validation.current;
     setIsLoading(true);
     setSessionError(false);
@@ -71,8 +83,8 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
   }, [refreshMe]);
 
   useEffect(() => {
-    if (!session.token) return;
-    const expires = sessionExpiresAt(session.token);
+    if (!session.sessionId) return;
+    const expires = session.expiresAt;
     if (expires === null) return;
     let timer: number;
     const check = () => {
@@ -92,11 +104,16 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
   }, [sessionError, refreshMe]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const response = await api.post<TokenResponse>("/api/auth/login", { email, password });
-    if (isCurrentSession(session)) changeSession(response.data.access_token);
+    await withSessionLock(async () => {
+      if (!isCurrentSession(session)) return;
+      const challenge = await sessionTransport.get<{ csrf_token: string }>("/api/auth/challenge");
+      const response = await sessionTransport.post<SessionResponse>("/api/auth/login", { email, password },
+        { headers: { "X-CSRF-Token": challenge.data.csrf_token } });
+      changeSession(response.data.session_id, response.data.csrf_token, response.data.expires_at);
+    });
   }, [session]);
-  const value = useMemo(() => ({ user, token: session.token, isLoading, login, logout }),
-    [user, session.token, isLoading, login, logout]);
+  const value = useMemo(() => ({ user, isLoading, login, logout }),
+    [user, session.sessionId, isLoading, login, logout]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -111,10 +128,11 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
         ) : isLoading ? <div role="status" className="p-8">Carregando sessão...</div> : sessionError ? (
           <div role="alert" className="mx-auto mt-16 max-w-lg space-y-4 rounded-lg border p-6">
             <h1 className="text-lg font-semibold">Não foi possível validar sua sessão</h1>
-            <p>Verifique a conexão com o servidor e tente novamente. Seu acesso salvo foi preservado.</p>
+            <p>{navigator.locks ? "Verifique a conexão com o servidor e tente novamente. Seu acesso salvo foi preservado."
+              : "Abra o endereço HTTPS do sistema em uma versão atualizada do Chrome ou Edge."}</p>
             <div className="flex gap-4">
               <button className="rounded bg-cyan-600 px-4 py-2 text-white" onClick={() => void refreshMe()}>Tentar novamente</button>
-              <button className="rounded border px-4 py-2" onClick={logout}>Sair</button>
+              {session.ready && <button className="rounded border px-4 py-2" onClick={logout}>Sair</button>}
             </div>
           </div>
         ) : children}

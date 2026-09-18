@@ -11,7 +11,7 @@ def verify(request, email, password, first, container, ready, passed, sql=None, 
         return body
 
     def login(address, secret):
-        return expect("POST", "/api/auth/login", {"email": address, "password": secret})["access_token"]
+        return expect("POST", "/api/auth/login", {"email": address, "password": secret})["session"]
 
     second = login(email, password)
     assert first != second

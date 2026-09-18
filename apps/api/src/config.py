@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import re
+from urllib.parse import urlsplit
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -12,6 +14,8 @@ class Settings:
     jwt_expire_minutes: int
     cors_origins_raw: str
     exams_base_path: str
+    public_origin: str = "https://localhost:18443"
+    session_cookie_name: str = "__Host-erp_dents_session"
     bootstrap_token: str = ""
     exam_max_bytes: int = 20 * 1024 * 1024
     exam_quota_bytes: int = 50 * 1024 * 1024 * 1024
@@ -40,7 +44,16 @@ def get_settings() -> Settings:
     maintenance_seconds = int(os.getenv("EXAM_MAINTENANCE_SECONDS", "300"))
     if not 10 <= maintenance_seconds <= 3600:
         raise ValueError("EXAM_MAINTENANCE_SECONDS deve estar entre 10 e 3600.")
+    origin = os.getenv("PUBLIC_ORIGIN", "https://localhost:18443")
+    parsed = urlsplit(origin)
+    if (parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password
+            or parsed.path or parsed.query or parsed.fragment or origin != f"https://{parsed.netloc}"):
+        raise ValueError("PUBLIC_ORIGIN deve ser uma origem HTTPS sem caminho ou credenciais.")
+    cookie_name = os.getenv("SESSION_COOKIE_NAME", "__Host-erp_dents_session")
+    if not re.fullmatch(r"__Host-[A-Za-z0-9_-]{1,80}", cookie_name):
+        raise ValueError("SESSION_COOKIE_NAME deve usar prefixo __Host- e nome válido.")
     return Settings(
+        public_origin=origin, session_cookie_name=cookie_name,
         database_url=os.getenv(
             "DATABASE_URL", "postgresql+psycopg://erp_user:erp_password@db:5432/erp_dents"
         ),

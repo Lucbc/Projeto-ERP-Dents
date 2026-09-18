@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "../src/hooks/use-auth";
-import { api } from "../src/lib/api";
-import { changeSession, getSession, TOKEN_STORAGE_KEY } from "../src/lib/session";
+import { api, sessionTransport, withSessionLock } from "../src/lib/api";
+import { changeSession, getSession, syncSession, SESSION_STORAGE_KEY } from "../src/lib/session";
 
 const tokenA = "fictitious-session-a";
 const tokenB = "fictitious-session-b";
@@ -40,11 +40,16 @@ function Page() {
 function mount() { return render(<StrictMode><AuthProvider><Page /></AuthProvider></StrictMode>); }
 
 beforeEach(() => {
+  Object.defineProperty(navigator, "locks", { configurable: true, value: { request: async (_name: string, work: () => Promise<unknown>) => await work() } });
+  sessionTransport.defaults.adapter = async (config) => {
+    const marker = config.url === "/api/auth/login" ? tokenB : localStorage.getItem(SESSION_STORAGE_KEY);
+    return response(config, { session_id: marker, csrf_token: "fictitious-csrf", expires_at: null, user: marker ? { id: marker === tokenA ? "user-a" : "user-b" } : null });
+  };
   changeSession(null);
   clients.length = 0;
   seen.length = 0;
   api.defaults.adapter = async (config) => {
-    const id = config.headers.Authorization === `Bearer ${tokenA}` ? "user-a" : "user-b";
+    const id = config.headers["X-Session-ID"] === tokenA ? "user-a" : "user-b";
     if (config.url === "/api/auth/me") return response(config, { id, role: "dentist" });
     if (config.url === "/api/auth/login") return response(config, { access_token: tokenB, user: { id } });
     return response(config, `patients-${id}`);
@@ -53,11 +58,61 @@ beforeEach(() => {
 afterEach(() => { cleanup(); changeSession(null); vi.useRealTimers(); });
 
 describe("session boundaries", () => {
+  it("does not claim logout when startup cannot recover cookie metadata", async () => {
+    localStorage.setItem(SESSION_STORAGE_KEY, tokenA);
+    syncSession();
+    sessionTransport.defaults.adapter = async (config) => { throw new AxiosError("Network Error", "ERR_NETWORK", config); };
+    mount();
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", { name: "Sair", exact: true })).toBeNull();
+    expect(screen.getByRole("button", { name: "Tentar novamente" })).toBeTruthy();
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBe(tokenA);
+  });
+
+  it("sends only session marker and CSRF header, never bearer or a stored JWT", async () => {
+    changeSession(tokenA, "csrf-for-a", Date.now() + 60000);
+    api.defaults.adapter = async (config) => {
+      expect(config.headers.Authorization).toBeUndefined();
+      expect(config.headers["X-Session-ID"]).toBe(tokenA);
+      expect(config.headers["X-CSRF-Token"]).toBe("csrf-for-a");
+      expect(config.withCredentials).toBe(true);
+      return response(config, {});
+    };
+    await api.post("/api/patients", {});
+    expect(localStorage.getItem("erp_dents_token")).toBeNull();
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBe(tokenA);
+    expect(Object.values(localStorage)).not.toContain("csrf-for-a");
+  });
+
+  it("refuses cookie-changing operations when browser locking is unavailable", async () => {
+    Object.defineProperty(navigator, "locks", { configurable: true, value: undefined });
+    const action = vi.fn();
+    await expect(withSessionLock(action)).rejects.toThrow("HTTPS");
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("holds the shared lock until an authentication response has completed", async () => {
+    const pending = deferred<string>();
+    let released = false;
+    Object.defineProperty(navigator, "locks", { configurable: true, value: {
+      request: async (name: string, work: () => Promise<string>) => {
+        expect(name).toBe("erp-dents-session");
+        const result = await work(); released = true; return result;
+      },
+    } });
+    const result = withSessionLock(() => pending.promise);
+    await Promise.resolve();
+    expect(released).toBe(false);
+    pending.resolve("complete");
+    await expect(result).resolves.toBe("complete");
+    expect(released).toBe(true);
+  });
+
   it("keeps the session when the current password is incorrect during a change", async () => {
     changeSession(tokenA);
     api.defaults.adapter = async (config) => { throw httpError(config, 400); };
     await expect(api.post("/api/auth/change-password", {})).rejects.toBeInstanceOf(AxiosError);
-    expect(getSession().token).toBe(tokenA);
+    expect(getSession().sessionId).toBe(tokenA);
   });
 
   it("waits for server logout confirmation and hides private data while waiting", async () => {
@@ -72,11 +127,12 @@ describe("session boundaries", () => {
     fireEvent.click(screen.getByText("Logout"));
     await screen.findByText("Encerrando sessão no servidor...");
     expect(screen.queryByText("patients-user-a")).toBeNull();
-    expect(getSession().token).toBe(tokenA);
-    expect(logoutConfig.headers.Authorization).toBe(`Bearer ${tokenA}`);
+    expect(getSession().sessionId).toBe(tokenA);
+    expect(logoutConfig.headers["X-Session-ID"]).toBe(tokenA);
+    expect(logoutConfig.headers.Authorization).toBeUndefined();
     await act(async () => pending.resolve(response(logoutConfig, {})));
     await screen.findByText("Login B");
-    expect(getSession().token).toBeNull();
+    expect(getSession().sessionId).toBeNull();
   });
 
   it("offers retry after failed logout without claiming server revocation", async () => {
@@ -90,11 +146,11 @@ describe("session boundaries", () => {
     fireEvent.click(screen.getByText("Logout"));
     await screen.findByText("Tentar sair novamente");
     expect(screen.queryByText("patients-user-a")).toBeNull();
-    expect(getSession().token).toBe(tokenA);
+    expect(getSession().sessionId).toBe(tokenA);
     fail = false;
     fireEvent.click(screen.getByText("Tentar sair novamente"));
     await screen.findByText("Login B");
-    expect(getSession().token).toBeNull();
+    expect(getSession().sessionId).toBeNull();
   });
 
   it("does not end a newer session when an older logout response arrives", async () => {
@@ -110,7 +166,7 @@ describe("session boundaries", () => {
     act(() => changeSession(tokenB));
     await screen.findByText("patients-user-b");
     await act(async () => pending.resolve(response(logoutConfig, {})));
-    expect(getSession().token).toBe(tokenB);
+    expect(getSession().sessionId).toBe(tokenB);
     expect(screen.getByText("patients-user-b")).toBeTruthy();
   });
 
@@ -133,14 +189,14 @@ describe("session boundaries", () => {
   it("adopts another tab login and logout, resetting visible data", async () => {
     changeSession(tokenA); mount(); await screen.findByText("patients-user-a");
     act(() => {
-      localStorage.setItem(TOKEN_STORAGE_KEY, tokenB);
-      window.dispatchEvent(new StorageEvent("storage", { key: TOKEN_STORAGE_KEY, storageArea: localStorage }));
+      localStorage.setItem(SESSION_STORAGE_KEY, tokenB);
+      window.dispatchEvent(new StorageEvent("storage", { key: SESSION_STORAGE_KEY, storageArea: localStorage }));
     });
     await screen.findByText("patients-user-b");
     expect(seen).not.toContain("user-b:patients-user-a");
     act(() => {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      window.dispatchEvent(new StorageEvent("storage", { key: TOKEN_STORAGE_KEY, storageArea: localStorage }));
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      window.dispatchEvent(new StorageEvent("storage", { key: SESSION_STORAGE_KEY, storageArea: localStorage }));
     });
     await screen.findByText("Login B");
     expect(screen.queryByText("patients-user-b")).toBeNull();
@@ -156,7 +212,7 @@ describe("session boundaries", () => {
     expect(captured.signal?.aborted).toBe(true);
     pending.resolve(response(captured, "private A"));
     expect(axios.isCancel(await request)).toBe(true);
-    expect(getSession().token).toBe(tokenB);
+    expect(getSession().sessionId).toBe(tokenB);
   });
 
   it("does not let a late 401 log out a newer session, even before storage event delivery", async () => {
@@ -165,10 +221,10 @@ describe("session boundaries", () => {
     let captured!: InternalAxiosRequestConfig;
     api.defaults.adapter = (config) => { captured = config; return pending.promise; };
     const request = api.get("/api/patients").catch((e) => e);
-    localStorage.setItem(TOKEN_STORAGE_KEY, tokenB);
+    localStorage.setItem(SESSION_STORAGE_KEY, tokenB);
     pending.reject(httpError(captured, 401));
     expect(axios.isCancel(await request)).toBe(true);
-    expect(getSession().token).toBe(tokenB);
+    expect(getSession().sessionId).toBe(tokenB);
   });
 
   it("a current authenticated 401 ends the session and removes private UI", async () => {
@@ -176,7 +232,7 @@ describe("session boundaries", () => {
     api.defaults.adapter = async (config) => { throw httpError(config, 401); };
     await act(async () => { await api.get("/api/protected").catch(() => undefined); });
     await screen.findByText("Login B");
-    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull();
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull();
     expect(screen.queryByText("patients-user-a")).toBeNull();
   });
 
@@ -184,7 +240,7 @@ describe("session boundaries", () => {
     changeSession(tokenA);
     api.defaults.adapter = async (config) => { throw status ? httpError(config, status) : new AxiosError("Network Error", "ERR_NETWORK", config); };
     await api.get("/api/patients").catch(() => undefined);
-    expect(getSession().token).toBe(tokenA);
+    expect(getSession().sessionId).toBe(tokenA);
   });
 
   it("login 401 has no bearer and does not invalidate an existing session", async () => {
@@ -194,7 +250,7 @@ describe("session boundaries", () => {
       throw httpError(config, 401);
     };
     await api.post("/api/auth/login", {}).catch(() => undefined);
-    expect(getSession().token).toBe(tokenA);
+    expect(getSession().sessionId).toBe(tokenA);
   });
 
   it.each(["manual", "online"])("retains saved access during validation failure and recovers via %s", async (mode) => {
@@ -204,7 +260,7 @@ describe("session boundaries", () => {
     mount();
     await screen.findByRole("alert");
     expect(screen.queryByText("user-a")).toBeNull();
-    expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe(tokenA);
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBe(tokenA);
     api.defaults.adapter = healthy;
     if (mode === "manual") fireEvent.click(screen.getByText("Tentar novamente"));
     else act(() => { window.dispatchEvent(new Event("online")); });
@@ -213,26 +269,26 @@ describe("session boundaries", () => {
 
   it("expires a session when a sleeping tab resumes", async () => {
     const exp = Math.floor(Date.now() / 1000) + 60;
-    changeSession(`header.${btoa(JSON.stringify({ exp }))}.signature`);
+    changeSession("fictitious-expiring-marker", "fictitious-csrf", exp * 1000);
     mount(); await screen.findByText("user-b");
     vi.useFakeTimers();
     // Focus also checks expiration after a sleeping/background tab resumes.
     vi.setSystemTime(new Date((exp + 1) * 1000));
     act(() => { window.dispatchEvent(new Event("focus")); });
     expect(screen.getByText("Login B")).toBeTruthy();
-    expect(getSession().token).toBeNull();
+    expect(getSession().sessionId).toBeNull();
   });
 
   it("expires an idle session by timer without any navigation or request", async () => {
     vi.useFakeTimers();
     const exp = Math.floor(Date.now() / 1000) + 60;
-    changeSession(`header.${btoa(JSON.stringify({ exp }))}.signature`);
+    changeSession("fictitious-expiring-marker", "fictitious-csrf", exp * 1000);
     mount();
     await act(async () => { await vi.advanceTimersByTimeAsync(100); });
     expect(screen.getByText("user-b")).toBeTruthy();
     await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
     expect(screen.getByText("Login B")).toBeTruthy();
-    expect(getSession().token).toBeNull();
+    expect(getSession().sessionId).toBeNull();
   });
 
   it("rejects a disabled identity on /me without treating ordinary permission errors as logout", async () => {
@@ -240,7 +296,7 @@ describe("session boundaries", () => {
     api.defaults.adapter = async (config) => { throw httpError(config, 403); };
     mount();
     await screen.findByText("Login B");
-    expect(getSession().token).toBeNull();
+    expect(getSession().sessionId).toBeNull();
   });
 
   it("a delayed identity response cannot restore a logged-out user", async () => {

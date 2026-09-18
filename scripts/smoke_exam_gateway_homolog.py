@@ -3,15 +3,20 @@ from concurrent.futures import ThreadPoolExecutor
 import http.client
 import json
 import socket
+import ssl
 import time
 from urllib.request import urlopen
 
 import smoke_homolog as smoke
 
 
+def tls_context():
+    return ssl.create_default_context(cafile=str(smoke.ROOT/".data/tls/homolog/ca.crt"))
+
+
 def health(_=None):
     start = time.monotonic()
-    with urlopen('http://127.0.0.1:18000/health', timeout=5) as response:
+    with urlopen('https://localhost:18443/health', timeout=5, context=tls_context()) as response:
         assert response.status == 200
     return time.monotonic() - start
 
@@ -20,7 +25,7 @@ def main():
     smoke.verify_target()
     with ThreadPoolExecutor(max_workers=8) as pool:
         times = sorted(pool.map(health, range(80)))
-    connection = http.client.HTTPConnection('127.0.0.1', 18000, timeout=5)
+    connection = http.client.HTTPSConnection('localhost', 18443, timeout=5, context=tls_context())
     connection.putrequest('POST', '/api/patients/fictitious/exams')
     connection.putheader('Content-Length', str(1024 * 1024 * 1024 + 65537))
     connection.endheaders()
@@ -29,17 +34,22 @@ def main():
     response.read()
     connection.close()
     # Two connections with incomplete bodies hold both gateway/API upload slots.
+    credentials = json.loads((smoke.STATE/"admin.json").read_text())
+    session = smoke.request("POST", "/api/auth/login", credentials)["session"]
+    auth_headers = {"Origin": "https://localhost:18443", "Cookie": session.cookies,
+                    "X-Session-ID": session.session_id, "X-CSRF-Token": session.csrf_token}
+    auth_wire = "".join(k+": "+v+"\r\n" for k,v in auth_headers.items()).encode()
     sockets = []
     try:
         for _ in range(2):
-            stream = socket.create_connection(('127.0.0.1', 18000), timeout=5)
-            stream.sendall(b'POST /api/patients/fictitious/exams HTTP/1.1\r\nHost: localhost\r\nContent-Length: 1000\r\nContent-Type: application/octet-stream\r\n\r\nx')
+            stream = tls_context().wrap_socket(socket.create_connection(('127.0.0.1', 18443), timeout=5), server_hostname='localhost')
+            stream.sendall(b'POST /api/patients/fictitious/exams HTTP/1.1\r\nHost: localhost\r\nContent-Length: 1000\r\nContent-Type: application/octet-stream\r\n' + auth_wire + b'\r\nx')
             sockets.append(stream)
         # Poll only until the gateway has processed both initial headers.
         statuses = []
         for _ in range(10):
-            conn = http.client.HTTPConnection('127.0.0.1', 18000, timeout=5)
-            conn.request('POST', '/api/patients/fictitious/exams', body=b'x')
+            conn = http.client.HTTPSConnection('localhost', 18443, timeout=5, context=tls_context())
+            conn.request('POST', '/api/patients/fictitious/exams', body=b'x', headers=auth_headers)
             reply = conn.getresponse()
             statuses.append(reply.status)
             reply.read()
@@ -54,6 +64,7 @@ def main():
         assert b' 408 ' in result.split(b'\r\n', 1)[0]
     finally:
         for stream in sockets: stream.close()
+        smoke.request("POST", "/api/auth/logout", token=session)
     assert health() < 5
     report = {'health_requests': len(times), 'workers': 8, 'p95_seconds': round(times[75], 4),
               'proxy_oversize': 413, 'parallel_upload_overload': 503, 'slow_body': 408}

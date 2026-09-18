@@ -18,7 +18,7 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
         return expect("POST", "/api/auth/login", {"email": email, "password": password}, status=status,
                       extra_headers=headers)
 
-    token = login()["access_token"]
+    token = login()["session"]
     wrong = login("a" * 72 + "different-suffix", status=401)
     missing = login(status=401, email="missing@example.com")
     expect("PUT", "/api/users/" + user["id"], {"is_active": False}, token=admin)
@@ -43,7 +43,7 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     passed("ten concurrent attempts per normalized account; 429/Retry-After persist after API restart")
 
     sql(f'UPDATE "{schema}".auth_attempts SET expires_at = now() - interval \'1 second\'')
-    token = login()["access_token"]
+    token = login()["session"]
     passed("expired window restores access without changing credentials")
 
     # Fill the actual origin bucket near its limit without 120 expensive password hashes.

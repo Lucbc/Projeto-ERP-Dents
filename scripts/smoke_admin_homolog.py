@@ -22,7 +22,7 @@ def main():
     smoke.verify_target()
     credentials = json.loads((smoke.STATE / "admin.json").read_text(encoding="utf8"))
     login = smoke.request("POST", "/api/auth/login", credentials)
-    admin_token = login["access_token"]
+    admin_token = login["session"]
 
     def admin(method, path, data=None, expected=200):
         return smoke.request(method, path, data, token=admin_token, expected=expected)
@@ -74,7 +74,7 @@ def main():
         delegate, account = create("delegate", "coordinator")
         target, _ = create("target-admin", "admin")
         ordinary, _ = create("ordinary", "reception")
-        token = smoke.request("POST", "/api/auth/login", account)["access_token"]
+        token = smoke.request("POST", "/api/auth/login", account)["session"]
         state["delegate_credentials"] = account
         save(state)
         smoke.request("GET", "/api/users", token=token, expected=403)

@@ -37,12 +37,12 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     upload(b"x" * 70000, status=413)
     assert len(expect("GET", path)) == 1
     passed("active/mismatched/empty files and excessive file/body sizes rejected without metadata")
-    upload(PNG, token=None, status=401)
+    upload(PNG, token=None, status=403)  # Missing CSRF is rejected before authentication/body parsing.
     expect("GET", "/api/exams/" + exam["id"] + "/download", token=None, status=401)
     reception_secret = secrets.token_urlsafe(18)
     reception = expect("POST", "/api/users", {"name": "Fictitious Reception", "email": "exam.reception@example.com",
         "password": reception_secret, "role": "reception"}, status=201)
-    token = expect("POST", "/api/auth/login", {"email": reception["email"], "password": reception_secret}, token=None)["access_token"]
+    token = expect("POST", "/api/auth/login", {"email": reception["email"], "password": reception_secret}, token=None)["session"]
     # Explicitly revoke exam access for this isolated role; test all routes.
     permissions = expect("GET", "/api/permissions")
     entry = next(item for item in permissions["items"] if item["role"] == "reception")
