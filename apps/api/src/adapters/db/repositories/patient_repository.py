@@ -1,12 +1,12 @@
 ﻿from __future__ import annotations
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from src.adapters.db.models.models import PatientModel, ExamModel
 from src.adapters.db.exam_cleanup import queue_exam_file
 from sqlalchemy.exc import IntegrityError
-from src.core.domain.exceptions import ConflictError
+from src.core.domain.exceptions import ConflictError, ValidationError
 from src.core.domain.entities import Patient
 from src.core.ports.repositories import PatientRepository
 
@@ -49,10 +49,10 @@ class SqlAlchemyPatientRepository(PatientRepository):
         return self._to_entity(item)
 
     def update(self, patient_id, data: dict):
-        item = self.session.get(PatientModel, patient_id)
-        if item is None:
-            return None
-
+        version = data.get('version')
+        if type(version) is not int or version < 1:
+            raise ValidationError("Reabra o cadastro para obter a versão atual antes de salvar.")
+        values = {}
         for key in [
             "full_name",
             "preferred_name",
@@ -74,7 +74,19 @@ class SqlAlchemyPatientRepository(PatientRepository):
             "active",
         ]:
             if key in data:
-                setattr(item, key, data[key])
+                values[key] = data[key]
+
+        # The predicate and increment are one SQL statement, including no-op edits.
+        item = self.session.scalar(update(PatientModel).where(
+            PatientModel.id == patient_id, PatientModel.version == version
+        ).values(**values, version=PatientModel.version + 1).returning(PatientModel),
+            execution_options={'populate_existing': True})
+        if item is None:
+            exists = self.session.scalar(select(PatientModel.id).where(PatientModel.id == patient_id))
+            self.session.rollback()
+            if exists is None:
+                return None
+            raise ConflictError("Este paciente foi alterado por outra operação. Seu rascunho foi mantido. Carregue o cadastro atual antes de salvar novamente.")
 
         self.session.commit()
         self.session.refresh(item)
@@ -100,6 +112,7 @@ class SqlAlchemyPatientRepository(PatientRepository):
 
     def _to_entity(self, model: PatientModel) -> Patient:
         return Patient(
+            version=model.version,
             id=model.id,
             full_name=model.full_name,
             preferred_name=model.preferred_name,

@@ -64,13 +64,18 @@ class AppointmentConcurrencyTests(unittest.TestCase):
             db.commit()
             return item.id
 
-    def race(self, operations, mode='create'):
+    def race(self, operations, mode='create', legacy=False):
         barrier = threading.Barrier(2, timeout=10)
         def worker(operation):
             with Session(self.engine) as db:
                 repo = SqlAlchemyAppointmentRepository(db)
                 uc = AppointmentUseCases(repo, SqlAlchemyPatientRepository(db),
                     SqlAlchemyDentistRepository(db), SqlAlchemyProcedureRepository(db))
+                if legacy:
+                    # Historical schema has no later patient version column.
+                    # Reproduce the original free-slot read followed by insert directly.
+                    self.assertFalse(repo.has_conflict(self.start, self.start+timedelta(hours=1), self.dentists[0]))
+                    uc = repo
                 original = getattr(repo, mode)
                 def synchronized(*args):
                     # Both use cases have already passed the application overlap checks.
@@ -140,7 +145,7 @@ class AppointmentConcurrencyTests(unittest.TestCase):
 
     def test_upgrade_refuses_existing_conflicts_without_changing_records(self):
         self.assertEqual(self.migrate('downgrade','0011_exam_file_deletions').returncode, 0)
-        self.assertEqual(self.race([(self.data(),), (self.data(patient=1),)]), ['ok','ok'])
+        self.assertEqual(self.race([(self.data(),), (self.data(patient=1),)], legacy=True), ['ok','ok'])
         result = self.migrate('upgrade','head')
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(b'nenhum dado foi alterado', result.stderr)

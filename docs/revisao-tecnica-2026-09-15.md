@@ -233,6 +233,8 @@ A regra de um lançamento ativo por consulta usa consulta prévia, seguida de cr
 
 ### R18 — P1 — Duas pessoas podem sobrescrever alterações uma da outra
 
+**Atualização parcial 2B.1:** edição de pacientes usa versão obrigatória e atualização atômica; rascunho preservado e recarga explícita no frontend. [Evidências e limites](./homologacao-etapa-2B1.md). Demais recursos e exclusões continuam pendentes; descrição original abaixo mantida como histórico.
+
 **Confirmado: não existe controle de versão nas atualizações.** [patient_repository.py](../apps/api/src/adapters/db/repositories/patient_repository.py#L48), [appointment_use_cases.py](../apps/api/src/core/use_cases/appointment_use_cases.py#L75), [financial_use_cases.py](../apps/api/src/core/use_cases/financial_use_cases.py#L91).
 
 Formulários enviam o registro inteiro; casos de uso também mesclam e regravam campos. Se A e B abrem o mesmo registro, B pode salvar dados antigos sobre a alteração de A. `updated_at` existe, mas não é usado como pré-condição.

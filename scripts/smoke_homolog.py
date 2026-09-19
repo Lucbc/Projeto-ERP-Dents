@@ -123,7 +123,7 @@ def main() -> None:
         patient = create('patients', {'full_name': 'Paciente Ficticio ' + suffix,
                                       'birth_date': '1990-01-15', 'notes': 'Somente homologacao'})
         updated = request('PUT', '/api/patients/' + patient['id'],
-                          {'preferred_name': 'Teste'}, token=token)
+                          {'preferred_name': 'Teste', 'version': patient['version']}, token=token)
         assert updated['preferred_name'] == 'Teste'
         passed('cadastros de especialidade, dentista, procedimento e paciente; edicao')
 

@@ -44,6 +44,7 @@ class PaymentMethod(str, Enum):
 
 @dataclass(slots=True)
 class Patient:
+    version: int
     id: UUID
     full_name: str
     preferred_name: str | None

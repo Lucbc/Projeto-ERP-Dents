@@ -45,6 +45,7 @@ class PatientCreateRequest(BaseModel):
 
 
 class PatientUpdateRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
     full_name: str | None = None
     preferred_name: str | None = None
     birth_date: date | None = None
@@ -66,6 +67,7 @@ class PatientUpdateRequest(BaseModel):
 
 
 class PatientResponse(AppBaseSchema):
+    version: int
     id: UUID
     full_name: str
     preferred_name: str | None

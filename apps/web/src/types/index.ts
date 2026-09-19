@@ -42,6 +42,7 @@ export interface PermissionActions {
 }
 
 export interface Patient {
+  version: number;
   id: string;
   full_name: string;
   preferred_name: string | null;

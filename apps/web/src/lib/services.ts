@@ -181,7 +181,7 @@ export const patientService = {
     const response = await api.post<Patient>("/api/patients", payload);
     return response.data;
   },
-  async update(id: string, payload: Partial<Patient>) {
+  async update(id: string, payload: Partial<Patient> & { version: number }) {
     const response = await api.put<Patient>(`/api/patients/${id}`, payload);
     return response.data;
   },

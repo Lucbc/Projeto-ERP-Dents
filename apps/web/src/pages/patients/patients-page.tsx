@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
+import { isAxiosError } from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -82,6 +83,7 @@ export function PatientsPage() {
   const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+  const [editConflict, setEditConflict] = useState(false);
 
   const form = useForm<PatientForm>({
     resolver: zodResolver(patientSchema),
@@ -144,8 +146,9 @@ export function PatientsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: PatientForm }) =>
+    mutationFn: ({ id, version, payload }: { id: string; version: number; payload: PatientForm }) =>
       patientService.update(id, {
+        version,
         full_name: payload.full_name,
         preferred_name: nullable(payload.preferred_name),
         birth_date: payload.birth_date || null,
@@ -172,6 +175,18 @@ export function PatientsPage() {
       form.reset();
       void queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
+      toast(getApiErrorMessage(error), "error");
+    },
+  });
+
+  const reloadPatientMutation = useMutation({
+    mutationFn: (id: string) => patientService.get(id),
+    onSuccess: (patient) => {
+      onEdit(patient);
+      void queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
@@ -184,7 +199,7 @@ export function PatientsPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadPatientMutation.isPending;
   const canCreate = can("patients", "create");
   const canUpdate = can("patients", "update");
   const canDelete = can("patients", "delete");
@@ -194,6 +209,7 @@ export function PatientsPage() {
 
   const onNew = () => {
     if (!canCreate) return;
+    setEditConflict(false);
     setEditingPatient(null);
     form.reset({
       full_name: "",
@@ -220,6 +236,7 @@ export function PatientsPage() {
 
   const onEdit = (patient: Patient) => {
     if (!canUpdate) return;
+    setEditConflict(false);
     setEditingPatient(patient);
     form.reset({
       full_name: patient.full_name,
@@ -246,7 +263,7 @@ export function PatientsPage() {
 
   const onSubmit = (values: PatientForm) => {
     if (editingPatient) {
-      updateMutation.mutate({ id: editingPatient.id, payload: values });
+      updateMutation.mutate({ id: editingPatient.id, version: editingPatient.version, payload: values });
       return;
     }
     createMutation.mutate(values);
@@ -353,10 +370,19 @@ export function PatientsPage() {
 
       <Modal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingPatient ? "Editar paciente" : "Novo paciente"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {editConflict && editingPatient && (
+            <div className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3" role="alert">
+              <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá os campos deste formulário.</p>
+              <Button type="button" variant="outline" disabled={isSubmitting}
+                onClick={() => reloadPatientMutation.mutate(editingPatient.id)}>
+                Descartar rascunho e carregar atual
+              </Button>
+            </div>
+          )}
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Nome completo *</label>
             <Input {...form.register("full_name")} />
@@ -489,7 +515,7 @@ export function PatientsPage() {
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpenModal(false)}>
+            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>

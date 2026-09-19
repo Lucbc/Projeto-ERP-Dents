@@ -24,7 +24,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
-| 2B | Edição concorrente e histórico financeiro | Pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
+| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 em validação | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída: [2A.2 — geração idempotente de cobrança](./homologacao-etapa-2A2.md).** PostgreSQL impede duas cobranças ativas por consulta; chaves persistentes recuperam operações repetidas sem recriar lançamentos. Etapa 2A encerrada. Próxima etapa: **2B — edição concorrente e histórico financeiro**, ainda não iniciada; dividir em recortes pequenos antes de implementar.
+**Em andamento: 2B.1 — edição simultânea de pacientes**, base `60347c6`. Versão obrigatória na atualização, comparação e incremento atômicos no banco, aviso de conflito com rascunho preservado e opção explícita de carregar dados atuais. Última entrega concluída: [2A.2](./homologacao-etapa-2A2.md). Demais cadastros, agenda, exclusões e histórico financeiro ficam nos recortes seguintes.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -199,7 +199,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Evidências: `docs/homologacao-etapa-2A1.md`. Testes: `test_appointment_concurrency.py`, `smoke_agenda_homolog.py` e smoke manual de navegador. Sem alteração de frontend. Rolagem horizontal da lista permanece na etapa 3; perda de campos em duas edições da mesma consulta, na 2B.
 - Homologação ativa em **https://localhost:18443**, sem schemas descartáveis restantes. Fechamento posterior ao CI somente documental; conferir árvore limpa e HEAD remoto ao retomar. Próxima subetapa será **2A.2 — geração idempotente de cobrança**: reproduzir solicitações simultâneas/repetidas e definir garantia transacional antes de alterar a geração. Não repetir a revisão geral nem considerar toda a 2A concluída.
 
-### Ponto de retomada atual — 2A.2 concluída em 18/09/2026
+### Retomada da 2A.2 — concluída em 18/09/2026 (histórico)
 
 - Base `b1e36c7`. R17 reproduzido e corrigido: migração `0013_financial_generation` instala índice único parcial de cobrança ativa por consulta e tabela persistente de repetição. Preflight recusa duplicações antigas sem alterar cobranças; exige janela pelo bloqueio da tabela.
 - Geração aceita UUID opcional `idempotency_key`; mesma chave/parâmetros recupera o mesmo lançamento no estado atual, parâmetros diferentes geram 409. Chave e cobrança na mesma transação. Cancelamento libera nova operação, mas repetição antiga continua ligada ao cancelado; exclusão deixa registro sem referência que impede recriação tardia. Clientes sem chave mantêm conflito sequencial.
@@ -208,3 +208,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Homologação principal atualizada, dados anteriores/exames preservados por fingerprints; cópias locais `pre-2A2.dump`, `pre-2A2-exams.tar` e estado. Registros novos de repetição dos testes ficam sem referência após limpeza das fixtures. Não publicar `.data`, segredos ou certificados.
 - Implementação `d5d2484` publicada; [CI 35404599297](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35404599297) aprovado em 7min44s com 119 testes backend, 42 frontend, smokes, builds e auditorias. Zero schemas de teste restantes. Homologação ativa em **https://localhost:18443**. Fechamento posterior somente documental.
 - Evidências/contrato/comandos: `docs/homologacao-etapa-2A2.md`. Conferir árvore limpa e HEAD local/remoto ao retomar. Próxima etapa: **2B — edição concorrente e histórico financeiro**, a dividir em recortes pequenos antes de implementar. Começar pelo mapeamento dos formulários e operações com risco de sobrescrita (R18), definindo controle de versão e resposta a conflito; baixa/histórico vêm em recorte próprio (R26). Não repetir a revisão geral nem declarar produção real liberada.
+
+### Ponto de retomada atual — 2B.1 em validação em 18/09/2026
+
+- Usuário autorizou iniciar a próxima etapa com 40% de contexto restante. Recorte definido e comunicado: **edição de pacientes**, base `60347c6`; não implementar toda a 2B de uma vez.
+- Migração `0014_patient_version`, versão positiva inicialmente 1; PUT de pacientes exige versão. Comparação/incremento atômicos em SQL. Versão antiga retorna 409, inexistência 404, precondição ausente/inválida 422. Campos existentes preservados; frontend/API precisam ser atualizados juntos.
+- Formulário mantém versão original e rascunho em conflito; opção explícita **Descartar rascunho e carregar atual** só substitui após leitura bem-sucedida. Falha de recarga conserva rascunho. Não há reenvio ou mesclagem automática.
+- Passaram oito testes PostgreSQL focados, dez grupos HTTP específicos e dez gerais, 43 testes frontend, builds API/web. Chrome com duas abas aprovou conflito real, rascunho preservado, recarga e salvamento revisado. Suíte backend completa aprovada: 127 testes. Retomada em 19/09/2026 para publicação e acompanhamento do CI.
+- Homologação principal em `0014_patient_version`; cópias locais `pre-2B1.dump`, `pre-2B1-exams.tar` e fingerprints. Campos anteriores/bytes dos exames preservados, fixtures de navegador removidas. Não publicar `.data`, credenciais ou certificados.
+- Evidências e contrato: `docs/homologacao-etapa-2B1.md`. R18 parcialmente tratado só para edição de pacientes; exclusões, demais cadastros e financeiro permanecem pendentes. Próximo recorte proposto: **2B.2 — edição concorrente da agenda**. Histórico financeiro terá recorte próprio. Fechar testes/CI, commit/push e verificar HEAD remoto; não repetir a revisão geral.

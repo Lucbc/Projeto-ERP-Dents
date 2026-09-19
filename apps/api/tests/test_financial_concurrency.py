@@ -41,12 +41,16 @@ class FinancialConcurrencyTests(unittest.TestCase):
         return dict(entry_type='income', description='Fictitious charge', amount_cents=12000,
                     due_date=date(2030,1,7), appointment_id=self.appointments[index], **kwargs)
 
-    def race(self, calls, method='create'):
+    def race(self, calls, method='create', legacy=False):
         gate = Barrier(2, timeout=15)
         def worker(call):
             with Session(self.engine) as db:
                 uc = self.use_case(db)
                 repo = uc.financial_repository
+                if legacy:
+                    # Historical patient schemas do not have the later version column.
+                    self.assertIsNone(repo.get_by_appointment(self.appointments[0]))
+                    uc = repo
                 original = getattr(repo, method)
                 def synchronized(*args):
                     gate.wait()
@@ -144,7 +148,8 @@ class FinancialConcurrencyTests(unittest.TestCase):
 
     def test_legacy_duplicate_reproduction_and_upgrade_refusal(self):
         self.assertEqual(self.fixture.migrate('downgrade','0012_appointment_exclusion').returncode, 0)
-        result = self.race([lambda uc: uc.create(self.data())]*2)
+        data = {**self.data(), 'total_cents':12000, 'status':'pending'}
+        result = self.race([lambda repo: repo.create(data)]*2, legacy=True)
         self.assertEqual([status for status,_ in result], ['ok','ok'])
         migration = self.fixture.migrate('upgrade','head')
         self.assertNotEqual(migration.returncode, 0)
@@ -156,9 +161,9 @@ class FinancialConcurrencyTests(unittest.TestCase):
     def test_upgrade_preserves_valid_records(self):
         self.assertEqual(self.fixture.migrate('downgrade','0012_appointment_exclusion').returncode, 0)
         with Session(self.engine) as db:
-            uc = self.use_case(db)
-            cancelled = uc.create(self.data(status='cancelled')).id
-            active = uc.create(self.data()).id
+            repo = SqlAlchemyFinancialRepository(db)
+            cancelled = repo.create({**self.data(status='cancelled'), 'total_cents':12000}).id
+            active = repo.create({**self.data(status='pending'), 'total_cents':12000}).id
         self.assertEqual(self.fixture.migrate('upgrade','head').returncode, 0)
         with Session(self.engine) as db:
             self.assertEqual(set(db.scalars(select(FinancialEntryModel.id))), {cancelled,active})
