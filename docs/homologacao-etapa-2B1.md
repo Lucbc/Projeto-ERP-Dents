@@ -26,6 +26,7 @@ Antes da atualização da homologação, cópias locais `.data/homolog/pre-2B1.d
 - Chrome/HTTPS: duas abas com a mesma versão; primeira edição salva, segunda recebe 409 e mantém rascunho. Recarga explícita exibe dados do primeiro operador, revisão salva versão 3. Capturas locais conferidas. Fixtures removidas.
 - Homologação em `0014_patient_version`; fingerprints confirmaram campos de negócio anteriores e bytes dos exames preservados.
 - Suíte backend completa: **127 testes aprovados**, incluindo PostgreSQL e ClamAV. CI remoto: registrar resultado antes de fechar.
+- Primeira execução remota (`35441069660`) passou os 127 testes, mas falhou na leitura da resposta do teste de timeout do gateway. O teste usava um único `recv`, que não garante uma linha HTTP completa. Substituído pelo leitor HTTP da biblioteca padrão, mantendo a exigência de 408 e informando somente o status em caso de falha. Ensaio local aprovado com 413/503/408 e 80 chamadas de saúde. O log anterior não preservava o status recebido; nova execução remota necessária para fechar, sem atribuir causa definitiva à fragmentação.
 
 Comandos específicos:
 

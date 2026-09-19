@@ -60,8 +60,9 @@ def main():
         assert health() < 5
         # Body deadline frees slots even when a client never completes the upload.
         sockets[0].settimeout(35)
-        result = sockets[0].recv(8192)
-        assert b' 408 ' in result.split(b'\r\n', 1)[0]
+        response = http.client.HTTPResponse(sockets[0])
+        response.begin()  # A single recv is not guaranteed to contain a full status line.
+        assert response.status == 408, f'Slow-body timeout: expected 408, got {response.status}'
     finally:
         for stream in sockets: stream.close()
         smoke.request("POST", "/api/auth/logout", token=session)
