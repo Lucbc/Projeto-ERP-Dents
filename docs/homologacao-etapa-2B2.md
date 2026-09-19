@@ -24,7 +24,8 @@ Migração adiciona coluna/restrição com bloqueio de tabela; reservar janela d
 - **10 grupos HTTP específicos**, **12 da proteção de sobreposição** e **10 do fluxo geral** aprovados. Testes históricos usam colunas explícitas para funcionar sem a coluna nova, mantendo a reprodução anterior das sobreposições.
 - **Chrome/HTTPS:** duas abas com lista e calendário. Lista salva e calendário rejeita versão antiga, mantendo seleção de procedimento divergente; recarga recupera a seleção gravada. Fluxo inverso também passou, com conflito na lista após edição pelo calendário. Revisões chegaram à versão 5, sem misturar campos/vínculos. Capturas conferidas e fixtures removidas pela API.
 - Homologação principal em `0015_appointment_version`; fingerprints aprovados após migração e smokes.
-- Suíte backend completa: **137 testes aprovados**, incluindo PostgreSQL e ClamAV. CI remoto: registrar antes de concluir.
+- Suíte backend completa: **137 testes aprovados**, incluindo PostgreSQL e ClamAV.
+- **CI remoto aprovado:** implementação `4a434d5`, [GitHub Actions 35460555407](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35460555407), em 8min56s. Confirmados 137 testes backend, 45 frontend, HTTP, builds e auditorias. Gateway passou 413/503/408 e 80 chamadas de saúde. Zero schemas de teste restantes na homologação. Etapa 2B.2 concluída em 19/09/2026; fechamento posterior somente documental.
 
 Comandos específicos:
 

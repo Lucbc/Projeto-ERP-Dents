@@ -24,7 +24,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
-| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 concluída; 2B.2 em validação | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
+| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 e 2B.2 concluídas; demais recortes pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Em andamento: 2B.2 — edição concorrente da agenda**, base `aa316c9`. Versão obrigatória na edição de consultas pela lista e calendário; dados e procedimentos na mesma transação, conflito com rascunho preservado e recarga explícita. Preservar exclusões de sobreposição da 2A.1. Última entrega concluída: [2B.1](./homologacao-etapa-2B1.md). Demais cadastros, exclusões e histórico financeiro permanecem nos recortes seguintes.
+**Concluída: [2B.2 — edição concorrente da agenda](./homologacao-etapa-2B2.md).** Versão obrigatória na edição pela lista/calendário; dados e procedimentos na mesma transação, rascunho preservado e recarga explícita. Restrições de sobreposição da 2A.1 mantidas. Próximo recorte: **2B.3 — demais cadastros, começando por dentistas**, ainda não iniciado. Exclusões e histórico financeiro permanecem em entregas próprias; não considerar toda a 2B concluída.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -221,11 +221,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Fechamento:** ajuste `0142dfe` publicado e [CI 35441701732](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35441701732) aprovado em 9min14s, com 127 testes backend, 43 frontend, HTTP, builds e auditorias. Gateway passou 413/503/408 e 80 chamadas de saúde; pendência anterior encerrada. Zero schemas descartáveis. Homologação ativa em **https://localhost:18443**, migração `0014_patient_version`.
 - Ao retomar: conferir árvore limpa e igualdade HEAD/remoto. Fechamento posterior ao CI somente documental. Iniciar **2B.2 — edição concorrente da agenda** mapeando edição na lista/calendário e tratamento do rascunho, preservando as restrições de sobreposição da 2A.1. Não repetir pacientes nem avançar para histórico financeiro sem recorte próprio. API/frontend atualizados juntos; abas antigas precisam recarregar para enviar versão de pacientes.
 
-### Ponto de retomada atual — 2B.2 em validação em 19/09/2026
+### Ponto de retomada atual — 2B.2 concluída em 19/09/2026
 
 - Base `aa316c9`, usuário autorizou iniciar a próxima etapa com 59% de contexto. Recorte: edição de consultas na lista e calendário, sem ampliar para histórico financeiro ou exclusões.
 - Migração `0015_appointment_version`; versão positiva inicialmente 1. PUT exige versão; aplicação compara antes das validações e banco compara/incrementa atomicamente. Campos e procedimentos na mesma transação. Sobreposição/FK rejeitada não consome versão nem deixa vínculos parciais.
 - Dois formulários guardam versão de origem e preservam rascunho/datas/procedimentos no conflito; recarga explícita só substitui após leitura bem-sucedida. Mantém duração gravada, sem aplicar sugestão automaticamente. Sem reenvio/mesclagem automática.
-- Passaram dez testes PostgreSQL focados, 45 frontend, dez grupos HTTP específicos, 12 de sobreposição e dez gerais; builds API/web. Chrome real passou nos dois sentidos (lista altera/calendário conflita e calendário altera/lista conflita), seleção de procedimento preservada, recarga e revisões até versão 5. Capturas conferidas; fixtures removidas. Suíte backend completa aprovada: 137 testes. CI pendente de publicação.
+- Passaram dez testes PostgreSQL focados, 45 frontend, dez grupos HTTP específicos, 12 de sobreposição e dez gerais; builds API/web. Chrome real passou nos dois sentidos (lista altera/calendário conflita e calendário altera/lista conflita), seleção de procedimento preservada, recarga e revisões até versão 5. Capturas conferidas; fixtures removidas. Suíte backend completa aprovada: 137 testes.
 - Homologação principal atualizada em `0015_appointment_version`; cópias locais `pre-2B2.dump`, `pre-2B2-exams.tar` e fingerprints. Campos anteriores/vínculos/exames preservados após migração e smokes. Não publicar `.data`, segredos ou certificados.
-- Contrato/comandos/evidências: `docs/homologacao-etapa-2B2.md`. Próximo recorte proposto: **2B.3 — demais cadastros, começando por dentistas**. R18 ainda parcial; exclusões, disponibilidade concorrente entre recursos e financeiro requerem recortes próprios. Fechar suíte/CI, commit/push e igualdade HEAD/remoto antes de concluir; não repetir a revisão geral.
+- Implementação `4a434d5` publicada. [CI 35460555407](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35460555407) aprovado em 8min56s com 137 testes backend, 45 frontend, HTTP, builds e auditorias. Gateway passou 413/503/408 e 80 chamadas de saúde. Zero schemas descartáveis. Homologação ativa em **https://localhost:18443**, migração `0015_appointment_version`. Fechamento posterior somente documental.
+- Contrato/comandos/evidências: `docs/homologacao-etapa-2B2.md`. Próximo recorte: **2B.3 — demais cadastros, começando por dentistas**; mapear dados, especialidades e disponibilidade antes de implementar versão/transação/recarga no formulário. R18 ainda parcial; exclusões, disponibilidade concorrente entre recursos e financeiro requerem recortes próprios. Ao retomar, conferir árvore limpa e igualdade HEAD/remoto. API/frontend juntos e abas antigas recarregadas; não repetir agenda nem revisão geral.
