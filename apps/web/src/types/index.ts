@@ -117,6 +117,7 @@ export interface User {
 }
 
 export interface Appointment {
+  version: number;
   id: string;
   patient_id: string;
   dentist_id: string;

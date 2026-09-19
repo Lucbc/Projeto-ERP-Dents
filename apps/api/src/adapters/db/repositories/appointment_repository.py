@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session, selectinload
 
 from src.adapters.db.models.models import (
@@ -14,6 +14,7 @@ from src.adapters.db.models.models import (
 )
 from src.core.domain.entities import Appointment, AppointmentStatus
 from src.core.ports.repositories import AppointmentRepository
+from src.core.domain.exceptions import ConflictError, ValidationError
 
 
 class SqlAlchemyAppointmentRepository(AppointmentRepository):
@@ -107,18 +108,27 @@ class SqlAlchemyAppointmentRepository(AppointmentRepository):
         return self._to_entity(item)
 
     def update(self, appointment_id, data: dict):
-        item = self.session.get(AppointmentModel, appointment_id)
+        version = data.get('version')
+        if type(version) is not int or version < 1:
+            raise ValidationError("Reabra a consulta para obter a versão atual antes de salvar.")
+        values = {key: data[key] for key in ("patient_id", "dentist_id", "start_at", "end_at", "status", "notes") if key in data}
+        # Acquire the row through a conditional write before touching procedure links.
+        item = self.session.scalar(update(AppointmentModel).where(
+            AppointmentModel.id == appointment_id, AppointmentModel.version == version
+        ).values(**values, version=AppointmentModel.version + 1).returning(AppointmentModel),
+            execution_options={'populate_existing': True})
         if item is None:
-            return None
+            exists = self.session.scalar(select(AppointmentModel.id).where(AppointmentModel.id == appointment_id))
+            self.session.rollback()
+            if exists is None:
+                return None
+            raise ConflictError("Esta consulta foi alterada por outra operação. Seu rascunho foi mantido. Carregue a consulta atual antes de salvar novamente.")
 
         if "procedure_ids" in data:
+            self.session.expire(item, ['procedure_links'])
             item.procedure_links = [
                 AppointmentProcedureModel(procedure_id=procedure_id) for procedure_id in data["procedure_ids"]
             ]
-
-        for key in ["patient_id", "dentist_id", "start_at", "end_at", "status", "notes"]:
-            if key in data:
-                setattr(item, key, data[key])
 
         self.session.commit()
         self.session.refresh(item)
@@ -140,6 +150,7 @@ class SqlAlchemyAppointmentRepository(AppointmentRepository):
         dentist_name: str | None = None,
     ) -> Appointment:
         return Appointment(
+            version=model.version,
             id=model.id,
             patient_id=model.patient_id,
             dentist_id=model.dentist_id,

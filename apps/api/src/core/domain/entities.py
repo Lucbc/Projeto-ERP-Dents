@@ -127,6 +127,7 @@ class RolePermission:
 
 @dataclass(slots=True)
 class Appointment:
+    version: int
     id: UUID
     patient_id: UUID
     dentist_id: UUID

@@ -9,7 +9,7 @@ import threading
 import unittest
 from uuid import uuid4
 
-from sqlalchemy import create_engine, select, text
+from sqlalchemy import create_engine, insert, select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -59,10 +59,10 @@ class AppointmentConcurrencyTests(unittest.TestCase):
 
     def insert(self, data):
         with Session(self.engine) as db:
-            item = AppointmentModel(**data)
-            db.add(item)
+            # Explicit columns and ID only also work on historical schemas without version.
+            id = db.scalar(insert(AppointmentModel.__table__).values(**data).returning(AppointmentModel.id))
             db.commit()
-            return item.id
+            return id
 
     def race(self, operations, mode='create', legacy=False):
         barrier = threading.Barrier(2, timeout=10)
@@ -75,7 +75,10 @@ class AppointmentConcurrencyTests(unittest.TestCase):
                     # Historical schema has no later patient version column.
                     # Reproduce the original free-slot read followed by insert directly.
                     self.assertFalse(repo.has_conflict(self.start, self.start+timedelta(hours=1), self.dentists[0]))
-                    uc = repo
+                    barrier.wait()
+                    db.execute(insert(AppointmentModel.__table__).values(**operation[0]))
+                    db.commit()
+                    return 'ok'
                 original = getattr(repo, mode)
                 def synchronized(*args):
                     # Both use cases have already passed the application overlap checks.
@@ -105,7 +108,7 @@ class AppointmentConcurrencyTests(unittest.TestCase):
     def test_two_edits_into_same_slot(self):
         first = self.insert(self.data(hour=2))
         second = self.insert(self.data(patient=1,hour=3))
-        target = {'start_at':self.start, 'end_at':self.start+timedelta(hours=1)}
+        target = {'version':1, 'start_at':self.start, 'end_at':self.start+timedelta(hours=1)}
         self.assertEqual(self.race([(first,target.copy()), (second,target.copy())], 'update'), ['23P01', 'ok'])
         with Session(self.engine) as db:
             rows = db.scalars(select(AppointmentModel)).all()
@@ -115,7 +118,7 @@ class AppointmentConcurrencyTests(unittest.TestCase):
     def test_two_cancelled_bookings_cannot_both_be_reactivated(self):
         first = self.insert(self.data(status='cancelled'))
         second = self.insert(self.data(patient=1,status='cancelled'))
-        self.assertEqual(self.race([(first,{'status':'confirmed'}), (second,{'status':'scheduled'})], 'update'), ['23P01', 'ok'])
+        self.assertEqual(self.race([(first,{'version':1,'status':'confirmed'}), (second,{'version':1,'status':'scheduled'})], 'update'), ['23P01', 'ok'])
 
     def test_cancellation_and_deletion_release_slot(self):
         first = self.insert(self.data())
@@ -150,7 +153,7 @@ class AppointmentConcurrencyTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(b'nenhum dado foi alterado', result.stderr)
         with Session(self.engine) as db:
-            self.assertEqual(len(db.scalars(select(AppointmentModel)).all()), 2)
+            self.assertEqual(len(db.scalars(select(AppointmentModel.id)).all()), 2)
             self.assertEqual(db.scalar(text('SELECT version_num FROM alembic_version')), '0011_exam_file_deletions')
 
     def test_upgrade_preserves_nonconflicting_existing_records(self):

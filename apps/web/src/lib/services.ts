@@ -316,7 +316,7 @@ export const appointmentService = {
     const response = await api.post<Appointment>("/api/appointments", payload);
     return response.data;
   },
-  async update(id: string, payload: AppointmentPayload) {
+  async update(id: string, payload: AppointmentPayload & { version: number }) {
     const response = await api.put<Appointment>(`/api/appointments/${id}`, payload);
     return response.data;
   },

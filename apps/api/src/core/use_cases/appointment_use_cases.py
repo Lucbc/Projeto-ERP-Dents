@@ -73,11 +73,17 @@ class AppointmentUseCases:
         return self.appointment_repository.create(data)
 
     def update(self, appointment_id: UUID, data: dict) -> Appointment:
+        version = data.get('version')
+        if type(version) is not int or version < 1:
+            raise ValidationError("Reabra a consulta para obter a versão atual antes de salvar.")
         current = self.appointment_repository.get(appointment_id)
         if current is None:
             raise NotFoundError("Consulta nao encontrada.")
+        if current.version != version:
+            raise ConflictError("Esta consulta foi alterada por outra operação. Seu rascunho foi mantido. Carregue a consulta atual antes de salvar novamente.")
 
         merged = {
+            "version": version,
             "patient_id": data.get("patient_id", current.patient_id),
             "dentist_id": data.get("dentist_id", current.dentist_id),
             "procedure_ids": data.get("procedure_ids", current.procedure_ids),

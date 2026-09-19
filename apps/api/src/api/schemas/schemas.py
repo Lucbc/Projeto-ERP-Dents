@@ -275,6 +275,7 @@ class AppointmentCreateRequest(BaseModel):
 
 
 class AppointmentUpdateRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
     patient_id: UUID | None = None
     dentist_id: UUID | None = None
     procedure_ids: list[UUID] | None = None
@@ -285,6 +286,7 @@ class AppointmentUpdateRequest(BaseModel):
 
 
 class AppointmentResponse(AppBaseSchema):
+    version: int
     id: UUID
     patient_id: UUID
     dentist_id: UUID

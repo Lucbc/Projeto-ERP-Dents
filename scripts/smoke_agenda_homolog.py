@@ -34,13 +34,13 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     first=expect('POST','/api/appointments',payload(h=4),201)
     second=expect('POST','/api/appointments',payload(p=1,h=6),201)
     race('PUT',['/api/appointments/'+row['id'] for row in (first,second)],
-         [payload(h=8),payload(p=1,h=8)],200)
+         [{**payload(h=8),'version':first['version']},{**payload(p=1,h=8),'version':second['version']}],200)
     passed('concurrent HTTP rescheduling preserves both records and rejects the losing edit')
     first=expect('POST','/api/appointments',payload(h=10,status='cancelled'),201)
     second=expect('POST','/api/appointments',payload(p=1,h=10,status='cancelled'),201)
     winner=race('PUT',['/api/appointments/'+row['id'] for row in (first,second)],
-                [{'status':'confirmed'},{'status':'scheduled'}],200)
-    expect('PUT','/api/appointments/'+winner['id'],{'status':'cancelled'})
+                [{'status':'confirmed','version':first['version']},{'status':'scheduled','version':second['version']}],200)
+    expect('PUT','/api/appointments/'+winner['id'],{'status':'cancelled','version':winner['version']})
     expect('POST','/api/appointments',payload(h=10),201)
     expect('POST','/api/appointments',payload(h=11),201)
     passed('reactivation conflicts; cancellation releases slot; adjacent bookings remain valid')

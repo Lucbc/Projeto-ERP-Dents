@@ -1,0 +1,18 @@
+"""Version appointment edits, preserving existing bookings and procedure links."""
+from alembic import op
+import sqlalchemy as sa
+
+revision = '0015_appointment_version'
+down_revision = '0014_patient_version'
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    op.add_column('appointments', sa.Column('version', sa.BigInteger(), server_default='1', nullable=False))
+    op.create_check_constraint('ck_appointments_positive_version', 'appointments', 'version > 0')
+
+
+def downgrade():
+    op.drop_constraint('ck_appointments_positive_version', 'appointments')
+    op.drop_column('appointments', 'version')

@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -78,6 +79,7 @@ export function AppointmentsPage() {
 
   const [openModal, setOpenModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [editConflict, setEditConflict] = useState(false);
   const [manualEndOverride, setManualEndOverride] = useState(false);
 
   const form = useForm<AppointmentForm>({
@@ -141,8 +143,9 @@ export function AppointmentsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: AppointmentForm }) =>
+    mutationFn: ({ id, version, payload }: { id: string; version: number; payload: AppointmentForm }) =>
       appointmentService.update(id, {
+        version,
         patient_id: payload.patient_id,
         dentist_id: payload.dentist_id,
         procedure_ids: payload.procedure_ids,
@@ -157,6 +160,18 @@ export function AppointmentsPage() {
       setEditingAppointment(null);
       form.reset();
       setManualEndOverride(false);
+      void queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    },
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
+      toast(getApiErrorMessage(error), "error");
+    },
+  });
+
+  const reloadAppointmentMutation = useMutation({
+    mutationFn: (id: string) => appointmentService.get(id),
+    onSuccess: (appointment) => {
+      onEdit(appointment);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -189,7 +204,7 @@ export function AppointmentsPage() {
   const canUpdate = can("appointments", "update");
   const canDelete = can("appointments", "delete");
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadAppointmentMutation.isPending || deleteMutation.isPending;
 
   useEffect(() => {
     if (manualEndOverride) return;
@@ -237,6 +252,7 @@ export function AppointmentsPage() {
   };
 
   const onEdit = (appointment: Appointment) => {
+    setEditConflict(false);
     if (!canUpdate) return;
     setEditingAppointment(appointment);
     setManualEndOverride(true);
@@ -254,7 +270,7 @@ export function AppointmentsPage() {
 
   const onSubmit = (values: AppointmentForm) => {
     if (editingAppointment) {
-      updateMutation.mutate({ id: editingAppointment.id, payload: values });
+      updateMutation.mutate({ id: editingAppointment.id, version: editingAppointment.version, payload: values });
       return;
     }
     createMutation.mutate(values);
@@ -355,10 +371,19 @@ export function AppointmentsPage() {
 
       <Modal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingAppointment ? "Editar consulta" : "Nova consulta"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {editConflict && editingAppointment && (
+            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+              <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar a consulta atual substituirá os campos deste formulário.</p>
+              <Button type="button" variant="outline" disabled={isSubmitting}
+                onClick={() => reloadAppointmentMutation.mutate(editingAppointment.id)}>
+                Descartar rascunho e carregar atual
+              </Button>
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Paciente *</label>
             <Select {...form.register("patient_id")}>
@@ -478,7 +503,7 @@ export function AppointmentsPage() {
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpenModal(false)}>
+              <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
