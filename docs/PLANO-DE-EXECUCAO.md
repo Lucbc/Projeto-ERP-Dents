@@ -24,7 +24,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
-| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 em validação | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
+| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 concluída; demais recortes pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Em andamento: 2B.1 — edição simultânea de pacientes**, base `60347c6`. Versão obrigatória na atualização, comparação e incremento atômicos no banco, aviso de conflito com rascunho preservado e opção explícita de carregar dados atuais. Última entrega concluída: [2A.2](./homologacao-etapa-2A2.md). Demais cadastros, agenda, exclusões e histórico financeiro ficam nos recortes seguintes.
+**Concluída: [2B.1 — edição simultânea de pacientes](./homologacao-etapa-2B1.md).** Versão obrigatória na atualização, comparação e incremento atômicos no banco, aviso de conflito com rascunho preservado e opção explícita de carregar dados atuais. Próximo recorte: **2B.2 — edição concorrente da agenda**, ainda não iniciado. Demais cadastros, exclusões e histórico financeiro permanecem pendentes; não considerar toda a 2B concluída.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -209,7 +209,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Implementação `d5d2484` publicada; [CI 35404599297](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35404599297) aprovado em 7min44s com 119 testes backend, 42 frontend, smokes, builds e auditorias. Zero schemas de teste restantes. Homologação ativa em **https://localhost:18443**. Fechamento posterior somente documental.
 - Evidências/contrato/comandos: `docs/homologacao-etapa-2A2.md`. Conferir árvore limpa e HEAD local/remoto ao retomar. Próxima etapa: **2B — edição concorrente e histórico financeiro**, a dividir em recortes pequenos antes de implementar. Começar pelo mapeamento dos formulários e operações com risco de sobrescrita (R18), definindo controle de versão e resposta a conflito; baixa/histórico vêm em recorte próprio (R26). Não repetir a revisão geral nem declarar produção real liberada.
 
-### Ponto de retomada atual — 2B.1 em validação em 18/09/2026
+### Ponto de retomada atual — 2B.1 concluída em 19/09/2026
 
 - Usuário autorizou iniciar a próxima etapa com 40% de contexto restante. Recorte definido e comunicado: **edição de pacientes**, base `60347c6`; não implementar toda a 2B de uma vez.
 - Migração `0014_patient_version`, versão positiva inicialmente 1; PUT de pacientes exige versão. Comparação/incremento atômicos em SQL. Versão antiga retorna 409, inexistência 404, precondição ausente/inválida 422. Campos existentes preservados; frontend/API precisam ser atualizados juntos.
@@ -218,3 +218,5 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Homologação principal em `0014_patient_version`; cópias locais `pre-2B1.dump`, `pre-2B1-exams.tar` e fingerprints. Campos anteriores/bytes dos exames preservados, fixtures de navegador removidas. Não publicar `.data`, credenciais ou certificados.
 - Evidências e contrato: `docs/homologacao-etapa-2B1.md`. R18 parcialmente tratado só para edição de pacientes; exclusões, demais cadastros e financeiro permanecem pendentes. Próximo recorte proposto: **2B.2 — edição concorrente da agenda**. Histórico financeiro terá recorte próprio. Fechar testes/CI, commit/push e verificar HEAD remoto; não repetir a revisão geral.
 - Retomada em 19/09: implementação `1236a59` publicada. CI `35441069660` passou os 127 testes e falhou no teste de timeout do gateway, que não registrava o status observado. Leitura de resposta reforçada com `HTTPResponse` em vez de um único `recv`; exigência de 408 mantida. Ensaio local passou 413/503/408 e 80 chamadas de saúde. Publicar ajuste do teste e aguardar novo CI; não declarar etapa concluída antes disso.
+- **Fechamento:** ajuste `0142dfe` publicado e [CI 35441701732](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35441701732) aprovado em 9min14s, com 127 testes backend, 43 frontend, HTTP, builds e auditorias. Gateway passou 413/503/408 e 80 chamadas de saúde; pendência anterior encerrada. Zero schemas descartáveis. Homologação ativa em **https://localhost:18443**, migração `0014_patient_version`.
+- Ao retomar: conferir árvore limpa e igualdade HEAD/remoto. Fechamento posterior ao CI somente documental. Iniciar **2B.2 — edição concorrente da agenda** mapeando edição na lista/calendário e tratamento do rascunho, preservando as restrições de sobreposição da 2A.1. Não repetir pacientes nem avançar para histórico financeiro sem recorte próprio. API/frontend atualizados juntos; abas antigas precisam recarregar para enviar versão de pacientes.
