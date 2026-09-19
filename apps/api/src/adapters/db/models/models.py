@@ -83,6 +83,8 @@ class PatientModel(Base):
 
 class DentistModel(Base):
     __tablename__ = "dentists"
+    __table_args__ = (CheckConstraint('version > 0', name='ck_dentists_positive_version'),)
+    version: Mapped[int] = mapped_column(BigInteger, server_default='1', nullable=False)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)

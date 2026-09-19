@@ -206,7 +206,7 @@ export const dentistService = {
     const response = await api.post<Dentist>("/api/dentists", payload);
     return response.data;
   },
-  async update(id: string, payload: DentistPayload) {
+  async update(id: string, payload: DentistPayload & { version: number }) {
     const response = await api.put<Dentist>(`/api/dentists/${id}`, payload);
     return response.data;
   },

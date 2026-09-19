@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -151,6 +152,7 @@ export function DentistsPage() {
   const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [editingDentist, setEditingDentist] = useState<Dentist | null>(null);
+  const [editConflict, setEditConflict] = useState(false);
 
   const form = useForm<DentistForm>({
     resolver: zodResolver(dentistSchema),
@@ -203,8 +205,9 @@ export function DentistsPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: DentistForm }) =>
+    mutationFn: ({ id, version, payload }: { id: string; version: number; payload: DentistForm }) =>
       dentistService.update(id, {
+        version,
         full_name: payload.full_name,
         cro: nullable(payload.cro),
         phone: nullable(payload.phone),
@@ -219,6 +222,18 @@ export function DentistsPage() {
       setOpenModal(false);
       setEditingDentist(null);
       form.reset();
+      void queryClient.invalidateQueries({ queryKey: ["dentists"] });
+    },
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
+      toast(getApiErrorMessage(error), "error");
+    },
+  });
+
+  const reloadDentistMutation = useMutation({
+    mutationFn: (id: string) => dentistService.get(id),
+    onSuccess: (dentist) => {
+      onEdit(dentist);
       void queryClient.invalidateQueries({ queryKey: ["dentists"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -243,13 +258,14 @@ export function DentistsPage() {
     }
     return names;
   }, [specialties, selectedSpecialty]);
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadDentistMutation.isPending;
   const canCreate = can("dentists", "create");
   const canUpdate = can("dentists", "update");
   const canDelete = can("dentists", "delete");
 
   const onNew = () => {
     if (!canCreate) return;
+    setEditConflict(false);
     setEditingDentist(null);
     form.reset({
       full_name: "",
@@ -265,6 +281,7 @@ export function DentistsPage() {
   };
 
   const onEdit = (dentist: Dentist) => {
+    setEditConflict(false);
     if (!canUpdate) return;
     setEditingDentist(dentist);
     form.reset({
@@ -282,7 +299,7 @@ export function DentistsPage() {
 
   const onSubmit = (values: DentistForm) => {
     if (editingDentist) {
-      updateMutation.mutate({ id: editingDentist.id, payload: values });
+      updateMutation.mutate({ id: editingDentist.id, version: editingDentist.version, payload: values });
       return;
     }
     createMutation.mutate(values);
@@ -391,10 +408,19 @@ export function DentistsPage() {
 
       <Modal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingDentist ? "Editar dentista" : "Novo dentista"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {editConflict && editingDentist && (
+            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+              <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá os campos e horários deste formulário.</p>
+              <Button type="button" variant="outline" disabled={isSubmitting}
+                onClick={() => reloadDentistMutation.mutate(editingDentist.id)}>
+                Descartar rascunho e carregar atual
+              </Button>
+            </div>
+          )}
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Nome completo *</label>
             <Input {...form.register("full_name")} />
@@ -539,7 +565,7 @@ export function DentistsPage() {
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpenModal(false)}>
+            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>

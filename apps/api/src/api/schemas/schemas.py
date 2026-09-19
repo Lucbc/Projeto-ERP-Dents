@@ -123,6 +123,7 @@ class DentistCreateRequest(BaseModel):
 
 
 class DentistUpdateRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
     full_name: str | None = None
     cro: str | None = None
     phone: str | None = None
@@ -134,6 +135,7 @@ class DentistUpdateRequest(BaseModel):
 
 
 class DentistResponse(AppBaseSchema):
+    version: int
     id: UUID
     full_name: str
     cro: str | None

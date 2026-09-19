@@ -70,6 +70,7 @@ class Patient:
 
 @dataclass(slots=True)
 class Dentist:
+    version: int
     id: UUID
     full_name: str
     cro: str | None

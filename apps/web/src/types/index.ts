@@ -67,6 +67,7 @@ export interface Patient {
 }
 
 export interface Dentist {
+  version: number;
   id: string;
   full_name: string;
   cro: string | null;
