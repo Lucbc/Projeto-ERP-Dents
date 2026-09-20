@@ -231,7 +231,7 @@ export const procedureService = {
     const response = await api.post<Procedure>("/api/procedures", payload);
     return response.data;
   },
-  async update(id: string, payload: ProcedurePayload) {
+  async update(id: string, payload: ProcedurePayload & { version: number }) {
     const response = await api.put<Procedure>(`/api/procedures/${id}`, payload);
     return response.data;
   },

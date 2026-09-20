@@ -86,6 +86,7 @@ class Dentist:
 
 @dataclass(slots=True)
 class Procedure:
+    version: int
     id: UUID
     name: str
     description: str | None

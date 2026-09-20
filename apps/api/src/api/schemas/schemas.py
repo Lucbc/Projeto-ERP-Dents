@@ -163,6 +163,7 @@ class ProcedureCreateRequest(BaseModel):
 
 
 class ProcedureUpdateRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
     name: str | None = None
     description: str | None = None
     duration_minutes: int | None = Field(default=None, ge=0)
@@ -171,6 +172,7 @@ class ProcedureUpdateRequest(BaseModel):
 
 
 class ProcedureResponse(AppBaseSchema):
+    version: int
     id: UUID
     name: str
     description: str | None

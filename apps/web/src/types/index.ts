@@ -88,6 +88,7 @@ export interface DentistAvailabilitySlot {
 }
 
 export interface Procedure {
+  version: number;
   id: string;
   name: string;
   description: string | null;

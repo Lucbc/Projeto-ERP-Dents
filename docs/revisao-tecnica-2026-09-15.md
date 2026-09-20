@@ -233,7 +233,7 @@ A regra de um lançamento ativo por consulta usa consulta prévia, seguida de cr
 
 ### R18 — P1 — Duas pessoas podem sobrescrever alterações uma da outra
 
-**Atualização parcial 2B.1/2B.2/2B.3:** edição de pacientes, consultas e dentistas usa versão obrigatória e atualização atômica; rascunho preservado e recarga explícita no frontend. Evidências de [pacientes](./homologacao-etapa-2B1.md), [agenda](./homologacao-etapa-2B2.md) e [dentistas](./homologacao-etapa-2B3.md). Demais recursos, exclusões e regras entre disponibilidade e consultas continuam pendentes; descrição original abaixo mantida como histórico.
+**Atualização parcial 2B.1/2B.2/2B.3/2B.4.1:** edição de pacientes, consultas, dentistas e procedimentos usa versão obrigatória e atualização atômica; rascunho preservado e recarga explícita no frontend. Evidências de [pacientes](./homologacao-etapa-2B1.md), [agenda](./homologacao-etapa-2B2.md), [dentistas](./homologacao-etapa-2B3.md) e [procedimentos](./homologacao-etapa-2B4-1.md). Demais recursos, exclusões e regras entre disponibilidade e consultas continuam pendentes; descrição original abaixo mantida como histórico.
 
 **Confirmado: não existe controle de versão nas atualizações.** [patient_repository.py](../apps/api/src/adapters/db/repositories/patient_repository.py#L48), [appointment_use_cases.py](../apps/api/src/core/use_cases/appointment_use_cases.py#L75), [financial_use_cases.py](../apps/api/src/core/use_cases/financial_use_cases.py#L91).
 

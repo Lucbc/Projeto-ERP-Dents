@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -72,6 +73,7 @@ export function ProceduresPage() {
   const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [editingProcedure, setEditingProcedure] = useState<Procedure | null>(null);
+  const [editConflict, setEditConflict] = useState(false);
 
   const form = useForm<ProcedureForm>({
     resolver: zodResolver(procedureSchema),
@@ -108,8 +110,9 @@ export function ProceduresPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: ProcedureForm }) =>
+    mutationFn: ({ id, version, payload }: { id: string; version: number; payload: ProcedureForm }) =>
       procedureService.update(id, {
+        version,
         name: payload.name,
         description: nullable(payload.description),
         duration_minutes: parseOptionalInt(payload.duration_minutes),
@@ -121,6 +124,18 @@ export function ProceduresPage() {
       setOpenModal(false);
       setEditingProcedure(null);
       form.reset();
+      void queryClient.invalidateQueries({ queryKey: ["procedures"] });
+    },
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
+      toast(getApiErrorMessage(error), "error");
+    },
+  });
+
+  const reloadProcedureMutation = useMutation({
+    mutationFn: (id: string) => procedureService.get(id),
+    onSuccess: (procedure) => {
+      onEdit(procedure);
       void queryClient.invalidateQueries({ queryKey: ["procedures"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -136,13 +151,14 @@ export function ProceduresPage() {
   });
 
   const items = useMemo(() => proceduresQuery.data?.items ?? [], [proceduresQuery.data]);
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadProcedureMutation.isPending;
   const canCreate = can("procedures", "create");
   const canUpdate = can("procedures", "update");
   const canDelete = can("procedures", "delete");
 
   const onNew = () => {
     if (!canCreate) return;
+    setEditConflict(false);
     setEditingProcedure(null);
     form.reset({
       name: "",
@@ -156,6 +172,7 @@ export function ProceduresPage() {
 
   const onEdit = (procedure: Procedure) => {
     if (!canUpdate) return;
+    setEditConflict(false);
     setEditingProcedure(procedure);
     form.reset({
       name: procedure.name,
@@ -172,7 +189,7 @@ export function ProceduresPage() {
 
   const onSubmit = (values: ProcedureForm) => {
     if (editingProcedure) {
-      updateMutation.mutate({ id: editingProcedure.id, payload: values });
+      updateMutation.mutate({ id: editingProcedure.id, version: editingProcedure.version, payload: values });
       return;
     }
     createMutation.mutate(values);
@@ -265,10 +282,19 @@ export function ProceduresPage() {
 
       <Modal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingProcedure ? "Editar procedimento" : "Novo procedimento"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {editConflict && editingProcedure && (
+            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+              <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá os campos, preço e duração deste formulário.</p>
+              <Button type="button" variant="outline" disabled={isSubmitting}
+                onClick={() => reloadProcedureMutation.mutate(editingProcedure.id)}>
+                Descartar rascunho e carregar atual
+              </Button>
+            </div>
+          )}
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Nome *</label>
             <Input {...form.register("name")} />
@@ -307,7 +333,7 @@ export function ProceduresPage() {
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpenModal(false)}>
+            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>

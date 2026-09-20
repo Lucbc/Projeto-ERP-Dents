@@ -60,6 +60,7 @@ jobs:
           python scripts/smoke_patient_concurrency_homolog.py
           python scripts/smoke_appointment_version_homolog.py
           python scripts/smoke_dentist_version_homolog.py
+          python scripts/smoke_procedure_version_homolog.py
           python scripts/smoke_errors_homolog.py
           python scripts/smoke_sessions_homolog.py
           python scripts/smoke_auth_hardening_homolog.py

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from src.adapters.db.models.models import ProcedureModel
 from src.core.domain.entities import Procedure
+from src.core.domain.exceptions import ConflictError, ValidationError
 from src.core.ports.repositories import ProcedureRepository
 
 
@@ -42,13 +43,22 @@ class SqlAlchemyProcedureRepository(ProcedureRepository):
         return self._to_entity(item)
 
     def update(self, procedure_id, data: dict):
-        item = self.session.get(ProcedureModel, procedure_id)
+        version = data.get('version')
+        if type(version) is not int or version < 1:
+            raise ValidationError("Reabra o cadastro para obter a versão atual antes de salvar.")
+        values = {key: data[key] for key in (
+            "name", "description", "duration_minutes", "price_cents", "active"
+        ) if key in data}
+        item = self.session.scalar(update(ProcedureModel).where(
+            ProcedureModel.id == procedure_id, ProcedureModel.version == version
+        ).values(**values, version=ProcedureModel.version + 1).returning(ProcedureModel),
+            execution_options={'populate_existing': True})
         if item is None:
-            return None
-
-        for key in ["name", "description", "duration_minutes", "price_cents", "active"]:
-            if key in data:
-                setattr(item, key, data[key])
+            exists = self.session.scalar(select(ProcedureModel.id).where(ProcedureModel.id == procedure_id))
+            self.session.rollback()
+            if exists is None:
+                return None
+            raise ConflictError("Este procedimento foi alterado por outra operação. Seu rascunho foi mantido. Carregue o cadastro atual antes de salvar novamente.")
 
         self.session.commit()
         self.session.refresh(item)
@@ -65,6 +75,7 @@ class SqlAlchemyProcedureRepository(ProcedureRepository):
 
     def _to_entity(self, model: ProcedureModel) -> Procedure:
         return Procedure(
+            version=model.version,
             id=model.id,
             name=model.name,
             description=model.description,

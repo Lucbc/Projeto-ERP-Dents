@@ -1,3 +1,5 @@
+Logins cadastrados na homologação local (20/09/2026): `admin.homolog@example.com` — administrador, ativo; `recepcao.9231a9e9@example.com` — recepção, ativo. Senhas não são publicadas; esta lista é uma consulta pontual ao banco desta máquina.
+
 # ERP Dents (MVP)
 
 Monorepo para clínica pequena de ortodontia com arquitetura cliente-servidor, backend FastAPI (Clean Architecture Hexagonal), frontend React e persistência em Postgres + filesystem para exames.

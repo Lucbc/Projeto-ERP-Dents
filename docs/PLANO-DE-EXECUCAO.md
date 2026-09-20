@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída: 2B.3 — edição concorrente de dentistas**, incluindo especialidade textual e disponibilidade, rascunho preservado e recarga explícita. [Evidências e complementos de validação](./homologacao-etapa-2B3.md). Próximo recorte: **2B.4 — edição concorrente dos catálogos de procedimentos e especialidades**. Exclusões, regras entre disponibilidade e consultas e histórico financeiro permanecem em recortes próprios.
+**Em andamento: 2B.4.1 — edição concorrente de procedimentos.** [Mapeamento e critérios](./plano-etapa-2B4.md). Versão obrigatória, preço/duração preservados no conflito e recarga explícita em validação. Última entrega concluída: [2B.3](./homologacao-etapa-2B3.md). Especialidades, exclusões, regras entre disponibilidade e consultas e histórico financeiro permanecem em recortes próprios.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -241,7 +241,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Retomada em 20/09/2026: CI `35467879087` aprovou 147 backend/46 frontend e smokes de dentistas, mas falhou no gateway com `RemoteDisconnected` durante espera de 408. Reproduzido localmente com os prazos originais. Corrigida disputa entre prazos iguais: API permanece em 30s, gateway passa a 45s e HTTPS a 60s; smoke exige JSON 408 nas duas conexões em menos de 35s e capacidade de upload liberada. Proxies de homologação recriados sem mexer nos volumes; sintaxe validada. Smoke corrigido passou localmente: 408 em 30,016s, 413/503, vagas liberadas e 80 chamadas de saúde. Correção `5ff12bd` publicada; acompanhar [CI 35487443934](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35487443934) antes de fechar. Após aprovação, registrar resultado, fechar 2B.3, indicar 2B.4 e publicar fechamento documental.
 - Segundo CI falhou em três testes de disputa de agenda: `40P01` por deadlock nas restrições GiST, em vez de `23P01`. A API já retorna 409 para ambos; corrigida expectativa dos testes, reforçando conferência de registros/versões e rollback do perdedor. Smoke HTTP aceita as duas mensagens seguras e mantém zero sobreposições. Ajustes somente de testes; 11 focados e 12 grupos HTTP aprovados localmente. Commit `ed0132b` publicado; acompanhar [CI 35487864107](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35487864107) antes de fechar. Alteração externa acidental no README removida conforme resposta explícita do usuário; nenhuma credencial foi publicada.
 
-### Ponto de retomada atual — 2B.3 concluída em 20/09/2026
+### Retomada da 2B.3 — concluída em 20/09/2026 (histórico)
 
 - Implementação `9e85823`, ajuste dos proxies `5ff12bd` e testes de disputa `ed0132b` publicados. [CI 35487864107](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35487864107) aprovado em 10min12s: 147 backend, 46 frontend, HTTP, builds e auditorias. As duas falhas históricas acima estão resolvidas no escopo verificado.
 - Gateway remoto confirmou 413/503, dois JSON 408 em 30,011s, vagas liberadas e 80 chamadas de saúde, p95 de 0,0379s. API permanece com prazo total de corpo de 30s; gateway/HTTPS têm margem de 45/60s. Em outra instalação, recriar também os proxies para aplicar os templates.
@@ -249,3 +249,10 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Evidências/contrato/comandos: `docs/homologacao-etapa-2B3.md`. Próximo recorte: **2B.4 — edição concorrente dos catálogos de procedimentos e especialidades**. Mapear referências e comportamento de renomeação antes de implementar; políticas de exclusão, disponibilidade versus consultas e histórico financeiro ficam separados. Não repetir dentistas nem a revisão geral.
 - TXT de acessos mencionado pelo usuário ainda não localizado; nome/caminho pendente, sem bloquear esta entrega. Não publicar segredos. README acidental restaurado com autorização explícita.
 - Fechamento posterior ao CI somente documental. Conferir árvore limpa e igualdade HEAD/remoto ao retomar; commit/push obrigatórios nas próximas entregas.
+
+### Ponto de retomada atual — 2B.4.1 em andamento em 20/09/2026
+
+- Base `6d656a3`. Mapeamento dos catálogos em `docs/plano-etapa-2B4.md`; executar procedimentos primeiro, especialidades depois. Usuário autorizou continuar a implementação. README tem os dois identificadores de login/perfis ativos consultados na homologação, sem senhas/hashes.
+- Implementados `0017_procedure_version`, versão obrigatória no PUT, UPDATE condicionado e recuperação explícita no formulário. Passaram nove casos PostgreSQL, 49 testes frontend, dez grupos HTTP específicos e dez gerais, builds API/web e Chrome com duas abas. Preço nulo/zero/centavos, rascunho e falha de recarga verificados. Teste confirmou cobranças/horários anteriores preservados e nova cobrança com preço atualizado.
+- Homologação principal atualizada em `0017_procedure_version` após cópias `.data/homolog/pre-2B4-1*`; fingerprints confirmaram dados anteriores/exames preservados. Capturas conferidas e fixtures removidas. Falta terminar suíte backend completa e CI/publicação. Evidências em `docs/homologacao-etapa-2B4-1.md`; logs `.data/procedure-version-*`. Não remover volumes nem publicar dados locais.
+- Especialidade segue textual no dentista; versionamento do catálogo não resolve sua renomeação. Cobranças novas leem preço atual; preservar cobranças existentes não equivale a implementar preço histórico. Regras separadas no plano.
