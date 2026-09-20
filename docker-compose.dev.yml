@@ -70,8 +70,9 @@ services:
     volumes:
       - clamav_data:/var/lib/clamav
       - ./ops/clamav/clamd.conf:/etc/clamav/clamd.conf:ro
+      - ./ops/clamav/healthcheck.sh:/usr/local/bin/erp-clamav-health.sh:ro
     healthcheck:
-      test: ["CMD-SHELL", "echo PING | nc -w 5 127.0.0.1 3310 | grep -q PONG"]
+      test: ["CMD", "sh", "/usr/local/bin/erp-clamav-health.sh"]
       interval: 15s
       timeout: 10s
       retries: 20

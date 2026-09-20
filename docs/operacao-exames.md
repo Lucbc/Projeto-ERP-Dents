@@ -98,6 +98,14 @@ docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docke
 
 Execute o teste do gateway separadamente dos testes de upload: ele ocupa deliberadamente as duas vagas por até 30 segundos. Os dois scripts que usam a API descartável também devem ser sequenciais, pois compartilham a porta 18001.
 
+## Prontidão do antivírus
+
+Os três Compose verificam a data das definições efetivamente carregadas pelo `clamd`, com a mesma política da API: até sete dias de idade e tolerância máxima de um dia no futuro. Responder ao PING sozinho não garante prontidão. Resposta sem data válida, serviço indisponível ou idade fora da política deixa o container sem saúde; o Compose aguarda antes de iniciar a API. Em execução, a API continua verificando as definições em cada análise e falhando de forma fechada.
+
+FreshClam continua responsável pela atualização. `SelfCheck` passa a 60 segundos para detectar mudanças no banco de assinaturas caso a notificação de recarga não tenha sido recebida durante a inicialização. O healthcheck é somente de leitura e não baixa arquivos nem reinicia o serviço. Restrição de rede/atualização deve ser resolvida na origem; não aumentar a idade permitida para contorná-la.
+
+O arquivo `ops/clamav/healthcheck.sh` usa LF inclusive no checkout Windows, por `.gitattributes`. Recriar `clamav` pelo Compose para aplicar a configuração/montagem, preservando o volume. Validação: `python scripts/smoke_clamav_readiness_homolog.py`; o CI registra somente versão/data e diagnóstico de prontidão se houver falha, sem arquivos clínicos ou credenciais.
+
 ## Limite do fechamento
 
 As pendências técnicas deste complemento são reconciliação após interrupção, quota, manutenção periódica, concorrência/tempo/proxy e antivírus. Auditoria clínica completa, política de retenção de prontuário, autorização por paciente, HTTPS e backup/restauração assistidos mantêm suas etapas de produto/operação já previstas. Não são funções que um antivírus ou uma rotina de arquivos resolvam.

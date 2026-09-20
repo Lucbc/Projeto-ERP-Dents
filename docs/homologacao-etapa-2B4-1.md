@@ -23,7 +23,14 @@ A migração precisa de janela pelo bloqueio da tabela. Downgrade remove a prote
 - **49 testes frontend aprovados**, incluindo três novos cenários de recuperação com preço nulo, zero e centavos. Verificados rascunho, falha de recarga, conversão decimal e versão enviada após recarga.
 - **Dez grupos HTTP específicos e dez gerais aprovados.** Builds Docker API/web aprovados.
 - **Chrome/HTTPS:** duas abas abriram o mesmo procedimento. Uma gravou R$ 123,45/45 minutos; outra recebeu 409 e conservou R$ 234,56/60 minutos. Recarga recuperou o valor salvo; revisão gravou R$ 321,09 mantendo 45 minutos, versão 3. Capturas conferidas; fixtures removidas.
-- Suíte backend completa e CI ainda pendentes neste checkpoint inicial.
+- Suíte backend completa: **156 testes aprovados**, incluindo PostgreSQL e ClamAV; zero schemas de teste restantes.
+- Implementação `224d074` publicada; [CI 35507513580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35507513580) aprovou frontend/builds e os testes novos de procedimentos, mas a suíte backend encerrou com uma falha no ClamAV real: definições carregadas fora do prazo permitido. A suíte local completa passou; novo CI depende do complemento abaixo.
+
+### Complemento de prontidão do ClamAV
+
+O healthcheck anterior conferia somente PING/PONG e podia liberar a API com definições antigas. Os três Compose agora verificam a data carregada, mantendo os limites da API (sete dias e tolerância futura de um dia). Rechecagem interna do banco de assinaturas reduzida de 600 para 60 segundos; healthcheck não força download nem relaxa a segurança. Os logs da execução anterior não permitem determinar por que a atualização/recarga remota não ocorreu a tempo; diagnóstico seguro incluído no CI.
+
+ClamAV da homologação recriado com o mesmo volume. Passaram a checagem real, cenários de definições antigas/futuras/indisponíveis/malformadas e os cinco testes do scanner, incluindo PNG limpo e EICAR. LF do shell preservado por `.gitattributes`. Novo CI completo pendente; não considerar a etapa encerrada antes dele.
 
 Comandos específicos:
 

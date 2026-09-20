@@ -52,6 +52,7 @@ jobs:
           PY
       - name: Backend and HTTP regression tests
         run: |
+          python scripts/smoke_clamav_readiness_homolog.py
           docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml run --rm --no-deps -e RUN_HOMOLOG_TESTS=1 -e RUN_CLAMAV_TESTS=1 api python -m unittest discover -s tests -v
           python scripts/smoke_homolog.py
           python scripts/smoke_cookie_homolog.py
@@ -70,6 +71,11 @@ jobs:
           python scripts/smoke_storage_init_homolog.py
       - name: Runtime image security
         run: python scripts/audit_images.py
+      - name: Antivirus readiness diagnostics
+        if: failure()
+        run: |
+          docker exec erp-dents-homolog-clamav-1 clamdscan --version || true
+          docker exec erp-dents-homolog-clamav-1 sh /usr/local/bin/erp-clamav-health.sh || true
       - name: Stop isolated services
         if: always()
         run: |
