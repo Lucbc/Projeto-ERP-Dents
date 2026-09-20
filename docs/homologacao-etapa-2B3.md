@@ -33,6 +33,8 @@ API mantém prazo total de corpo em 30s. Gateway passa a 45s e HTTPS a 60s para 
 
 Validação local após correção aprovada: duas respostas JSON 408 em 30,016s, vagas liberadas, 413/503 e 80 chamadas de saúde com oito clientes, p95 de 2,078s. Sintaxe dos dois Nginx aprovada. Novo CI ainda pendente neste checkpoint; sem alteração de API ou nova migração nesse complemento.
 
+O [CI 35487443934](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35487443934), da correção `5ff12bd`, parou antes do smoke do gateway: três disputas reais de agenda produziram SQLSTATE `40P01` (deadlock nas restrições de exclusão), enquanto o teste só aceitava `23P01`. A API já classificava ambos como 409 com rollback; não houve mudança nessa política. O teste passa a admitir especificamente os dois estados, verifica a classificação HTTP e confirma uma única criação, preservação do reagendamento perdedor e uma única reativação. O smoke HTTP aceita as duas mensagens seguras e mantém a exigência de um vencedor/um 409 e zero sobreposições no banco. Validação local: 11 testes focados de agenda e 12 grupos HTTP aprovados. Publicar este ajuste de testes e acompanhar novo CI.
+
 Comandos específicos:
 
 ```powershell

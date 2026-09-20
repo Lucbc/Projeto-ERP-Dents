@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from sqlalchemy import create_engine, insert, select, text
 from sqlalchemy.engine import make_url
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from src.adapters.db.models.models import AppointmentModel, DentistModel, PatientModel
 from src.adapters.db.repositories.appointment_repository import SqlAlchemyAppointmentRepository
@@ -20,6 +20,7 @@ from src.adapters.db.repositories.patient_repository import SqlAlchemyPatientRep
 from src.adapters.db.repositories.procedure_repository import SqlAlchemyProcedureRepository
 from src.core.use_cases.appointment_use_cases import AppointmentUseCases
 from src.core.domain.entities import AppointmentStatus
+from src.api.error_boundary import failure_response
 
 
 @unittest.skipUnless(os.getenv('RUN_HOMOLOG_TESTS') == '1', 'Homologation opt-in required')
@@ -88,16 +89,25 @@ class AppointmentConcurrencyTests(unittest.TestCase):
                 try:
                     getattr(uc, mode)(*operation)
                     return 'ok'
-                except IntegrityError as error:
+                except (IntegrityError, OperationalError) as error:
                     db.rollback()
-                    return error.orig.sqlstate
+                    # Simultaneous GiST exclusion checks may deadlock instead of
+                    # reporting 23P01. Both must abort the loser and become HTTP 409.
+                    if error.orig.sqlstate not in ('23P01', '40P01'):
+                        raise
+                    self.assertEqual(failure_response(error, 'fictitious').status_code, 409)
+                    return 'conflict'
         with ThreadPoolExecutor(max_workers=2) as pool: return sorted(pool.map(worker, operations))
 
     def test_two_creates_for_same_dentist_after_both_prechecks_pass(self):
-        self.assertEqual(self.race([(self.data(),), (self.data(patient=1),)]), ['23P01', 'ok'])
+        self.assertEqual(self.race([(self.data(),), (self.data(patient=1),)]), ['conflict', 'ok'])
+        with Session(self.engine) as db:
+            self.assertEqual(len(db.scalars(select(AppointmentModel.id)).all()), 1)
 
     def test_two_creates_for_same_patient_different_dentists(self):
-        self.assertEqual(self.race([(self.data(),), (self.data(dentist=1),)]), ['23P01', 'ok'])
+        self.assertEqual(self.race([(self.data(),), (self.data(dentist=1),)]), ['conflict', 'ok'])
+        with Session(self.engine) as db:
+            self.assertEqual(len(db.scalars(select(AppointmentModel.id)).all()), 1)
 
     def test_independent_resources_can_commit_concurrently(self):
         self.assertEqual(self.race([(self.data(),), (self.data(patient=1,dentist=1),)]), ['ok', 'ok'])
@@ -109,16 +119,25 @@ class AppointmentConcurrencyTests(unittest.TestCase):
         first = self.insert(self.data(hour=2))
         second = self.insert(self.data(patient=1,hour=3))
         target = {'version':1, 'start_at':self.start, 'end_at':self.start+timedelta(hours=1)}
-        self.assertEqual(self.race([(first,target.copy()), (second,target.copy())], 'update'), ['23P01', 'ok'])
+        self.assertEqual(self.race([(first,target.copy()), (second,target.copy())], 'update'), ['conflict', 'ok'])
         with Session(self.engine) as db:
             rows = db.scalars(select(AppointmentModel)).all()
             self.assertEqual(sum(row.start_at == self.start for row in rows), 1)
             self.assertEqual(len(rows), 2)  # Losing edit preserves the original booking.
+            self.assertEqual(sorted(row.version for row in rows), [1, 2])
+            for row in rows:
+                if row.version == 1:
+                    self.assertEqual(row.start_at, self.start + timedelta(hours=2 if row.id == first else 3))
 
     def test_two_cancelled_bookings_cannot_both_be_reactivated(self):
         first = self.insert(self.data(status='cancelled'))
         second = self.insert(self.data(patient=1,status='cancelled'))
-        self.assertEqual(self.race([(first,{'version':1,'status':'confirmed'}), (second,{'version':1,'status':'scheduled'})], 'update'), ['23P01', 'ok'])
+        self.assertEqual(self.race([(first,{'version':1,'status':'confirmed'}), (second,{'version':1,'status':'scheduled'})], 'update'), ['conflict', 'ok'])
+        with Session(self.engine) as db:
+            rows = db.scalars(select(AppointmentModel)).all()
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(sum(row.status == AppointmentStatus.cancelled for row in rows), 1)
+            self.assertEqual(sorted(row.version for row in rows), [1, 2])
 
     def test_cancellation_and_deletion_release_slot(self):
         first = self.insert(self.data())

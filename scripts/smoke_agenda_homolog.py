@@ -25,7 +25,9 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
             return request(method,paths[index],bodies[index],token=token)
         with ThreadPoolExecutor(max_workers=2) as pool: results=list(pool.map(worker,range(2)))
         assert sorted(code for code,_ in results) == sorted([success,409])
-        assert all('Conflito de agenda' in body['detail'] for code,body in results if code==409)
+        assert all('Conflito de agenda' in body['detail'] or
+                   body['detail'] == 'Outra operação alterou estes dados ao mesmo tempo. Atualize a tela antes de tentar novamente.'
+                   for code,body in results if code==409)
         return next(body for code,body in results if code==success)
     race('POST',['/api/appointments']*2,[payload(),payload(p=1)],201)
     passed('concurrent HTTP reservations of one dentist return one 201 and one safe 409')
