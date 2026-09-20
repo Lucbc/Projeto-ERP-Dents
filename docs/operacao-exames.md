@@ -9,7 +9,7 @@ Implementado em 17/09/2026, base `2ed2c84`. Este documento substitui as pendênc
 | Tamanho | PDF/JPG/PNG até 20 MiB; corpo multipart até esse limite mais 64 KiB |
 | Quota | 50 GiB de conteúdo armazenado, incluindo arquivos antigos e quarentena; configurável |
 | Concorrência | Até dois envios simultâneos no gateway e por processo da API; confirmação de arquivo/metadados serializada entre processos pelo PostgreSQL |
-| Tempo | Até 30 segundos para receber o corpo na API; antivírus com prazo total de 40 segundos; proxy aguarda resposta por até 120 segundos |
+| Tempo | Até 30 segundos para receber o corpo na API; inatividade de corpo/envio ao upstream de 45 segundos no gateway e 60 segundos no HTTPS; antivírus com prazo total de 40 segundos; proxy aguarda resposta por até 120 segundos |
 | Antivírus | ClamAV local obrigatório antes de publicar novos arquivos e antes de liberar downloads, inclusive legados |
 | Falha do antivírus | Arquivo não é liberado; resposta 503. Detecção de ameaça ou limite de análise excedido bloqueia o arquivo com 400 |
 | Atualização | FreshClam mantém assinaturas em volume persistente. A API rejeita assinaturas com mais de sete dias |
@@ -40,6 +40,8 @@ EXAM_QUOTA_BYTES=53687091200
 ```
 
 Recrie os serviços pelo Compose após alterar os limites; API e gateway recebem o mesmo limite de arquivo. A quota precisa ser pelo menos o tamanho máximo de um arquivo. Para testar a manutenção em uma API isolada, `EXAM_MAINTENANCE_SECONDS` aceita 10 a 3.600 segundos; nos Compose entregues o intervalo padrão é 300.
+
+Os prazos externos precisam ser maiores que os internos para permitir a resposta JSON 408 da API. Com três prazos iguais de 30 segundos, foi reproduzido fechamento sem resposta no ensaio HTTPS. O Nginx pode encerrar a conexão ao atingir seu próprio timeout, conforme [registro oficial](https://trac.nginx.org/nginx/ticket/1005). A margem dos proxies não amplia o prazo total de recebimento de exames na API, que continua em 30 segundos; os timers de inatividade do Nginx são distintos desse prazo total. Ao atualizar uma instalação existente, recriar também `gateway` e `edge` para regenerar as configurações dos templates.
 
 O ClamAV usa imagem oficial fixada por digest, volume de assinaturas separado por ambiente e limite de 4 GiB de RAM. Reserve recursos também para banco/API/web; este conjunto foi testado em Docker com aproximadamente 8 GiB disponíveis. A primeira inicialização aguarda o antivírus ficar saudável. O servidor precisa conseguir atualizar assinaturas; conteúdo de exames não é enviado a serviços externos. [Requisitos e atualização da imagem oficial](https://docs.clamav.net/manual/Installing/Docker.html).
 

@@ -5,10 +5,12 @@ server {
   resolver 127.0.0.11 valid=10s ipv6=off;
   set $erp_api http://api:8000;
   client_max_body_size ${EXAM_BODY_LIMIT};
-  client_body_timeout 30s;
+  # API owns the 30s body deadline and must have time to return its JSON 408.
+  # Equal proxy deadlines can close the client connection before that response.
+  client_body_timeout 45s;
   proxy_connect_timeout 5s;
   proxy_read_timeout 120s;
-  proxy_send_timeout 30s;
+  proxy_send_timeout 45s;
   location ~ ^/api/patients/[^/]+/exams/?$ {
     limit_conn exam_uploads 2;
     limit_conn_status 503;

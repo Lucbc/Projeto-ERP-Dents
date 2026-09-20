@@ -19,10 +19,19 @@ A migração adiciona coluna/restrição com bloqueio da tabela: reservar janela
 ## Validação
 
 - **10 testes PostgreSQL focados aprovados:** conexões simultâneas com a mesma versão; perfil/especialidade/horários do vencedor; rascunho antigo; revisão parcial; ativação antiga; repetição sem mudanças; precondições inválidas; rollback de falha de banco; horários inválidos; listagem; exclusão anterior; migração preservando registros. Alguns testes agrupam mais de um cenário.
-- **46 testes frontend distintos aprovados:** os 45 anteriores e o novo componente de dentistas. Este exercita conflito, especialidade e linhas de horários preservadas, falha de recarga, substituição explícita e gravação com a versão carregada. O mock inicial do catálogo retornava um array em vez de `{items,total}`; corrigido e o teste passou.
+- **46 testes frontend distintos aprovados:** os 45 anteriores e o novo componente de dentistas. Este exercita conflito, especialidade e linhas de horários preservadas, falha de recarga, substituição explícita e gravação com a versão carregada.
 - **10 grupos HTTP específicos** e **10 do fluxo geral** aprovados; a API descartável confirmou também versão obrigatória e bloqueio de reativação antiga.
 - **Chrome/HTTPS:** duas abas abriram o mesmo dentista. A primeira salvou horários; a segunda recebeu 409 e manteve especialidade divergente e duas linhas de disponibilidade. Recarga recuperou a especialidade/horário salvo e removeu a linha extra do rascunho. Revisão posterior chegou à versão 3, sem misturar dados. Capturas locais conferidas; fixtures removidas pela API.
-- Builds Docker API/web aprovados. Suíte backend completa e CI remoto ainda em andamento no checkpoint inicial desta entrega.
+- Builds Docker API/web aprovados. Suíte backend completa: **147 testes aprovados**, incluindo PostgreSQL e ClamAV. Zero schemas de teste restantes.
+- Implementação `9e85823` publicada no `origin/main`; [CI 35467879087](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35467879087) aprovou 147 backend, 46 frontend, builds e smokes de dentistas, mas falhou no timeout do gateway. O fechamento depende da correção abaixo e de novo CI aprovado.
+
+### Pendência encontrada no CI e retomada em 20/09/2026
+
+O smoke de upload incompleto recebeu `RemoteDisconnected`, sem resposta HTTP. A falha foi reproduzida localmente com a configuração original: API, gateway e HTTPS tinham prazos de 30 segundos. O fechamento pelo proxy pode anteceder o JSON 408 da API; o [registro oficial do Nginx](https://trac.nginx.org/nginx/ticket/1005) descreve o encerramento sem resposta no próprio timeout. O log remoto não identifica qual dos dois proxies venceu a disputa.
+
+API mantém prazo total de corpo em 30s. Gateway passa a 45s e HTTPS a 60s para inatividade de corpo/envio ao upstream, permitindo que a API responda primeiro. Templates compartilhados pelos ambientes foram ajustados, e os dois proxies da homologação foram recriados. Smoke agora exige resposta JSON 408 nas duas conexões em menos de 35s e confirma que nova requisição completa alcança validação, comprovando liberação de vagas. Não aceita desconexão como sucesso nem aumenta a tolerância de tempo do teste.
+
+Validação local após correção aprovada: duas respostas JSON 408 em 30,016s, vagas liberadas, 413/503 e 80 chamadas de saúde com oito clientes, p95 de 2,078s. Sintaxe dos dois Nginx aprovada. Novo CI ainda pendente neste checkpoint; sem alteração de API ou nova migração nesse complemento.
 
 Comandos específicos:
 

@@ -41,6 +41,7 @@ def main():
     auth_wire = "".join(k+": "+v+"\r\n" for k,v in auth_headers.items()).encode()
     sockets = []
     try:
+        body_started = time.monotonic()
         for _ in range(2):
             stream = tls_context().wrap_socket(socket.create_connection(('127.0.0.1', 18443), timeout=5), server_hostname='localhost')
             stream.sendall(b'POST /api/patients/fictitious/exams HTTP/1.1\r\nHost: localhost\r\nContent-Length: 1000\r\nContent-Type: application/octet-stream\r\n' + auth_wire + b'\r\nx')
@@ -59,16 +60,31 @@ def main():
         assert statuses[-1] == 503
         assert health() < 5
         # Body deadline frees slots even when a client never completes the upload.
-        sockets[0].settimeout(35)
-        response = http.client.HTTPResponse(sockets[0])
-        response.begin()  # A single recv is not guaranteed to contain a full status line.
-        assert response.status == 408, f'Slow-body timeout: expected 408, got {response.status}'
+        for stream in sockets:
+            stream.settimeout(max(.1, 35 - (time.monotonic() - body_started)))
+            response = http.client.HTTPResponse(stream)
+            response.begin()  # A single recv is not guaranteed to contain a full status line.
+            assert response.status == 408, f'Slow-body timeout: expected 408, got {response.status}'
+            assert response.getheader('Content-Type', '').startswith('application/json')
+            assert json.loads(response.read()) == {'detail': 'Tempo de envio excedido. Tente novamente.'}
+        body_seconds = time.monotonic() - body_started
+        assert body_seconds < 35, 'API body deadline did not terminate uploads before proxy deadlines'
+        # A complete request must now reach validation, not remain blocked by occupied slots.
+        conn = http.client.HTTPSConnection('localhost', 18443, timeout=5, context=tls_context())
+        try:
+            conn.request('POST', '/api/patients/fictitious/exams', body=b'x', headers=auth_headers)
+            reply = conn.getresponse()
+            assert reply.status == 422, f'Upload slot not released: expected validation 422, got {reply.status}'
+            reply.read()
+        finally:
+            conn.close()
     finally:
         for stream in sockets: stream.close()
         smoke.request("POST", "/api/auth/logout", token=session)
     assert health() < 5
     report = {'health_requests': len(times), 'workers': 8, 'p95_seconds': round(times[75], 4),
-              'proxy_oversize': 413, 'parallel_upload_overload': 503, 'slow_body': 408}
+              'proxy_oversize': 413, 'parallel_upload_overload': 503, 'slow_body': 408,
+              'slow_body_seconds': round(body_seconds, 3), 'upload_slots_released': True}
     (smoke.STATE / 'last-exam-gateway-smoke.json').write_text(json.dumps(report, indent=2), encoding='utf8')
     print('OK: gateway bounds size/concurrency/time; health remains available; metrics:', json.dumps(report))
 
