@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída: 2B.4.2 — edição concorrente de especialidades.** [Evidências e limites](./homologacao-etapa-2B4-2.md). Versão obrigatória, distinção entre nome duplicado/edição antiga e recuperação do rascunho homologadas; CI aprovado em 21/09/2026. Próximo recorte: **2B.5 — mapeamento das operações financeiras e definição da primeira entrega**. Exclusões, regras entre disponibilidade e consultas e vínculos por ID entre dentistas/especialidades permanecem em recortes próprios.
+**Preparação da 2B.5 concluída:** [mapeamento financeiro, reproduções e critérios](./plano-etapa-2B5.md). Sete falhas reproduzidas em PostgreSQL e três grupos específicos confirmados por HTTP; nenhuma regra financeira alterada nesta preparação. Próxima implementação: **2B.5.1 — versão em edição, baixa e exclusão financeiras**. Última entrega funcional concluída: [especialidades, 2B.4.2](./homologacao-etapa-2B4-2.md). Histórico financeiro e proteção definitiva dos pagamentos exigem os recortes seguintes.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -286,7 +286,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Complemento implementado: middleware disponibiliza referência no estado da requisição; conflitos com código a retornam no corpo. Passaram sete testes de erros e dez grupos HTTP do smoke anterior, sem afrouxamento. API local atualizada; dados/exames preservados, zero schemas descartáveis. Publicar complemento e acompanhar novo CI completo (167 backend esperados, 53 frontend).
 - Complemento publicado em `b1929dd`; HEAD local/remoto conferidos. **Execução atual: [CI 35636864205](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35636864205)**. Ao retomar, consultar este CI antes de repetir testes. Se aprovado, fechar 2B.4.2, indicar mapeamento financeiro 2B.5, publicar fechamento documental e conferir árvore limpa/HEAD remoto.
 
-### Ponto de retomada atual — 2B.4.2 concluída em 21/09/2026
+### Retomada da 2B.4.2 — concluída em 21/09/2026 (histórico)
 
 - Implementação `c47ca18` e correlação dos erros `b1929dd` publicadas. [CI 35636864205](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35636864205) aprovado em 12min13s: **167 backend, 53 frontend**, HTTP, builds e auditorias. A regressão de `request_id` foi corrigida sem afrouxar o teste. Cinco imagens sem achados na consulta.
 - Nome duplicado retorna `specialty_name_exists` e permite corrigir sem recarga/consumo de versão. Edição antiga retorna `stale_version`; mantém rascunho e oferece recarga explícita. Códigos preservam referência gerada pelo servidor. Chrome real com duas abas aprovado, capturas conferidas, fixtures removidas.
@@ -294,3 +294,18 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - API/frontend atualizados juntos; recarregar abas antigas antes de editar especialidades. README mantém os identificadores/perfis de homologação na primeira linha, sem senhas. Especialidade dos dentistas continua textual, sem propagação automática de renomeação; versionamento do catálogo não altera esse vínculo.
 - Evidências/contrato/comandos: `docs/homologacao-etapa-2B4-2.md`. **Próximo recorte: 2B.5 — financeiro.** Mapear edição, baixa, cancelamento e exclusão, autoria/histórico e repetição (R18/R26); definir uma entrega pequena e seus critérios antes de migrar. Preservar geração idempotente da 2A.2. Não repetir catálogos nem declarar toda a 2B encerrada.
 - Fechamento posterior ao CI somente documental. Publicar commit/push e conferir árvore limpa e HEAD local/remoto; outra sessão deve partir deste checkpoint.
+
+### Preparação da 2B.5 — 21/09/2026 (histórico)
+
+- Base `300e12f`, árvore limpa. Usuário autorizou iniciar próxima etapa com 49% de contexto. Entrega atual: mapear financeiro, reproduzir os riscos em dados fictícios isolados e definir primeira correção/critério de aceite antes de migrar.
+- Inspeção inicial confirma baixa e PUT usando atualização sem versão, mudança de status pelo formulário e exclusão física; geração com chave/índice da 2A.2 deve ser preservada. Mapear também caminhos que criam lançamentos já pagos, autoria e exclusões de referências.
+- Não alterar regras financeiras ou migrar parcialmente durante a preparação. Registrar evidências separando inspeção, banco/API e interface; publicar plano e checkpoint por commit/push ao concluir.
+
+### Ponto de retomada atual — preparação da 2B.5 concluída em 21/09/2026
+
+- Base `300e12f`; entrega documental em `docs/plano-etapa-2B5.md`: mapa de todos os caminhos de gravação, permissões/autoria, garantias da 2A.2, reprodução, sequência e matriz de aceite. Não houve alteração executável nem migração; problemas reproduzidos continuam pendentes de correção.
+- PostgreSQL isolado: sete cenários confirmados — repetição muda data/forma, valor pago reescrito, rascunho reabre pago, exclusão física de pago, baixa sobre cancelamento já confirmado, edição parcial sobrescreve valor concorrente e duas baixas divergentes retornam sucesso. Duas intercalações controladas com conexões independentes e uma disputa por barreira, sem depender de sleeps.
+- HTTP descartável: dez grupos executados (sete de isolamento/bootstrap e três financeiros), confirmando repetição, alteração/reabertura e exclusão de pago. São diagnósticos de defeitos, não aprovação do fluxo. Interface apenas inspecionada no código, sem novo Chrome nesta preparação. Scripts/logs de investigação locais em `.data/probe_finance_2b5*` e `.data/financial-2b5-*`, sem dados reais ou segredos publicados.
+- Fixtures/API/schema descartáveis removidos; zero schemas de teste. Comparação com fingerprints existentes confirmou dados de negócio e bytes de exames preservados. Homologação segue `0018_specialty_version` em **https://localhost:18443**. Sem reinício/migração dos serviços principais nesta preparação. Última regressão de produto continua sendo CI `35636864205`, 167 backend/53 frontend; suíte não repetida para mudanças somente documentais.
+- **Próxima implementação: 2B.5.1.** Versão positiva no financeiro, PUT/baixa/DELETE condicionados, códigos distintos de conflito e recuperação explícita; preservar recibos/índice da 2A.2. Baixa repetida não deve regravar pagamento; recuperação idempotente por chave e imutabilidade dos pagos serão 2B.5.2. Referências/trilha, 2B.5.3. Não tratar controle de versão como histórico completo.
+- Ao retomar, ler `docs/plano-etapa-2B5.md`, criar testes conforme sua matriz, salvar cópias antes de migrar e atualizar todos os caminhos de escrita juntos. Não repetir revisão geral. Publicar esta preparação com commit/push, conferir árvore limpa/HEAD remoto; R18/R26 continuam parcialmente pendentes.

@@ -307,6 +307,8 @@ Não existe entidade de evolução/atendimento com autor, data, conteúdo, final
 
 ### R26 — P1 — Pagamentos e registros históricos podem ser reescritos ou apagados
 
+**Reconfirmado na preparação 2B.5, em 21/09/2026:** repetição altera data/forma; valor pago pode ser editado, reaberto e excluído via API. Disputas no PostgreSQL também permitem baixa sobre cancelamento e sobrescrita por edição parcial. [Mapa, evidências e sequência de correções](./plano-etapa-2B5.md). Esta preparação não corrigiu R26; não confundir a geração idempotente da 2A.2 com histórico de pagamentos.
+
 **Confirmado; baixa repetida reproduzida.** [financial_use_cases.py](../apps/api/src/core/use_cases/financial_use_cases.py#L91), [financial_repository.py](../apps/api/src/adapters/db/repositories/financial_repository.py#L153), [appointment_repository.py](../apps/api/src/adapters/db/repositories/appointment_repository.py#L131).
 
 Uma baixa repetida atualiza `paid_at` para agora, mesmo quando o lançamento já estava pago. Editar permite mudar valor, status e vínculos de um lançamento pago; excluir remove o registro. Agendamentos também podem ser apagados. A exclusão de vínculos financeiros usa `SET NULL`, perdendo a relação histórica. Não há registro de quem fez a alteração ou qual era o valor anterior.
