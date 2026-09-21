@@ -24,7 +24,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
-| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1, 2B.2, 2B.3 e 2B.4.1 concluídas; demais recortes pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
+| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1, 2B.2, 2B.3 e 2B.4 concluídas; financeiro e demais recortes pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Em andamento: 2B.4.2 — edição concorrente de especialidades.** [Evidências e limites](./homologacao-etapa-2B4-2.md). Versão obrigatória e distinção entre nome duplicado/edição antiga implementadas; testes focados e navegador aprovados, regressão completa/CI pendentes. Última entrega concluída: [procedimentos, 2B.4.1](./homologacao-etapa-2B4-1.md). Exclusões, regras entre disponibilidade e consultas e histórico financeiro permanecem em recortes próprios.
+**Concluída: 2B.4.2 — edição concorrente de especialidades.** [Evidências e limites](./homologacao-etapa-2B4-2.md). Versão obrigatória, distinção entre nome duplicado/edição antiga e recuperação do rascunho homologadas; CI aprovado em 21/09/2026. Próximo recorte: **2B.5 — mapeamento das operações financeiras e definição da primeira entrega**. Exclusões, regras entre disponibilidade e consultas e vínculos por ID entre dentistas/especialidades permanecem em recortes próprios.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -272,7 +272,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próxima subetapa: 2B.4.2 — edição concorrente de especialidades.** Aplicar versão ao nome/ativação e distinguir nome duplicado de edição desatualizada. Usar a matriz em `docs/plano-etapa-2B4.md`. Especialidade do dentista continua textual; não propagar renomeações nem converter vínculos implicitamente. Exclusões, preço histórico e financeiro seguem em recortes próprios.
 - Fechamento posterior ao CI somente documental. Fazer commit/push e conferir árvore limpa e igualdade HEAD/remoto; na retomada não repetir procedimentos, antivírus ou revisão geral sem nova evidência.
 
-### Ponto de retomada atual — 2B.4.2 iniciada em 21/09/2026
+### Implementação da 2B.4.2 — 21/09/2026 (histórico)
 
 - Base `8cb02a7`, árvore limpa. Usuário autorizou próxima etapa com 53% de contexto. Recorte: versão de especialidades (nome/ativação), comparação atômica, códigos distintos para nome duplicado e edição antiga, rascunho preservado e recarga explícita.
 - Implementar migração própria e atualizar API/frontend juntos; homologar PostgreSQL, HTTP, componente e Chrome em duas abas. Conferir criação/edição duplicada sem consumo de versão, rollback e textos dos dentistas preservados. Critérios em `docs/plano-etapa-2B4.md`.
@@ -284,3 +284,13 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Regressão local completa aprovada: **166 testes backend**, em 345,120s; 53 frontend já aprovados. Zero schemas descartáveis. CI passou frontend/builds/inicialização e executa backend/HTTP; aguardar resultado antes de marcar a subetapa concluída.
 - CI `35604768366` aprovou 166 backend, 53 frontend e smoke de especialidades, mas falhou no smoke geral de erros: resposta de duplicidade passou a ser de domínio e perdeu `request_id` no corpo. Corrigir preservando referência gerada pelo servidor e código de duplicidade; manter o smoke anterior sem afrouxar sua exigência. Novo teste cobre referência/código e formato legado. Não fechar antes de validar e publicar complemento.
 - Complemento implementado: middleware disponibiliza referência no estado da requisição; conflitos com código a retornam no corpo. Passaram sete testes de erros e dez grupos HTTP do smoke anterior, sem afrouxamento. API local atualizada; dados/exames preservados, zero schemas descartáveis. Publicar complemento e acompanhar novo CI completo (167 backend esperados, 53 frontend).
+- Complemento publicado em `b1929dd`; HEAD local/remoto conferidos. **Execução atual: [CI 35636864205](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35636864205)**. Ao retomar, consultar este CI antes de repetir testes. Se aprovado, fechar 2B.4.2, indicar mapeamento financeiro 2B.5, publicar fechamento documental e conferir árvore limpa/HEAD remoto.
+
+### Ponto de retomada atual — 2B.4.2 concluída em 21/09/2026
+
+- Implementação `c47ca18` e correlação dos erros `b1929dd` publicadas. [CI 35636864205](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35636864205) aprovado em 12min13s: **167 backend, 53 frontend**, HTTP, builds e auditorias. A regressão de `request_id` foi corrigida sem afrouxar o teste. Cinco imagens sem achados na consulta.
+- Nome duplicado retorna `specialty_name_exists` e permite corrigir sem recarga/consumo de versão. Edição antiga retorna `stale_version`; mantém rascunho e oferece recarga explícita. Códigos preservam referência gerada pelo servidor. Chrome real com duas abas aprovado, capturas conferidas, fixtures removidas.
+- Gateway remoto confirmou 413/503, JSON 408 em 30,008s, vagas liberadas e 80 chamadas de saúde, p95 de 0,0305s. Homologação ativa em **https://localhost:18443**, migração `0018_specialty_version`. Dados/exames preservados por comparação após atualização; zero schemas descartáveis. Cópias `pre-2B4-2*` e credenciais permanecem fora do Git.
+- API/frontend atualizados juntos; recarregar abas antigas antes de editar especialidades. README mantém os identificadores/perfis de homologação na primeira linha, sem senhas. Especialidade dos dentistas continua textual, sem propagação automática de renomeação; versionamento do catálogo não altera esse vínculo.
+- Evidências/contrato/comandos: `docs/homologacao-etapa-2B4-2.md`. **Próximo recorte: 2B.5 — financeiro.** Mapear edição, baixa, cancelamento e exclusão, autoria/histórico e repetição (R18/R26); definir uma entrega pequena e seus critérios antes de migrar. Preservar geração idempotente da 2A.2. Não repetir catálogos nem declarar toda a 2B encerrada.
+- Fechamento posterior ao CI somente documental. Publicar commit/push e conferir árvore limpa e HEAD local/remoto; outra sessão deve partir deste checkpoint.

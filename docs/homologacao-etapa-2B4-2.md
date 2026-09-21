@@ -1,6 +1,6 @@
 # Etapa 2B.4.2 — edição concorrente de especialidades
 
-Base `8cb02a7`, iniciada em 21/09/2026. Critérios no [mapeamento dos catálogos](./plano-etapa-2B4.md). Implementação `c47ca18` publicada; complemento de correlação dos erros em validação remota antes do fechamento.
+**Concluída em 21/09/2026.** Base `8cb02a7`, implementação `c47ca18` e complemento de correlação `b1929dd`. [CI 35636864205](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35636864205) aprovado em 12min13s: **167 testes backend, 53 frontend**, regressão HTTP, builds e auditorias. Critérios no [mapeamento dos catálogos](./plano-etapa-2B4.md).
 
 ## Contrato entregue
 
@@ -32,7 +32,9 @@ Comparação após atualização e testes de navegador/fluxo geral confirmou dad
 
 O smoke geral de erros exigia que a duplicidade de especialidade mantivesse `request_id` no corpo, igual ao cabeçalho. A tradução para erro de domínio preservou a mensagem segura, mas inicialmente perdeu esse campo. Corrigido compartilhando a referência do middleware no estado da requisição e incluindo-a nos conflitos com código. A referência continua sendo criada pelo servidor, sem aceitar o valor enviado pelo cliente.
 
-Sete testes de tratamento de erros aprovados após a correção, incluindo um novo caso para os dois códigos, referência/cabeçalho, CORS, ausência de cache e formato legado. Os dez grupos do smoke geral de erros passaram sem alterar suas exigências. API da homologação atualizada; comparação de dados/exames continua idêntica, zero schemas descartáveis. Novo CI completo pendente; total esperado de backend passa a 167 pelo novo teste.
+Sete testes de tratamento de erros aprovados após a correção, incluindo um novo caso para os dois códigos, referência/cabeçalho, CORS, ausência de cache e formato legado. Os dez grupos do smoke geral de erros passaram sem alterar suas exigências. API da homologação atualizada; comparação de dados/exames continua idêntica, zero schemas descartáveis.
+
+O CI final aprovou os **167 testes backend** (389,599s), 53 frontend e todos os smokes HTTP, incluindo a resposta de duplicidade com referência. Gateway: 413/503, JSON 408 em 30,008s, vagas liberadas e 80 chamadas de saúde com p95 de 0,0305s. Auditoria das cinco imagens sem achados na consulta. A pendência de correlação está encerrada; fechamento posterior somente documental.
 
 Comandos específicos:
 
