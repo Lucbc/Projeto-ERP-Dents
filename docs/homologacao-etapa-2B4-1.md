@@ -2,6 +2,8 @@
 
 Base `6d656a3`. Primeiro recorte dos catálogos, conforme [mapeamento 2B.4](./plano-etapa-2B4.md). Especialidades terão entrega própria.
 
+**Concluída em 21/09/2026.** Implementação `224d074`, prontidão `e8164a6` e imagem oficial `8c28719`. [CI 35601989322](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35601989322) aprovado em 11min16s: 156 testes backend, 49 frontend, regressão HTTP, builds e auditorias. O histórico abaixo registra as falhas anteriores e a correção validada.
+
 ## Contrato entregue
 
 - Migração `0017_procedure_version`: versão positiva inicialmente 1, preservando campos e referências existentes.
@@ -36,7 +38,9 @@ Em 21/09, o resultado do [CI 35508107940](https://github.com/Lucbc/Projeto-ERP-D
 
 Os três Compose foram atualizados para o digest oficial `a5f03c12a79dbe9f6d8a527b6bb1ea053fa8dd061d3738a26897f055ee2d9303`, criado em 21/09. Inspeção sem rede confirmou ClamAV 1.4.6, definições `28129` de 20/09 e assinatura digital válida. Após recriação local com o volume preservado, o serviço ficou saudável, carregou `28129` e passou novamente o smoke de prontidão e os cinco testes do scanner real. Trocar imagem não atualiza automaticamente volumes antigos; FreshClam e a política de idade continuam necessários. Validação remota completa ainda pendente.
 
-Auditoria local após atualizar a imagem: API, web, gateway, banco e ClamAV sem vulnerabilidades identificadas na consulta. Isso não substitui atualizações futuras nem garante ausência de falhas desconhecidas.
+Fechamento: o CI de `8c28719` aprovou a inicialização isolada, prontidão, scanner real, todos os testes backend/HTTP e auditoria. API, web, gateway, banco e ClamAV sem vulnerabilidades identificadas nas consultas local e remota. Isso não substitui atualizações futuras nem garante ausência de falhas desconhecidas. A atualização da imagem resolveu o bloqueio nesta execução; não demonstra a causa da falha do atualizador nas execuções anteriores.
+
+Gateway remoto: 413/503, respostas JSON 408 em 30,010s e vagas liberadas; 80 chamadas de saúde com p95 de 0,0399s. Conferência local após recriação do antivírus confirmou novamente dados de negócio e bytes de exames preservados, zero schemas descartáveis. Não houve nova migração neste complemento.
 
 Comandos específicos:
 

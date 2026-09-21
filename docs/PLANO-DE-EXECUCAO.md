@@ -24,7 +24,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
-| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1, 2B.2 e 2B.3 concluídas; demais recortes pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
+| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1, 2B.2, 2B.3 e 2B.4.1 concluídas; demais recortes pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Em andamento: 2B.4.1 — edição concorrente de procedimentos.** [Mapeamento e critérios](./plano-etapa-2B4.md). Versão obrigatória, preço/duração preservados no conflito e recarga explícita em validação. Última entrega concluída: [2B.3](./homologacao-etapa-2B3.md). Especialidades, exclusões, regras entre disponibilidade e consultas e histórico financeiro permanecem em recortes próprios.
+**Concluída: 2B.4.1 — edição concorrente de procedimentos.** [Evidências e limites](./homologacao-etapa-2B4-1.md). Versão obrigatória, preço/duração preservados no conflito e recarga explícita homologados; CI aprovado em 21/09/2026. Próximo recorte: **2B.4.2 — especialidades**, conforme [mapeamento e critérios](./plano-etapa-2B4.md). Exclusões, regras entre disponibilidade e consultas e histórico financeiro permanecem em recortes próprios.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -250,7 +250,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - TXT de acessos mencionado pelo usuário ainda não localizado; nome/caminho pendente, sem bloquear esta entrega. Não publicar segredos. README acidental restaurado com autorização explícita.
 - Fechamento posterior ao CI somente documental. Conferir árvore limpa e igualdade HEAD/remoto ao retomar; commit/push obrigatórios nas próximas entregas.
 
-### Ponto de retomada atual — 2B.4.1 em andamento em 20/09/2026
+### Implementação da 2B.4.1 — 20 e 21/09/2026 (histórico)
 
 - Base `6d656a3`. Mapeamento dos catálogos em `docs/plano-etapa-2B4.md`; executar procedimentos primeiro, especialidades depois. Usuário autorizou continuar a implementação. README tem os dois identificadores de login/perfis ativos consultados na homologação, sem senhas/hashes.
 - Implementados `0017_procedure_version`, versão obrigatória no PUT, UPDATE condicionado e recuperação explícita no formulário. Passaram nove casos PostgreSQL, 49 testes frontend, dez grupos HTTP específicos e dez gerais, builds API/web e Chrome com duas abas. Preço nulo/zero/centavos, rascunho e falha de recarga verificados. Teste confirmou cobranças/horários anteriores preservados e nova cobrança com preço atualizado.
@@ -261,3 +261,13 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Complemento publicado em `e8164a6`. **Execução a acompanhar: [CI 35508107940](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35508107940).** Se aprovado, fechar 2B.4.1 com 156 backend/49 frontend e demais evidências; publicar fechamento documental e conferir HEAD remoto. Se falhar, consultar o diagnóstico de versão/data do ClamAV incluído no workflow e preservar a política de segurança.
 - Retomada em 21/09/2026: CI `35508107940` recusou inicialização com definições `28122`, de 13/09, idade de 623625 segundos. A proteção funcionou; a causa da falta de atualização remota ainda não foi demonstrada. Iniciada verificação do novo digest oficial da imagem 1.4, com inspeção das definições embarcadas, teste local preservando volume e novo CI antes do fechamento. Não iniciar especialidades nem relaxar a política de idade.
 - Novo digest oficial `a5f03c12a79dbe9f6d8a527b6bb1ea053fa8dd061d3738a26897f055ee2d9303` aplicado aos três Compose. Imagem criada em 21/09, ClamAV 1.4.6, assinaturas `28129` de 20/09 verificadas sem rede. Homologação recriada sem remover volume: saudável, smoke de prontidão e cinco testes reais do scanner aprovados. Auditoria local das cinco imagens sem achados na consulta. Publicar ajuste e acompanhar CI completo.
+- Ajuste publicado em `8c28719`, HEAD local/remoto conferidos. [CI 35601989322](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35601989322) superou a inicialização do Docker e executa backend/HTTP. Conferência local posterior ao reinício confirmou dados de negócio/exames preservados e zero schemas descartáveis. Ao retomar, consultar esta execução antes de repetir testes ou fechar a etapa.
+
+### Ponto de retomada atual — 2B.4.1 concluída em 21/09/2026
+
+- Implementação `224d074`, prontidão do antivírus `e8164a6` e imagem oficial atualizada `8c28719` publicados. [CI 35601989322](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35601989322) aprovado em 11min16s: 156 testes backend, 49 frontend, HTTP, builds e auditorias. Scanner real aprovado; cinco imagens sem achados na consulta. Falhas anteriores de prontidão não se repetiram; a causa da falta de atualização externa nas execuções antigas não foi determinada.
+- Gateway remoto confirmou 413/503, JSON 408 em 30,010s, vagas liberadas e 80 chamadas de saúde, p95 de 0,0399s. Política de idade das definições mantida; FreshClam continua necessário e volumes existentes não são substituídos ao trocar imagem.
+- Homologação ativa em **https://localhost:18443**, banco em `0017_procedure_version`. Dados de negócio/exames preservados por comparação após reinício; zero schemas descartáveis. Cópias locais `pre-2B4-1*`, segredos e capturas permanecem fora do Git. API/frontend atualizados juntos; recarregar abas antigas para enviar versão ao editar procedimentos.
+- Evidências: `docs/homologacao-etapa-2B4-1.md`. README mantém os dois identificadores/perfis de homologação na primeira linha, sem senhas. Lista pontual desta máquina; Git não transporta contas nem volumes.
+- **Próxima subetapa: 2B.4.2 — edição concorrente de especialidades.** Aplicar versão ao nome/ativação e distinguir nome duplicado de edição desatualizada. Usar a matriz em `docs/plano-etapa-2B4.md`. Especialidade do dentista continua textual; não propagar renomeações nem converter vínculos implicitamente. Exclusões, preço histórico e financeiro seguem em recortes próprios.
+- Fechamento posterior ao CI somente documental. Fazer commit/push e conferir árvore limpa e igualdade HEAD/remoto; na retomada não repetir procedimentos, antivírus ou revisão geral sem nova evidência.

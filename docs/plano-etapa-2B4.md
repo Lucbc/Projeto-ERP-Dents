@@ -2,7 +2,7 @@
 
 Base `6d656a3`, mapeamento concluído em 20/09/2026. Usuário informou 18% de contexto; fase dividida em procedimentos (2B.4.1) e especialidades (2B.4.2). A implementação da 2B.4.1 prosseguiu após este mapeamento; consultar o checkpoint atual no plano de execução para seu estado de validação.
 
-## Contratos encontrados no código
+## Contratos encontrados na base `6d656a3`
 
 | Recurso | Gravação atual | Referências e efeito de alterações |
 | --- | --- | --- |
