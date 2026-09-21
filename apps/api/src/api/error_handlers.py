@@ -30,7 +30,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(status_code=422, content={"detail": errors})
 
     @app.exception_handler(DomainError)
-    async def domain_exception_handler(_: Request, exc: DomainError) -> JSONResponse:
+    async def domain_exception_handler(request: Request, exc: DomainError) -> JSONResponse:
         status_code = 400
 
         if isinstance(exc, ValidationError):
@@ -45,6 +45,9 @@ def register_exception_handlers(app: FastAPI) -> None:
             content = {"detail": str(exc)}
             if exc.code:
                 content["code"] = exc.code
+                request_id = getattr(request.state, "request_id", None)
+                if request_id:
+                    content["request_id"] = request_id
             return JSONResponse(status_code=409, content=content)
         elif isinstance(exc, PayloadTooLargeError):
             status_code = 413

@@ -93,6 +93,24 @@ class ErrorHandlingTests(unittest.TestCase):
         def conflict(): raise ConflictError('Conflito conhecido.')
         self.assertEqual(call(self.app, '/conflict')[0], 409)
 
+    def test_coded_conflicts_keep_server_reference_and_legacy_body_unchanged(self):
+        @self.app.post('/coded-conflict')
+        def conflict(): raise ConflictError('Conflito conhecido.', code=self.code)
+        for code in ('specialty_name_exists', 'stale_version', None):
+            self.code = code
+            with self.subTest(code=code):
+                status, headers, body = call(self.app, '/coded-conflict')
+                self.assertEqual(status, 409)
+                self.assertEqual(headers[b'cache-control'], b'no-store')
+                self.assertEqual(headers[b'access-control-allow-origin'], b'http://localhost:18080')
+                if code:
+                    self.assertEqual(body['code'], code)
+                    self.assertEqual(body['request_id'], headers[b'x-request-id'].decode())
+                    self.assertRegex(body['request_id'], r'^[a-f0-9]{32}$')
+                    self.assertNotEqual(body['request_id'], 'spoofed')
+                else:
+                    self.assertEqual(body, {'detail': 'Conflito conhecido.'})
+
     def test_infrastructure_failures_are_classified_without_raw_database_details(self):
         cases = [(IntegrityError, '23P01', 409), (IntegrityError, '23505', 409), (IntegrityError, '23503', 409),
                  (IntegrityError, '23514', 422), (OperationalError, '40001', 409),

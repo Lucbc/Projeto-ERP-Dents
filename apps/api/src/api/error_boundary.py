@@ -37,6 +37,7 @@ class SafeErrorMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         request_id = uuid4().hex
+        scope.setdefault("state", {})["request_id"] = request_id
         started = False
 
         async def safe_send(message):

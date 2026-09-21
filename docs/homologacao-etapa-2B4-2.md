@@ -1,6 +1,6 @@
 # Etapa 2B.4.2 — edição concorrente de especialidades
 
-Base `8cb02a7`, iniciada em 21/09/2026. Critérios no [mapeamento dos catálogos](./plano-etapa-2B4.md). Implementação e testes focados aprovados; regressão completa e CI em andamento.
+Base `8cb02a7`, iniciada em 21/09/2026. Critérios no [mapeamento dos catálogos](./plano-etapa-2B4.md). Implementação `c47ca18` publicada; complemento de correlação dos erros em validação remota antes do fechamento.
 
 ## Contrato entregue
 
@@ -8,7 +8,7 @@ Base `8cb02a7`, iniciada em 21/09/2026. Critérios no [mapeamento dos catálogos
 - Criação, leitura e lista retornam versão. PUT exige inteiro positivo estrito. Precondição ausente/inválida retorna 422; registro inexistente, 404.
 - Comparação de versão, alteração de nome/ativação e incremento ocorrem no mesmo UPDATE. Edição antiga retorna 409 com `code: stale_version`. Campos omitidos permanecem intactos; uma atualização sem mudanças consome versão.
 - Violação do índice único `ix_specialties_name`, na criação ou edição, retorna 409 com `code: specialty_name_exists` e mensagem para escolher outro nome. Rollback preserva todos os campos e a versão; a mesma versão pode ser enviada com o nome corrigido. Outros erros de integridade continuam usando seu tratamento próprio, sem serem classificados como duplicidade.
-- `ConflictError` aceita código opcional. Os conflitos anteriores mantêm o formato de resposta sem código; o novo contrato é aditivo.
+- `ConflictError` aceita código opcional. Respostas com código incluem também `request_id`, igual ao cabeçalho `X-Request-ID` gerado pelo servidor. Os conflitos de domínio anteriores mantêm o formato de resposta sem código; o novo contrato é aditivo.
 - Frontend conserva rascunho e versão original. Só `stale_version` oferece **Descartar rascunho e carregar atual**. Nome duplicado permite corrigir e salvar sem recarga. Falha ao recarregar mantém nome/ativação; recarga bem-sucedida substitui explicitamente campos e versão. Salvar, recarregar, cancelar e fechar ficam coordenados enquanto há solicitação pendente.
 
 Não há reenvio, mesclagem automática ou armazenamento persistente de rascunhos. A regra de unicidade continua a do índice existente; não foi alterada para ignorar maiúsculas ou acentos. Nomes continuam recebendo a remoção de espaços nas extremidades já existente.
@@ -26,7 +26,13 @@ Comparação após atualização e testes de navegador/fluxo geral confirmou dad
 - **API HTTP:** dez grupos aprovados, incluindo preparação/limpeza isoladas e três grupos específicos de especialidades. Contrato de versão, códigos distintos de erro, disputa, rollback, recarga/revisão parcial, lista e alvo excluído verificados. Fluxo geral: dez grupos aprovados.
 - **Frontend:** 53 testes aprovados, incluindo quatro novos casos de especialidades: rascunho/recarga com falha, duplicidade na edição, 409 sem código conhecido e duplicidade na criação.
 - **Chrome real com HTTPS:** duas abas no mesmo registro. Primeira recebeu duplicidade e corrigiu sem recarregar, mantendo versão 1; gravação válida gerou versão 2 e inativou. Segunda recebeu `stale_version` e manteve nome do rascunho/ativação antiga. Recarga trouxe nome atual e inativação; revisão salvou versão 3 sem reativar. Capturas conferidas, registros fictícios removidos e sessão encerrada.
-- Builds Docker API/web aprovados. Suíte backend completa e CI ainda pendentes nesta versão do relatório.
+- Builds Docker API/web aprovados. **Suíte backend completa local: 166 testes aprovados** em 345,120s, incluindo PostgreSQL e ClamAV. Zero schemas descartáveis. O [CI 35604768366](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35604768366) também aprovou esses 166 testes e o smoke de especialidades, mas encontrou a regressão de correlação descrita abaixo.
+
+### Complemento de correlação dos erros
+
+O smoke geral de erros exigia que a duplicidade de especialidade mantivesse `request_id` no corpo, igual ao cabeçalho. A tradução para erro de domínio preservou a mensagem segura, mas inicialmente perdeu esse campo. Corrigido compartilhando a referência do middleware no estado da requisição e incluindo-a nos conflitos com código. A referência continua sendo criada pelo servidor, sem aceitar o valor enviado pelo cliente.
+
+Sete testes de tratamento de erros aprovados após a correção, incluindo um novo caso para os dois códigos, referência/cabeçalho, CORS, ausência de cache e formato legado. Os dez grupos do smoke geral de erros passaram sem alterar suas exigências. API da homologação atualizada; comparação de dados/exames continua idêntica, zero schemas descartáveis. Novo CI completo pendente; total esperado de backend passa a 167 pelo novo teste.
 
 Comandos específicos:
 
