@@ -256,7 +256,7 @@ export const specialtyService = {
     const response = await api.post<Specialty>("/api/specialties", payload);
     return response.data;
   },
-  async update(id: string, payload: SpecialtyPayload) {
+  async update(id: string, payload: SpecialtyPayload & { version: number }) {
     const response = await api.put<Specialty>(`/api/specialties/${id}`, payload);
     return response.data;
   },

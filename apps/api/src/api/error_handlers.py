@@ -42,7 +42,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         elif isinstance(exc, NotFoundError):
             status_code = 404
         elif isinstance(exc, ConflictError):
-            status_code = 409
+            content = {"detail": str(exc)}
+            if exc.code:
+                content["code"] = exc.code
+            return JSONResponse(status_code=409, content=content)
         elif isinstance(exc, PayloadTooLargeError):
             status_code = 413
         elif isinstance(exc, StorageUnavailableError):

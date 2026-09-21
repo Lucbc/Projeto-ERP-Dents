@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -31,6 +32,7 @@ export function SpecialtiesPage() {
   const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [editingSpecialty, setEditingSpecialty] = useState<Specialty | null>(null);
+  const [editConflict, setEditConflict] = useState(false);
 
   const form = useForm<SpecialtyForm>({
     resolver: zodResolver(specialtySchema),
@@ -61,8 +63,9 @@ export function SpecialtiesPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: SpecialtyForm }) =>
+    mutationFn: ({ id, version, payload }: { id: string; version: number; payload: SpecialtyForm }) =>
       specialtyService.update(id, {
+        version,
         name: payload.name,
         active: payload.active === "true",
       }),
@@ -71,6 +74,19 @@ export function SpecialtiesPage() {
       setOpenModal(false);
       setEditingSpecialty(null);
       form.reset();
+      void queryClient.invalidateQueries({ queryKey: ["specialties"] });
+    },
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.status === 409
+        && error.response.data?.code === "stale_version") setEditConflict(true);
+      toast(getApiErrorMessage(error), "error");
+    },
+  });
+
+  const reloadSpecialtyMutation = useMutation({
+    mutationFn: (id: string) => specialtyService.get(id),
+    onSuccess: (specialty) => {
+      onEdit(specialty);
       void queryClient.invalidateQueries({ queryKey: ["specialties"] });
     },
     onError: (error) => toast(getApiErrorMessage(error), "error"),
@@ -86,13 +102,14 @@ export function SpecialtiesPage() {
   });
 
   const items = useMemo(() => specialtiesQuery.data?.items ?? [], [specialtiesQuery.data]);
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadSpecialtyMutation.isPending;
   const canCreate = can("specialties", "create");
   const canUpdate = can("specialties", "update");
   const canDelete = can("specialties", "delete");
 
   const onNew = () => {
     if (!canCreate) return;
+    setEditConflict(false);
     setEditingSpecialty(null);
     form.reset({
       name: "",
@@ -103,6 +120,7 @@ export function SpecialtiesPage() {
 
   const onEdit = (specialty: Specialty) => {
     if (!canUpdate) return;
+    setEditConflict(false);
     setEditingSpecialty(specialty);
     form.reset({
       name: specialty.name,
@@ -113,7 +131,7 @@ export function SpecialtiesPage() {
 
   const onSubmit = (values: SpecialtyForm) => {
     if (editingSpecialty) {
-      updateMutation.mutate({ id: editingSpecialty.id, payload: values });
+      updateMutation.mutate({ id: editingSpecialty.id, version: editingSpecialty.version, payload: values });
       return;
     }
     createMutation.mutate(values);
@@ -198,10 +216,19 @@ export function SpecialtiesPage() {
 
       <Modal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingSpecialty ? "Editar especialidade" : "Nova especialidade"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {editConflict && editingSpecialty && (
+            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+              <p>Esta especialidade foi alterada por outra operação. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá o nome e a ativação deste formulário.</p>
+              <Button type="button" variant="outline" disabled={isSubmitting}
+                onClick={() => reloadSpecialtyMutation.mutate(editingSpecialty.id)}>
+                Descartar rascunho e carregar atual
+              </Button>
+            </div>
+          )}
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Nome *</label>
             <Input {...form.register("name")} />
@@ -219,7 +246,7 @@ export function SpecialtiesPage() {
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpenModal(false)}>
+            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>

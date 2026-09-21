@@ -99,6 +99,7 @@ class Procedure:
 
 @dataclass(slots=True)
 class Specialty:
+    version: int
     id: UUID
     name: str
     active: bool

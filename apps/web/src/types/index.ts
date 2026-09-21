@@ -100,6 +100,7 @@ export interface Procedure {
 }
 
 export interface Specialty {
+  version: number;
   id: string;
   name: string;
   active: boolean;

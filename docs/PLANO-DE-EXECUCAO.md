@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Concluída: 2B.4.1 — edição concorrente de procedimentos.** [Evidências e limites](./homologacao-etapa-2B4-1.md). Versão obrigatória, preço/duração preservados no conflito e recarga explícita homologados; CI aprovado em 21/09/2026. Próximo recorte: **2B.4.2 — especialidades**, conforme [mapeamento e critérios](./plano-etapa-2B4.md). Exclusões, regras entre disponibilidade e consultas e histórico financeiro permanecem em recortes próprios.
+**Em andamento: 2B.4.2 — edição concorrente de especialidades.** [Evidências e limites](./homologacao-etapa-2B4-2.md). Versão obrigatória e distinção entre nome duplicado/edição antiga implementadas; testes focados e navegador aprovados, regressão completa/CI pendentes. Última entrega concluída: [procedimentos, 2B.4.1](./homologacao-etapa-2B4-1.md). Exclusões, regras entre disponibilidade e consultas e histórico financeiro permanecem em recortes próprios.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -263,7 +263,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Novo digest oficial `a5f03c12a79dbe9f6d8a527b6bb1ea053fa8dd061d3738a26897f055ee2d9303` aplicado aos três Compose. Imagem criada em 21/09, ClamAV 1.4.6, assinaturas `28129` de 20/09 verificadas sem rede. Homologação recriada sem remover volume: saudável, smoke de prontidão e cinco testes reais do scanner aprovados. Auditoria local das cinco imagens sem achados na consulta. Publicar ajuste e acompanhar CI completo.
 - Ajuste publicado em `8c28719`, HEAD local/remoto conferidos. [CI 35601989322](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35601989322) superou a inicialização do Docker e executa backend/HTTP. Conferência local posterior ao reinício confirmou dados de negócio/exames preservados e zero schemas descartáveis. Ao retomar, consultar esta execução antes de repetir testes ou fechar a etapa.
 
-### Ponto de retomada atual — 2B.4.1 concluída em 21/09/2026
+### Retomada da 2B.4.1 — concluída em 21/09/2026 (histórico)
 
 - Implementação `224d074`, prontidão do antivírus `e8164a6` e imagem oficial atualizada `8c28719` publicados. [CI 35601989322](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35601989322) aprovado em 11min16s: 156 testes backend, 49 frontend, HTTP, builds e auditorias. Scanner real aprovado; cinco imagens sem achados na consulta. Falhas anteriores de prontidão não se repetiram; a causa da falta de atualização externa nas execuções antigas não foi determinada.
 - Gateway remoto confirmou 413/503, JSON 408 em 30,010s, vagas liberadas e 80 chamadas de saúde, p95 de 0,0399s. Política de idade das definições mantida; FreshClam continua necessário e volumes existentes não são substituídos ao trocar imagem.
@@ -271,3 +271,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Evidências: `docs/homologacao-etapa-2B4-1.md`. README mantém os dois identificadores/perfis de homologação na primeira linha, sem senhas. Lista pontual desta máquina; Git não transporta contas nem volumes.
 - **Próxima subetapa: 2B.4.2 — edição concorrente de especialidades.** Aplicar versão ao nome/ativação e distinguir nome duplicado de edição desatualizada. Usar a matriz em `docs/plano-etapa-2B4.md`. Especialidade do dentista continua textual; não propagar renomeações nem converter vínculos implicitamente. Exclusões, preço histórico e financeiro seguem em recortes próprios.
 - Fechamento posterior ao CI somente documental. Fazer commit/push e conferir árvore limpa e igualdade HEAD/remoto; na retomada não repetir procedimentos, antivírus ou revisão geral sem nova evidência.
+
+### Ponto de retomada atual — 2B.4.2 iniciada em 21/09/2026
+
+- Base `8cb02a7`, árvore limpa. Usuário autorizou próxima etapa com 53% de contexto. Recorte: versão de especialidades (nome/ativação), comparação atômica, códigos distintos para nome duplicado e edição antiga, rascunho preservado e recarga explícita.
+- Implementar migração própria e atualizar API/frontend juntos; homologar PostgreSQL, HTTP, componente e Chrome em duas abas. Conferir criação/edição duplicada sem consumo de versão, rollback e textos dos dentistas preservados. Critérios em `docs/plano-etapa-2B4.md`.
+- Antes de atualizar homologação principal, salvar cópias locais e fingerprints. Não alterar vínculos textuais, exclusões ou financeiro neste recorte. Registrar validações, publicar commit/push, acompanhar CI e conferir HEAD remoto antes de fechar.
+- Implementados `0018_specialty_version`, PUT com versão obrigatória, comparação/incremento atômicos e códigos `stale_version`/`specialty_name_exists`. Frontend preserva rascunho e oferece recarga somente para edição antiga; duplicidade permite corrigir nome com a mesma versão. Dez testes PostgreSQL focados, 53 frontend, dez grupos HTTP específicos e dez gerais aprovados; builds API/web aprovados.
+- Chrome/HTTPS com duas abas confirmou duplicidade distinta, correção sem recarga, conflito antigo, rascunho preservado, recarga explícita e revisão até versão 3. Capturas conferidas; fixtures removidas. Homologação principal em `0018_specialty_version` após cópias `pre-2B4-2*`; comparação após smokes confirmou dados anteriores e bytes dos exames preservados.
+- Suíte backend completa em execução, log `.data/specialty-version-full.log`. Relatório `docs/homologacao-etapa-2B4-2.md`. Falta fechar suíte, publicar implementação, acompanhar CI e registrar fechamento. Não iniciar financeiro antes disso. Próximo recorte proposto: 2B.5, mapeamento de edição/baixa/cancelamento/exclusão e histórico/autoria.

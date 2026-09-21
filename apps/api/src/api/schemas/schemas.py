@@ -194,11 +194,13 @@ class SpecialtyCreateRequest(BaseModel):
 
 
 class SpecialtyUpdateRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
     name: str | None = None
     active: bool | None = None
 
 
 class SpecialtyResponse(AppBaseSchema):
+    version: int
     id: UUID
     name: str
     active: bool
