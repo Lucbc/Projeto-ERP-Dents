@@ -32,6 +32,12 @@ O healthcheck anterior conferia somente PING/PONG e podia liberar a API com defi
 
 ClamAV da homologação recriado com o mesmo volume. Passaram a checagem real, cenários de definições antigas/futuras/indisponíveis/malformadas e os cinco testes do scanner, incluindo PNG limpo e EICAR. LF do shell preservado por `.gitattributes`. Novo CI completo pendente; não considerar a etapa encerrada antes dele.
 
+Em 21/09, o resultado do [CI 35508107940](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35508107940) confirmou bloqueio da inicialização com definições `28122`, de 13/09, idade de 623625 segundos. O healthcheck impediu liberar a API, conforme esperado. A imagem anterior foi criada em 14/09; não foi determinada a causa externa da falta de atualização naquela execução.
+
+Os três Compose foram atualizados para o digest oficial `a5f03c12a79dbe9f6d8a527b6bb1ea053fa8dd061d3738a26897f055ee2d9303`, criado em 21/09. Inspeção sem rede confirmou ClamAV 1.4.6, definições `28129` de 20/09 e assinatura digital válida. Após recriação local com o volume preservado, o serviço ficou saudável, carregou `28129` e passou novamente o smoke de prontidão e os cinco testes do scanner real. Trocar imagem não atualiza automaticamente volumes antigos; FreshClam e a política de idade continuam necessários. Validação remota completa ainda pendente.
+
+Auditoria local após atualizar a imagem: API, web, gateway, banco e ClamAV sem vulnerabilidades identificadas na consulta. Isso não substitui atualizações futuras nem garante ausência de falhas desconhecidas.
+
 Comandos específicos:
 
 ```powershell

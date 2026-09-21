@@ -106,6 +106,8 @@ FreshClam continua responsável pela atualização. `SelfCheck` passa a 60 segun
 
 O arquivo `ops/clamav/healthcheck.sh` usa LF inclusive no checkout Windows, por `.gitattributes`. Recriar `clamav` pelo Compose para aplicar a configuração/montagem, preservando o volume. Validação: `python scripts/smoke_clamav_readiness_homolog.py`; o CI registra somente versão/data e diagnóstico de prontidão se houver falha, sem arquivos clínicos ou credenciais.
 
+A imagem oficial permanece fixada por digest nos três Compose. Suas definições embarcadas também envelhecem: uma instalação nova pode aguardar o FreshClam antes de ficar pronta. Atualizar o digest exige conferir a imagem oficial e homologar prontidão, análise real e auditoria de vulnerabilidades. Volumes existentes conservam suas próprias definições; trocar a imagem não substitui o volume nem garante atualização das assinaturas. Acesso ao serviço oficial de atualização continua necessário. Não apagar volumes ou aumentar o prazo aceito para forçar a inicialização.
+
 ## Limite do fechamento
 
 As pendências técnicas deste complemento são reconciliação após interrupção, quota, manutenção periódica, concorrência/tempo/proxy e antivírus. Auditoria clínica completa, política de retenção de prontuário, autorização por paciente, HTTPS e backup/restauração assistidos mantêm suas etapas de produto/operação já previstas. Não são funções que um antivírus ou uma rotina de arquivos resolvam.
