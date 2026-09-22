@@ -160,12 +160,9 @@ def main() -> None:
         assert entry['total_cents'] == 15000
         request('POST', '/api/financial/from-appointment/' + appointment['id'], {},
                 token=token, expected=409)
-        paid = request('POST', '/api/financial/' + entry['id'] + '/mark-paid',
-                       {'version':entry['version'],'payment_method': 'pix'}, token=token)
-        assert paid['status'] == 'paid' and paid['paid_at']
         summary = request('GET', '/api/financial/summary', token=token)
-        assert summary['received_cents'] >= 15000
-        passed('cobranca, duplicidade sequencial, baixa e resumo financeiro')
+        assert summary['pending_income_cents'] >= 15000
+        passed('cobranca, duplicidade sequencial e resumo; baixa historica testada em schema descartavel')
 
         png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=')
         boundary = 'homolog-' + suffix

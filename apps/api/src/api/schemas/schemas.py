@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from src.core.domain.entities import (
     AppointmentStatus,
@@ -308,13 +308,14 @@ class AppointmentResponse(AppBaseSchema):
 
 
 class FinancialEntryCreateRequest(BaseModel):
+    idempotency_key: UUID | None = None
     entry_type: FinancialEntryType
     description: str = Field(min_length=1)
     amount_cents: int = Field(ge=0)
     discount_cents: int = Field(default=0, ge=0)
     tax_cents: int = Field(default=0, ge=0)
     due_date: date
-    paid_at: datetime | None = None
+    paid_at: AwareDatetime | None = None
     status: FinancialEntryStatus = FinancialEntryStatus.pending
     payment_method: PaymentMethod | None = None
     patient_id: UUID | None = None
@@ -332,7 +333,7 @@ class FinancialEntryUpdateRequest(BaseModel):
     discount_cents: int | None = Field(default=None, ge=0)
     tax_cents: int | None = Field(default=None, ge=0)
     due_date: date | None = None
-    paid_at: datetime | None = None
+    paid_at: AwareDatetime | None = None
     status: FinancialEntryStatus | None = None
     payment_method: PaymentMethod | None = None
     patient_id: UUID | None = None
@@ -352,12 +353,22 @@ class FinancialGenerateFromAppointmentRequest(BaseModel):
 
 
 class FinancialMarkPaidRequest(BaseModel):
+    idempotency_key: UUID
     version: int = Field(gt=0, strict=True)
-    paid_at: datetime | None = None
+    paid_at: AwareDatetime | None = None
     payment_method: PaymentMethod | None = None
 
 
+class FinancialReverseRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
+    idempotency_key: UUID
+    payment_id: UUID
+    reason: str = Field(min_length=3, max_length=500)
+
+
 class FinancialEntryResponse(AppBaseSchema):
+    active_payment_id: UUID | None = None
+    has_payments: bool = False
     version: int
     id: UUID
     entry_type: FinancialEntryType
@@ -380,6 +391,13 @@ class FinancialEntryResponse(AppBaseSchema):
     is_overdue: bool = False
     created_at: datetime
     updated_at: datetime
+
+
+class FinancialOperationResponse(BaseModel):
+    entry: FinancialEntryResponse
+    payment: dict
+    reversal: dict | None
+    replayed: bool
 
 
 class FinancialEntryListResponse(BaseModel):

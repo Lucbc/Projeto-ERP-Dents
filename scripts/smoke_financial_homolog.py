@@ -36,20 +36,26 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     expect('POST',path,{'idempotency_key':str(uuid4())},409)
     expect('POST',path,{},409)
     passed('retry across sessions recovers original; changed request and other operations conflict')
-    expect('POST','/api/financial/'+entry['id']+'/mark-paid',{'version':entry['version']})
+    expect('POST','/api/financial/'+entry['id']+'/mark-paid',{'version':entry['version'],'idempotency_key':str(uuid4())})
     retry = expect('POST',path,payload,201)
     assert retry['status'] == 'paid' and retry['id'] == entry['id']
-    expect('PUT','/api/financial/'+entry['id'],{'version':retry['version'],'status':'cancelled'})
+    reverse = expect('POST','/api/financial/'+entry['id']+'/reverse-payment',{'version':retry['version'],'payment_id':retry['active_payment_id'],'idempotency_key':str(uuid4()),'reason':'Fictitious correction'})
+    expect('PUT','/api/financial/'+entry['id'],{'version':reverse['entry']['version'],'status':'cancelled'})
     replacement = expect('POST',path,{'idempotency_key':str(uuid4())},201)
     retry = expect('POST',path,payload,201)
     assert retry['status'] == 'cancelled' and retry['id'] == entry['id']
     expect('PUT','/api/financial/'+entry['id'],{'version':retry['version'],'status':'pending'},409)
     passed('retries preserve payment/cancellation; new operation may replace cancellation; reactivation conflicts')
-    expect('DELETE','/api/financial/'+entry['id']+'?version='+str(retry['version']),status=204)
-    expect('POST',path,payload,409)
+    expect('DELETE','/api/financial/'+entry['id']+'?version='+str(retry['version']),status=409)
+    expect('DELETE','/api/financial/'+replacement['id']+'?version='+str(replacement['version']),status=204)
+    # A result without payment history remains deletable and its receipt is retained.
+    replacement_payload = {'idempotency_key':str(uuid4())}
+    removable = expect('POST',path,replacement_payload,201)
+    expect('DELETE','/api/financial/'+removable['id']+'?version='+str(removable['version']),status=204)
+    expect('POST',path,replacement_payload,409)
     assert sql(f'SELECT count(*) FROM "{schema}".financial_entries') == '1'
-    assert sql(f'SELECT count(*) FROM "{schema}".financial_generations') == '2'
-    passed('deleted result leaves receipt and cannot be recreated by delayed retry')
+    assert sql(f'SELECT count(*) FROM "{schema}".financial_generations') == '3'
+    passed('paid history cannot be deleted; deleted unpaid result retains receipt and blocks delayed retry')
     expect('POST','/api/auth/logout',{})
     request('POST','/api/auth/logout',token=login['session'])
 

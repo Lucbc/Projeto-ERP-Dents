@@ -20,9 +20,12 @@ from src.api.schemas.schemas import (
     FinancialEntryUpdateRequest,
     FinancialGenerateFromAppointmentRequest,
     FinancialMarkPaidRequest,
+    FinancialReverseRequest,
+    FinancialOperationResponse,
     FinancialSummaryResponse,
 )
 from src.core.use_cases.financial_use_cases import FinancialUseCases
+from src.core.domain.entities import User, FinancialEntryStatus
 
 router = APIRouter(
     prefix="/api/financial",
@@ -97,9 +100,12 @@ def get_financial_summary(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_permission("financial", "create"))],
 )
-def create_financial_entry(payload: FinancialEntryCreateRequest, db: Session = Depends(get_db_dep)):
+def create_financial_entry(payload: FinancialEntryCreateRequest, db: Session = Depends(get_db_dep),
+                           actor: User = Depends(require_permission("financial", "create"))):
+    if payload.status == FinancialEntryStatus.paid:
+        require_permission("financial", "update")(current_user=actor, db=db)
     use_case = build_use_case(db)
-    return use_case.create(payload.model_dump())
+    return use_case.create(payload.model_dump(), actor=actor)
 
 
 @router.post(
@@ -111,10 +117,13 @@ def create_financial_entry(payload: FinancialEntryCreateRequest, db: Session = D
 def generate_financial_from_appointment(
     appointment_id: UUID,
     payload: FinancialGenerateFromAppointmentRequest,
+    actor: User = Depends(require_permission("financial", "create")),
     db: Session = Depends(get_db_dep),
 ):
     use_case = build_use_case(db)
-    return use_case.generate_from_appointment(appointment_id=appointment_id, data=payload.model_dump())
+    if payload.status == FinancialEntryStatus.paid:
+        require_permission("financial", "update")(current_user=actor, db=db)
+    return use_case.generate_from_appointment(appointment_id=appointment_id, data=payload.model_dump(), actor=actor)
 
 
 @router.get(
@@ -143,18 +152,21 @@ def update_financial_entry(
 
 @router.post(
     "/{financial_entry_id}/mark-paid",
-    response_model=FinancialEntryResponse,
+    response_model=FinancialOperationResponse,
     dependencies=[Depends(require_permission("financial", "update"))],
 )
 def mark_financial_entry_paid(
     financial_entry_id: UUID,
     payload: FinancialMarkPaidRequest,
+    actor: User = Depends(require_permission("financial", "update")),
     db: Session = Depends(get_db_dep),
 ):
     use_case = build_use_case(db)
     return use_case.mark_as_paid(
         financial_entry_id=financial_entry_id,
         version=payload.version,
+        idempotency_key=payload.idempotency_key,
+        actor=actor,
         paid_at=payload.paid_at,
         payment_method=payload.payment_method,
     )
@@ -170,3 +182,17 @@ def delete_financial_entry(financial_entry_id: UUID, version: int = Query(gt=0),
     use_case = build_use_case(db)
     use_case.delete(financial_entry_id, version)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{financial_entry_id}/payments", dependencies=[Depends(require_permission("financial", "view"))])
+def financial_payments(financial_entry_id: UUID, db: Session = Depends(get_db_dep)):
+    return build_use_case(db).payments(financial_entry_id)
+
+
+@router.post("/{financial_entry_id}/reverse-payment", response_model=FinancialOperationResponse,
+             dependencies=[Depends(require_permission("financial", "update"))])
+def reverse_financial_payment(financial_entry_id: UUID, payload: FinancialReverseRequest,
+                              actor: User = Depends(require_permission("financial_reversals", "create")),
+                              db: Session = Depends(get_db_dep)):
+    return build_use_case(db).reverse_payment(financial_entry_id, payload.version, payload.payment_id,
+                                            payload.idempotency_key, payload.reason, actor)

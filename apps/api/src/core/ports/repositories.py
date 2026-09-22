@@ -195,6 +195,21 @@ class ExamRepository(ABC):
 
 class FinancialRepository(ABC):
     @abstractmethod
+    def payments(self, entry_id: UUID) -> list[dict]: ...
+
+    @abstractmethod
+    def operation(self, key: UUID, kind: str, request_hash: str) -> dict | None: ...
+
+    @abstractmethod
+    def settle(self, id, version, key, request_hash, paid_at, payment_method, actor) -> dict: ...
+
+    @abstractmethod
+    def reverse(self, id, version, payment_id, key, request_hash, reason, actor) -> dict: ...
+
+    @abstractmethod
+    def create_paid(self, data, key, kind, request_hash, actor, generation_hash=None) -> FinancialEntry: ...
+
+    @abstractmethod
     def list(
         self,
         search: str | None,

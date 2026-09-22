@@ -19,6 +19,7 @@ PermissionResource: TypeAlias = Literal[
     "permissions",
     "consultations",
     "financial",
+    "financial_reversals",
 ]
 PermissionMatrix: TypeAlias = dict[str, dict[str, bool]]
 
@@ -36,6 +37,7 @@ PERMISSION_RESOURCES: tuple[PermissionResource, ...] = (
     "permissions",
     "consultations",
     "financial",
+    "financial_reversals",
 )
 
 
@@ -66,6 +68,7 @@ DEFAULT_ROLE_PERMISSIONS: dict[UserRole, PermissionMatrix] = {
         "permissions": _deny_all(),
         "consultations": _allow_view_only(),
         "financial": _allow_all(),
+        "financial_reversals": _deny_all(),
     },
     UserRole.dentist: {
         "dashboard": _allow_view_only(),
@@ -80,6 +83,7 @@ DEFAULT_ROLE_PERMISSIONS: dict[UserRole, PermissionMatrix] = {
         "permissions": _deny_all(),
         "consultations": _allow_view_only(),
         "financial": _allow_view_only(),
+        "financial_reversals": _deny_all(),
     },
     UserRole.reception: {
         "dashboard": _allow_view_only(),
@@ -94,6 +98,7 @@ DEFAULT_ROLE_PERMISSIONS: dict[UserRole, PermissionMatrix] = {
         "permissions": _deny_all(),
         "consultations": _deny_all(),
         "financial": {"view": True, "create": True, "update": True, "delete": False},
+        "financial_reversals": _deny_all(),
     },
 }
 

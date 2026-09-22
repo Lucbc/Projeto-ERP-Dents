@@ -34,7 +34,7 @@ class FinancialVersionTests(unittest.TestCase):
                 uc=self.uc(db)
                 repo=uc.financial_repository
                 # Both operations finish their preliminary reads before either write.
-                for name in ('update','delete'):
+                for name in ('update','delete','settle'):
                     original=getattr(repo,name)
                     def synchronized(*args,_original=original,**kwargs):
                         gate.wait()
@@ -56,7 +56,7 @@ class FinancialVersionTests(unittest.TestCase):
             self.assertIn((row.amount_cents,row.total_cents,row.notes),[(23456,23356,'A'),(34567,34767,'B')])
 
     def test_edit_against_payment(self):
-        self.race([lambda uc:uc.update(self.id,{'version':1,'notes':'Edited'}),lambda uc:uc.mark_as_paid(self.id,1)])
+        self.race([lambda uc:uc.update(self.id,{'version':1,'notes':'Edited'}),lambda uc:fixture.settle(uc,self.id,1)])
         with Session(self.engine) as db:
             row=self.uc(db).get(self.id)
             self.assertEqual(row.version,2)
@@ -64,7 +64,7 @@ class FinancialVersionTests(unittest.TestCase):
             self.assertEqual(row.paid_at is not None,row.status.value=='paid')
 
     def test_cancellation_against_payment(self):
-        self.race([lambda uc:uc.update(self.id,{'version':1,'status':'cancelled'}),lambda uc:uc.mark_as_paid(self.id,1)])
+        self.race([lambda uc:uc.update(self.id,{'version':1,'status':'cancelled'}),lambda uc:fixture.settle(uc,self.id,1)])
         with Session(self.engine) as db:
             row=self.uc(db).get(self.id)
             self.assertEqual(row.version,2)
@@ -74,8 +74,8 @@ class FinancialVersionTests(unittest.TestCase):
     def test_two_payments_preserve_one_date_and_method(self):
         a=datetime(2030,1,1,12,tzinfo=timezone.utc)
         b=datetime(2030,1,2,12,tzinfo=timezone.utc)
-        self.race([lambda uc:uc.mark_as_paid(self.id,1,a,PaymentMethod.pix),
-                   lambda uc:uc.mark_as_paid(self.id,1,b,PaymentMethod.cash)])
+        self.race([lambda uc:fixture.settle(uc,self.id,1,a,PaymentMethod.pix),
+                   lambda uc:fixture.settle(uc,self.id,1,b,PaymentMethod.cash)])
         with Session(self.engine) as db:
             row=self.uc(db).get(self.id)
             self.assertEqual(row.version,2)
@@ -103,15 +103,16 @@ class FinancialVersionTests(unittest.TestCase):
     def test_repeat_and_state_conflicts_do_not_rewrite_settlement(self):
         with Session(self.engine) as db:
             uc=self.uc(db)
-            first=uc.mark_as_paid(self.id,1,payment_method=PaymentMethod.pix)
+            first=fixture.settle(uc,self.id,1,payment_method=PaymentMethod.pix)
             for version,code in ((1,'stale_version'),(2,'financial_state_conflict')):
-                with self.assertRaises(ConflictError) as caught: uc.mark_as_paid(self.id,version,payment_method=PaymentMethod.cash)
+                with self.assertRaises(ConflictError) as caught: fixture.settle(uc,self.id,version,payment_method=PaymentMethod.cash)
                 self.assertEqual(caught.exception.code,code)
             current=uc.get(self.id)
             self.assertEqual((current.version,current.paid_at,current.payment_method,current.updated_at),
                 (first.version,first.paid_at,first.payment_method,first.updated_at))
-            uc.update(self.id,{'version':2,'status':'cancelled'})
-            with self.assertRaises(ConflictError) as caught: uc.mark_as_paid(self.id,3)
+            fixture.reverse(uc, current)
+            uc.update(self.id,{'version':3,'status':'cancelled'})
+            with self.assertRaises(ConflictError) as caught: fixture.settle(uc,self.id,4)
             self.assertEqual(caught.exception.code,'financial_state_conflict')
 
     def test_preconditions_noop_partial_and_deleted_target(self):
@@ -125,7 +126,7 @@ class FinancialVersionTests(unittest.TestCase):
             with self.assertRaises(ConflictError): uc.delete(self.id,1)
             uc.delete(self.id,2)
             with self.assertRaises(NotFoundError): uc.delete(self.id,2)
-            with self.assertRaises(NotFoundError): uc.mark_as_paid(self.id,2)
+            with self.assertRaises(NotFoundError): fixture.settle(uc,self.id,2)
 
     def test_rejected_index_and_fk_keep_version_and_values(self):
         with Session(self.engine) as db:
@@ -146,7 +147,7 @@ class FinancialVersionTests(unittest.TestCase):
         self.assertEqual(migrate('downgrade','0018_specialty_version').returncode,0)
         def snapshot():
             with self.engine.connect() as db:
-                return (db.execute(text("SELECT (to_jsonb(f)-'version')::text FROM financial_entries f ORDER BY id")).scalars().all(),
+                return (db.execute(text("SELECT (to_jsonb(f)-'version'-'active_payment_id')::text FROM financial_entries f ORDER BY id")).scalars().all(),
                     db.execute(text('SELECT row_to_json(g)::text FROM financial_generations g ORDER BY key')).scalars().all())
         before=snapshot()
         self.assertEqual(migrate('upgrade','head').returncode,0)

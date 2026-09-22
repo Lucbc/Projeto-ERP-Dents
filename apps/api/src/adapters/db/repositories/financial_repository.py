@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import func, or_, select, update, delete
+from sqlalchemy import func, or_, select, update, delete, text
+from .financial_history import FinancialHistoryMixin
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -18,7 +19,7 @@ from src.core.domain.entities import (
 from src.core.ports.repositories import FinancialRepository
 
 
-class SqlAlchemyFinancialRepository(FinancialRepository):
+class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
     def __init__(self, session: Session) -> None:
         self.session = session
 
@@ -161,6 +162,10 @@ class SqlAlchemyFinancialRepository(FinancialRepository):
     def update(self, financial_entry_id, data: dict, *, pending_only: bool = False):
         version = data.get("version")
         self._validate_version(version)
+        current = self._locked_entry(financial_entry_id, version)
+        if current.status == FinancialEntryStatus.paid or data.get('status') in ('paid', FinancialEntryStatus.paid):
+            self.session.rollback()
+            raise ConflictError('Pagamento confirmado exige estorno antes de editar.', code='payment_immutable')
         values = {key: data[key] for key in (
             "entry_type", "description", "amount_cents", "discount_cents", "tax_cents", "total_cents",
             "due_date", "paid_at", "status", "payment_method", "patient_id", "dentist_id",
@@ -183,6 +188,10 @@ class SqlAlchemyFinancialRepository(FinancialRepository):
 
     def delete(self, financial_entry_id, version: int) -> bool:
         self._validate_version(version)
+        current = self._locked_entry(financial_entry_id, version)
+        if current.status == FinancialEntryStatus.paid or self.payments(financial_entry_id):
+            self.session.rollback()
+            raise ConflictError('Lançamento com pagamentos não pode ser excluído. Use estorno e cancelamento.', code='payment_immutable')
         removed = self.session.scalar(delete(FinancialEntryModel).where(
             FinancialEntryModel.id == financial_entry_id, FinancialEntryModel.version == version
         ).returning(FinancialEntryModel.id))
@@ -265,6 +274,8 @@ class SqlAlchemyFinancialRepository(FinancialRepository):
 
         return FinancialEntry(
             version=model.version,
+            active_payment_id=model.active_payment_id,
+            has_payments=bool(self.session.scalar(text("SELECT EXISTS(SELECT 1 FROM financial_payments WHERE entry_id=:id)"), {"id":model.id})),
             id=model.id,
             entry_type=model.entry_type,
             description=model.description,

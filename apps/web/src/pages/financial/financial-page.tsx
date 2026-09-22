@@ -1,3 +1,5 @@
+import { PaymentDialog } from "./payment-dialog";
+import { uncertainFinancialEntry } from "@/lib/financial-attempt";
 import { isAxiosError } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -111,6 +113,11 @@ export function FinancialPage() {
   const [openGenerateModal, setOpenGenerateModal] = useState(false);
   const [editConflict, setEditConflict] = useState(false);
   const [actionConflict, setActionConflict] = useState(false);
+  const [paymentDialog, setPaymentDialog] = useState<{ entry: FinancialEntry; mode: "pay" | "history" } | null>(null);
+  const [createUncertain, setCreateUncertain] = useState(false);
+  const [generateUncertain, setGenerateUncertain] = useState(false);
+  const [reviewCreation, setReviewCreation] = useState(uncertainFinancialEntry("creation"));
+  const createAttempt = useRef<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(null);
 
   const entryForm = useForm<FinancialForm>({
@@ -208,6 +215,7 @@ export function FinancialPage() {
   const createMutation = useMutation({
     mutationFn: (payload: FinancialForm) =>
       financialService.create({
+        idempotency_key: createAttempt.current || (createAttempt.current = crypto.randomUUID()),
         entry_type: payload.entry_type,
         description: payload.description.trim(),
         amount_cents: toCents(payload.amount),
@@ -228,13 +236,20 @@ export function FinancialPage() {
         notes: nullable(payload.notes),
       }),
     onSuccess: () => {
+      createAttempt.current = null; setCreateUncertain(false); uncertainFinancialEntry("creation", false);
       toast("Lancamento financeiro cadastrado com sucesso.");
       setOpenEntryModal(false);
       setEditingEntry(null);
       entryForm.reset();
       void queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => {
+      const unknown = !isAxiosError(error) || !error.response || error.response.status >= 500;
+      setCreateUncertain(unknown);
+      uncertainFinancialEntry("creation", unknown);
+      if (!unknown) createAttempt.current = null;
+      toast(getApiErrorMessage(error), "error");
+    },
   });
 
   const updateMutation = useMutation({
@@ -307,15 +322,6 @@ export function FinancialPage() {
     onError: onActionError,
   });
 
-  const markAsPaidMutation = useMutation({
-    mutationFn: (entry: FinancialEntry) => financialService.markAsPaid(entry.id, { version: entry.version }),
-    onSuccess: () => {
-      toast("Lancamento baixado como pago.");
-      void queryClient.invalidateQueries({ queryKey: ["financial"] });
-    },
-    onError: onActionError,
-  });
-
   const generationAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
   const generateFromAppointmentMutation = useMutation({
     mutationFn: (payload: GenerateFromAppointmentForm) => {
@@ -335,13 +341,17 @@ export function FinancialPage() {
       });
     },
     onSuccess: () => {
-      generationAttempt.current = null;
+      generationAttempt.current = null; setGenerateUncertain(false); uncertainFinancialEntry("creation", false);
       toast("Lancamento financeiro gerado com base na consulta.");
       setOpenGenerateModal(false);
       generateForm.reset();
       void queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => {
+      const unknown = !isAxiosError(error) || !error.response || error.response.status >= 500;
+      setGenerateUncertain(unknown); uncertainFinancialEntry("creation", unknown);
+      toast(getApiErrorMessage(error), "error");
+    },
   });
 
   const patients = useMemo(() => patientsQuery.data?.items ?? [], [patientsQuery.data]);
@@ -353,7 +363,7 @@ export function FinancialPage() {
     [appointmentsForGenerateQuery.data],
   );
 
-  const canCreate = can("financial", "create");
+  const canCreate = can("financial", "create") && !reviewCreation;
   const canUpdate = can("financial", "update");
   const canDelete = can("financial", "delete");
   const isSubmittingEntry = createMutation.isPending || updateMutation.isPending || reloadEntryMutation.isPending;
@@ -427,6 +437,9 @@ export function FinancialPage() {
 
   return (
     <div className="space-y-4">
+      {reviewCreation && <div role="alert" className="rounded border border-amber-300 p-3"><p>Uma criação anterior ficou sem confirmação. Confira os lançamentos e pagamentos antes de criar outro.</p><Button disabled={!financialEntriesQuery.isSuccess || financialEntriesQuery.isFetching} onClick={() => { uncertainFinancialEntry("creation", false); setReviewCreation(false); }}>Conferi os lançamentos</Button></div>}
+      {paymentDialog && <PaymentDialog key={paymentDialog.entry.id + paymentDialog.mode} entry={paymentDialog.entry} mode={paymentDialog.mode}
+        onClose={() => setPaymentDialog(null)} onChanged={() => void queryClient.invalidateQueries({ queryKey: ["financial"] })} />}
       {actionConflict && (
         <div role="alert" className="rounded border border-amber-300 bg-amber-50 p-3">
           <p>O lançamento mudou. Recarregue a lista e confira o estado atual antes de escolher uma nova ação. A operação não será repetida automaticamente.</p>
@@ -510,7 +523,7 @@ export function FinancialPage() {
           </Select>
           <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="">Todos status</option>
-            {financialEntryStatusOptions.map((option) => (
+            {financialEntryStatusOptions.filter(option => option.value !== "paid" || (!editingEntry && canUpdate)).map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -605,7 +618,7 @@ export function FinancialPage() {
                           <span className="text-slate-400">-</span>
                         ) : (
                           <div className="flex gap-2">
-                            {canUpdate && (
+                            {canUpdate && entry.status !== "paid" && (
                               <Button variant="outline" onClick={() => onEditEntry(entry)}>
                                 Editar
                               </Button>
@@ -613,16 +626,17 @@ export function FinancialPage() {
                             {canUpdate && entry.status === "pending" && (
                               <Button
                                 variant="outline"
-                                onClick={() => markAsPaidMutation.mutate(entry)}
-                                disabled={markAsPaidMutation.isPending || deleteMutation.isPending || actionConflict}
+                                onClick={() => setPaymentDialog({ entry, mode: "pay" })}
+                                disabled={deleteMutation.isPending || actionConflict}
                               >
                                 Baixar
                               </Button>
                             )}
-                            {canDelete && (
+                            {(entry.has_payments || entry.status === "paid") && <Button variant="outline" onClick={() => setPaymentDialog({ entry, mode: "history" })}>Ver pagamentos</Button>}
+                            {canDelete && !entry.has_payments && entry.status !== "paid" && (
                               <Button
                                 variant="danger"
-                                disabled={deleteMutation.isPending || markAsPaidMutation.isPending || actionConflict}
+                                disabled={deleteMutation.isPending || actionConflict}
                                 onClick={() => {
                                   if (window.confirm("Deseja remover este lancamento?")) {
                                     deleteMutation.mutate(entry);
@@ -647,17 +661,20 @@ export function FinancialPage() {
       <Modal
         open={openEntryModal}
         onClose={() => {
-          if (isSubmittingEntry) return;
+          if (isSubmittingEntry || createUncertain) return;
           setOpenEntryModal(false);
           setEditingEntry(null);
         }}
         title={editingEntry ? "Editar lancamento financeiro" : "Novo lancamento financeiro"}
       >
+        {createUncertain && <div role="alert"><p>Resultado incerto. Repita os mesmos dados para recuperar a criação; não crie outro lançamento.</p><Button disabled={createMutation.isPending} onClick={() => createMutation.mutate(createMutation.variables!)}>Consultar/repetir criação</Button></div>}
+        {editingEntry?.status === "paid" && <div role="alert"><p>Pagamento confirmado. Consulte os pagamentos para estornar antes de corrigir.</p><Button onClick={() => { setOpenEntryModal(false); setEditingEntry(null); }}>Fechar formulário</Button></div>}
         <form className="grid gap-3 md:grid-cols-2" onSubmit={entryForm.handleSubmit(submitEntry)}>
+          <fieldset disabled={createUncertain || editingEntry?.status === "paid"} className="contents">
           {editConflict && editingEntry && (
             <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
               <p>Este lançamento mudou. Seu rascunho foi mantido. Carregar o atual substituirá valores, datas, status e vínculos deste formulário.</p>
-              <Button type="button" variant="outline" disabled={isSubmittingEntry}
+              <Button type="button" variant="outline" disabled={isSubmittingEntry || createUncertain}
                 onClick={() => reloadEntryMutation.mutate(editingEntry.id)}>Descartar rascunho e carregar atual</Button>
             </div>
           )}
@@ -675,7 +692,7 @@ export function FinancialPage() {
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Status *</label>
             <Select {...entryForm.register("status")}>
-              {financialEntryStatusOptions.map((option) => (
+              {financialEntryStatusOptions.filter(option => option.value !== "paid" || editingEntry?.status === "paid" || (!editingEntry && canUpdate)).map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -788,7 +805,7 @@ export function FinancialPage() {
             <Button
               type="button"
               variant="outline"
-              disabled={isSubmittingEntry}
+              disabled={isSubmittingEntry || createUncertain}
               onClick={() => {
                 setOpenEntryModal(false);
                 setEditingEntry(null);
@@ -796,18 +813,20 @@ export function FinancialPage() {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmittingEntry}>
+            <Button type="submit" disabled={isSubmittingEntry || createUncertain}>
               {isSubmittingEntry ? "Salvando..." : "Salvar"}
             </Button>
           </div>
+          </fieldset>
         </form>
       </Modal>
 
       <Modal
         open={openGenerateModal}
-        onClose={() => setOpenGenerateModal(false)}
+        onClose={() => { if (!isGeneratingEntry && !generateUncertain) setOpenGenerateModal(false); }}
         title="Gerar lancamento financeiro da consulta"
       >
+        {generateUncertain && <div role="alert"><p>Resultado incerto. Repita os mesmos dados para recuperar a geração.</p><Button disabled={isGeneratingEntry} onClick={() => generateFromAppointmentMutation.mutate(generateFromAppointmentMutation.variables!)}>Consultar/repetir geração</Button></div>}
         {!canViewAppointments ? (
           <div className="space-y-2 text-sm text-slate-600">
             <p>Seu perfil nao possui permissao para listar consultas.</p>
@@ -821,6 +840,7 @@ export function FinancialPage() {
           <EmptyState message="Nenhuma consulta disponivel para gerar lancamento." />
         ) : (
           <form className="grid gap-3 md:grid-cols-2" onSubmit={generateForm.handleSubmit(submitGenerate)}>
+            <fieldset disabled={isGeneratingEntry || generateUncertain} className="contents">
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">Consulta *</label>
               <Select {...generateForm.register("appointment_id")}>
@@ -850,7 +870,7 @@ export function FinancialPage() {
               <label className="mb-1 block text-sm font-semibold text-slate-700">Status</label>
               <Select {...generateForm.register("status")}>
                 <option value="pending">Pendente</option>
-                <option value="paid">Pago</option>
+                {canUpdate && <option value="paid">Pago</option>}
               </Select>
             </div>
 
@@ -884,6 +904,7 @@ export function FinancialPage() {
                 {isGeneratingEntry ? "Gerando..." : "Gerar"}
               </Button>
             </div>
+            </fieldset>
           </form>
         )}
       </Modal>

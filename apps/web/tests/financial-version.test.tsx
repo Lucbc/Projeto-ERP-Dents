@@ -10,7 +10,7 @@ import type { FinancialEntry, FinancialSummary } from "../src/types";
 
 vi.mock("@/hooks/use-permissions",()=>({usePermissions:()=>({can:(resource:string)=>resource!=="appointments"})}));
 let client:QueryClient;
-afterEach(()=>{cleanup();client?.clear();vi.restoreAllMocks();});
+afterEach(()=>{cleanup();client?.clear();vi.restoreAllMocks();sessionStorage.clear();});
 const entry={id:"fictitious",version:1,entry_type:"income",description:"Fictitious charge",amount_cents:12000,
   discount_cents:0,tax_cents:0,total_cents:12000,due_date:"2030-01-07",status:"pending",paid_at:null,
   payment_method:null,patient_id:null,dentist_id:null,appointment_id:null,procedure_ids:[],notes:null} as FinancialEntry;
@@ -26,7 +26,7 @@ function setup(){
   return {list,field:(name:string)=>container.querySelector(`[name="${name}"]`) as HTMLInputElement};
 }
 
-it("keeps financial draft after conflict/failed reload and preserves loaded payment timestamp precision",async()=>{
+it("keeps financial draft after conflict/failed reload and makes a loaded paid entry read-only",async()=>{
   const paidAt="2030-01-07T12:34:56.123456Z";
   const current={...entry,version:2,status:"paid" as const,paid_at:paidAt,payment_method:"pix" as const,amount_cents:23456,total_cents:23456};
   const update=vi.spyOn(financialService,"update").mockRejectedValueOnce(failure(409,"stale_version")).mockResolvedValue({...current,version:3});
@@ -47,13 +47,12 @@ it("keeps financial draft after conflict/failed reload and preserves loaded paym
   fireEvent.click(reload);
   await waitFor(()=>expect(field("status").value).toBe("paid"));
   expect(field("amount").value).toBe("234.56");
-  fireEvent.change(field("notes"),{target:{value:"Reviewed"}});
-  fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
-  await waitFor(()=>expect(update).toHaveBeenCalledTimes(2));
-  expect(update.mock.calls[1][1]).toMatchObject({version:2,paid_at:paidAt,payment_method:"pix",amount_cents:23456,notes:"Reviewed"});
+  expect(field("notes").closest("fieldset")?.disabled).toBe(true);
+  expect(update).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button",{name:"Fechar formulário"})).toBeTruthy();
 });
 
-it.each(["Baixar","Excluir"])("sends displayed version for %s and requires explicit refresh without automatic retry",async(action)=>{
+it.each(["Excluir"])("sends displayed version for %s and requires explicit refresh without automatic retry",async(action)=>{
   vi.spyOn(window,"confirm").mockReturnValue(true);
   const pay=vi.spyOn(financialService,"markAsPaid").mockRejectedValue(failure(409,"stale_version"));
   const remove=vi.spyOn(financialService,"remove").mockRejectedValue(failure(409,"stale_version"));
@@ -68,4 +67,20 @@ it.each(["Baixar","Excluir"])("sends displayed version for %s and requires expli
   await waitFor(()=>expect(screen.queryByRole("button",{name:"Recarregar financeiro"})).toBeNull());
   expect(financialService.summary).toHaveBeenCalledTimes(2);
   expect(action==="Baixar"?pay:remove).toHaveBeenCalledTimes(1);
+});
+
+it("locks a paid creation after network uncertainty and reuses its original key and values",async()=>{
+  const create=vi.spyOn(financialService,"create").mockRejectedValueOnce(new AxiosError("network")).mockResolvedValue({...entry,status:"paid",has_payments:true});
+  const {field}=setup();
+  fireEvent.click(await screen.findByRole("button",{name:"Novo lancamento",exact:true}));
+  fireEvent.change(field("description"),{target:{value:"Fictitious paid creation"}});
+  fireEvent.change(field("amount"),{target:{value:"120.00"}});
+  fireEvent.change(field("status"),{target:{value:"paid"}});
+  fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
+  const retry=await screen.findByRole("button",{name:"Consultar/repetir criação"});
+  expect(field("amount").closest("fieldset")?.disabled).toBe(true);
+  fireEvent.click(retry);
+  await waitFor(()=>expect(create).toHaveBeenCalledTimes(2));
+  expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
+  expect(create.mock.calls[0][0]).toMatchObject({status:"paid",amount_cents:12000,idempotency_key:expect.any(String)});
 });

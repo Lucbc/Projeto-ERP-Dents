@@ -17,6 +17,16 @@ from src.core.use_cases.financial_use_cases import FinancialUseCases
 from src.core.domain.exceptions import ConflictError
 
 
+def settle(uc, *args, **kwargs):
+    return uc.mark_as_paid(*args, **kwargs, idempotency_key=uuid4(),
+                          actor=SimpleNamespace(id=uuid4(), name='Fictitious operator'))['entry']
+
+
+def reverse(uc, entry):
+    return uc.reverse_payment(entry.id, entry.version, entry.active_payment_id, uuid4(), 'Fictitious correction',
+                              SimpleNamespace(id=uuid4(), name='Fictitious operator'))['entry']
+
+
 @unittest.skipUnless(os.getenv('RUN_HOMOLOG_TESTS') == '1', 'Homologation opt-in required')
 class FinancialConcurrencyTests(unittest.TestCase):
     def setUp(self):
@@ -113,7 +123,7 @@ class FinancialConcurrencyTests(unittest.TestCase):
             first = uc.create(self.data(status='cancelled')).id
             second = uc.create(self.data(status='cancelled')).id
         result = self.race([lambda uc: uc.update(first, {'version':1,'status':'pending'}),
-                            lambda uc: uc.update(second, {'version':1,'status':'paid'})], 'update')
+                            lambda uc: uc.update(second, {'version':1,'status':'pending'})], 'update')
         self.assertEqual(sorted(status for status,_ in result), ['conflict','ok'])
         with Session(self.engine) as db:
             self.assertEqual(db.scalar(text("SELECT count(*) FROM financial_entries WHERE status='cancelled'")), 1)
@@ -123,10 +133,11 @@ class FinancialConcurrencyTests(unittest.TestCase):
         with Session(self.engine) as db:
             uc = self.use_case(db)
             entry = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key})
-            uc.mark_as_paid(entry.id,entry.version)
+            settle(uc,entry.id,entry.version)
             retry = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key})
             self.assertEqual(retry.id, entry.id)
             self.assertEqual(retry.status.value, 'paid')
+            retry = reverse(uc, retry)
             uc.update(entry.id, {'version':retry.version,'status':'cancelled'})
             replacement = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':uuid4()})
             retry = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key})

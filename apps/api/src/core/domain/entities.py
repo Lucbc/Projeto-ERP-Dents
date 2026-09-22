@@ -169,6 +169,8 @@ class FinancialEntry:
     patient_name: str | None = None
     dentist_name: str | None = None
     is_overdue: bool = False
+    active_payment_id: UUID | None = None
+    has_payments: bool = False
 
 
 @dataclass(slots=True)

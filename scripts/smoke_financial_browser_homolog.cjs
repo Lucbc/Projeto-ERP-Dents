@@ -67,7 +67,7 @@ let stage = 'start';
     assert.ok(firstKey);
     stage='retry recovers persisted result';
     const retryResponse=page.waitForResponse(r=>r.url().endsWith('/api/financial/from-appointment/'+appointment.id));
-    await page.getByRole('button',{name:'Gerar',exact:true}).click();
+    await page.getByRole('button',{name:'Consultar/repetir geração',exact:true}).click();
     const response=await retryResponse;
     stage='check retry HTTP status';
     assert.equal(response.status(),201);

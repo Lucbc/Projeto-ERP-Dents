@@ -243,6 +243,7 @@ class AppointmentProcedureModel(Base):
 
 
 class FinancialEntryModel(Base):
+    active_payment_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     version: Mapped[int] = mapped_column(BigInteger, server_default="1", nullable=False)
     __tablename__ = "financial_entries"
     __table_args__ = (

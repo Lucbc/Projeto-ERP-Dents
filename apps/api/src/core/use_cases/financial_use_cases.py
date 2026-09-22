@@ -86,7 +86,16 @@ class FinancialUseCases:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
         return financial_entry
 
-    def create(self, data: dict) -> FinancialEntry:
+    def create(self, data: dict, *, actor=None) -> FinancialEntry:
+        if data.get('status') in ('paid', FinancialEntryStatus.paid):
+            key = self._payment_identity(data.get('idempotency_key'), actor)
+            request_hash = self._operation_hash('create', None, data)
+            existing = self.financial_repository.operation(key, 'create', request_hash)
+            if existing:
+                return existing['entry']
+            # The unique index decides concurrent links after receipt recovery.
+            normalized = self._normalize_input(data, check_appointment_conflict=False)
+            return self.financial_repository.create_paid(normalized, key, 'create', request_hash, actor)
         normalized = self._normalize_input(data)
         return self.financial_repository.create(normalized)
 
@@ -96,6 +105,10 @@ class FinancialUseCases:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
 
         self._check_version(current, data.get("version"))
+        if current.status == FinancialEntryStatus.paid:
+            raise ConflictError('Pagamento confirmado exige estorno antes de editar.', code='payment_immutable')
+        if data.get('status') in ('paid', FinancialEntryStatus.paid) or data.get('paid_at') is not None:
+            raise ConflictError('Use a ação Baixar para registrar o pagamento.', code='payment_action_required')
         merged = {
             "entry_type": data.get("entry_type", current.entry_type.value),
             "description": data.get("description", current.description),
@@ -119,32 +132,51 @@ class FinancialUseCases:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
         return updated
 
-    def mark_as_paid(
-        self,
-        financial_entry_id: UUID,
-        version: int,
-        paid_at: datetime | None = None,
-        payment_method: PaymentMethod | None = None,
-    ) -> FinancialEntry:
-        current = self.financial_repository.get(financial_entry_id)
-        if current is None:
-            raise NotFoundError("Lancamento financeiro nao encontrado.")
-        self._check_version(current, version)
-        if current.status != FinancialEntryStatus.pending:
-            raise ConflictError("Este lançamento não está pendente. Recarregue o financeiro e confira o pagamento.", code="financial_state_conflict")
+    @staticmethod
+    def _operation_hash(kind, target, data):
+        def normalize(value):
+            if isinstance(value, datetime):
+                if value.tzinfo is None or value.utcoffset() is None:
+                    raise ValidationError('Informe o fuso da data de pagamento.')
+                return value.astimezone(timezone.utc).isoformat()
+            if isinstance(value, dict):
+                return {k:normalize(v) for k,v in value.items() if k != 'idempotency_key'}
+            if isinstance(value, list): return [normalize(v) for v in value]
+            return value.value if hasattr(value, 'value') else str(value) if isinstance(value, (UUID,date)) else value
+        return hashlib.sha256(json.dumps(normalize({'kind':kind,'target':target,'data':data}),sort_keys=True).encode()).hexdigest()
 
-        payload = {
-            "version": version,
-            "status": FinancialEntryStatus.paid.value,
-            "paid_at": paid_at or _to_utc_now(),
-        }
-        if payment_method is not None:
-            payload["payment_method"] = payment_method.value
+    @staticmethod
+    def _payment_identity(key, actor):
+        if not isinstance(key, UUID) or actor is None or not actor.id or not actor.name.strip():
+            raise ValidationError('Chave de operação e autor autenticado são obrigatórios.')
+        return key
 
-        updated = self.financial_repository.update(financial_entry_id, payload, pending_only=True)
-        if updated is None:
-            raise NotFoundError("Lancamento financeiro nao encontrado.")
-        return updated
+    def mark_as_paid(self, financial_entry_id, version, paid_at=None, payment_method=None, *, idempotency_key, actor):
+        self._validate_payment_version(version)
+        key = self._payment_identity(idempotency_key, actor)
+        payment_method = self._normalize_payment_method(payment_method)
+        data = {'version':version,'paid_at':paid_at,'payment_method':payment_method}
+        request_hash = self._operation_hash('settle', financial_entry_id, data)
+        return self.financial_repository.settle(financial_entry_id, version, key, request_hash, paid_at, payment_method, actor)
+
+    def reverse_payment(self, financial_entry_id, version, payment_id, idempotency_key, reason, actor):
+        self._validate_payment_version(version)
+        key = self._payment_identity(idempotency_key, actor)
+        reason = reason.strip()
+        if not 3 <= len(reason) <= 500:
+            raise ValidationError('Informe um motivo de 3 a 500 caracteres.')
+        data = {'version':version,'payment_id':payment_id,'reason':reason}
+        request_hash = self._operation_hash('reverse', financial_entry_id, data)
+        return self.financial_repository.reverse(financial_entry_id, version, payment_id, key, request_hash, reason, actor)
+
+    def payments(self, financial_entry_id):
+        self.get(financial_entry_id)
+        return self.financial_repository.payments(financial_entry_id)
+
+    @staticmethod
+    def _validate_payment_version(version):
+        if type(version) is not int or version < 1:
+            raise ValidationError('Reabra o lançamento para obter a versão atual.')
 
     def delete(self, financial_entry_id: UUID, version: int) -> None:
         deleted = self.financial_repository.delete(financial_entry_id, version)
@@ -158,15 +190,30 @@ class FinancialUseCases:
         if current.version != version:
             raise ConflictError("Este lançamento foi alterado por outra operação. Recarregue os dados antes de confirmar novamente.", code="stale_version")
 
-    def generate_from_appointment(self, appointment_id: UUID, data: dict) -> FinancialEntry:
+    def generate_from_appointment(self, appointment_id: UUID, data: dict, *, actor=None) -> FinancialEntry:
         key = data.get("idempotency_key")
+        try:
+            operation_hash = self._operation_hash('generate', appointment_id, data)
+        except ValidationError:
+            # Legacy receipts may predate timezone validation. Only exact legacy
+            # replays can return here; new payments still require an aware date.
+            operation_hash = None
         request_hash = hashlib.sha256(json.dumps(
             {"appointment_id": str(appointment_id), **{k: v for k, v in data.items() if k != "idempotency_key"}},
             sort_keys=True, default=str).encode()).hexdigest()
         if key is not None:
+            if operation_hash is not None:
+                operation = self.financial_repository.operation(key, 'generate', operation_hash)
+                if operation is not None:
+                    return operation['entry']
             existing = self.financial_repository.get_generation(key, request_hash)
             if existing is not None:
                 return existing
+        paid = data.get('status') in ('paid', FinancialEntryStatus.paid)
+        if paid:
+            self._payment_identity(key, actor)
+            if operation_hash is None:
+                raise ValidationError('Informe o fuso da data de pagamento.')
         appointment = self.appointment_repository.get(appointment_id)
         if appointment is None:
             raise NotFoundError("Consulta nao encontrada.")
@@ -206,6 +253,8 @@ class FinancialUseCases:
         }
 
         normalized = self._normalize_input(payload, check_appointment_conflict=False)
+        if paid:
+            return self.financial_repository.create_paid(normalized, key, 'generate', operation_hash, actor, generation_hash=request_hash)
         return self.financial_repository.create_generated(normalized, key, request_hash)
 
     def _normalize_input(self, data: dict, current_id: UUID | None = None, check_appointment_conflict: bool = True) -> dict:
@@ -234,7 +283,7 @@ class FinancialUseCases:
         if status == FinancialEntryStatus.paid:
             if paid_at is None:
                 paid_at = _to_utc_now()
-            elif not isinstance(paid_at, datetime):
+            elif not isinstance(paid_at, datetime) or paid_at.tzinfo is None or paid_at.utcoffset() is None:
                 raise ValidationError("Data de pagamento invalida.")
         else:
             paid_at = None

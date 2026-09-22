@@ -48,7 +48,8 @@ def main(session_checks=None, report_name=None, extra_env=None):
         from cookie_client import CookieClient
         headers = dict(extra_headers or {})
         if activation is not None: headers['X-Bootstrap-Token'] = activation
-        status, data, response_headers = CookieClient('http://127.0.0.1:18001').request(
+        status, data, response_headers = CookieClient('http://127.0.0.1:18001',
+            origin=(extra_env or {}).get('PUBLIC_ORIGIN', 'https://localhost:18443')).request(
             method, path, payload, token, headers, timeout=10)
         request.last_headers = response_headers
         if status >= 500:

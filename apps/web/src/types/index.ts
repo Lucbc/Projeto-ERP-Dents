@@ -32,7 +32,8 @@ export type PermissionResource =
   | "users"
   | "permissions"
   | "consultations"
-  | "financial";
+  | "financial"
+  | "financial_reversals";
 
 export interface PermissionActions {
   view: boolean;
@@ -147,6 +148,8 @@ export interface Exam {
 }
 
 export interface FinancialEntry {
+  active_payment_id: string | null;
+  has_payments: boolean;
   version: number;
   id: string;
   entry_type: FinancialEntryType;
@@ -218,4 +221,18 @@ export interface ConsultationPatientDetailResponse {
   patient: Patient;
   next_appointment: Appointment | null;
   upcoming_appointments: Appointment[];
+}
+
+
+export interface FinancialReversal {
+  id: string; payment_id: string; recorded_at: string; actor_id: string; actor_name: string; reason: string;
+}
+export interface FinancialPayment {
+  id: string; entry_id: string; entry_type: FinancialEntryType; total_cents: number;
+  paid_at: string; payment_method: PaymentMethod | null; recorded_at: string;
+  actor_id: string | null; actor_name: string | null; origin: "legacy" | "recorded";
+  reversal: FinancialReversal | null;
+}
+export interface FinancialOperation {
+  entry: FinancialEntry; payment: FinancialPayment; reversal: FinancialReversal | null; replayed: boolean;
 }

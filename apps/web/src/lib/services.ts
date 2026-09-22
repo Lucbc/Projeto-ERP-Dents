@@ -7,6 +7,8 @@ import type {
   DentistAvailabilitySlot,
   Exam,
   FinancialEntry,
+  FinancialPayment,
+  FinancialOperation,
   FinancialEntryStatus,
   FinancialEntryType,
   FinancialSummary,
@@ -84,6 +86,7 @@ export interface SpecialtyPayload {
 }
 
 export interface FinancialPayload {
+  idempotency_key?: string;
   entry_type?: FinancialEntryType;
   description?: string;
   amount_cents?: number;
@@ -435,9 +438,15 @@ export const financialService = {
     );
     return response.data;
   },
-  async markAsPaid(id: string, payload: MarkFinancialAsPaidPayload & { version: number }) {
-    const response = await api.post<FinancialEntry>(`/api/financial/${id}/mark-paid`, payload);
+  async markAsPaid(id: string, payload: MarkFinancialAsPaidPayload & { version: number; idempotency_key: string }) {
+    const response = await api.post<FinancialOperation>(`/api/financial/${id}/mark-paid`, payload);
     return response.data;
+  },
+  async payments(id: string) {
+    return (await api.get<FinancialPayment[]>(`/api/financial/${id}/payments`)).data;
+  },
+  async reversePayment(id: string, payload: { version: number; idempotency_key: string; payment_id: string; reason: string }) {
+    return (await api.post<FinancialOperation>(`/api/financial/${id}/reverse-payment`, payload)).data;
   },
   async remove(id: string, version: number) {
     await api.delete(`/api/financial/${id}`, { params: { version } });
