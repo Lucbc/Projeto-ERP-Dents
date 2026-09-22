@@ -95,6 +95,7 @@ class FinancialUseCases:
         if current is None:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
 
+        self._check_version(current, data.get("version"))
         merged = {
             "entry_type": data.get("entry_type", current.entry_type.value),
             "description": data.get("description", current.description),
@@ -113,7 +114,7 @@ class FinancialUseCases:
         }
 
         normalized = self._normalize_input(merged, current_id=financial_entry_id)
-        updated = self.financial_repository.update(financial_entry_id, normalized)
+        updated = self.financial_repository.update(financial_entry_id, {**normalized, "version": data["version"]})
         if updated is None:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
         return updated
@@ -121,31 +122,41 @@ class FinancialUseCases:
     def mark_as_paid(
         self,
         financial_entry_id: UUID,
+        version: int,
         paid_at: datetime | None = None,
         payment_method: PaymentMethod | None = None,
     ) -> FinancialEntry:
         current = self.financial_repository.get(financial_entry_id)
         if current is None:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
-        if current.status == FinancialEntryStatus.cancelled:
-            raise ValidationError("Nao e possivel dar baixa em lancamento cancelado.")
+        self._check_version(current, version)
+        if current.status != FinancialEntryStatus.pending:
+            raise ConflictError("Este lançamento não está pendente. Recarregue o financeiro e confira o pagamento.", code="financial_state_conflict")
 
         payload = {
+            "version": version,
             "status": FinancialEntryStatus.paid.value,
             "paid_at": paid_at or _to_utc_now(),
         }
         if payment_method is not None:
             payload["payment_method"] = payment_method.value
 
-        updated = self.financial_repository.update(financial_entry_id, payload)
+        updated = self.financial_repository.update(financial_entry_id, payload, pending_only=True)
         if updated is None:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
         return updated
 
-    def delete(self, financial_entry_id: UUID) -> None:
-        deleted = self.financial_repository.delete(financial_entry_id)
+    def delete(self, financial_entry_id: UUID, version: int) -> None:
+        deleted = self.financial_repository.delete(financial_entry_id, version)
         if not deleted:
             raise NotFoundError("Lancamento financeiro nao encontrado.")
+
+    @staticmethod
+    def _check_version(current: FinancialEntry, version: object) -> None:
+        if type(version) is not int or version < 1:
+            raise ValidationError("Reabra o lançamento para obter a versão atual.")
+        if current.version != version:
+            raise ConflictError("Este lançamento foi alterado por outra operação. Recarregue os dados antes de confirmar novamente.", code="stale_version")
 
     def generate_from_appointment(self, appointment_id: UUID, data: dict) -> FinancialEntry:
         key = data.get("idempotency_key")

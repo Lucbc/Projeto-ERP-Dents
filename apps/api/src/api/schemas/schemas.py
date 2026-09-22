@@ -325,6 +325,7 @@ class FinancialEntryCreateRequest(BaseModel):
 
 
 class FinancialEntryUpdateRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
     entry_type: FinancialEntryType | None = None
     description: str | None = None
     amount_cents: int | None = Field(default=None, ge=0)
@@ -351,11 +352,13 @@ class FinancialGenerateFromAppointmentRequest(BaseModel):
 
 
 class FinancialMarkPaidRequest(BaseModel):
+    version: int = Field(gt=0, strict=True)
     paid_at: datetime | None = None
     payment_method: PaymentMethod | None = None
 
 
 class FinancialEntryResponse(AppBaseSchema):
+    version: int
     id: UUID
     entry_type: FinancialEntryType
     description: str

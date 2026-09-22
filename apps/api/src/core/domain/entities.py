@@ -147,6 +147,7 @@ class Appointment:
 
 @dataclass(slots=True)
 class FinancialEntry:
+    version: int
     id: UUID
     entry_type: FinancialEntryType
     description: str

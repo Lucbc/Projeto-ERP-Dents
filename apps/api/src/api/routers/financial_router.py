@@ -154,6 +154,7 @@ def mark_financial_entry_paid(
     use_case = build_use_case(db)
     return use_case.mark_as_paid(
         financial_entry_id=financial_entry_id,
+        version=payload.version,
         paid_at=payload.paid_at,
         payment_method=payload.payment_method,
     )
@@ -165,7 +166,7 @@ def mark_financial_entry_paid(
     response_class=Response,
     dependencies=[Depends(require_permission("financial", "delete"))],
 )
-def delete_financial_entry(financial_entry_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
+def delete_financial_entry(financial_entry_id: UUID, version: int = Query(gt=0), db: Session = Depends(get_db_dep)) -> Response:
     use_case = build_use_case(db)
-    use_case.delete(financial_entry_id)
+    use_case.delete(financial_entry_id, version)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

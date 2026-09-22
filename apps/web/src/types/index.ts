@@ -147,6 +147,7 @@ export interface Exam {
 }
 
 export interface FinancialEntry {
+  version: number;
   id: string;
   entry_type: FinancialEntryType;
   description: string;

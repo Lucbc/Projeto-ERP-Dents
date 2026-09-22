@@ -5,8 +5,9 @@ import os
 from threading import Barrier
 import unittest
 from uuid import uuid4
+from types import SimpleNamespace
 
-from sqlalchemy import select, text
+from sqlalchemy import select, text, Table, MetaData
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 import test_appointment_concurrency as agenda_fixture
@@ -37,6 +38,15 @@ class FinancialConcurrencyTests(unittest.TestCase):
             agenda_fixture.SqlAlchemyAppointmentRepository(db), agenda_fixture.SqlAlchemyPatientRepository(db),
             agenda_fixture.SqlAlchemyDentistRepository(db), agenda_fixture.SqlAlchemyProcedureRepository(db))
 
+    def legacy_create(self, db, data):
+        table = Table('financial_entries', MetaData(), autoload_with=db.connection())
+        values = {'id':uuid4(), 'discount_cents':0, 'tax_cents':0, 'procedure_ids':[],
+                  'created_at':__import__('datetime').datetime.now(__import__('datetime').timezone.utc),
+                  'updated_at':__import__('datetime').datetime.now(__import__('datetime').timezone.utc), **data}
+        id = db.scalar(table.insert().values(**values).returning(table.c.id))
+        db.commit()
+        return SimpleNamespace(id=id)
+
     def data(self, index=0, **kwargs):
         return dict(entry_type='income', description='Fictitious charge', amount_cents=12000,
                     due_date=date(2030,1,7), appointment_id=self.appointments[index], **kwargs)
@@ -49,7 +59,8 @@ class FinancialConcurrencyTests(unittest.TestCase):
                 repo = uc.financial_repository
                 if legacy:
                     # Historical patient schemas do not have the later version column.
-                    self.assertIsNone(repo.get_by_appointment(self.appointments[0]))
+                    self.assertIsNone(db.scalar(text("SELECT id FROM financial_entries WHERE appointment_id=:id AND status <> 'cancelled'"), {"id":self.appointments[0]}))
+                    repo.create = lambda data: self.legacy_create(db, data)
                     uc = repo
                 original = getattr(repo, method)
                 def synchronized(*args):
@@ -65,7 +76,7 @@ class FinancialConcurrencyTests(unittest.TestCase):
             return list(pool.map(worker, calls))
 
     def count(self, model=FinancialEntryModel):
-        with Session(self.engine) as db: return len(db.scalars(select(model)).all())
+        with Session(self.engine) as db: return len(db.scalars(select(model.id if model is FinancialEntryModel else model.key)).all())
 
     def test_manual_creates_after_both_prechecks_pass(self):
         result = self.race([lambda uc: uc.create(self.data())]*2)
@@ -101,8 +112,8 @@ class FinancialConcurrencyTests(unittest.TestCase):
             uc = self.use_case(db)
             first = uc.create(self.data(status='cancelled')).id
             second = uc.create(self.data(status='cancelled')).id
-        result = self.race([lambda uc: uc.update(first, {'status':'pending'}),
-                            lambda uc: uc.update(second, {'status':'paid'})], 'update')
+        result = self.race([lambda uc: uc.update(first, {'version':1,'status':'pending'}),
+                            lambda uc: uc.update(second, {'version':1,'status':'paid'})], 'update')
         self.assertEqual(sorted(status for status,_ in result), ['conflict','ok'])
         with Session(self.engine) as db:
             self.assertEqual(db.scalar(text("SELECT count(*) FROM financial_entries WHERE status='cancelled'")), 1)
@@ -112,11 +123,11 @@ class FinancialConcurrencyTests(unittest.TestCase):
         with Session(self.engine) as db:
             uc = self.use_case(db)
             entry = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key})
-            uc.mark_as_paid(entry.id)
+            uc.mark_as_paid(entry.id,entry.version)
             retry = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key})
             self.assertEqual(retry.id, entry.id)
             self.assertEqual(retry.status.value, 'paid')
-            uc.update(entry.id, {'status':'cancelled'})
+            uc.update(entry.id, {'version':retry.version,'status':'cancelled'})
             replacement = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':uuid4()})
             retry = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key})
             self.assertEqual(retry.id, entry.id)
@@ -130,7 +141,7 @@ class FinancialConcurrencyTests(unittest.TestCase):
             entry = uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key})
             with self.assertRaises(ConflictError):
                 uc.generate_from_appointment(self.appointments[0], {'idempotency_key':key, 'notes':'Changed'})
-            uc.delete(entry.id)
+            uc.delete(entry.id,entry.version)
         with Session(self.engine) as db:
             with self.assertRaises(ConflictError):
                 self.use_case(db).generate_from_appointment(self.appointments[0], {'idempotency_key':key})
@@ -162,8 +173,8 @@ class FinancialConcurrencyTests(unittest.TestCase):
         self.assertEqual(self.fixture.migrate('downgrade','0012_appointment_exclusion').returncode, 0)
         with Session(self.engine) as db:
             repo = SqlAlchemyFinancialRepository(db)
-            cancelled = repo.create({**self.data(status='cancelled'), 'total_cents':12000}).id
-            active = repo.create({**self.data(status='pending'), 'total_cents':12000}).id
+            cancelled = self.legacy_create(db, {**self.data(status='cancelled'), 'total_cents':12000}).id
+            active = self.legacy_create(db, {**self.data(status='pending'), 'total_cents':12000}).id
         self.assertEqual(self.fixture.migrate('upgrade','head').returncode, 0)
         with Session(self.engine) as db:
             self.assertEqual(set(db.scalars(select(FinancialEntryModel.id))), {cancelled,active})

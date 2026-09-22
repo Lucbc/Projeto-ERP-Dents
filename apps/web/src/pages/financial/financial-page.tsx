@@ -1,3 +1,4 @@
+import { isAxiosError } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
@@ -108,6 +109,8 @@ export function FinancialPage() {
 
   const [openEntryModal, setOpenEntryModal] = useState(false);
   const [openGenerateModal, setOpenGenerateModal] = useState(false);
+  const [editConflict, setEditConflict] = useState(false);
+  const [actionConflict, setActionConflict] = useState(false);
   const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(null);
 
   const entryForm = useForm<FinancialForm>({
@@ -235,8 +238,9 @@ export function FinancialPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: FinancialForm }) =>
+    mutationFn: ({ id, version, payload }: { id: string; version: number; payload: FinancialForm }) =>
       financialService.update(id, {
+        version,
         entry_type: payload.entry_type,
         description: payload.description.trim(),
         amount_cents: toCents(payload.amount),
@@ -247,7 +251,9 @@ export function FinancialPage() {
         paid_at:
           payload.status === "paid"
             ? payload.paid_at
-              ? fromInputDateTime(payload.paid_at)
+              ? editingEntry?.paid_at && payload.paid_at === toInputDateTime(editingEntry.paid_at)
+                ? editingEntry.paid_at
+                : fromInputDateTime(payload.paid_at)
               : null
             : null,
         payment_method: payload.payment_method || null,
@@ -263,25 +269,51 @@ export function FinancialPage() {
       entryForm.reset();
       void queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
+    onError: (error) => {
+      if (isAxiosError(error) && error.response?.status === 409 && error.response.data?.code === "stale_version") setEditConflict(true);
+      toast(getApiErrorMessage(error), "error");
+    },
+  });
+
+  const reloadEntryMutation = useMutation({
+    mutationFn: (id: string) => financialService.get(id),
+    onSuccess: (entry) => {
+      onEditEntry(entry);
+      void queryClient.invalidateQueries({ queryKey: ["financial"] });
+    },
+    onError: (error) => toast(getApiErrorMessage(error), "error"),
+  });
+
+  const onActionError = (error: unknown) => {
+    if (isAxiosError(error) && error.response?.status === 409) setActionConflict(true);
+    toast(getApiErrorMessage(error), "error");
+  };
+
+  const refreshActionsMutation = useMutation({
+    mutationFn: async () => {
+      const results = await Promise.all([financialEntriesQuery.refetch(), summaryQuery.refetch()]);
+      for (const result of results) if (result.error) throw result.error;
+    },
+    onSuccess: () => setActionConflict(false),
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => financialService.remove(id),
+    mutationFn: (entry: FinancialEntry) => financialService.remove(entry.id, entry.version),
     onSuccess: () => {
       toast("Lancamento removido.");
       void queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: onActionError,
   });
 
   const markAsPaidMutation = useMutation({
-    mutationFn: (id: string) => financialService.markAsPaid(id),
+    mutationFn: (entry: FinancialEntry) => financialService.markAsPaid(entry.id, { version: entry.version }),
     onSuccess: () => {
       toast("Lancamento baixado como pago.");
       void queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: onActionError,
   });
 
   const generationAttempt = useRef<{ fingerprint: string; key: string } | null>(null);
@@ -324,11 +356,12 @@ export function FinancialPage() {
   const canCreate = can("financial", "create");
   const canUpdate = can("financial", "update");
   const canDelete = can("financial", "delete");
-  const isSubmittingEntry = createMutation.isPending || updateMutation.isPending;
+  const isSubmittingEntry = createMutation.isPending || updateMutation.isPending || reloadEntryMutation.isPending;
   const isGeneratingEntry = generateFromAppointmentMutation.isPending;
 
   const onNewEntry = () => {
     if (!canCreate) return;
+    setEditConflict(false);
     setEditingEntry(null);
     entryForm.reset({
       entry_type: "income",
@@ -350,6 +383,7 @@ export function FinancialPage() {
 
   const onEditEntry = (entry: FinancialEntry) => {
     if (!canUpdate) return;
+    setEditConflict(false);
     setEditingEntry(entry);
     entryForm.reset({
       entry_type: entry.entry_type,
@@ -371,7 +405,7 @@ export function FinancialPage() {
 
   const submitEntry = (values: FinancialForm) => {
     if (editingEntry) {
-      updateMutation.mutate({ id: editingEntry.id, payload: values });
+      updateMutation.mutate({ id: editingEntry.id, version: editingEntry.version, payload: values });
       return;
     }
     createMutation.mutate(values);
@@ -393,6 +427,13 @@ export function FinancialPage() {
 
   return (
     <div className="space-y-4">
+      {actionConflict && (
+        <div role="alert" className="rounded border border-amber-300 bg-amber-50 p-3">
+          <p>O lançamento mudou. Recarregue a lista e confira o estado atual antes de escolher uma nova ação. A operação não será repetida automaticamente.</p>
+          <Button variant="outline" disabled={refreshActionsMutation.isPending}
+            onClick={() => refreshActionsMutation.mutate()}>Recarregar financeiro</Button>
+        </div>
+      )}
       <Card>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -572,8 +613,8 @@ export function FinancialPage() {
                             {canUpdate && entry.status === "pending" && (
                               <Button
                                 variant="outline"
-                                onClick={() => markAsPaidMutation.mutate(entry.id)}
-                                disabled={markAsPaidMutation.isPending}
+                                onClick={() => markAsPaidMutation.mutate(entry)}
+                                disabled={markAsPaidMutation.isPending || deleteMutation.isPending || actionConflict}
                               >
                                 Baixar
                               </Button>
@@ -581,9 +622,10 @@ export function FinancialPage() {
                             {canDelete && (
                               <Button
                                 variant="danger"
+                                disabled={deleteMutation.isPending || markAsPaidMutation.isPending || actionConflict}
                                 onClick={() => {
                                   if (window.confirm("Deseja remover este lancamento?")) {
-                                    deleteMutation.mutate(entry.id);
+                                    deleteMutation.mutate(entry);
                                   }
                                 }}
                               >
@@ -605,12 +647,20 @@ export function FinancialPage() {
       <Modal
         open={openEntryModal}
         onClose={() => {
+          if (isSubmittingEntry) return;
           setOpenEntryModal(false);
           setEditingEntry(null);
         }}
         title={editingEntry ? "Editar lancamento financeiro" : "Novo lancamento financeiro"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={entryForm.handleSubmit(submitEntry)}>
+          {editConflict && editingEntry && (
+            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+              <p>Este lançamento mudou. Seu rascunho foi mantido. Carregar o atual substituirá valores, datas, status e vínculos deste formulário.</p>
+              <Button type="button" variant="outline" disabled={isSubmittingEntry}
+                onClick={() => reloadEntryMutation.mutate(editingEntry.id)}>Descartar rascunho e carregar atual</Button>
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Tipo *</label>
             <Select {...entryForm.register("entry_type")}>
@@ -738,6 +788,7 @@ export function FinancialPage() {
             <Button
               type="button"
               variant="outline"
+              disabled={isSubmittingEntry}
               onClick={() => {
                 setOpenEntryModal(false);
                 setEditingEntry(null);

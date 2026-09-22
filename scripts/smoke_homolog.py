@@ -161,7 +161,7 @@ def main() -> None:
         request('POST', '/api/financial/from-appointment/' + appointment['id'], {},
                 token=token, expected=409)
         paid = request('POST', '/api/financial/' + entry['id'] + '/mark-paid',
-                       {'payment_method': 'pix'}, token=token)
+                       {'version':entry['version'],'payment_method': 'pix'}, token=token)
         assert paid['status'] == 'paid' and paid['paid_at']
         summary = request('GET', '/api/financial/summary', token=token)
         assert summary['received_cents'] >= 15000
@@ -187,6 +187,9 @@ def main() -> None:
             errors = []
             for path in reversed(cleanup):
                 try:
+                    if path.startswith('/api/financial/'):
+                        current = request('GET', path, token=token)
+                        path += '?version=' + str(current['version'])
                     request('DELETE', path, token=token, expected=204)
                 except Exception:
                     errors.append(path)

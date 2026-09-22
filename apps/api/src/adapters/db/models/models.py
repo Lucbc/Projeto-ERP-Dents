@@ -243,8 +243,10 @@ class AppointmentProcedureModel(Base):
 
 
 class FinancialEntryModel(Base):
+    version: Mapped[int] = mapped_column(BigInteger, server_default="1", nullable=False)
     __tablename__ = "financial_entries"
     __table_args__ = (
+        CheckConstraint("version > 0", name="ck_financial_positive_version"),
         Index("ix_financial_entries_due_date", "due_date"),
         Index("ix_financial_entries_status_due_date", "status", "due_date"),
         Index("ix_financial_entries_type_due_date", "entry_type", "due_date"),

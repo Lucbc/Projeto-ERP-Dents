@@ -3,12 +3,12 @@ from __future__ import annotations
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update, delete
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from src.adapters.db.models.models import DentistModel, FinancialEntryModel, FinancialGenerationModel, PatientModel
-from src.core.domain.exceptions import ConflictError
+from src.core.domain.exceptions import ConflictError, ValidationError
 from src.core.domain.entities import (
     FinancialEntry,
     FinancialEntryStatus,
@@ -143,41 +143,52 @@ class SqlAlchemyFinancialRepository(FinancialRepository):
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def update(self, financial_entry_id, data: dict):
-        item = self.session.get(FinancialEntryModel, financial_entry_id)
-        if item is None:
+    @staticmethod
+    def _validate_version(version):
+        if type(version) is not int or version < 1:
+            raise ValidationError("Reabra o lançamento para obter a versão atual.")
+
+    def _missing_or_conflict(self, id, version):
+        self.session.rollback()
+        current = self.session.execute(select(FinancialEntryModel.version).where(FinancialEntryModel.id == id)).first()
+        self.session.rollback()
+        if current is None:
             return None
+        if current.version != version:
+            raise ConflictError("Este lançamento foi alterado por outra operação. Recarregue os dados antes de confirmar novamente.", code="stale_version")
+        raise ConflictError("Este lançamento não está pendente. Recarregue o financeiro e confira o pagamento.", code="financial_state_conflict")
 
-        for key in [
-            "entry_type",
-            "description",
-            "amount_cents",
-            "discount_cents",
-            "tax_cents",
-            "total_cents",
-            "due_date",
-            "paid_at",
-            "status",
-            "payment_method",
-            "patient_id",
-            "dentist_id",
-            "appointment_id",
-            "procedure_ids",
-            "notes",
-        ]:
-            if key in data:
-                setattr(item, key, data[key])
-
-        self.session.commit()
+    def update(self, financial_entry_id, data: dict, *, pending_only: bool = False):
+        version = data.get("version")
+        self._validate_version(version)
+        values = {key: data[key] for key in (
+            "entry_type", "description", "amount_cents", "discount_cents", "tax_cents", "total_cents",
+            "due_date", "paid_at", "status", "payment_method", "patient_id", "dentist_id",
+            "appointment_id", "procedure_ids", "notes") if key in data}
+        stmt = update(FinancialEntryModel).where(FinancialEntryModel.id == financial_entry_id,
+            FinancialEntryModel.version == version)
+        if pending_only:
+            stmt = stmt.where(FinancialEntryModel.status == FinancialEntryStatus.pending)
+        try:
+            item = self.session.scalar(stmt.values(**values, version=FinancialEntryModel.version + 1)
+                .returning(FinancialEntryModel), execution_options={'populate_existing': True})
+            if item is None:
+                return self._missing_or_conflict(financial_entry_id, version)
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            raise
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def delete(self, financial_entry_id) -> bool:
-        item = self.session.get(FinancialEntryModel, financial_entry_id)
-        if item is None:
+    def delete(self, financial_entry_id, version: int) -> bool:
+        self._validate_version(version)
+        removed = self.session.scalar(delete(FinancialEntryModel).where(
+            FinancialEntryModel.id == financial_entry_id, FinancialEntryModel.version == version
+        ).returning(FinancialEntryModel.id))
+        if removed is None:
+            self._missing_or_conflict(financial_entry_id, version)
             return False
-
-        self.session.delete(item)
         self.session.commit()
         return True
 
@@ -253,6 +264,7 @@ class SqlAlchemyFinancialRepository(FinancialRepository):
                 continue
 
         return FinancialEntry(
+            version=model.version,
             id=model.id,
             entry_type=model.entry_type,
             description=model.description,

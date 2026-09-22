@@ -36,16 +36,16 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     expect('POST',path,{'idempotency_key':str(uuid4())},409)
     expect('POST',path,{},409)
     passed('retry across sessions recovers original; changed request and other operations conflict')
-    expect('POST','/api/financial/'+entry['id']+'/mark-paid',{})
+    expect('POST','/api/financial/'+entry['id']+'/mark-paid',{'version':entry['version']})
     retry = expect('POST',path,payload,201)
     assert retry['status'] == 'paid' and retry['id'] == entry['id']
-    expect('PUT','/api/financial/'+entry['id'],{'status':'cancelled'})
+    expect('PUT','/api/financial/'+entry['id'],{'version':retry['version'],'status':'cancelled'})
     replacement = expect('POST',path,{'idempotency_key':str(uuid4())},201)
     retry = expect('POST',path,payload,201)
     assert retry['status'] == 'cancelled' and retry['id'] == entry['id']
-    expect('PUT','/api/financial/'+entry['id'],{'status':'pending'},409)
+    expect('PUT','/api/financial/'+entry['id'],{'version':retry['version'],'status':'pending'},409)
     passed('retries preserve payment/cancellation; new operation may replace cancellation; reactivation conflicts')
-    expect('DELETE','/api/financial/'+entry['id'],status=204)
+    expect('DELETE','/api/financial/'+entry['id']+'?version='+str(retry['version']),status=204)
     expect('POST',path,payload,409)
     assert sql(f'SELECT count(*) FROM "{schema}".financial_entries') == '1'
     assert sql(f'SELECT count(*) FROM "{schema}".financial_generations') == '2'

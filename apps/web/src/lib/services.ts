@@ -424,7 +424,7 @@ export const financialService = {
     const response = await api.post<FinancialEntry>("/api/financial", payload);
     return response.data;
   },
-  async update(id: string, payload: FinancialPayload) {
+  async update(id: string, payload: FinancialPayload & { version: number }) {
     const response = await api.put<FinancialEntry>(`/api/financial/${id}`, payload);
     return response.data;
   },
@@ -435,11 +435,11 @@ export const financialService = {
     );
     return response.data;
   },
-  async markAsPaid(id: string, payload: MarkFinancialAsPaidPayload = {}) {
+  async markAsPaid(id: string, payload: MarkFinancialAsPaidPayload & { version: number }) {
     const response = await api.post<FinancialEntry>(`/api/financial/${id}/mark-paid`, payload);
     return response.data;
   },
-  async remove(id: string) {
-    await api.delete(`/api/financial/${id}`);
+  async remove(id: string, version: number) {
+    await api.delete(`/api/financial/${id}`, { params: { version } });
   },
 };
