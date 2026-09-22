@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**2B.5.1 concluída:** [versão em edição, baixa e exclusão financeiras](./homologacao-etapa-2B5-1.md). Regressão local e CI aprovados: 177 backend e 56 frontend, HTTP, builds e auditorias; Chrome com duas abas aprovado localmente. Homologação em `0019_financial_version`, dados/exames preservados. Próxima subetapa: **2B.5.2 — pagamentos, histórico e repetição idempotente**, conforme [plano financeiro](./plano-etapa-2B5.md). A etapa 2B completa permanece em andamento.
+**Preparação da 2B.5.2 concluída:** [contrato de pagamentos, estornos e migração](./plano-etapa-2B5-2.md). Próximo recorte: **2B.5.2.1 — implementação conjunta em banco/API/UI**. Última entrega funcional: [2B.5.1](./homologacao-etapa-2B5-1.md), 177 backend/56 frontend e CI aprovados. Homologação permanece em `0019_financial_version`; nenhuma regra ou migração alterada nesta preparação. A etapa 2B e R26 continuam parcialmente pendentes.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -321,7 +321,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Retomada em 22/09/2026: **177 testes backend aprovados em 478,929s**, 56 frontend e onze grupos HTTP específicos aprovados, incluindo permissões. Zero schemas descartáveis. Web atualizado com recarga conjunta da lista e dos totais após conflito. Revisão final sem erros de whitespace; publicar implementação e acompanhar CI antes de fechar. Não repetir testes já aprovados sem nova alteração ou falha.
 - Implementação publicada em `496132d`; HEAD local/remoto conferidos. Acompanhar [CI 35719559295](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35719559295). Após aprovação, fechar relatório/plano, publicar fechamento documental e conferir árvore limpa/HEAD remoto. Próxima etapa continua 2B.5.2; não iniciar antes do fechamento.
 
-### Ponto de retomada atual — 2B.5.1 concluída em 22/09/2026
+### Retomada da 2B.5.1 — concluída em 22/09/2026 (histórico)
 
 - Implementação `496132d` publicada. [CI 35719559295](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35719559295) aprovado em 12min38s: **177 backend, 56 frontend**, smokes HTTP, builds e auditorias. Banco e API validam versão em edição/baixa/exclusão; somente pendentes aceitam baixa, sem regravar pagamento em repetição.
 - Chrome final com duas abas aprovado após atualização da última imagem web; rascunho preservado, data exata mantida na revisão e exclusão antiga rejeitada. Recarga explícita atualiza lista e totais sem repetir ação. Comparação posterior confirmou dados de negócio e bytes de exames preservados. Zero schemas descartáveis; nenhum volume removido.
@@ -329,3 +329,17 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Gateway remoto: 413/503, JSON 408 em 30,011s, vagas liberadas e 80 chamadas de saúde, p95 de 0,040s. Evidências e limites em `docs/homologacao-etapa-2B5-1.md`; logs locais `.data/financial-version-*`.
 - **Próxima subetapa: 2B.5.2.** Partir do mapa `docs/plano-etapa-2B5.md` e definir os caminhos de pagamento/estorno, transições, imutabilidade, autoria e chave persistente de baixa antes de migrar. Edição/exclusão intencionais com versão atual ainda podem alterar/apagar pagos; R26 segue parcial. Não inventar histórico ou autor para dados legados.
 - Fechamento posterior ao CI somente documental. Publicar commit/push e conferir árvore limpa e HEAD remoto. Na retomada, não repetir revisão geral nem a 2B.5.1 sem nova evidência.
+
+### Preparação da 2B.5.2 — iniciada em 22/09/2026
+
+- Base `9eee763`, árvore limpa e HEAD remoto conferido. Recorte autorizado: seguir a próxima etapa. Conforme plano financeiro, primeiro definir contrato próprio de pagamentos/estornos e migração, sem converter parcialmente os quatro caminhos que podem registrar pago.
+- Inspecionados casos de uso, repositório, schemas, rotas, permissões e formulários atuais. Consulta agregada somente leitura na homologação `0019`: um lançamento, pago; zero datas ausentes em pagos, datas em não pagos, valores negativos/totais divergentes, formas ausentes em pagos ou totais zero. Não expor linhas, nomes, vínculos ou credenciais. Amostra não representa outras instalações.
+- Entrega desta preparação: plano executável com estados, deduplicação, autoria, permissões, dados legados, transações e matriz de aceite. Nenhuma migração ou alteração do produto nesta preparação; próximo recorte será implementação conjunta de banco/API/UI.
+
+### Ponto de retomada atual — preparação da 2B.5.2 concluída em 22/09/2026
+
+- Contrato em `docs/plano-etapa-2B5-2.md`: pagamento integral próprio e imutável, estorno separado com motivo/autor, recibo durável e retorno do evento original junto do estado atual. Reenvio após estorno não paga novamente. Criação/geração pagas seguem suportadas com chave; PUT deixa de ser caminho de pagamento na implementação futura.
+- Definidos transições, proteção dos quatro caminhos, recurso separado de permissão de estorno (não administradores inicialmente negados), migração legada sem inventar autoria, tratamento de inconsistências e testes de falha transacional. Consulta mínima do histórico faz parte da implementação; referências históricas abrangentes ficam na 2B.5.3.
+- Validação desta entrega: inspeção do código e consulta SQL agregada somente leitura na homologação. Nenhum novo teste de API/UI ou regressão executado, pois só documentação mudou. Última regressão funcional segue CI `35719559295`, 177 backend/56 frontend. Nenhum dado, volume ou serviço alterado.
+- **Próxima implementação: 2B.5.2.1.** Ler o contrato próprio, começar por testes de migração legada/transações/repetição e aplicar banco/API/UI/permissões juntos. Não atualizar principal antes de cópias e validação focada. Não tratar esta preparação como correção de R26 nem repetir revisão geral.
+- Publicar preparação com commit/push e conferir árvore limpa/HEAD remoto. A homologação continua em `0019`, **https://localhost:18443**. Credenciais e cópias continuam locais, fora do Git.

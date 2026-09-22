@@ -2,6 +2,8 @@
 
 Preparação concluída em 21/09/2026, base `300e12f`, banco `0018_specialty_version`. Esta entrega é de diagnóstico e definição dos recortes; os problemas reproduzidos abaixo ainda existem no programa. Não houve migração nem alteração de regra financeira.
 
+**Atualização em 22/09/2026:** a descrição acima e as reproduções são históricas. A [2B.5.1 está concluída](./homologacao-etapa-2B5-1.md), com versão e proteção contra operações antigas. O [contrato próprio da 2B.5.2](./plano-etapa-2B5-2.md) foi definido; pagamentos imutáveis/estornos ainda não foram implementados. Próximo recorte: 2B.5.2.1.
+
 ## Caminhos de gravação encontrados
 
 | Operação | Caminho atual | Risco e garantia existente |
@@ -81,6 +83,8 @@ Definir antes de implementar a máquina de estados e todos os caminhos que criam
 Bloquear reescrita/exclusão silenciosa de pagamento; corrigir por operação explícita com motivo e autoria. Integrar recebimentos e despesas, estado do lançamento, cancelamento/estorno e geração idempotente na mesma transação quando necessário. Preservar o formato de pagamentos legados e marcar origem legada/autoria desconhecida, sem atribuir o importado ao administrador atual. Definir tratamento de dados antigos inconsistentes e política de migração antes de gravar eventos.
 
 Esse recorte exige plano próprio. Não converter pagamentos existentes nem remover status do formulário parcialmente enquanto outros endpoints puderem contornar a regra. Parcelamento/pagamentos parciais e escopo clínico permanecem na etapa 4; regras fiscais ou contábeis externas não foram avaliadas aqui.
+
+Contrato próprio definido em [plano-etapa-2B5-2.md](./plano-etapa-2B5-2.md): estados, quatro caminhos de pagamento, transações/recibos, permissões, migração legada e matriz de aceite. Esse documento orienta a implementação seguinte.
 
 ### 2B.5.3 — referências históricas e consulta da trilha
 
