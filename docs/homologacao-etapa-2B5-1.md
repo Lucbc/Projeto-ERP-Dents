@@ -1,6 +1,6 @@
 # Etapa 2B.5.1 — versão nas alterações financeiras
 
-Base `e6a5578`, iniciada em 21/09/2026. Implementação conforme [plano financeiro](./plano-etapa-2B5.md). Regressão local aprovada; publicação/CI ainda em andamento.
+Base `e6a5578`, iniciada em 21/09/2026 e concluída em 22/09/2026. Implementação `496132d` conforme [plano financeiro](./plano-etapa-2B5.md). [CI 35719559295](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35719559295) aprovado em 12min38s: 177 backend, 56 frontend, HTTP, builds e auditorias.
 
 ## Contrato
 
@@ -31,7 +31,8 @@ A migração exige janela pelo bloqueio da tabela; downgrade remove versões/pro
 - **HTTP:** onze grupos específicos (precondições, permissões anônimas/perfil somente leitura, disputa e preservação do pagamento, mais preparação/limpeza). Onze grupos de geração idempotente e dez do fluxo geral aprovados.
 - **Frontend:** 56 testes aprovados, incluindo três novos: rascunho/recarga com falha/data exata; baixa antiga; exclusão antiga. Os dois últimos confirmam envio da versão e ausência de repetição automática após recarga.
 - **Chrome real/HTTPS:** duas abas verificaram formulário antigo após baixa, recuperação e salvamento mantendo data exata; dois formulários concorrentes; exclusão com versão antiga e recarga explícita. Capturas locais conferidas e fixtures removidas.
-- Builds API/web aprovados. Suíte backend completa aprovada: **177 testes em 478,929s**, zero schemas descartáveis. CI pendente nesta versão do relatório. Smoke de geração no navegador teve somente a limpeza adaptada para enviar versão; não foi reexecutado nesta entrega. Sua garantia de repetição foi coberta por PostgreSQL/HTTP, sem simular novamente perda de resposta no Chrome.
+- Builds API/web aprovados. Suíte backend completa aprovada: **177 testes em 478,929s** localmente e 422,184s no CI, zero schemas descartáveis locais. Chrome repetido com a imagem final e preservação dos dados reconfirmada. Smoke de geração no navegador teve somente a limpeza adaptada para enviar versão; não foi reexecutado nesta entrega. Sua garantia de repetição foi coberta por PostgreSQL/HTTP, sem simular novamente perda de resposta no Chrome.
+- Gateway remoto confirmou 413/503, JSON 408 em 30,011s, capacidade liberada e 80 chamadas de saúde, p95 de 0,040s. Auditorias de dependências e imagens aprovadas no CI.
 
 Comandos específicos:
 

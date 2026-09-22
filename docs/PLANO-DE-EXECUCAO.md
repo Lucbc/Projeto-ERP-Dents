@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**2B.5.1 implementada, aguardando CI:** [versão em edição, baixa e exclusão financeiras](./homologacao-etapa-2B5-1.md). Regressão local aprovada: 177 backend e 56 frontend, HTTP e Chrome com duas abas. Homologação em `0019_financial_version`, dados/exames preservados. Histórico financeiro e proteção definitiva dos pagamentos exigem os recortes seguintes do [plano financeiro](./plano-etapa-2B5.md).
+**2B.5.1 concluída:** [versão em edição, baixa e exclusão financeiras](./homologacao-etapa-2B5-1.md). Regressão local e CI aprovados: 177 backend e 56 frontend, HTTP, builds e auditorias; Chrome com duas abas aprovado localmente. Homologação em `0019_financial_version`, dados/exames preservados. Próxima subetapa: **2B.5.2 — pagamentos, histórico e repetição idempotente**, conforme [plano financeiro](./plano-etapa-2B5.md). A etapa 2B completa permanece em andamento.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -310,7 +310,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próxima implementação: 2B.5.1.** Versão positiva no financeiro, PUT/baixa/DELETE condicionados, códigos distintos de conflito e recuperação explícita; preservar recibos/índice da 2A.2. Baixa repetida não deve regravar pagamento; recuperação idempotente por chave e imutabilidade dos pagos serão 2B.5.2. Referências/trilha, 2B.5.3. Não tratar controle de versão como histórico completo.
 - Ao retomar, ler `docs/plano-etapa-2B5.md`, criar testes conforme sua matriz, salvar cópias antes de migrar e atualizar todos os caminhos de escrita juntos. Não repetir revisão geral. Publicar esta preparação com commit/push, conferir árvore limpa/HEAD remoto; R18/R26 continuam parcialmente pendentes.
 
-### Ponto de retomada atual — 2B.5.1 iniciada em 21/09/2026
+### Implementação da 2B.5.1 — 21 e 22/09/2026 (histórico)
 
 - Base `e6a5578`, árvore limpa. Usuário autorizou iniciar com 21% de contexto. Implementar versão em PUT/baixa/DELETE financeiros, conforme `docs/plano-etapa-2B5.md`, preservando geração idempotente. Baixa de pago/cancelado deve retornar conflito de estado; não implantar histórico nem imutabilidade completa neste recorte.
 - API/frontend/testes serão atualizados juntos. Não atualizar homologação principal antes de cópias e validação focada. Registrar progresso antes de interrupção; commit/push obrigatórios na entrega, sem publicar `.data` ou segredos.
@@ -319,3 +319,13 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Cópias `.data/homolog/pre-2B5-1*` salvas antes da atualização; homologação principal em `0019_financial_version`, API/frontend juntos. Chrome com duas abas aprovou formulário antigo após baixa, revisão com data exata preservada, dois editores e exclusão antiga. Capturas conferidas; fixtures removidas. Fingerprints confirmam dados anteriores/exames preservados (somente nova versão financeira e metadados de autenticação/Alembic excluídos).
 - Pendências: resultado final da suíte local e smoke HTTP com permissões; revisar diff/relatório, commit/push da implementação e CI completo antes do fechamento. Não iniciar 2B.5.2 nem marcar histórico financeiro concluído. Scripts locais de alteração/preparação em `.data`, nunca publicar; mudanças úteis estão nos arquivos de código/testes/smokes versionáveis.
 - Retomada em 22/09/2026: **177 testes backend aprovados em 478,929s**, 56 frontend e onze grupos HTTP específicos aprovados, incluindo permissões. Zero schemas descartáveis. Web atualizado com recarga conjunta da lista e dos totais após conflito. Revisão final sem erros de whitespace; publicar implementação e acompanhar CI antes de fechar. Não repetir testes já aprovados sem nova alteração ou falha.
+- Implementação publicada em `496132d`; HEAD local/remoto conferidos. Acompanhar [CI 35719559295](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35719559295). Após aprovação, fechar relatório/plano, publicar fechamento documental e conferir árvore limpa/HEAD remoto. Próxima etapa continua 2B.5.2; não iniciar antes do fechamento.
+
+### Ponto de retomada atual — 2B.5.1 concluída em 22/09/2026
+
+- Implementação `496132d` publicada. [CI 35719559295](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35719559295) aprovado em 12min38s: **177 backend, 56 frontend**, smokes HTTP, builds e auditorias. Banco e API validam versão em edição/baixa/exclusão; somente pendentes aceitam baixa, sem regravar pagamento em repetição.
+- Chrome final com duas abas aprovado após atualização da última imagem web; rascunho preservado, data exata mantida na revisão e exclusão antiga rejeitada. Recarga explícita atualiza lista e totais sem repetir ação. Comparação posterior confirmou dados de negócio e bytes de exames preservados. Zero schemas descartáveis; nenhum volume removido.
+- Homologação em **https://localhost:18443**, migração `0019_financial_version`. API/frontend atualizados juntos; recarregar abas antigas. Cópias `pre-2B5-1*`, capturas e credenciais ficam locais e não são transportadas pelo Git.
+- Gateway remoto: 413/503, JSON 408 em 30,011s, vagas liberadas e 80 chamadas de saúde, p95 de 0,040s. Evidências e limites em `docs/homologacao-etapa-2B5-1.md`; logs locais `.data/financial-version-*`.
+- **Próxima subetapa: 2B.5.2.** Partir do mapa `docs/plano-etapa-2B5.md` e definir os caminhos de pagamento/estorno, transições, imutabilidade, autoria e chave persistente de baixa antes de migrar. Edição/exclusão intencionais com versão atual ainda podem alterar/apagar pagos; R26 segue parcial. Não inventar histórico ou autor para dados legados.
+- Fechamento posterior ao CI somente documental. Publicar commit/push e conferir árvore limpa e HEAD remoto. Na retomada, não repetir revisão geral nem a 2B.5.1 sem nova evidência.
