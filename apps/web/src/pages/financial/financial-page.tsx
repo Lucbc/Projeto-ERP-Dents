@@ -667,7 +667,11 @@ export function FinancialPage() {
         }}
         title={editingEntry ? "Editar lancamento financeiro" : "Novo lancamento financeiro"}
       >
-        {createUncertain && <div role="alert"><p>Resultado incerto. Repita os mesmos dados para recuperar a criação; não crie outro lançamento.</p><Button disabled={createMutation.isPending} onClick={() => createMutation.mutate(createMutation.variables!)}>Consultar/repetir criação</Button></div>}
+        {createUncertain && <div role="alert"><p>Resultado incerto. Confira a operação antes de criar outro lançamento.</p>
+          {createMutation.variables?.status === "paid"
+            ? <Button disabled={createMutation.isPending} onClick={() => createMutation.mutate(createMutation.variables!)}>Consultar/repetir criação</Button>
+            : <Button onClick={() => { setOpenEntryModal(false); setCreateUncertain(false); setReviewCreation(true); createAttempt.current = null; void queryClient.invalidateQueries({ queryKey: ["financial"] }); }}>Fechar e conferir lançamentos</Button>}
+        </div>}
         {editingEntry?.status === "paid" && <div role="alert"><p>Pagamento confirmado. Consulte os pagamentos para estornar antes de corrigir.</p><Button onClick={() => { setOpenEntryModal(false); setEditingEntry(null); }}>Fechar formulário</Button></div>}
         <form className="grid gap-3 md:grid-cols-2" onSubmit={entryForm.handleSubmit(submitEntry)}>
           <fieldset disabled={createUncertain || editingEntry?.status === "paid"} className="contents">

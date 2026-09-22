@@ -84,3 +84,16 @@ it("locks a paid creation after network uncertainty and reuses its original key 
   expect(create.mock.calls[1]).toEqual(create.mock.calls[0]);
   expect(create.mock.calls[0][0]).toMatchObject({status:"paid",amount_cents:12000,idempotency_key:expect.any(String)});
 });
+
+it("does not replay an unpaid manual creation because that endpoint has no receipt",async()=>{
+  const create=vi.spyOn(financialService,"create").mockRejectedValue(new AxiosError("network"));
+  const {field}=setup();
+  fireEvent.click(await screen.findByRole("button",{name:"Novo lancamento",exact:true}));
+  fireEvent.change(field("description"),{target:{value:"Fictitious pending creation"}});
+  fireEvent.change(field("amount"),{target:{value:"120"}});
+  fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
+  fireEvent.click(await screen.findByRole("button",{name:"Fechar e conferir lançamentos"}));
+  expect(screen.queryByRole("button",{name:"Consultar/repetir criação"})).toBeNull();
+  expect(await screen.findByRole("button",{name:"Conferi os lançamentos"})).toBeTruthy();
+  expect(create).toHaveBeenCalledTimes(1);
+});
