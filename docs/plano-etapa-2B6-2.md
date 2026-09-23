@@ -21,7 +21,7 @@ Interface e ordem de bloqueios foram inspecionadas no código; esta preparação
 
 Após limpeza: zero schemas descartáveis, principal em `0021_financial_references`; comparação confirmou todas as linhas de negócio, referências históricas e bytes de exames preservados. Nenhum reinício/migração ou mudança executável. Última regressão permanece [CI 35874815267](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35874815267), 202 backend/69 frontend, não repetida para documentação.
 
-## Contrato da próxima implementação (2B.6.2.1)
+## Contrato da implementação (2B.6.2.1)
 
 ### Precondição e efeitos
 

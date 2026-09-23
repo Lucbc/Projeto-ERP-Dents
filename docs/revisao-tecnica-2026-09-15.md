@@ -233,6 +233,8 @@ A regra de um lançamento ativo por consulta usa consulta prévia, seguida de cr
 
 ### R18 — P1 — Duas pessoas podem sobrescrever alterações uma da outra
 
+**Atualização 2B.6.2.1 concluída:** exclusão de consultas na lista/calendário exige versão e comparação transacional antes de remover procedimentos vinculados. Confirmação identifica consulta salva e efeitos financeiros; erro preserva rascunho e exige revisão explícita/nova confirmação. Disputas com geração/baixa e preservação de pagamentos, referências e recibos aprovadas. [Evidências](./homologacao-etapa-2B6-2-1.md): CI 209 backend/76 frontend, HTTP e Chrome, dados anteriores preservados. R18 permanece parcial para dentistas, pacientes/exames e regras entre recursos.
+
 **Atualização 2B.6.1 concluída:** exclusão de procedimentos/especialidades agora exige versão, compara sob bloqueio transacional e diferencia cadastro alterado de vínculo impeditivo. Interface confirma o registro exibido e exige recarga/nova confirmação após erro; sem reenvio automático. [Evidências](./homologacao-etapa-2B6-1.md): CI 202 backend/69 frontend, HTTP e Chrome aprovados. R18 permanece parcial para exclusões de consultas, dentistas, pacientes e regras entre recursos.
 
 **Preparação 2B.6, em 23/09/2026:** HTTP isolado confirmou que DELETE ainda ignora versão antiga em pacientes, dentistas, procedimentos, especialidades e consultas, removendo uma edição já confirmada. [Mapa, contrato e sequência](./plano-etapa-2B6.md). Próxima correção: procedimentos/especialidades; versão do paciente sozinha não cobre mudanças em exames vinculados. Nenhuma correção executável nesta preparação.

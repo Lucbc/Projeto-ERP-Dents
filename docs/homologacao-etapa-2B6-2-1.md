@@ -1,6 +1,6 @@
 # 2B.6.2.1 — exclusão concorrente de consultas
 
-**Em validação em 23/09/2026.** Base `203bcf6`. [Contrato](./plano-etapa-2B6-2.md). Fechamento depende da regressão completa, atualização com preservação e CI.
+**Concluída em 23/09/2026.** Implementação `cc910cb`, base `203bcf6`. [Contrato](./plano-etapa-2B6-2.md). [CI 35904115803](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35904115803) aprovado: **209 backend e 76 frontend**, HTTP, builds e auditorias.
 
 ## Mudanças
 
@@ -20,9 +20,13 @@
 - **Chrome HTTPS:** lista/calendário em duas abas com reagendamento; exclusão antiga rejeitada, rascunho diferente do salvo mantido, recarga e nova confirmação; ausência após exclusão em outra aba; financeiro/histórico conferidos por API autorizada. Capturas `appointment-deletion-calendar.png` e `appointment-deletion-list.png` conferidas.
 - Dados fictícios em schemas/API/web descartáveis exclusivos de `erp-dents-homolog`. Logs `.data/appointment-deletion-*`, capturas e cópias fora do Git.
 
-## Pendências de fechamento
+## Atualização e regressão final
 
-Regressão completa local (209 casos esperados), CI, dump completo após limpeza dos schemas, atualização principal, smoke geral e comparação de todas as linhas de negócio/referências/bytes de exames. Cópias públicas/exames/fingerprints `pre-2B6-2-1*` já salvos. Nenhum volume removido.
+- **209 testes backend locais aprovados em 508,288s**. No CI: 209 em 488,792s e 76 frontend, HTTP, builds e auditorias; execução de 14min20s. Logs locais `.data/appointment-deletion-ci.log` e `.data/appointment-deletion-full.log`.
+- HTTPs anteriores de edição de agenda e exames adaptados e aprovados. Scripts antigos de navegador tiveram a sintaxe conferida; o Chrome executado nesta entrega foi o novo teste de exclusão de consultas, sem alegar repetição de todos os scripts antigos.
+- Principal em **https://localhost:18443**, API/web atualizados juntos, revisão `0021` mantida. Dez verificações gerais aprovadas. Clientes antigos devem recarregar a página.
+- Cópias públicas/exames/fingerprints antes da atualização e dump completo após zero schemas descartáveis, todos `pre-2B6-2-1*` locais. Comparação integral antes/depois do smoke confirmou todas as linhas de negócio, referências financeiras e bytes de exames preservados. Zero schemas descartáveis após entrega; nenhum volume removido.
+- Gateway remoto: 413/503, JSON 408 em 30,012s, vagas liberadas; 80 chamadas de saúde com p95 de 0,0392s. Fechamento posterior ao CI somente documental.
 
 ## Reprodução
 
