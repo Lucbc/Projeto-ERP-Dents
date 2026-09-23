@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**Preparação 2B.6.3 concluída:** [mapa, evidências e contrato](./plano-etapa-2B6-3.md). DELETE antigo apaga edição de dentista e pode deixar conta ativa sem vínculo, com sessão válida e módulo de consultas indisponível. Próxima implementação **2B.6.3.1**: versão, confirmação, FK impeditiva de conta vinculada e preservação financeira. Nenhuma mudança executável nesta preparação.
+
 **2B.6.2.1 concluída:** [relatório](./homologacao-etapa-2B6-2-1.md), implementação `cc910cb`. CI aprovado com **209 backend e 76 frontend**, HTTP, builds e auditorias. Exclusão de consultas por versão na lista/calendário, rascunho e financeiro preservados; Chrome e atualização principal verificados, revisão `0021` mantida. **Próximo recorte: preparação 2B.6.3 — exclusão de dentistas e vínculos/disponibilidade.**
 
 **2B.6.1 concluída:** [relatório](./homologacao-etapa-2B6-1.md), implementação `b421cc8`. CI aprovado com **202 backend e 69 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação verificados; principal atualizada, sem nova migração (`0021`). Próximo recorte: **preparação 2B.6.2 — exclusão de consultas na lista e calendário**; pacientes/exames e dentistas mantêm recortes próprios.
@@ -462,3 +464,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Gateway remoto: 413/503, JSON 408 em 30,012s, vagas liberadas e 80 chamadas de saúde com p95 de 0,0392s. Relatório/contrato/comandos em `docs/homologacao-etapa-2B6-2-1.md`. Credenciais, capturas e cópias continuam fora do Git.
 - **Próximo passo: preparação 2B.6.3.** Mapear DELETE de dentistas, FK de consultas/financeiro, disponibilidade e confirmação/versão. Definir contrato e evidência isolada antes de implementar, sem reabrir catálogos/consultas já corrigidos. Pacientes/exames exigem recorte próprio de filhos/arquivos; disponibilidade entre recursos e auditoria clínica completa permanecem pendentes. R18 segue parcial.
 - Fechamento posterior ao CI somente documental. Publicar commit/push e conferir árvore limpa/HEAD remoto. Outra sessão deve partir deste ponto.
+
+### Ponto de retomada atual — preparação 2B.6.3 concluída em 23/09/2026
+
+- Base `6ff8342`, árvore inicialmente limpa. Início registrado na entrega atual. Inspecionados DELETE/versão, disponibilidade JSON, FKs de consultas/usuários/financeiro, administração/revogação e escopo do módulo de consultas. Contrato em `docs/plano-etapa-2B6-3.md`.
+- Probe `.data/probe_dentist_deletion_2b63.py`: dez grupos HTTP isolados, três diagnósticos. DELETE versão 1 apaga nome/horários já editados para versão 2; cobrança paga mantém versão/valor/histórico; usuário fica ativo sem dentista, sessão anterior retorna 200 e consultas retornam 400. Consulta agendada/concluída/cancelada impede exclusão e preserva disponibilidade. Diagnóstico sequencial, não teste de disputa nem Chrome.
+- Contrato define proteção explícita contra conta órfã: próxima migração altera FK de usuários de SET NULL para RESTRICT, inclusive contas inativas; regularização de vínculo via administração existente. Não desativar contas, trocar perfis ou revogar sessões implicitamente. Versão da linha não protege sozinha vínculos novos; consultas mantêm RESTRICT e financeiro mantém SET NULL/capturas.
+- Zero schemas descartáveis; comparação integral aprovou dados de negócio/referências/exames preservados. Consulta agregada principal: zero contas dentistas órfãs/associadas; não extrapolar para outras instalações. Principal continua `0021` em **https://localhost:18443**, sem migração/reinício. Último CI permanece `35904115803`, 209 backend/76 frontend; regressão não repetida para documentação.
+- **Próximo passo: implementar 2B.6.3.1**, seguindo matriz de migração, vínculos/sessões, corridas financeiras e UI. Antes de atualizar principal, cópias e validação isolada. Não repetir revisão geral ou exclusões já corrigidas; pacientes/exames e disponibilidade × agendamento continuam separados. R18 permanece parcial.
+- Publicar preparação por commit/push, verificar árvore limpa e HEAD remoto. Probe/logs e credenciais ficam locais; não adicionar teste permanente que espere o defeito atual.
