@@ -91,7 +91,7 @@ class ProcedureVersionTests(unittest.TestCase):
             rows,_=uc.list(None,100,0)
             self.assertEqual(next(row.version for row in rows if row.id==self.id),2)
             disposable=uc.create({'name':'Disposable fictitious procedure'})
-            uc.delete(disposable.id)
+            uc.delete(disposable.id, disposable.version)
             with self.assertRaises(NotFoundError): uc.update(disposable.id,{'version':1,'name':'Deleted'})
 
     def test_catalog_changes_preserve_saved_charge_links_and_booking_times(self):

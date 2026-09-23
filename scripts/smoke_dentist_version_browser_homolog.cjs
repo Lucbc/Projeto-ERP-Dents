@@ -85,7 +85,7 @@ let stage='start';
     try {
       if(api) {
         if(dentist) await api('DELETE','/api/dentists/'+dentist.id);
-        for(const specialty of specialties) await api('DELETE','/api/specialties/'+specialty.id);
+        for(const specialty of specialties) await api('DELETE','/api/specialties/'+specialty.id+'?version='+(await api('GET','/api/specialties/'+specialty.id)).version);
         await api('POST','/api/auth/logout');
       }
     } finally { await browser.close(); }

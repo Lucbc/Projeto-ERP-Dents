@@ -34,7 +34,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema):
     expect('PUT',path,{'version':3,'active':True},409)
     empty=expect('PUT',path,{'version':4,'price_cents':None,'duration_minutes':None})
     assert empty['price_cents'] is None and empty['duration_minutes'] is None and empty['active'] is False
-    expect('DELETE',path,status=204)
+    expect('DELETE',path+'?version='+str(empty['version']),status=204)
     expect('PUT',path,{'version':5,'name':'Deleted'},404)
     passed('partial edit preserves prices; zero/null differ; stale activation and deleted target rejected')
 

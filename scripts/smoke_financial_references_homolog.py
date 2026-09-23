@@ -29,7 +29,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     second = expect('POST', path+'/mark-paid', {'version':reversed_result['entry']['version'], 'idempotency_key':str(uuid4())})
     assert second['payment']['reference_snapshot']['patient']['name'] == 'Renamed fictitious record'
     for resource, item in [('patients',patient), ('dentists',dentist), ('procedures',procedure)]:
-        expect('DELETE', '/api/'+resource+'/'+item['id'], status=204)
+        expect('DELETE', '/api/'+resource+'/'+item['id']+('?version=2' if resource=='procedures' else ''), status=204)
     replay = expect('POST', path+'/mark-paid', paid_payload)
     assert replay['payment'] == paid['payment'] and replay['entry']['patient_id'] is None
     history = expect('GET', path+'/payments')

@@ -82,7 +82,7 @@ let stage='start';
     assert.deepEqual(current.procedure_ids,[procedures[0]]);
     console.log('OK: list and calendar reject stale drafts, preserve selections, reload explicitly and save reviewed versions.');
   } finally {
-    try { if(api) {for(const url of cleanup.reverse()) await api('DELETE',url);await api('POST','/api/auth/logout');} }
+    try { if(api) {for(const url of cleanup.reverse()) await api('DELETE',url+(url.startsWith('/api/procedures/')?'?version='+(await api('GET',url)).version:''));await api('POST','/api/auth/logout');} }
     finally {await browser.close();}
   }
 })().catch(()=>{console.error('Appointment version browser test failed at: '+stage+'; inspect fictitious fixtures locally if cleanup failed.');process.exitCode=1;});

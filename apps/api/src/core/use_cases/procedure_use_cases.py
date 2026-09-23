@@ -51,7 +51,7 @@ class ProcedureUseCases:
             raise NotFoundError("Procedimento nao encontrado.")
         return procedure
 
-    def delete(self, procedure_id: UUID) -> None:
-        deleted = self.procedure_repository.delete(procedure_id)
+    def delete(self, procedure_id: UUID, version: int) -> None:
+        deleted = self.procedure_repository.delete(procedure_id, version)
         if not deleted:
             raise NotFoundError("Procedimento nao encontrado.")

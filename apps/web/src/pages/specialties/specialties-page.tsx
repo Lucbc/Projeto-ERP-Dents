@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
 import { specialtyService } from "@/lib/services";
@@ -92,13 +93,9 @@ export function SpecialtiesPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => specialtyService.remove(id),
-    onSuccess: () => {
-      toast("Especialidade removida.");
-      void queryClient.invalidateQueries({ queryKey: ["specialties"] });
-    },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+  const deletion = useCatalogDeletion(specialtyService.remove, () => specialtiesQuery.refetch(), () => {
+    toast("Especialidade removida.");
+    void queryClient.invalidateQueries({ queryKey: ["specialties"] });
   });
 
   const items = useMemo(() => specialtiesQuery.data?.items ?? [], [specialtiesQuery.data]);
@@ -139,6 +136,11 @@ export function SpecialtiesPage() {
 
   return (
     <div className="space-y-4">
+      {deletion.review && <div role="alert" className="rounded border border-amber-300 p-3 space-y-2">
+        <p>{deletion.review}</p>
+        <p>Confira os dados atualizados e confirme novamente se ainda quiser excluir.</p>
+        <Button disabled={deletion.reload.isPending} onClick={() => deletion.reload.mutate()}>Recarregar lista para conferir</Button>
+      </div>}
       <Card>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -193,9 +195,11 @@ export function SpecialtiesPage() {
                             {canDelete && (
                               <Button
                                 variant="danger"
+                                disabled={deletion.blocked}
                                 onClick={() => {
-                                  if (window.confirm("Deseja remover esta especialidade?")) {
-                                    deleteMutation.mutate(specialty.id);
+                                  const target = { id: specialty.id, version: specialty.version };
+                                  if (window.confirm(`Excluir “${specialty.name}”?`)) {
+                                    deletion.mutation.mutate(target);
                                   }
                                 }}
                               >

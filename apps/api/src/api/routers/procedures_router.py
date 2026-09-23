@@ -82,7 +82,7 @@ def update_procedure(
     response_class=Response,
     dependencies=[Depends(require_permission("procedures", "delete"))],
 )
-def delete_procedure(procedure_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
+def delete_procedure(procedure_id: UUID, version: int = Query(gt=0), db: Session = Depends(get_db_dep)) -> Response:
     use_case = ProcedureUseCases(SqlAlchemyProcedureRepository(db))
-    use_case.delete(procedure_id)
+    use_case.delete(procedure_id, version)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

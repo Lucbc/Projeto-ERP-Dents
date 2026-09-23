@@ -39,7 +39,7 @@ class SpecialtyUseCases:
             raise NotFoundError("Especialidade nao encontrada.")
         return specialty
 
-    def delete(self, specialty_id: UUID) -> None:
-        deleted = self.specialty_repository.delete(specialty_id)
+    def delete(self, specialty_id: UUID, version: int) -> None:
+        deleted = self.specialty_repository.delete(specialty_id, version)
         if not deleted:
             raise NotFoundError("Especialidade nao encontrada.")

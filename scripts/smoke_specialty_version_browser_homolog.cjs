@@ -84,8 +84,8 @@ let stage='start';
   } finally {
     try {
       if(api) {
-        if(specialty) await api('DELETE','/api/specialties/'+specialty.id);
-        if(other) await api('DELETE','/api/specialties/'+other.id);
+        if(specialty) await api('DELETE','/api/specialties/'+specialty.id+'?version='+(await api('GET','/api/specialties/'+specialty.id)).version);
+        if(other) await api('DELETE','/api/specialties/'+other.id+'?version='+(await api('GET','/api/specialties/'+other.id)).version);
         await api('POST','/api/auth/logout');
       }
     } finally { await browser.close(); }

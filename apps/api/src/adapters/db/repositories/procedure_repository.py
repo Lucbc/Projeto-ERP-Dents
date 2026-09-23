@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
+from .catalog_deletion import delete_catalog_record
 
 from src.adapters.db.models.models import ProcedureModel
 from src.core.domain.entities import Procedure
@@ -64,14 +65,8 @@ class SqlAlchemyProcedureRepository(ProcedureRepository):
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def delete(self, procedure_id) -> bool:
-        item = self.session.get(ProcedureModel, procedure_id)
-        if item is None:
-            return False
-
-        self.session.delete(item)
-        self.session.commit()
-        return True
+    def delete(self, procedure_id, version: int) -> bool:
+        return delete_catalog_record(self.session, ProcedureModel, procedure_id, version)
 
     def _to_entity(self, model: ProcedureModel) -> Procedure:
         return Procedure(

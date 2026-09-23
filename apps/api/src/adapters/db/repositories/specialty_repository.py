@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from .catalog_deletion import delete_catalog_record
 
 from src.adapters.db.models.models import SpecialtyModel
 from src.core.domain.entities import Specialty
@@ -74,14 +75,8 @@ class SqlAlchemySpecialtyRepository(SpecialtyRepository):
                 code="specialty_name_exists") from error
         raise error
 
-    def delete(self, specialty_id) -> bool:
-        item = self.session.get(SpecialtyModel, specialty_id)
-        if item is None:
-            return False
-
-        self.session.delete(item)
-        self.session.commit()
-        return True
+    def delete(self, specialty_id, version: int) -> bool:
+        return delete_catalog_record(self.session, SpecialtyModel, specialty_id, version)
 
     def _to_entity(self, model: SpecialtyModel) -> Specialty:
         return Specialty(

@@ -36,7 +36,7 @@ def checks(request, email, password, token, container, ready, passed, sql, schem
     sql(f'''INSERT INTO "{schema}".appointments (id,patient_id,dentist_id,start_at,end_at,status,created_at,updated_at)
         VALUES ('{appointment}','{patient}','{dentist}',now(),now()+interval '30 minutes','scheduled',now(),now());
         INSERT INTO "{schema}".appointment_procedures (appointment_id,procedure_id,created_at) VALUES ('{appointment}','{procedure}',now());''')
-    expect('DELETE', '/api/procedures/'+procedure, status=409)
+    expect('DELETE', '/api/procedures/'+procedure+'?version=1', status=409)
     assert expect('GET', '/api/procedures/'+procedure)['id'] == procedure
     passed('real referenced procedure deletion returns 409 and preserves the record')
 

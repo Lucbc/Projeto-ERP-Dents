@@ -108,7 +108,7 @@ class SpecialtyVersionTests(unittest.TestCase):
             self.assertEqual(uc.update(self.id,{'version':1}).version,2)
             with self.assertRaises(ConflictError): uc.update(self.id,{'version':1})
             self.assertEqual(next(row.version for row in uc.list(None,100,0)[0] if row.id==self.id),2)
-            uc.delete(self.id)
+            uc.delete(self.id, 2)
             with self.assertRaises(NotFoundError): uc.update(self.id,{'version':2,'name':'Deleted'})
 
     def test_invalid_preconditions(self):

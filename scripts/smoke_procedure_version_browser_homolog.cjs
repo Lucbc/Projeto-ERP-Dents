@@ -69,7 +69,7 @@ let stage='start';
     console.log('OK: two Chrome drafts; stale edit rejected, draft preserved, explicit reload and reviewed save passed.');
   } finally {
     try {
-      if(api) { if(procedure) await api('DELETE','/api/procedures/'+procedure.id); await api('POST','/api/auth/logout'); }
+      if(api) { if(procedure) await api('DELETE','/api/procedures/'+procedure.id+'?version='+(await api('GET','/api/procedures/'+procedure.id)).version); await api('POST','/api/auth/logout'); }
     } finally { await browser.close(); }
   }
 })().catch(()=>{console.error('Procedure browser test failed at: '+stage+'; inspect fictitious fixtures locally if cleanup failed.');process.exitCode=1;});

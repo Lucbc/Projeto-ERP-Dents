@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**2B.6.1 iniciada em 23/09/2026**, base `c2b7b38`, árvore limpa: versão na exclusão de procedimentos/especialidades, confirmação e recuperação na interface, testes e atualização dos clientes/smokes. Sem nova migração; principal permanece intacta até validação e cópias.
+
 **Preparação 2B.6 concluída:** [mapa, reprodução e contrato](./plano-etapa-2B6.md). DELETE antigo apaga edição confirmada nos cinco recursos; defeito reproduzido por HTTP isolado, ainda não corrigido. Próxima implementação: **2B.6.1 — procedimentos e especialidades**. Pacientes/exames exigem contrato próprio dos efeitos vinculados.
 
 **2B.5.3.1 concluída:** [referências históricas](./homologacao-etapa-2B5-3-1.md), implementação `6b3109d`. CI aprovado com **197 backend e 63 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação aprovados; principal em `0021_financial_references`. Próximo recorte: **2B.6 — exclusões concorrentes de cadastros e agenda**.
@@ -410,3 +412,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Zero schemas descartáveis após o probe; comparação confirmou dados de negócio, eventos, recibos, permissões e exames preservados. Principal continua `0021` em **https://localhost:18443**. Sem migração/reinício/alteração executável. Última regressão continua CI `35808882862` (197 backend/63 frontend), não repetida para documentação.
 - **Próximo passo: implementar 2B.6.1**, procedimentos e especialidades, conforme matriz própria. Começar por DELETE desatualizado e PUT × DELETE em banco isolado; atualizar API/web/smokes juntos. Preservar FK de consultas, especialidade textual e referências financeiras. Não ampliar para pacientes/exames ou reabrir revisão geral neste recorte.
 - Publicar preparação por commit/push e conferir árvore limpa/HEAD remoto. R18 permanece parcial; esta preparação não corrige os cinco DELETEs. Probe/logs e credenciais continuam locais, fora do Git.
+
+### Implementação 2B.6.1 — em andamento em 23/09/2026
+
+- Base `c2b7b38`, árvore limpa. Versão obrigatória no DELETE de procedimentos/especialidades em rotas/portas/casos de uso/repositórios/serviços. Helper transacional bloqueia e atualiza a leitura da linha, compara versão antes de excluir, diferencia `stale_version`/`linked_record`, faz rollback em falha. Sem migração nem alteração dos outros DELETEs.
+- Interface confirma nome e captura ID/versão exibidos; bloqueia nova exclusão durante envio e após erro, exige recarga explícita e outra confirmação. Rede/5xx não vira sucesso nem repetição automática. Adaptados testes e smokes antigos, incluindo limpeza dos catálogos na versão atual.
+- 69 frontend/build aprovados. HTTP próprio: dez grupos aprovados, incluindo versão inválida/ausente, permissões, 409 antigo, exclusão atual/404 e FK de consulta. Primeira rodada de banco 23/24: um fixture SQL omitiu `created_at`; corrigido. Cinco testes finais de exclusão aprovados em 12,668s. Suíte completa já iniciada com a imagem anterior à correção desse fixture; esperar uma falha conhecida e conferir todas as demais (202 casos). CI deve usar o fixture corrigido.
+- Builds API/web finais aprovados; Chrome descartável em andamento, logs `.data/catalog-deletion-*`. Cópias públicas/exames/fingerprints `pre-2B6-1*` salvos. Principal ainda não atualizada; revisão segue `0021`. Fazer dump completo depois de zero schemas, antes de atualizar API/web.
+- Pendentes: Chrome/capturas, resultado da regressão geral, smokes antigos adaptados, atualização principal e comparação integral por `.data/upgrade_2b61.py after`, relatório/revisão, commit/push/CI e fechamento. Não declarar etapa concluída nem iniciar exclusões de consultas/pacientes nesta entrega.
+- Chrome descartável aprovado: dois catálogos em duas abas, edição confirmada seguida de exclusão antiga rejeitada; recarga/nova confirmação exclui versão atual; vínculo de consulta impede exclusão. Ambas as capturas conferidas. Publicar implementação para executar CI enquanto a regressão local termina; principal ainda aguarda atualização e comparação. Nenhuma alteração funcional pendente conhecida; fechamento depende das verificações finais acima.

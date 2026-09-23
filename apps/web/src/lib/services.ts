@@ -238,8 +238,8 @@ export const procedureService = {
     const response = await api.put<Procedure>(`/api/procedures/${id}`, payload);
     return response.data;
   },
-  async remove(id: string) {
-    await api.delete(`/api/procedures/${id}`);
+  async remove(id: string, version: number) {
+    await api.delete(`/api/procedures/${id}`, { params: { version } });
   },
 };
 
@@ -263,8 +263,8 @@ export const specialtyService = {
     const response = await api.put<Specialty>(`/api/specialties/${id}`, payload);
     return response.data;
   },
-  async remove(id: string) {
-    await api.delete(`/api/specialties/${id}`);
+  async remove(id: string, version: number) {
+    await api.delete(`/api/specialties/${id}`, { params: { version } });
   },
 };
 

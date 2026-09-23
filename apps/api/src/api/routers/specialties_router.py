@@ -82,7 +82,7 @@ def update_specialty(
     response_class=Response,
     dependencies=[Depends(require_permission("specialties", "delete"))],
 )
-def delete_specialty(specialty_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
+def delete_specialty(specialty_id: UUID, version: int = Query(gt=0), db: Session = Depends(get_db_dep)) -> Response:
     use_case = SpecialtyUseCases(SqlAlchemySpecialtyRepository(db))
-    use_case.delete(specialty_id)
+    use_case.delete(specialty_id, version)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

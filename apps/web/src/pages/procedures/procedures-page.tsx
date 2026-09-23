@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
 import { procedureService } from "@/lib/services";
@@ -141,13 +142,9 @@ export function ProceduresPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => procedureService.remove(id),
-    onSuccess: () => {
-      toast("Procedimento removido.");
-      void queryClient.invalidateQueries({ queryKey: ["procedures"] });
-    },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+  const deletion = useCatalogDeletion(procedureService.remove, () => proceduresQuery.refetch(), () => {
+    toast("Procedimento removido.");
+    void queryClient.invalidateQueries({ queryKey: ["procedures"] });
   });
 
   const items = useMemo(() => proceduresQuery.data?.items ?? [], [proceduresQuery.data]);
@@ -197,6 +194,11 @@ export function ProceduresPage() {
 
   return (
     <div className="space-y-4">
+      {deletion.review && <div role="alert" className="rounded border border-amber-300 p-3 space-y-2">
+        <p>{deletion.review}</p>
+        <p>Confira os dados atualizados e confirme novamente se ainda quiser excluir.</p>
+        <Button disabled={deletion.reload.isPending} onClick={() => deletion.reload.mutate()}>Recarregar lista para conferir</Button>
+      </div>}
       <Card>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -259,9 +261,11 @@ export function ProceduresPage() {
                             {canDelete && (
                               <Button
                                 variant="danger"
+                                disabled={deletion.blocked}
                                 onClick={() => {
-                                  if (window.confirm("Deseja remover este procedimento?")) {
-                                    deleteMutation.mutate(procedure.id);
+                                  const target = { id: procedure.id, version: procedure.version };
+                                  if (window.confirm(`Excluir “${procedure.name}”?`)) {
+                                    deletion.mutation.mutate(target);
                                   }
                                 }}
                               >

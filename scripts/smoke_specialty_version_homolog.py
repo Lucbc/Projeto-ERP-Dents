@@ -39,7 +39,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema):
     assert reviewed['version']==3 and reviewed['active']==winner['active']
     listed=expect('GET','/api/specialties')['items']
     assert next(row['version'] for row in listed if row['id']==specialty['id'])==3
-    expect('DELETE',path,status=204)
+    expect('DELETE',path+'?version='+str(reviewed['version']),status=204)
     expect('PUT',path,{'version':3,'name':'Deleted'},404)
     passed('two edits produce one winner; stale version is distinct; partial review, list and deleted target verified')
 
