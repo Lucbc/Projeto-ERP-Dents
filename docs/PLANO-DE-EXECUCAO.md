@@ -36,6 +36,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 **2B.5.2.1 concluída:** [pagamentos, estornos e recibos duráveis](./homologacao-etapa-2B5-2-1.md). CI aprovado com **188 backend e 61 frontend**, HTTP, builds e auditorias. Chrome e preservação dos dados/exames verificados. Homologação em `0020_financial_history`, API/frontend juntos. Próximo recorte: **2B.5.3 — referências históricas e consulta da trilha**. A etapa 2B e os vínculos históricos de R26 continuam parcialmente pendentes.
 
+**Preparação 2B.5.3 concluída:** [contrato de referências históricas](./plano-etapa-2B5-3.md), com captura, exclusão, migração, permissões e matriz de aceite. Entrega documental; próxima implementação conjunta: **2B.5.3.1**. O produto permanece na versão homologada acima.
+
 ### Ponto de retomada — 15/09/2026
 
 - Docker Engine 29.8.0 respondeu; inicialmente nenhum container rodando.
@@ -366,3 +368,11 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Gateway remoto: 413/503, JSON 408 em 30,006s, vagas liberadas e 80 chamadas de saúde, p95 de 0,0243s. Relatório/contratos/comandos: `docs/homologacao-etapa-2B5-2-1.md`; logs `.data/financial-history-*`. Não repetir a regressão sem nova alteração ou falha.
 - **Próximo recorte: 2B.5.3.** Mapear perda/renomeação de referências a pacientes, dentistas, consultas e procedimentos; definir snapshots e políticas de exclusão antes de migrar. Consulta mínima de pagamentos já existe; complementar a trilha sem reimplementar baixa/estorno. Não inventar dados apagados antes da migração. R26 segue parcial nos vínculos; parcelas, conciliação, relatórios de caixa e instalação assistida seguem seus recortes.
 - Fechamento posterior ao CI somente documental. Publicar commit/push e conferir árvore limpa/HEAD remoto; outra sessão deve partir daqui.
+
+### Ponto de retomada atual — preparação 2B.5.3 concluída em 22/09/2026
+
+- Base `d68e864`, árvore inicialmente limpa. Início registrado na seção de entrega atual; inspecionados modelos, repositórios, normalização financeira, geração, eventos e exclusões. Nomes financeiros usam cadastros atuais; FKs permitem perda de vínculos; procedimentos são IDs JSON sem identificação histórica. Validação individual de procedimentos manuais também precisa ser incorporada.
+- Contrato em `docs/plano-etapa-2B5-3.md`: origem do lançamento separada da captura de cada pagamento, referências atuais distintas das históricas, gravação transacional, comportamento após estorno/correção, busca, permissões e política de exclusão. Migração identifica estado disponível na implantação sem inventar informação original.
+- Validação desta entrega: inspeção estática e revisão documental. **Nenhum novo teste de banco, API ou interface executado**; nenhuma migração/reinício ou alteração de dados/volumes. Última regressão continua CI `35756213438` (188 backend/61 frontend); não repetida para documentação. R26 permanece parcial.
+- **Próximo passo: 2B.5.3.1.** Ler o contrato, criar testes em schemas exclusivos de `erp-dents-homolog`, fechar DDL/ordem de bloqueios e implementar banco/API/UI juntos. Cópias obrigatórias antes de atualizar principal. Não repetir revisão geral nem pagamento/estorno. Homologação permanece `0020_financial_history`, em **https://localhost:18443**.
+- Publicar preparação com commit/push e conferir árvore limpa/HEAD remoto. Credenciais e cópias continuam locais; não incluir no Git.
