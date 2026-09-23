@@ -2,6 +2,8 @@
 
 Preparação concluída em 22/09/2026, base `9eee763`, banco `0019_financial_version`. Este documento define a implementação seguinte; **as regras abaixo ainda não estão implementadas**. A proteção vigente é a [2B.5.1](./homologacao-etapa-2B5-1.md). Não declarar R26 resolvido por esta preparação.
 
+**Atualização de execução:** a [2B.5.2.1 foi concluída em 22/09/2026](./homologacao-etapa-2B5-2-1.md), com 188 backend/61 frontend e CI aprovados. O texto abaixo registra o contrato e a preparação originais. Pagamentos/estornos agora estão implementados; vínculos históricos e demais limites continuam pendentes para a 2B.5.3.
+
 ## Resultado esperado
 
 Um pagamento confirmado deve manter valor, data, forma e autor, mesmo após correção. Corrigir exige estorno explícito com motivo; reenviar uma solicitação cuja resposta se perdeu deve recuperar a operação original, sem novo pagamento. Vale para recebimentos e despesas; não integra bancos, cartões ou transferência real de dinheiro.

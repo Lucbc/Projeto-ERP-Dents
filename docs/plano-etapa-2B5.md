@@ -4,6 +4,8 @@ Preparação concluída em 21/09/2026, base `300e12f`, banco `0018_specialty_ver
 
 **Atualização em 22/09/2026:** a descrição acima e as reproduções são históricas. A [2B.5.1 está concluída](./homologacao-etapa-2B5-1.md), com versão e proteção contra operações antigas. O [contrato próprio da 2B.5.2](./plano-etapa-2B5-2.md) foi definido; pagamentos imutáveis/estornos ainda não foram implementados. Próximo recorte: 2B.5.2.1.
 
+**Fechamento posterior:** [2B.5.2.1 concluída](./homologacao-etapa-2B5-2-1.md), incluindo pagamentos, estornos, autoria e repetição. Próximo recorte: **2B.5.3**, referências históricas; os diagnósticos abaixo devem ser lidos com essas correções já aplicadas.
+
 ## Caminhos de gravação encontrados
 
 | Operação | Caminho atual | Risco e garantia existente |

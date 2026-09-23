@@ -309,6 +309,8 @@ Não existe entidade de evolução/atendimento com autor, data, conteúdo, final
 
 ### R26 — P1 — Pagamentos e registros históricos podem ser reescritos ou apagados
 
+**Atualização 2B.5.2.1:** pagamentos/estornos com autoria e recibos duráveis implementados; pago não aceita edição/exclusão comum e histórico impede exclusão física mesmo após estorno. Legados importados sem inventar autor; dados anteriores preservados. [Contrato, testes e estado do CI](./homologacao-etapa-2B5-2-1.md). R26 continua parcial para referências históricas de pacientes/dentistas/consultas/procedimentos e dados apagados antes da migração; registros anteriores abaixo são histórico do diagnóstico.
+
 **Atualização parcial 2B.5.1:** repetição da baixa não regrava pagamento e operações antigas são rejeitadas. Edição/exclusão intencionais com versão atual ainda podem alterar ou apagar pagos; imutabilidade, autoria, estorno e recuperação idempotente da baixa continuam pendentes. [Contrato e evidências](./homologacao-etapa-2B5-1.md).
 
 **Reconfirmado na preparação 2B.5, em 21/09/2026:** repetição altera data/forma; valor pago pode ser editado, reaberto e excluído via API. Disputas no PostgreSQL também permitem baixa sobre cancelamento e sobrescrita por edição parcial. [Mapa, evidências e sequência de correções](./plano-etapa-2B5.md). Esta preparação não corrigiu R26; não confundir a geração idempotente da 2A.2 com histórico de pagamentos.
