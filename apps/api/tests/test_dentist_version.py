@@ -98,7 +98,7 @@ class DentistVersionTests(unittest.TestCase):
     def test_deleted_target_returns_not_found(self):
         with Session(self.engine) as db:
             uc=self.uc(db)
-            uc.delete(self.id)
+            uc.delete(self.id, 1)
             with self.assertRaises(NotFoundError): uc.update(self.id,{'version':1,'phone':'Stale'})
 
     def test_migration_preserves_all_business_fields(self):

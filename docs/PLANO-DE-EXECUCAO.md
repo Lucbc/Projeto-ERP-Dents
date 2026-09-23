@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Preparação 2B.6.3 concluída:** [mapa, evidências e contrato](./plano-etapa-2B6-3.md). DELETE antigo apaga edição de dentista e pode deixar conta ativa sem vínculo, com sessão válida e módulo de consultas indisponível. Próxima implementação **2B.6.3.1**: versão, confirmação, FK impeditiva de conta vinculada e preservação financeira. Nenhuma mudança executável nesta preparação.
+**2B.6.3.1 em validação:** [relatório](./homologacao-etapa-2B6-3-1.md), [contrato](./plano-etapa-2B6-3.md). Implementados versão na exclusão e FK impeditiva de contas vinculadas. 13 testes finais focados de banco, 81 frontend e HTTP aprovados. Aguardar Chrome, regressão completa, atualização preservando dados e CI antes do fechamento.
 
 **2B.6.2.1 concluída:** [relatório](./homologacao-etapa-2B6-2-1.md), implementação `cc910cb`. CI aprovado com **209 backend e 76 frontend**, HTTP, builds e auditorias. Exclusão de consultas por versão na lista/calendário, rascunho e financeiro preservados; Chrome e atualização principal verificados, revisão `0021` mantida. **Próximo recorte: preparação 2B.6.3 — exclusão de dentistas e vínculos/disponibilidade.**
 
@@ -473,3 +473,14 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Zero schemas descartáveis; comparação integral aprovou dados de negócio/referências/exames preservados. Consulta agregada principal: zero contas dentistas órfãs/associadas; não extrapolar para outras instalações. Principal continua `0021` em **https://localhost:18443**, sem migração/reinício. Último CI permanece `35904115803`, 209 backend/76 frontend; regressão não repetida para documentação.
 - **Próximo passo: implementar 2B.6.3.1**, seguindo matriz de migração, vínculos/sessões, corridas financeiras e UI. Antes de atualizar principal, cópias e validação isolada. Não repetir revisão geral ou exclusões já corrigidas; pacientes/exames e disponibilidade × agendamento continuam separados. R18 permanece parcial.
 - Publicar preparação por commit/push, verificar árvore limpa e HEAD remoto. Probe/logs e credenciais ficam locais; não adicionar teste permanente que espere o defeito atual.
+
+
+### Implementação 2B.6.3.1 — iniciada em 23/09/2026
+
+- Base `1362185`, árvore limpa. Aplicar contrato de versão, proteção de contas por FK RESTRICT e preservação de consultas/financeiro. Testar migração, banco, API e UI em isolamento; cópias antes de atualizar principal. Pendentes implementação, homologação, preservação, commit/push e CI.
+
+- Implementada `0022_dentist_user_restrict`, trocando apenas a FK de usuários e preservando o nome real da constraint. DELETE exige versão e usa helper transacional dos catálogos; interface confirma nome/CRO/efeitos, exige recarga após erro e invalida dentistas/agenda/consultas/financeiro. Adaptados callers e limpezas antigas; nenhuma alteração implícita de conta ou sessão.
+- Primeiros 21 testes focados aprovados em 58,310s; ampliados com sessão existente na migração, reagendamento após exclusão e cobrança pendente confirmada antes da exclusão. **13 testes finais novos aprovados em 40,531s**; 81 frontend/builds aprovados. HTTP próprio: dez grupos aprovados; primeira inicialização excedeu espera do harness, repetição isolada passou sem mudança de produto.
+- Chrome em validação: primeira asserção de CRO divergiu porque fixture usava formato alterado pelo formatador existente ao editar; ajustado dado fictício para formato estável. Não tratar tentativas iniciais como aprovadas. Regressão completa `.data/dentist-deletion-full.log` em andamento, esperado 222 backend.
+- Cópias públicas/exames/fingerprints `pre-2B6-3-1*` salvos. Helper `.data/upgrade_2b631.py` exclui somente `alembic_version` da comparação de negócio. Principal ainda `0021`; após aprovações e zero schemas, salvar dump completo e atualizar API/web juntos para `0022`, conferir FK/dados/smoke. Faltam publicação/CI e fechamento; não iniciar pacientes/exames nesta entrega.
+- Chrome final aprovado: duas abas, horário editado, confirmação antiga recusada, conta vinculada protegida e reatribuição pelo administrador na UI; recarga/nova confirmação exclui dentista revisado sem alterar a conta. Capturas conferidas. Publicar implementação para CI enquanto regressão local/HTTPs antigos adaptados terminam; ainda não declarar conclusão.

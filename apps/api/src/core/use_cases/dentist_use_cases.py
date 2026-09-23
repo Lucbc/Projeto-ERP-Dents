@@ -68,8 +68,8 @@ class DentistUseCases:
             raise NotFoundError("Dentista nao encontrado.")
         return dentist
 
-    def delete(self, dentist_id: UUID) -> None:
-        deleted = self.dentist_repository.delete(dentist_id)
+    def delete(self, dentist_id: UUID, version: int) -> None:
+        deleted = self.dentist_repository.delete(dentist_id, version)
         if not deleted:
             raise NotFoundError("Dentista nao encontrado.")
 

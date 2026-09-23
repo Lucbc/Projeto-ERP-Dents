@@ -82,7 +82,7 @@ def update_dentist(
     response_class=Response,
     dependencies=[Depends(require_permission("dentists", "delete"))],
 )
-def delete_dentist(dentist_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
+def delete_dentist(dentist_id: UUID, version: int = Query(gt=0), db: Session = Depends(get_db_dep)) -> Response:
     use_case = DentistUseCases(SqlAlchemyDentistRepository(db))
-    use_case.delete(dentist_id)
+    use_case.delete(dentist_id, version)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

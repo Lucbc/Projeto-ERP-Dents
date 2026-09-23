@@ -1,0 +1,39 @@
+# 2B.6.3.1 — exclusão de dentistas e proteção das contas
+
+**Em validação em 23/09/2026.** Base `1362185`. [Contrato](./plano-etapa-2B6-3.md). Fechamento depende da regressão completa, atualização principal com preservação e CI.
+
+## Mudanças
+
+- DELETE exige versão positiva: 422 ausente/inválida, 404 inexistente, 409 `stale_version` alterado. Comparação ocorre sob bloqueio com estado atualizado, antes da exclusão; erros revertem a transação.
+- Migração `0022_dentist_user_restrict` altera somente a FK `users.dentist_id` de SET NULL para RESTRICT, mantendo nullable e nome real da constraint. Conta vinculada, ativa ou inativa, impede excluir dentista; consultas continuam impeditivas em qualquer estado. Resposta `409 linked_record` não expõe identidade/valores de registros vinculados.
+- Para regularizar conta vinculada, administrador autorizado pode reatribuir dentista ou mudar perfil pelas ações existentes; reatribuição continua revogando sessões. A exclusão não modifica contas nem revoga sessões implicitamente. Contas já órfãs não ganham associação inventada.
+- A confirmação usa nome/CRO salvos e versão exibida; informa remoção do cadastro/horários e permanência de cobranças/pagamentos. Erro mantém rascunho e exige recarga bem-sucedida/nova confirmação, sem repetição automática. Sucesso invalida dentistas, agenda/consultas e financeiro.
+- Financeiro mantém SET NULL da referência atual e todas as versões/valores/status, capturas, pagamentos, estornos e recibos. Bloqueio por conta/consulta reverte também qualquer efeito financeiro. Permissão de exclusão não exige visualizar usuários/financeiro.
+- Downgrade restaura SET NULL e perde essa proteção de contas, sem reescrever linhas. Atualizar API/web juntos e recarregar abas antigas; DELETE antigo sem versão recebe 422.
+
+## Validação por camada
+
+- **Banco:** 21 testes focados iniciais aprovados em 58,310s. Após ampliar a matriz, 13 testes novos finais aprovados em 40,531s. Migração preserva linhas e sessão existente, conta órfã e constraint renomeada; downgrade/upgrade e delete direto. Estado ORM antigo/horários, edição × exclusão, dois DELETEs, contas ativas/inativas e consultas em quatro estados.
+- **Concorrência PostgreSQL:** conexões independentes/barreiras para criação e reatribuição de conta/consulta, exclusão após leitura, edição recusada sem perda de campos, cobrança pendente confirmada antes da exclusão, criação pendente/paga rejeitada sem evento/recibo parcial, baixa com bloqueio inverso retornando conflito seguro. Origem conserva dentista e pagamento posterior à exclusão registra referência atual nula. Estorno/repetição e rollback por conta vinculada preservados.
+- **Componentes:** 81 testes frontend aprovados, incluindo confirmação do nome/CRO/versionamento, rascunho intacto, 409/404/503/rede, falha de recarga, nova confirmação e cancelamento. Builds API/web aprovados.
+- **HTTP:** dez grupos incluindo preparação/limpeza, precondições, conta inativa impeditiva, sessão preservada na recusa, reatribuição explícita revogando sessão, exclusão sem permissões extras, revogação de `dentists.delete`, financeiro e consultas. Primeira inicialização excedeu prazo do harness; repetição isolada passou sem alteração do produto.
+- **Chrome:** aprovado em HTTPS descartável. Duas abas, horários editados, exclusão antiga rejeitada, recarga, conta vinculada impeditiva, reatribuição administrativa pela interface e nova confirmação excluindo só o cadastro revisado. Duas capturas conferidas. Asserção inicial de CRO foi ajustada: fixture tinha valor que o formatador existente normalizava durante edição; usado valor fictício no formato estável.
+
+## Pendências de fechamento
+
+Regressão completa local (222 casos esperados), CI e atualização principal. Cópias públicas/exames/fingerprints `pre-2B6-3-1*` salvos. Após zero schemas, salvar dump completo; comparar todas as linhas de negócio/referências/bytes de exames, excluindo somente revisão Alembic. Conferir FK RESTRICT e smoke geral após atualizar.
+
+## Reprodução
+
+```powershell
+docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml build api web
+docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml run --rm --no-deps -e RUN_HOMOLOG_TESTS=1 -e PYTHONPATH=/app:/app/tests api python -m unittest test_dentist_deletion test_dentist_version -v
+python scripts/smoke_dentist_deletion_homolog.py
+python scripts/smoke_dentist_deletion_browser_homolog.py
+```
+
+Todos os dados de teste são fictícios, em schemas descartáveis exclusivos de `erp-dents-homolog`. Harnesses HTTP/Chrome sequenciais (porta 18001); Chrome usa HTTPS 18444 e CA confiável, credenciais via stdin e somente diagnóstico de etapa. Logs/capturas/cópias `.data/dentist-deletion-*` e `.data/homolog` fora do Git. Não remover volumes para contornar migração.
+
+## Limites e próxima etapa
+
+Não corrige cadastros dentistas já órfãos em outras instalações, nem muda concorrência disponibilidade × agendamento, política clínica ou auditoria integral. Próximo recorte após fechamento: preparação 2B.6.4, exclusão de pacientes/exames, considerando mudanças dos filhos, fila de limpeza e arquivos. Instalação assistida continua na etapa 5.

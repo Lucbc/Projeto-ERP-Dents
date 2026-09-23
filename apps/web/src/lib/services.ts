@@ -213,8 +213,8 @@ export const dentistService = {
     const response = await api.put<Dentist>(`/api/dentists/${id}`, payload);
     return response.data;
   },
-  async remove(id: string) {
-    await api.delete(`/api/dentists/${id}`);
+  async remove(id: string, version: number) {
+    await api.delete(`/api/dentists/${id}`, { params: { version } });
   },
 };
 

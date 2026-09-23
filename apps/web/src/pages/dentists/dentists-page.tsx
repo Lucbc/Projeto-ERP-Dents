@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useToast } from "@/components/ui/toast";
+import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
 import { dentistService, specialtyService } from "@/lib/services";
@@ -239,13 +240,10 @@ export function DentistsPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => dentistService.remove(id),
-    onSuccess: () => {
-      toast("Dentista removido.");
-      void queryClient.invalidateQueries({ queryKey: ["dentists"] });
-    },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+  const deletion = useCatalogDeletion(dentistService.remove, () => dentistsQuery.refetch(), () => {
+    toast("Dentista removido.");
+    for (const resource of ["dentists", "appointments", "consultations", "financial"])
+      void queryClient.invalidateQueries({ queryKey: [resource] });
   });
 
   const items = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
@@ -307,6 +305,11 @@ export function DentistsPage() {
 
   return (
     <div className="space-y-4">
+      {deletion.review && <div role="alert" className="rounded border border-amber-300 p-3 space-y-2">
+        <p>{deletion.review}</p>
+        <p>Confira os dados atualizados e confirme novamente se ainda quiser excluir.</p>
+        <Button disabled={deletion.reload.isPending} onClick={() => deletion.reload.mutate()}>Recarregar lista para conferir</Button>
+      </div>}
       <Card>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -385,9 +388,11 @@ export function DentistsPage() {
                             {canDelete && (
                               <Button
                                 variant="danger"
+                                disabled={deletion.blocked}
                                 onClick={() => {
-                                  if (window.confirm("Deseja remover este dentista?")) {
-                                    deleteMutation.mutate(dentist.id);
+                                  const target = { id: dentist.id, version: dentist.version };
+                                  if (window.confirm(`Excluir “${dentist.full_name}”${dentist.cro ? ` (CRO ${dentist.cro})` : ""}?\nExcluir remove o cadastro e seus horários disponíveis. Cobranças e pagamentos já registrados permanecem.`)) {
+                                    deletion.mutation.mutate(target);
                                   }
                                 }}
                               >

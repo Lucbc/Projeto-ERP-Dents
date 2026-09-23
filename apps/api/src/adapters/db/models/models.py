@@ -155,7 +155,7 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[UserRole] = mapped_column(SAEnum(UserRole, name="user_role"), nullable=False)
     dentist_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("dentists.id", ondelete="SET NULL"), nullable=True
+        UUID(as_uuid=True), ForeignKey("dentists.id", ondelete="RESTRICT"), nullable=True
     )
     password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

@@ -6,6 +6,7 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.orm import Session
 
 from src.adapters.db.models.models import DentistModel
+from src.adapters.db.repositories.catalog_deletion import delete_catalog_record
 from src.core.domain.entities import Dentist
 from src.core.ports.repositories import DentistRepository
 from src.core.domain.exceptions import ConflictError, ValidationError
@@ -68,14 +69,8 @@ class SqlAlchemyDentistRepository(DentistRepository):
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def delete(self, dentist_id) -> bool:
-        item = self.session.get(DentistModel, dentist_id)
-        if item is None:
-            return False
-
-        self.session.delete(item)
-        self.session.commit()
-        return True
+    def delete(self, dentist_id, version: int) -> bool:
+        return delete_catalog_record(self.session, DentistModel, dentist_id, version)
 
     def _to_entity(self, model: DentistModel) -> Dentist:
         return Dentist(

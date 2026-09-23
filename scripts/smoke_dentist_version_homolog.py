@@ -32,7 +32,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema):
     expect('PUT',path,{'version':3,'active':False})
     expect('PUT',path,{'version':3,'active':True},409)
     assert expect('GET',path)['active'] is False
-    expect('DELETE',path,status=204)
+    expect('DELETE',path+'?version='+str(expect('GET',path)['version']),status=204)
     expect('PUT',path,{'version':4,'phone':'Deleted'},404)
     passed('reviewed partial edit preserves schedule; stale activation and deleted targets cannot overwrite')
 

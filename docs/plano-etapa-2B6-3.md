@@ -1,6 +1,6 @@
 # 2B.6.3 — exclusão de dentistas e vínculos
 
-Preparação concluída em 23/09/2026, base `6ff8342`. Complementa [2B.6](./plano-etapa-2B6.md). **Contrato para implementação 2B.6.3.1; esta preparação não muda o produto.**
+Preparação concluída em 23/09/2026, base `6ff8342`. Complementa [2B.6](./plano-etapa-2B6.md). Mapa/diagnóstico abaixo registram o comportamento anterior. Implementação 2B.6.3.1 e validações no [relatório próprio](./homologacao-etapa-2B6-3-1.md).
 
 ## Mapa e diagnóstico
 
