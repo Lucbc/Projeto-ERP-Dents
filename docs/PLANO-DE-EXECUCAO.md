@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**Preparação 2B.6.2 concluída:** [fluxos, reprodução e contrato](./plano-etapa-2B6-2.md). Exclusão antiga ainda apaga consulta editada; cobranças/histórico/recibos permanecem. Próxima implementação: **2B.6.2.1**, versão e confirmação na lista/calendário, preservando efeitos financeiros e rascunhos. Nenhuma correção executável nesta preparação.
+
 **2B.6.1 concluída:** [relatório](./homologacao-etapa-2B6-1.md), implementação `b421cc8`. CI aprovado com **202 backend e 69 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação verificados; principal atualizada, sem nova migração (`0021`). Próximo recorte: **preparação 2B.6.2 — exclusão de consultas na lista e calendário**; pacientes/exames e dentistas mantêm recortes próprios.
 
 ### Ponto de retomada — 15/09/2026
@@ -429,3 +431,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Gateway remoto: 413/503, JSON 408 em 30,006s, vagas liberadas; 80 chamadas de saúde com p95 de 0,0208s. Resultado inicial local com um erro de fixture está documentado separadamente, sem confundi-lo com aprovação integral do CI final.
 - **Próximo passo: preparação 2B.6.2.** Mapear exclusão de consultas na lista/calendário, versão e confirmações, disputa com edição, geração/baixa financeira e preservação de referências. Definir os efeitos/precondições antes de implementar; não mudar política clínica nem substituir exclusão por cancelamento implicitamente. Dentistas e pacientes/exames continuam pendentes; estes últimos exigem contrato dos filhos/arquivos.
 - Publicar fechamento documental, conferir árvore limpa e HEAD remoto. Não repetir revisão geral, catálogos ou testes já aprovados sem nova alteração/falha.
+
+### Ponto de retomada atual — preparação 2B.6.2 concluída em 23/09/2026
+
+- Base `0f17b82`, árvore inicialmente limpa; início registrado na seção de entrega atual. Inspecionados DELETE e edição de agenda, confirmações da lista/calendário, efeitos de FK/CASCADE e recuperação de recibos antes da consulta no financeiro.
+- Probe `.data/probe_appointment_deletion_2b62.py`, API/schema descartáveis: duas gerações (pendente/paga), consulta editada para concluída/versão 2 e DELETE com versão 1 aceito. Consulta/links removidos, cobrança manteve valor/status/versão, origem/pagamentos preservados, FK atual nula; chave antiga recupera e chave nova retorna 404. Nove grupos incluindo isolamento/limpeza. Diagnóstico sequencial, não correção nem disputa por barreira.
+- Contrato `docs/plano-etapa-2B6-2.md`: exclusão por versão na mesma transação, confirmação da consulta salva, aviso de que cobranças/pagamentos não são cancelados, preservação de rascunho e recarga explícita no calendário. Geração/baixa financeira não incrementa versão da consulta; sucesso de ambas as operações pode ser válido conforme a ordem. Não impor uma regra falsa de um vencedor entre recursos independentes.
+- Zero schemas descartáveis; comparação integral confirmou linhas de negócio, referências e exames preservados. Principal continua `0021`, **https://localhost:18443**. Sem migração/reinício ou mudança executável. Interface somente inspecionada; último CI continua `35874815267` (202 backend/69 frontend), não repetido para documentação.
+- **Próximo passo: implementar 2B.6.2.1.** Ler contrato, criar testes de DELETE antigo/PUT × DELETE e disputas financeiras, atualizar API/web/lista/calendário/smokes juntos. Não repetir revisão geral nem alterar política clínica, geração de consultas canceladas, dentistas ou pacientes/exames neste recorte.
+- Publicar preparação por commit/push e conferir árvore limpa/HEAD remoto. Probe/logs, cópias e credenciais permanecem locais, fora do Git. R18 continua parcial.
