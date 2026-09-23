@@ -28,7 +28,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema, *, br
                               env={**os.environ,'NODE_EXTRA_CA_CERTS':str(root/'.data/tls/homolog/ca.crt')})
         if result.returncode:
             # Script emits only stage labels, never credentials or request bodies.
-            stages=[line for line in result.stderr.splitlines() if line.startswith(('Financial history browser failed at stage: ', 'Catalog deletion browser failed at stage: '))]
+            stages=[line for line in result.stderr.splitlines() if line.startswith(('Financial history browser failed at stage: ', 'Catalog deletion browser failed at stage: ', 'Appointment deletion browser failed at stage: '))]
             raise AssertionError(stages[-1] if stages else 'Financial history browser failed; raw diagnostics suppressed')
         passed(result.stdout.strip())
     finally:

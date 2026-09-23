@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**Preparação 2B.6.2 concluída:** [fluxos, reprodução e contrato](./plano-etapa-2B6-2.md). Exclusão antiga ainda apaga consulta editada; cobranças/histórico/recibos permanecem. Próxima implementação: **2B.6.2.1**, versão e confirmação na lista/calendário, preservando efeitos financeiros e rascunhos. Nenhuma correção executável nesta preparação.
+**2B.6.2.1 em validação:** [relatório](./homologacao-etapa-2B6-2-1.md), [contrato](./plano-etapa-2B6-2.md). Exclusão de consultas por versão na lista/calendário implementada; sete testes focados de banco, 76 frontend, HTTP e Chrome aprovados. Aguardar regressão completa, atualização principal com preservação e CI antes do fechamento.
 
 **2B.6.1 concluída:** [relatório](./homologacao-etapa-2B6-1.md), implementação `b421cc8`. CI aprovado com **202 backend e 69 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação verificados; principal atualizada, sem nova migração (`0021`). Próximo recorte: **preparação 2B.6.2 — exclusão de consultas na lista e calendário**; pacientes/exames e dentistas mantêm recortes próprios.
 
@@ -440,3 +440,15 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Zero schemas descartáveis; comparação integral confirmou linhas de negócio, referências e exames preservados. Principal continua `0021`, **https://localhost:18443**. Sem migração/reinício ou mudança executável. Interface somente inspecionada; último CI continua `35874815267` (202 backend/69 frontend), não repetido para documentação.
 - **Próximo passo: implementar 2B.6.2.1.** Ler contrato, criar testes de DELETE antigo/PUT × DELETE e disputas financeiras, atualizar API/web/lista/calendário/smokes juntos. Não repetir revisão geral nem alterar política clínica, geração de consultas canceladas, dentistas ou pacientes/exames neste recorte.
 - Publicar preparação por commit/push e conferir árvore limpa/HEAD remoto. Probe/logs, cópias e credenciais permanecem locais, fora do Git. R18 continua parcial.
+
+
+### Implementação 2B.6.2.1 — iniciada em 23/09/2026
+
+- Base `203bcf6`, árvore limpa. Implementar exclusão por versão na lista/calendário conforme contrato, com confirmação da consulta salva, rascunho preservado em erro e referências financeiras intactas.
+- Validar banco/API/componentes/Chrome em isolamento `erp-dents-homolog`; principal permanece em `0021` até cópias e aprovação focada. Pendentes implementação, validações, atualização preservando dados e publicação/CI.
+
+- Implementados DELETE com versão obrigatória, bloqueio/recarga/comparação antes de cascatas, rollback e `stale_version`. Lista confirma identidade salva; calendário distingue rascunho, exige recarga explícita após erro e mantém bloqueio mesmo após fechar/reabrir a mesma consulta em cache. Sucesso invalida agenda e vínculo financeiro; nenhuma migração ou mudança da política clínica.
+- Sete testes finais de banco aprovados em 23,568s: edição × exclusão, duas exclusões, ORM antigo/links/horário, quatro estados, criação/geração pendente/paga × exclusão, baixa com bloqueio inverso/rollback e captura sem vínculo após exclusão. Ajustes nos testes iniciais: interceptar `create_paid`, informar request ID ao conversor de erro e esperar objeto de referência com campos nulos. Não foram defeitos novos do produto.
+- **76 frontend e builds API/web aprovados**. Testes revelaram aviso de rascunho sem inscrição no estado `isDirty`; corrigido e validado. HTTP próprio: dez grupos aprovados, inclusive permissão sem acesso financeiro e revogação. Chrome HTTPS descartável aprovado: duas abas, reagendamento, versões antigas na lista/calendário, rascunho, recarga/nova confirmação, ausência e dinheiro/histórico preservados. Duas capturas conferidas.
+- Regressão completa em andamento (`.data/appointment-deletion-full.log`), esperado 209 casos. Cópias públicas/exames/fingerprints `pre-2B6-2-1*` salvos; helper `.data/upgrade_2b621.py`. Principal ainda não atualizada, `0021`. Fazer dump completo após zero schemas, atualizar API/web juntos, comparar integralmente e executar smoke geral.
+- Publicar implementação e acompanhar seu CI; então fechar relatório/plano/R18 e publicar fechamento documental. Não iniciar dentistas/pacientes/exames antes de concluir esta entrega. Credenciais, logs, capturas e cópias continuam locais.

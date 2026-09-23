@@ -91,7 +91,7 @@ def update_appointment(
     response_class=Response,
     dependencies=[Depends(require_permission("appointments", "delete"))],
 )
-def delete_appointment(appointment_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
+def delete_appointment(appointment_id: UUID, version: int = Query(gt=0), db: Session = Depends(get_db_dep)) -> Response:
     use_case = build_use_case(db)
-    use_case.delete(appointment_id)
+    use_case.delete(appointment_id, version)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

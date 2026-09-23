@@ -323,8 +323,8 @@ export const appointmentService = {
     const response = await api.put<Appointment>(`/api/appointments/${id}`, payload);
     return response.data;
   },
-  async remove(id: string) {
-    await api.delete(`/api/appointments/${id}`);
+  async remove(id: string, version: number) {
+    await api.delete(`/api/appointments/${id}`, { params: { version } });
   },
 };
 

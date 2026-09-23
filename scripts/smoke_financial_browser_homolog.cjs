@@ -86,7 +86,7 @@ let stage = 'start';
     console.log('OK: Chrome lost response after commit; retry retained key and recovered exactly one charge.');
   } finally {
     try {
-      if(api) { for(const url of cleanup.reverse()) { const target=/^\/api\/(financial|procedures|specialties)\//.test(url)?url+'?version='+(await api('GET',url)).version:url; await api('DELETE',target); } await api('POST','/api/auth/logout'); }
+      if(api) { for(const url of cleanup.reverse()) { const target=/^\/api\/(financial|procedures|specialties|appointments)\//.test(url)?url+'?version='+(await api('GET',url)).version:url; await api('DELETE',target); } await api('POST','/api/auth/logout'); }
     } finally { await browser.close(); }
   }
 })().catch(()=>{console.error('Financial browser test failed at: '+stage+'; inspect fictitious fixtures locally if cleanup failed.');process.exitCode=1;});

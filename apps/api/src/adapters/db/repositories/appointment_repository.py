@@ -134,14 +134,28 @@ class SqlAlchemyAppointmentRepository(AppointmentRepository):
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def delete(self, appointment_id) -> bool:
-        item = self.session.get(AppointmentModel, appointment_id)
-        if item is None:
-            return False
-
-        self.session.delete(item)
-        self.session.commit()
-        return True
+    def delete(self, appointment_id: UUID, version: int) -> bool:
+        if type(version) is not int or version < 1:
+            raise ValidationError("Reabra a consulta para obter a versão atual antes de excluir.")
+        try:
+            # Lock and refresh before ORM cascades can remove any procedure links.
+            item = self.session.scalar(select(AppointmentModel).where(
+                AppointmentModel.id == appointment_id
+            ).with_for_update().execution_options(populate_existing=True))
+            if item is None:
+                self.session.rollback()
+                return False
+            if item.version != version:
+                raise ConflictError(
+                    "Esta consulta foi alterada. Carregue a consulta atual e confira os dados antes de confirmar outra exclusão.",
+                    code="stale_version",
+                )
+            self.session.delete(item)
+            self.session.commit()
+            return True
+        except Exception:
+            self.session.rollback()
+            raise
 
     def _to_entity(
         self,

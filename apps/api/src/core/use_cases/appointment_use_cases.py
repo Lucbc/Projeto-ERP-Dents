@@ -115,8 +115,8 @@ class AppointmentUseCases:
             raise NotFoundError("Consulta nao encontrada.")
         return updated
 
-    def delete(self, appointment_id: UUID) -> None:
-        deleted = self.appointment_repository.delete(appointment_id)
+    def delete(self, appointment_id: UUID, version: int) -> None:
+        deleted = self.appointment_repository.delete(appointment_id, version)
         if not deleted:
             raise NotFoundError("Consulta nao encontrada.")
 

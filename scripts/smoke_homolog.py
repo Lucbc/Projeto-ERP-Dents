@@ -184,7 +184,7 @@ def main() -> None:
             errors = []
             for path in reversed(cleanup):
                 try:
-                    if path.startswith(('/api/financial/', '/api/procedures/', '/api/specialties/')):
+                    if path.startswith(('/api/financial/', '/api/procedures/', '/api/specialties/', '/api/appointments/')):
                         current = request('GET', path, token=token)
                         path += '?version=' + str(current['version'])
                     request('DELETE', path, token=token, expected=204)

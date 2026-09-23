@@ -48,7 +48,7 @@ let stage='start';
     async function openCalendar(){await calendar.goto('https://localhost:18443/calendar');await calendar.locator('.rbc-event').filter({hasText:patient.full_name}).first().click();}
     async function save(page,status){const response=page.waitForResponse(r=>r.url().endsWith(url)&&r.request().method()==='PUT');await page.getByRole('button',{name:'Salvar',exact:true}).click();assert.equal((await response).status(),status);}
     async function recover(page,name){
-      const reload=page.getByRole('button',{name:'Descartar rascunho e carregar atual',exact:true});
+      const reload=page.getByRole('button',{name:/Descartar rascunho e carregar (consulta )?atual/});
       await reload.waitFor();await reload.scrollIntoViewIfNeeded();
       await page.screenshot({path:path.join(state,name+'.png'),fullPage:true});
       await reload.click();await reload.waitFor({state:'hidden'});
@@ -82,7 +82,7 @@ let stage='start';
     assert.deepEqual(current.procedure_ids,[procedures[0]]);
     console.log('OK: list and calendar reject stale drafts, preserve selections, reload explicitly and save reviewed versions.');
   } finally {
-    try { if(api) {for(const url of cleanup.reverse()) await api('DELETE',url+(url.startsWith('/api/procedures/')?'?version='+(await api('GET',url)).version:''));await api('POST','/api/auth/logout');} }
+    try { if(api) {for(const url of cleanup.reverse()) await api('DELETE',url+(/^\/api\/(procedures|appointments)\//.test(url)?'?version='+(await api('GET',url)).version:''));await api('POST','/api/auth/logout');} }
     finally {await browser.close();}
   }
 })().catch(()=>{console.error('Appointment version browser test failed at: '+stage+'; inspect fictitious fixtures locally if cleanup failed.');process.exitCode=1;});

@@ -28,6 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/use-permissions";
+import { appointmentDeletionConfirmation, appointmentDeletionError } from "@/lib/appointment-deletion";
 import { getApiErrorMessage } from "@/lib/api";
 import { appointmentStatusOptions } from "@/lib/labels";
 import { appointmentService, dentistService, patientService, procedureService } from "@/lib/services";
@@ -224,6 +225,8 @@ export function CalendarPage() {
   const [openModal, setOpenModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [editConflict, setEditConflict] = useState(false);
+  const [deleteReviews, setDeleteReviews] = useState<Record<string, string>>({});
+  const deleteReview = editingAppointment ? deleteReviews[editingAppointment.id] ?? null : null;
   const [manualEndOverride, setManualEndOverride] = useState(false);
 
   const rangeFrom = startOfDay(addMonths(currentDate, -2)).toISOString();
@@ -312,14 +315,23 @@ export function CalendarPage() {
   const reloadAppointmentMutation = useMutation({
     mutationFn: (id: string) => appointmentService.get(id),
     onSuccess: (appointment) => {
+      setDeleteReviews((reviews) => {
+        const next = { ...reviews };
+        delete next[appointment.id];
+        return next;
+      });
       openEditModal(appointment);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error, id) => {
+      toast(getApiErrorMessage(error), "error");
+      if (deleteReview) setDeleteReviews((reviews) => ({ ...reviews, [id]: appointmentDeletionError(error) }));
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => appointmentService.remove(id),
+    retry: false,
+    mutationFn: (target: { id: string; version: number }) => appointmentService.remove(target.id, target.version),
     onSuccess: () => {
       toast("Consulta removida.");
       setOpenModal(false);
@@ -327,8 +339,9 @@ export function CalendarPage() {
       form.reset();
       setManualEndOverride(false);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      void queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error, target) => setDeleteReviews((reviews) => ({ ...reviews, [target.id]: appointmentDeletionError(error) })),
   });
 
   const patients = patientsQuery.data?.items ?? [];
@@ -349,6 +362,7 @@ export function CalendarPage() {
     return result;
   }, [dentists]);
   const selectedProcedureIds = form.watch("procedure_ids") ?? [];
+  const hasDraft = form.formState.isDirty;
   const startAtValue = form.watch("start_at");
   const suggestedDurationMinutes = useMemo(
     () => calculateSuggestedDuration(selectedProcedureIds, procedureById),
@@ -418,6 +432,7 @@ export function CalendarPage() {
   };
 
   const openCreateModal = () => {
+    if (isSubmitting) return;
     const start = new Date();
     const end = new Date(start.getTime() + 30 * 60 * 1000);
 
@@ -452,6 +467,7 @@ export function CalendarPage() {
   };
 
   const onSubmit = (values: AppointmentForm) => {
+    if (isSubmitting || deleteReview) return;
     if (editingAppointment) {
       updateMutation.mutate({ id: editingAppointment.id, version: editingAppointment.version, payload: values });
       return;
@@ -521,12 +537,12 @@ export function CalendarPage() {
             date={currentDate}
             onNavigate={(date) => setCurrentDate(date)}
             onSelectEvent={(event) => {
-              if (!canUpdate) return;
+              if (!canUpdate || isSubmitting) return;
               openEditModal((event as CalendarEvent).resource);
             }}
             selectable={canCreate}
             onSelectSlot={(slot) => {
-              if (!canCreate) return;
+              if (!canCreate || isSubmitting) return;
               setEditingAppointment(null);
               setManualEndOverride(false);
               form.reset({
@@ -566,13 +582,15 @@ export function CalendarPage() {
         title={editingAppointment ? "Editar consulta" : "Nova consulta"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
-          {editConflict && editingAppointment && (
+          {(editConflict || deleteReview) && editingAppointment && (
             <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
-              <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar a consulta atual substituirá os campos deste formulário.</p>
+              <p>{deleteReview ?? "Não foi possível salvar."} Seu rascunho permanece abaixo. Carregar a consulta atual substituirá os campos deste formulário.</p>
               <Button type="button" variant="outline" disabled={isSubmitting}
                 onClick={() => reloadAppointmentMutation.mutate(editingAppointment.id)}>
-                Descartar rascunho e carregar atual
+                Descartar rascunho e carregar consulta atual
               </Button>
+              {deleteReview && <Button type="button" variant="outline" disabled={isSubmitting || appointmentsQuery.isFetching}
+                onClick={() => void appointmentsQuery.refetch()}>Atualizar agenda sem descartar rascunho</Button>}
             </div>
           )}
           {[patientsQuery, dentistsQuery, proceduresQuery].some((query) => query.isError) && (
@@ -709,10 +727,11 @@ export function CalendarPage() {
                 <Button
                   type="button"
                   variant="danger"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || deleteReview !== null}
                   onClick={() => {
-                    if (window.confirm("Deseja remover esta consulta?")) {
-                      deleteMutation.mutate(editingAppointment.id);
+                    const target = { id: editingAppointment.id, version: editingAppointment.version };
+                    if (window.confirm(appointmentDeletionConfirmation(editingAppointment, hasDraft))) {
+                      deleteMutation.mutate(target);
                     }
                   }}
                 >
@@ -724,7 +743,7 @@ export function CalendarPage() {
               <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || deleteReview !== null}>
                 {isSubmitting ? "Salvando..." : "Salvar"}
               </Button>
             </div>

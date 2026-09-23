@@ -109,7 +109,7 @@ class AppointmentVersionTests(unittest.TestCase):
     def test_deleted_target_is_not_found(self):
         with Session(self.engine) as db:
             uc=self.uc(db)
-            uc.delete(self.id)
+            uc.delete(self.id, 1)
             with self.assertRaises(NotFoundError): uc.update(self.id,{'version':1,'notes':'Stale'})
 
     def test_list_returns_latest_version(self):

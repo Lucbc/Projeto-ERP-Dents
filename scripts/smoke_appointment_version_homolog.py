@@ -35,7 +35,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema):
     current=expect('PUT',path,{'version':3,'status':'cancelled'})
     expect('PUT',path,{'version':3,'status':'scheduled'},409)
     assert expect('GET',path)['status']=='cancelled'
-    expect('DELETE',path,status=204)
+    expect('DELETE',path+'?version=4',status=204)
     expect('PUT',path,{'version':4,'notes':'Deleted'},404)
     passed('reviewed edit preserves links; old reactivation and edits after deletion cannot overwrite')
 

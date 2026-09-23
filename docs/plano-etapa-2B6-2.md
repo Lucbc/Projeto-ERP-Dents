@@ -1,6 +1,6 @@
 # 2B.6.2 — exclusão de consultas na lista e calendário
 
-Preparação em 23/09/2026, base `0f17b82`. Complementa [2B.6](./plano-etapa-2B6.md). **Contrato para implementação futura; não altera o comportamento atual.**
+Preparação em 23/09/2026, base `0f17b82`. Complementa [2B.6](./plano-etapa-2B6.md). Mapa/evidência abaixo registram o comportamento anterior. Implementação e validação da 2B.6.2.1 no [relatório próprio](./homologacao-etapa-2B6-2-1.md).
 
 ## Mapa do fluxo
 

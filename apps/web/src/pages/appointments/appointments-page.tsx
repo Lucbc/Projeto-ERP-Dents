@@ -14,7 +14,9 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
+import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
+import { appointmentDeletionConfirmation } from "@/lib/appointment-deletion";
 import { getApiErrorMessage } from "@/lib/api";
 import { appointmentStatusLabels, appointmentStatusOptions } from "@/lib/labels";
 import { appointmentService, dentistService, patientService, procedureService } from "@/lib/services";
@@ -177,13 +179,10 @@ export function AppointmentsPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => appointmentService.remove(id),
-    onSuccess: () => {
-      toast("Consulta removida.");
-      void queryClient.invalidateQueries({ queryKey: ["appointments"] });
-    },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+  const deletion = useCatalogDeletion(appointmentService.remove, () => appointmentsQuery.refetch(), () => {
+    toast("Consulta removida.");
+    void queryClient.invalidateQueries({ queryKey: ["appointments"] });
+    void queryClient.invalidateQueries({ queryKey: ["financial"] });
   });
 
   const items = useMemo(() => appointmentsQuery.data ?? [], [appointmentsQuery.data]);
@@ -204,7 +203,7 @@ export function AppointmentsPage() {
   const canUpdate = can("appointments", "update");
   const canDelete = can("appointments", "delete");
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadAppointmentMutation.isPending || deleteMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadAppointmentMutation.isPending || deletion.mutation.isPending;
 
   useEffect(() => {
     if (manualEndOverride) return;
@@ -278,6 +277,11 @@ export function AppointmentsPage() {
 
   return (
     <div className="space-y-4">
+      {deletion.review && <div role="alert" className="rounded border border-amber-300 p-3 space-y-2">
+        <p>{deletion.review}</p>
+        <p>Confira os dados atualizados e confirme novamente se ainda quiser excluir.</p>
+        <Button disabled={deletion.reload.isPending} onClick={() => deletion.reload.mutate()}>Recarregar lista para conferir</Button>
+      </div>}
       <Card>
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
           <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
@@ -348,9 +352,11 @@ export function AppointmentsPage() {
                             {canDelete && (
                               <Button
                                 variant="danger"
+                                disabled={deletion.blocked}
                                 onClick={() => {
-                                  if (window.confirm("Deseja remover esta consulta?")) {
-                                    deleteMutation.mutate(appointment.id);
+                                  const target = { id: appointment.id, version: appointment.version };
+                                  if (window.confirm(appointmentDeletionConfirmation(appointment))) {
+                                    deletion.mutation.mutate(target);
                                   }
                                 }}
                               >

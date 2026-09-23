@@ -45,7 +45,7 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     const originalEnd=end().value;
     fireEvent.change(notes(),{target:{value:"My draft"}});
     fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
-    const reload=await screen.findByRole("button",{name:"Descartar rascunho e carregar atual"});
+    const reload=await screen.findByRole("button",{name:/Descartar rascunho e carregar (consulta )?atual/});
     expect(notes().value).toBe("My draft");
     expect(end().value).toBe(originalEnd);
     expect(update.mock.calls[0][1]).toMatchObject({version:1,procedure_ids:[procedureId],notes:"My draft"});

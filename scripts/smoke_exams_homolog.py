@@ -68,7 +68,7 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     expect("DELETE", "/api/patients/" + patient["id"], status=409)
     assert expect("GET", "/api/exams/" + exam["id"] + "/download") == PNG
     assert sql(f'SELECT count(*) FROM "{schema}".exam_file_deletions') == "0"
-    expect("DELETE", "/api/appointments/" + appointment["id"], status=204)
+    expect("DELETE", "/api/appointments/" + appointment["id"] + "?version=1", status=204)
     passed("patient with an appointment returns 409 and preserves exam metadata/files without cleanup intents")
     expect("DELETE", "/api/patients/" + patient["id"], status=204)
     assert sql(f'SELECT count(*) FROM "{schema}".exams') == "0"

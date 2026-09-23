@@ -57,7 +57,7 @@ let stage = 'start';
     console.log('OK: real HTTP 409 shown in Chrome; appointment draft and dates preserved.');
   } finally {
     try {
-      if(api) { for(const url of cleanup.reverse()) await api('DELETE',url); await api('POST','/api/auth/logout'); }
+      if(api) { for(const url of cleanup.reverse()) await api('DELETE',url+(url.startsWith('/api/appointments/')?'?version='+(await api('GET',url)).version:'')); await api('POST','/api/auth/logout'); }
     } finally { await browser.close(); }
   }
 })().catch(()=>{console.error('Agenda browser test failed at: '+stage+'; inspect fictitious fixtures locally if cleanup failed.');process.exitCode=1;});
