@@ -24,7 +24,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
-| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 a 2B.5.2 concluídas; referências históricas e demais recortes pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
+| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 a 2B.5.3 concluídas; exclusões concorrentes e regras entre recursos pendentes | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**2B.5.3.1 implementada e homologada localmente; publicação/CI pendentes:** [referências históricas](./homologacao-etapa-2B5-3-1.md). Banco/API/Chrome e preservação aprovados; principal em `0021_financial_references`. Regressão de 195 backend, nove testes focados finais (dois novos após início da suíte; CI esperado: 197) e 63 frontend. Não iniciar próximo recorte antes do fechamento.
+**2B.5.3.1 concluída:** [referências históricas](./homologacao-etapa-2B5-3-1.md), implementação `6b3109d`. CI aprovado com **197 backend e 63 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação aprovados; principal em `0021_financial_references`. Próximo recorte: **2B.6 — exclusões concorrentes de cadastros e agenda**.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -390,3 +390,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Chrome final descartável aprovado; capturas inicial e com rolagem conferidas. Dois pagamentos mantêm nomes diferentes, exclusão não remove referências, reenvios não recapturam nomes. Principal atualizada em `0021`, API/web juntos; Chrome somente leitura confirmou avisos de migração na origem e pagamento legado.
 - Dump completo salvo após zero schemas descartáveis. Dez verificações gerais aprovadas; comparação posterior confirmou todas as colunas antigas, eventos, recibos, permissões e bytes de exames preservados. Nenhum volume removido. Cópias/fingerprints `pre-2B5-3-1*`, helpers e credenciais ficam locais.
 - Relatório `docs/homologacao-etapa-2B5-3-1.md`; logs `.data/financial-references-*`. Falta publicar implementação e acompanhar CI completo, depois fechar relatório/plano e conferir HEAD remoto. Não repetir testes aprovados sem alteração/falha. Próximo recorte proposto após fechamento: **2B.6 — exclusões concorrentes de cadastros e agenda**, começando pelo mapa das precondições e preservação das referências já protegidas. Disponibilidade entre recursos, datas/resumos e cobrança por itens mantêm recortes próprios.
+
+### Ponto de retomada atual — 2B.5.3.1 concluída em 23/09/2026
+
+- Implementação `6b3109d` publicada; HEAD local/remoto conferidos e árvore limpa antes deste fechamento documental. [CI 35808882862](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35808882862) aprovado em **14min25s**: **197 backend em 496,644s e 63 frontend**, HTTP, builds e auditorias. Log local `.data/financial-references-ci.log`.
+- Origem e referências de cada pagamento preservadas, com busca histórica e indicação de nomes atuais/migração/ausência. Renomeação, reagendamento, exclusão permitida, estorno/correção e repetição aprovados; procedimentos excluídos não voltam ao formulário como seleções invisíveis. Dados apagados antes da migração não são recuperados nem inventados.
+- Homologação em **https://localhost:18443**, revisão `0021_financial_references`, API/web juntos. Chrome descartável e consulta somente leitura ao legado na principal aprovados. Colunas antigas, eventos, recibos, permissões e bytes de exames preservados; cópias `pre-2B5-3-1*` locais, nenhum volume removido. Recarregar abas antigas.
+- Gateway remoto: 413/503, JSON 408 em 30,012s, vagas liberadas e 80 chamadas de saúde com p95 de 0,0434s. Esta entrega fecha as referências financeiras da 2B.5.3; não equivale a auditoria de toda edição clínica ou composição de cobrança por itens.
+- **Próximo passo: preparação 2B.6.** Mapear DELETE de pacientes, dentistas, procedimentos, especialidades e consultas: versões/precondições, permissões, confirmação na interface e disputa com edição/vínculos. Definir recortes pequenos e testes antes de alterar exclusões; preservar capturas/recibos existentes. Não repetir revisão geral ou implementar datas/resumos/parcelas neste recorte.
+- Publicar este fechamento documental com commit/push e conferir árvore limpa/HEAD remoto. Não repetir testes funcionais aprovados sem nova alteração ou falha.

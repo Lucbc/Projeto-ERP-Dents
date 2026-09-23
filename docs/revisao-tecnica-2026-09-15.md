@@ -309,7 +309,7 @@ Não existe entidade de evolução/atendimento com autor, data, conteúdo, final
 
 ### R26 — P1 — Pagamentos e registros históricos podem ser reescritos ou apagados
 
-**Atualização 2B.5.3.1 (homologação local aprovada; CI pendente):** origem do lançamento e referências de cada pagamento preservadas diante de renomeação/exclusão; migração sinaliza limitações do legado, sem inventar identificação original. Consulta e busca históricas protegidas por permissão financeira; formulários não reutilizam procedimentos apagados. [Evidências e limites](./homologacao-etapa-2B5-3-1.md). Auditoria de todas as edições de cadastros/rascunhos e recuperação de dados já apagados não estão incluídas.
+**Atualização 2B.5.3.1 concluída:** origem do lançamento e referências de cada pagamento preservadas diante de renomeação/exclusão; migração sinaliza limitações do legado, sem inventar identificação original. Consulta e busca históricas protegidas por permissão financeira; formulários não reutilizam procedimentos apagados. CI aprovado com 197 backend/63 frontend. [Evidências e limites](./homologacao-etapa-2B5-3-1.md). Auditoria de todas as edições de cadastros/rascunhos e recuperação de dados já apagados não estão incluídas.
 
 **Atualização 2B.5.2.1:** pagamentos/estornos com autoria e recibos duráveis implementados; pago não aceita edição/exclusão comum e histórico impede exclusão física mesmo após estorno. Legados importados sem inventar autor; dados anteriores preservados. [Contrato, testes e estado do CI](./homologacao-etapa-2B5-2-1.md). R26 continua parcial para referências históricas de pacientes/dentistas/consultas/procedimentos e dados apagados antes da migração; registros anteriores abaixo são histórico do diagnóstico.
 

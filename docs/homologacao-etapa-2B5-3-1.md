@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementação homologada localmente, iniciada em 22/09/2026 a partir de `c1f0699`; publicação/CI pendentes. Não considerar concluída antes do fechamento no plano de execução e do CI. Contrato: [plano-etapa-2B5-3.md](./plano-etapa-2B5-3.md).
+**Concluída em 23/09/2026.** Implementação `6b3109d`, iniciada a partir de `c1f0699`. [CI 35808882862](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35808882862) aprovado: **197 backend e 63 frontend**, HTTP, builds e auditorias. Contrato: [plano-etapa-2B5-3.md](./plano-etapa-2B5-3.md).
 
 ## Comportamento implementado
 
@@ -23,13 +23,13 @@ Migração bloqueia escrita financeira enquanto copia o estado disponível. Toda
 
 As tabelas/triggers financeiros usam SQL explícito nas migrações, como na `0020`; não aplicar autogeração de migrações que os remova por não constarem no metadata ORM. Backup e restauração precisam incluir esquema completo e funções/triggers.
 
-## Evidências em andamento
+## Evidências
 
 - Primeira rodada focada: 38/39 aprovados; corrigida expectativa de um teste que confundia validação de domínio já existente com rejeição transacional. A correção não removeu a validação; o teste passou a atingir separadamente as duas camadas.
 - Frontend: 63 testes aprovados; build aprovado. Componente verifica rótulos de migração, captura nova e referência indisponível, sem controles de edição.
 - HTTP descartável: nove grupos aprovados, incluindo preparação/limpeza, renomeação/exclusão, dois pagamentos, reenvio, busca sem duplicação e negação de consulta sem permissão financeira.
 - Chrome HTTPS descartável: duas abas, perda de resposta após commit, recuperação, bloqueio de rascunho antigo, estorno/correção/nova baixa, nomes anterior/posterior e exclusão preservando histórico. Capturas locais em `.data/homolog/financial-history-*.png`; dados exclusivamente fictícios.
-- Regressão completa, teste extra de migração, imagem final, preservação principal e CI: registrar resultados finais abaixo antes de concluir.
+- Resultados finais de regressão, migração, imagens, preservação e CI registrados abaixo.
 
 ### Validação local final
 
@@ -37,7 +37,7 @@ As tabelas/triggers financeiros usam SQL explícito nas migrações, como na `00
 - HTTP final: nove grupos aprovados, incluindo correção após exclusão dos procedimentos. Chrome final e capturas conferidos, com rolagem permitindo ler ambos os pagamentos e fechar a janela. Builds finais aprovados; 63 testes de frontend.
 - Principal em **https://localhost:18443**, revisão `0021_financial_references`, API/web juntos. Uma origem/um pagamento anteriores receberam captura `migration`; Chrome somente leitura conferiu os avisos. Dez verificações gerais aprovadas.
 - Dump público/exames/fingerprints `pre-2B5-3-1*` antes da atualização; dump completo após limpeza dos schemas. Comparação posterior confirmou todas as colunas antigas, eventos, recibos, permissões e bytes dos exames. Nenhum volume removido. Cópias, credenciais e capturas fora do Git.
-- CI e publicação: pendentes. Após aprovação, registrar execução/commit e fechar o plano; testes já aprovados não precisam ser repetidos sem nova mudança ou falha.
+- Implementação `6b3109d` publicada; CI `35808882862` aprovado em **14min25s**, com **197 backend em 496,644s e 63 frontend**, HTTP, builds e auditorias. Gateway: 413/503, JSON 408 em 30,012s, vagas liberadas; 80 chamadas de saúde, p95 de 0,0434s. Fechamento posterior somente documental; testes não repetidos sem nova mudança ou falha.
 
 ## Comandos de reprodução
 
