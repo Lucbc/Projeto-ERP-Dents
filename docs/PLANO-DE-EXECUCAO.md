@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**Preparação 2B.6 concluída:** [mapa, reprodução e contrato](./plano-etapa-2B6.md). DELETE antigo apaga edição confirmada nos cinco recursos; defeito reproduzido por HTTP isolado, ainda não corrigido. Próxima implementação: **2B.6.1 — procedimentos e especialidades**. Pacientes/exames exigem contrato próprio dos efeitos vinculados.
+
 **2B.5.3.1 concluída:** [referências históricas](./homologacao-etapa-2B5-3-1.md), implementação `6b3109d`. CI aprovado com **197 backend e 63 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação aprovados; principal em `0021_financial_references`. Próximo recorte: **2B.6 — exclusões concorrentes de cadastros e agenda**.
 
 ### Ponto de retomada — 15/09/2026
@@ -399,3 +401,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Gateway remoto: 413/503, JSON 408 em 30,012s, vagas liberadas e 80 chamadas de saúde com p95 de 0,0434s. Esta entrega fecha as referências financeiras da 2B.5.3; não equivale a auditoria de toda edição clínica ou composição de cobrança por itens.
 - **Próximo passo: preparação 2B.6.** Mapear DELETE de pacientes, dentistas, procedimentos, especialidades e consultas: versões/precondições, permissões, confirmação na interface e disputa com edição/vínculos. Definir recortes pequenos e testes antes de alterar exclusões; preservar capturas/recibos existentes. Não repetir revisão geral ou implementar datas/resumos/parcelas neste recorte.
 - Publicar este fechamento documental com commit/push e conferir árvore limpa/HEAD remoto. Não repetir testes funcionais aprovados sem nova alteração ou falha.
+
+### Ponto de retomada atual — preparação 2B.6 concluída em 23/09/2026
+
+- Base `265c2c2`, árvore inicialmente limpa. Início registrado na seção de entrega atual; inspecionados DELETE, casos de uso, portas do fluxo, repositórios/FKs, serviços web e confirmações das cinco páginas mais calendário. Todas as rotas exigem permissão de exclusão, mas nenhuma exige versão nesses recursos.
+- Probe `.data/probe_deletion_2b6.py`: cinco cenários HTTP confirmados em API/schema descartáveis — criar versão 1, editar para versão 2, DELETE com versão 1 retorna 204 e GET retorna 404. Doze grupos incluindo isolamento/limpeza. Diagnóstico de defeito, não aprovação nem teste de disputa simultânea. Interface apenas inspecionada, sem novo Chrome nesta preparação.
+- Contrato `docs/plano-etapa-2B6.md`: precondição obrigatória e transacional, resposta de versão/vínculo/ausência distinta, confirmação vinculada à versão, recuperação sem reenvio automático. Versão da linha não detecta sozinha mudanças em exames ou outros vínculos; pacientes/exames ficam para contrato específico, preservando a fila e os arquivos.
+- Zero schemas descartáveis após o probe; comparação confirmou dados de negócio, eventos, recibos, permissões e exames preservados. Principal continua `0021` em **https://localhost:18443**. Sem migração/reinício/alteração executável. Última regressão continua CI `35808882862` (197 backend/63 frontend), não repetida para documentação.
+- **Próximo passo: implementar 2B.6.1**, procedimentos e especialidades, conforme matriz própria. Começar por DELETE desatualizado e PUT × DELETE em banco isolado; atualizar API/web/smokes juntos. Preservar FK de consultas, especialidade textual e referências financeiras. Não ampliar para pacientes/exames ou reabrir revisão geral neste recorte.
+- Publicar preparação por commit/push e conferir árvore limpa/HEAD remoto. R18 permanece parcial; esta preparação não corrige os cinco DELETEs. Probe/logs e credenciais continuam locais, fora do Git.

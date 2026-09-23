@@ -233,6 +233,8 @@ A regra de um lançamento ativo por consulta usa consulta prévia, seguida de cr
 
 ### R18 — P1 — Duas pessoas podem sobrescrever alterações uma da outra
 
+**Preparação 2B.6, em 23/09/2026:** HTTP isolado confirmou que DELETE ainda ignora versão antiga em pacientes, dentistas, procedimentos, especialidades e consultas, removendo uma edição já confirmada. [Mapa, contrato e sequência](./plano-etapa-2B6.md). Próxima correção: procedimentos/especialidades; versão do paciente sozinha não cobre mudanças em exames vinculados. Nenhuma correção executável nesta preparação.
+
 **Atualização parcial 2B.5.1:** edição, baixa e exclusão financeiras agora comparam versão; baixa exige estado pendente na mesma escrita. Testes de disputa, recuperação do formulário e ações antigas descritos no [relatório financeiro](./homologacao-etapa-2B5-1.md), incluindo estado de validação. R18 continua parcial para outros recursos e exclusões.
 
 **Atualização parcial 2B.1/2B.2/2B.3/2B.4:** edição de pacientes, consultas, dentistas, procedimentos e especialidades usa versão obrigatória e atualização atômica; rascunho preservado e recarga explícita no frontend. Evidências de [pacientes](./homologacao-etapa-2B1.md), [agenda](./homologacao-etapa-2B2.md), [dentistas](./homologacao-etapa-2B3.md), [procedimentos](./homologacao-etapa-2B4-1.md) e [especialidades](./homologacao-etapa-2B4-2.md), com estado de validação em cada relatório. Demais recursos, exclusões e regras entre disponibilidade e consultas continuam pendentes; descrição original abaixo mantida como histórico.
