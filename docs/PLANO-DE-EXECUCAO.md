@@ -34,11 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**2B.6.1 iniciada em 23/09/2026**, base `c2b7b38`, árvore limpa: versão na exclusão de procedimentos/especialidades, confirmação e recuperação na interface, testes e atualização dos clientes/smokes. Sem nova migração; principal permanece intacta até validação e cópias.
-
-**Preparação 2B.6 concluída:** [mapa, reprodução e contrato](./plano-etapa-2B6.md). DELETE antigo apaga edição confirmada nos cinco recursos; defeito reproduzido por HTTP isolado, ainda não corrigido. Próxima implementação: **2B.6.1 — procedimentos e especialidades**. Pacientes/exames exigem contrato próprio dos efeitos vinculados.
-
-**2B.5.3.1 concluída:** [referências históricas](./homologacao-etapa-2B5-3-1.md), implementação `6b3109d`. CI aprovado com **197 backend e 63 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação aprovados; principal em `0021_financial_references`. Próximo recorte: **2B.6 — exclusões concorrentes de cadastros e agenda**.
+**2B.6.1 concluída:** [relatório](./homologacao-etapa-2B6-1.md), implementação `b421cc8`. CI aprovado com **202 backend e 69 frontend**, HTTP, builds e auditorias. Banco/API/Chrome e preservação verificados; principal atualizada, sem nova migração (`0021`). Próximo recorte: **preparação 2B.6.2 — exclusão de consultas na lista e calendário**; pacientes/exames e dentistas mantêm recortes próprios.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -421,3 +417,15 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Builds API/web finais aprovados; Chrome descartável em andamento, logs `.data/catalog-deletion-*`. Cópias públicas/exames/fingerprints `pre-2B6-1*` salvos. Principal ainda não atualizada; revisão segue `0021`. Fazer dump completo depois de zero schemas, antes de atualizar API/web.
 - Pendentes: Chrome/capturas, resultado da regressão geral, smokes antigos adaptados, atualização principal e comparação integral por `.data/upgrade_2b61.py after`, relatório/revisão, commit/push/CI e fechamento. Não declarar etapa concluída nem iniciar exclusões de consultas/pacientes nesta entrega.
 - Chrome descartável aprovado: dois catálogos em duas abas, edição confirmada seguida de exclusão antiga rejeitada; recarga/nova confirmação exclui versão atual; vínculo de consulta impede exclusão. Ambas as capturas conferidas. Publicar implementação para executar CI enquanto a regressão local termina; principal ainda aguarda atualização e comparação. Nenhuma alteração funcional pendente conhecida; fechamento depende das verificações finais acima.
+- Implementação publicada em `b421cc8`; HEAD remoto conferido. [CI 35874815267](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35874815267) em andamento, esperado 202 backend/69 frontend. HTTPs anteriores de procedimentos/especialidades e referências financeiras adaptados e aprovados. Consultar esse CI antes de repetir testes; falta concluir regressão local, dump completo, atualizar principal e comparar preservação, então fechar/publicar documentação.
+- Regressão local terminou: 202 casos em 520,034s, 201 aprovados e somente a falha conhecida do fixture antigo; cinco focados na imagem corrigida passaram, incluindo esse caso. Não chamar a execução antiga de aprovada; CI da implementação corrigida deve passar integralmente.
+- Zero schemas descartáveis; dump completo `pre-2B6-1-full.dump` salvo. API/web principais atualizados juntos, revisão ainda `0021`; dez verificações gerais aprovadas. Comparação antes/depois do smoke confirmou todas as linhas de negócio, referências históricas e bytes dos exames. Nenhum volume removido. Falta somente resultado do CI, fechamento documental/revisão R18, commit/push e conferência final de HEAD.
+
+### Ponto de retomada atual — 2B.6.1 concluída em 23/09/2026
+
+- Implementação `b421cc8` publicada; HEAD remoto conferido. [CI 35874815267](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/35874815267) aprovado em **12min57s**: **202 backend em 308,340s e 69 frontend**, HTTP, builds e auditorias. O CI inclui o fixture corrigido; nenhum teste falhou nessa execução. Log local `.data/catalog-deletion-ci.log`.
+- Procedimentos/especialidades exigem versão no DELETE, com comparação/exclusão transacionais. Confirmar a versão antiga não remove uma edição recente. Versão/vínculo/ausência têm respostas distintas; interface exige recarga e nova confirmação, sem repetição automática após erro. Permissões, FK de consulta, especialidade textual e referências financeiras preservadas.
+- Chrome em duas abas aprovado para ambos os catálogos; capturas conferidas. Homologação principal em **https://localhost:18443**, API/web atualizados juntos, revisão `0021` mantida. Dez verificações gerais e comparação integral aprovadas; cópias `pre-2B6-1*` locais, dados/exames preservados e nenhum volume removido. Recarregar abas antigas.
+- Gateway remoto: 413/503, JSON 408 em 30,006s, vagas liberadas; 80 chamadas de saúde com p95 de 0,0208s. Resultado inicial local com um erro de fixture está documentado separadamente, sem confundi-lo com aprovação integral do CI final.
+- **Próximo passo: preparação 2B.6.2.** Mapear exclusão de consultas na lista/calendário, versão e confirmações, disputa com edição, geração/baixa financeira e preservação de referências. Definir os efeitos/precondições antes de implementar; não mudar política clínica nem substituir exclusão por cancelamento implicitamente. Dentistas e pacientes/exames continuam pendentes; estes últimos exigem contrato dos filhos/arquivos.
+- Publicar fechamento documental, conferir árvore limpa e HEAD remoto. Não repetir revisão geral, catálogos ou testes já aprovados sem nova alteração/falha.
