@@ -571,8 +571,8 @@ export function FinancialPage() {
                   <tr className="border-b">
                     <th className="p-2 font-semibold">Tipo</th>
                     <th className="p-2 font-semibold">Descricao</th>
-                    <th className="p-2 font-semibold">Paciente</th>
-                    <th className="p-2 font-semibold">Dentista</th>
+                    <th className="p-2 font-semibold">Paciente atual</th>
+                    <th className="p-2 font-semibold">Dentista atual</th>
                     <th className="p-2 font-semibold">Vencimento</th>
                     <th className="p-2 font-semibold">Status</th>
                     <th className="p-2 font-semibold">Valor total</th>
@@ -632,7 +632,7 @@ export function FinancialPage() {
                                 Baixar
                               </Button>
                             )}
-                            {(entry.has_payments || entry.status === "paid") && <Button variant="outline" onClick={() => setPaymentDialog({ entry, mode: "history" })}>Ver pagamentos</Button>}
+                            <Button variant="outline" onClick={() => setPaymentDialog({ entry, mode: "history" })}>{entry.has_payments || entry.status === "paid" ? "Ver pagamentos" : "Ver histórico"}</Button>
                             {canDelete && !entry.has_payments && entry.status !== "paid" && (
                               <Button
                                 variant="danger"

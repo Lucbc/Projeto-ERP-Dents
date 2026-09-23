@@ -148,6 +148,7 @@ export interface Exam {
 }
 
 export interface FinancialEntry {
+  reference_snapshot?: FinancialReferenceSnapshot | null;
   active_payment_id: string | null;
   has_payments: boolean;
   version: number;
@@ -228,6 +229,7 @@ export interface FinancialReversal {
   id: string; payment_id: string; recorded_at: string; actor_id: string; actor_name: string; reason: string;
 }
 export interface FinancialPayment {
+  reference_snapshot?: FinancialReferenceSnapshot | null;
   id: string; entry_id: string; entry_type: FinancialEntryType; total_cents: number;
   paid_at: string; payment_method: PaymentMethod | null; recorded_at: string;
   actor_id: string | null; actor_name: string | null; origin: "legacy" | "recorded";
@@ -235,4 +237,15 @@ export interface FinancialPayment {
 }
 export interface FinancialOperation {
   entry: FinancialEntry; payment: FinancialPayment; reversal: FinancialReversal | null; replayed: boolean;
+}
+
+export interface FinancialReferenceSnapshot {
+  schema_version: number;
+  origin: "migration" | "recorded";
+  captured_at: string;
+  description: string;
+  patient: { id: string | null; name: string | null };
+  dentist: { id: string | null; name: string | null };
+  appointment: { id: string | null; start_at: string | null };
+  procedures: { id: string | null; name: string | null }[];
 }

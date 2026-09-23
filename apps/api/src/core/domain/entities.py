@@ -171,6 +171,7 @@ class FinancialEntry:
     is_overdue: bool = False
     active_payment_id: UUID | None = None
     has_payments: bool = False
+    reference_snapshot: dict | None = None
 
 
 @dataclass(slots=True)

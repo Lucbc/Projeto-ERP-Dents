@@ -26,13 +26,13 @@ class FinancialHistoryMixin:
         # Keep the returned entry and reversal state consistent during this read.
         self.session.execute(select(FinancialEntryModel).where(FinancialEntryModel.id==operation['entry_id'])
                              .with_for_update(read=True).execution_options(populate_existing=True)).scalar_one()
-        payment = self.session.execute(text('SELECT * FROM financial_payments WHERE id=:id'), {'id':operation['payment_id']}).mappings().one()
+        payment = self.session.execute(text('SELECT p.*, r.snapshot AS reference_snapshot FROM financial_payments p JOIN financial_payment_references r ON r.payment_id=p.id WHERE p.id=:id'), {'id':operation['payment_id']}).mappings().one()
         reversal = self.session.execute(text('SELECT * FROM financial_reversals WHERE payment_id=:id'), {'id':payment['id']}).mappings().first()
         return {'entry':self.get(operation['entry_id']), 'payment':dict(payment),
                 'reversal':dict(reversal) if reversal else None, 'replayed':replayed}
 
     def payments(self, entry_id):
-        rows = self.session.execute(text('SELECT * FROM financial_payments WHERE entry_id=:id ORDER BY recorded_at,id'), {'id':entry_id}).mappings().all()
+        rows = self.session.execute(text('SELECT p.*, r.snapshot AS reference_snapshot FROM financial_payments p JOIN financial_payment_references r ON r.payment_id=p.id WHERE p.entry_id=:id ORDER BY p.recorded_at,p.id'), {'id':entry_id}).mappings().all()
         reversals = self.session.execute(text('SELECT r.* FROM financial_reversals r JOIN financial_payments p ON p.id=r.payment_id WHERE p.entry_id=:id'), {'id':entry_id}).mappings().all()
         by_payment = {r['payment_id']:dict(r) for r in reversals}
         return [{**dict(row), 'reversal':by_payment.get(row['id'])} for row in rows]

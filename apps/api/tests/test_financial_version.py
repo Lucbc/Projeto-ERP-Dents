@@ -22,6 +22,8 @@ class FinancialVersionTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.fixture.setUp()
         self.engine=self.fixture.engine
+        if self._testMethodName == 'test_migration_preserves_records_receipts_and_positive_version':
+            return
         with Session(self.engine) as db:
             self.id=self.uc(db).create(self.fixture.data()).id
 
@@ -141,10 +143,13 @@ class FinancialVersionTests(unittest.TestCase):
             self.assertEqual((uc.get(self.id).version,uc.get(self.id).amount_cents),(1,12000))
 
     def test_migration_preserves_records_receipts_and_positive_version(self):
-        with Session(self.engine) as db:
-            self.uc(db).generate_from_appointment(self.fixture.appointments[1],{'idempotency_key':uuid4()})
         migrate=self.fixture.fixture.migrate
         self.assertEqual(migrate('downgrade','0018_specialty_version').returncode,0)
+        with Session(self.engine) as db:
+            entry = self.fixture.legacy_create(db, {**self.fixture.data(), 'status':'pending', 'total_cents':12000})
+            db.execute(text('INSERT INTO financial_generations(key,request_hash,entry_id) VALUES(:key,:hash,:id)'),
+                {'key':uuid4(), 'hash':'fictitious legacy receipt', 'id':entry.id})
+            db.commit()
         def snapshot():
             with self.engine.connect() as db:
                 return (db.execute(text("SELECT (to_jsonb(f)-'version'-'active_payment_id')::text FROM financial_entries f ORDER BY id")).scalars().all(),

@@ -12,6 +12,7 @@ import { paymentMethodOptions } from "@/lib/labels";
 import { uncertainFinancialEntry } from "@/lib/financial-attempt";
 import { financialService } from "@/lib/services";
 import type { FinancialEntry, FinancialOperation, PaymentMethod } from "@/types";
+import { ReferenceSnapshot } from "./reference-snapshot";
 
 type Attempt = { kind: "settle"; payload: { version: number; idempotency_key: string; paid_at: string | null; payment_method: PaymentMethod | null } }
   | { kind: "reverse"; payload: { version: number; idempotency_key: string; payment_id: string; reason: string } };
@@ -76,6 +77,7 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
         <Button variant="danger" disabled={reason.trim().length < 3} onClick={() => submit("reverse")}>Estornar registro</Button>
       </fieldset>}
       <h3 className="font-semibold">Histórico de pagamentos</h3>
+      <ReferenceSnapshot snapshot={current.reference_snapshot} title="Origem do lançamento" />
       {history.isPending && <p>Carregando...</p>}
       {history.isError && <Button onClick={() => void history.refetch()}>Tentar carregar histórico</Button>}
       {history.data?.length === 0 && <p>Nenhum pagamento registrado.</p>}
@@ -83,6 +85,7 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
         <p>{money(payment.total_cents)} — {new Date(payment.paid_at).toLocaleString("pt-BR")} — {paymentMethodOptions.find(p => p.value === payment.payment_method)?.label || "Forma não informada"}</p>
         <p>{payment.origin === "legacy" ? "Registro anterior ao histórico; autor desconhecido" : `Registrado por ${payment.actor_name}`}</p>
         <p className="text-sm">Registro: {new Date(payment.recorded_at).toLocaleString("pt-BR")}</p>
+        <ReferenceSnapshot snapshot={payment.reference_snapshot} title="Referências deste pagamento" />
         {payment.reversal ? <p>Estornado em {new Date(payment.reversal.recorded_at).toLocaleString("pt-BR")} por {payment.reversal.actor_name}: {payment.reversal.reason}</p> : <p>Pagamento ativo</p>}
       </article>)}
       <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>Fechar</Button>

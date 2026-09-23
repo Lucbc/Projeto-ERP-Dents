@@ -9,11 +9,13 @@ Preparação em 22/09/2026, base `d68e864`. **Contrato para implementação; ain
 | Paciente/dentista | `financial_repository.py` consulta nomes por JOIN com cadastros atuais; busca usa esses nomes | Renomeação muda a identificação exibida, inclusive em lançamentos pagos; nome antigo não é uma referência de busca garantida |
 | Paciente/dentista/consulta | FKs financeiras em `models.py` usam `ON DELETE SET NULL` | Exclusão permitida elimina o vínculo, sem preservar identificação própria no financeiro |
 | Consulta/procedimentos | Exclusão de consulta remove seus procedimentos por CASCADE; financeiro guarda IDs em JSON | IDs não preservam nomes; associação original à consulta pode desaparecer |
-| Procedimentos financeiros | `_normalize_input` normaliza UUIDs; não verifica individualmente a existência dos procedimentos manuais | Pode haver ID sem cadastro mesmo antes de qualquer exclusão |
+| Procedimentos financeiros | `_normalize_procedure_ids` valida UUIDs e existência no caso de uso, antes da gravação | Falta proteção transacional contra exclusão depois da validação; IDs JSON não têm FK individual |
 | Pagamento | `_payment` em `financial_history.py` captura valores, data, forma e autor | Evento monetário protegido, mas sem identificação histórica de paciente/dentista/consulta/procedimentos |
 | Exclusões | Agenda restringe exclusão de paciente/dentista e de procedimentos associados; repositórios de dentista/procedimento apenas excluem e fazem commit | Proteção depende de haver consulta vinculada, não de haver histórico financeiro; conferir resposta HTTP dos conflitos na implementação |
 
 Essas conclusões são de leitura do código, não de nova execução de SQL, HTTP ou Chrome. A descrição gerada pode conter nome de paciente, mas texto livre não substitui referência estruturada e não cobre criação manual.
+
+Correção da inspeção inicial durante a 2B.5.3.1: a validação individual de procedimentos já existe em `_normalize_procedure_ids`; o problema remanescente é a proteção transacional, não ausência de validação no caso de uso.
 
 ## Contrato de captura
 

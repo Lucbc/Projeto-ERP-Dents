@@ -367,6 +367,7 @@ class FinancialReverseRequest(BaseModel):
 
 
 class FinancialEntryResponse(AppBaseSchema):
+    reference_snapshot: dict | None = None
     active_payment_id: UUID | None = None
     has_payments: bool = False
     version: int

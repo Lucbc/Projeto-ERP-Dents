@@ -19,7 +19,7 @@ def failure_response(exc, request_id):
         status, message = 409, "O registro possui vínculos ou uma referência não está mais disponível. Atualize os dados e confira os vínculos."
     elif isinstance(exc, IntegrityError) and state in ("23502", "23514"):
         status, message = 422, "Os dados não atendem às regras do cadastro. Revise os campos informados."
-    elif state in ("40001", "40P01"):
+    elif state in ("40001", "40P01", "55P03"):
         status, message = 409, "Outra operação alterou estes dados ao mesmo tempo. Atualize a tela antes de tentar novamente."
     elif isinstance(exc, (OperationalError, PoolTimeout)) and (not state or state.startswith("08") or state in ("57P01", "57P02", "57P03", "53300")):
         status, message = 503, "O banco de dados está temporariamente indisponível. Confira o resultado da operação antes de tentar novamente."

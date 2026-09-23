@@ -22,7 +22,8 @@ process.on('unhandledRejection',()=>{console.error('Financial history browser fa
    const response=await fetch(url,{method,headers,body:data?JSON.stringify(data):undefined});
    return {status:response.status,body:response.status===204?null:await response.json()};
   },{method,url,data,headers});
-  const created=await api('POST','/api/financial',{entry_type:'income',description:'Fictitious History Browser',amount_cents:12000,due_date:new Date().toISOString().slice(0,10)});
+  const patient=(await api('POST','/api/patients',{full_name:'Fictitious original reference'})).body;
+  const created=await api('POST','/api/financial',{entry_type:'income',description:'Fictitious History Browser',amount_cents:12000,due_date:new Date().toISOString().slice(0,10),patient_id:patient.id});
   assert.equal(created.status,201); const entry=created.body,endpoint='/api/financial/'+entry.id;
   const second=await context.newPage();
   for(const tab of [page,second]) await tab.goto('https://localhost:18444/financial');
@@ -40,6 +41,9 @@ process.on('unhandledRejection',()=>{console.error('Financial history browser fa
   await page.getByRole('button',{name:'Consultar/repetir esta operação'}).click();
   await page.getByText('Operação anterior recuperada. Confira o estado atual e o histórico.',{exact:true}).waitFor();
   let history=(await api('GET',endpoint+'/payments')).body;assert.equal(history.length,1);
+  assert.equal(history[0].reference_snapshot.patient.name,'Fictitious original reference');
+  await page.getByRole('heading',{name:'Origem do lançamento',exact:true}).waitFor();
+  assert.equal((await api('PUT','/api/patients/'+patient.id,{version:patient.version,full_name:'Fictitious renamed reference'})).status,200);
   stage='old draft cannot rewrite payment';
   const rejected=second.waitForResponse(r=>r.url().endsWith(endpoint)&&r.request().method()==='PUT');
   await second.getByRole('button',{name:'Salvar',exact:true}).click();assert.equal((await rejected).status(),409);
@@ -75,6 +79,12 @@ process.on('unhandledRejection',()=>{console.error('Financial history browser fa
   const delayedReverse=(await api('POST',endpoint+'/reverse-payment',reversalBody)).body;
   assert.equal(delayedReverse.entry.status,'paid');assert.equal(delayedReverse.entry.version,5);
   history=(await api('GET',endpoint+'/payments')).body;assert.equal(history.length,2);
+  assert.equal(history[1].reference_snapshot.patient.name,'Fictitious renamed reference');
+  assert.equal((await api('DELETE','/api/patients/'+patient.id)).status,204);
+  await page.getByText('Paciente: Fictitious renamed reference',{exact:true}).waitFor();
+  assert.equal(await page.getByText('Paciente: Fictitious original reference',{exact:true}).count(),2);
+  assert.equal((await api('POST',endpoint+'/mark-paid',paymentBody)).body.payment.reference_snapshot.patient.name,'Fictitious original reference');
+  await page.getByRole('button',{name:'Fechar',exact:true}).scrollIntoViewIfNeeded();
   await page.screenshot({path:path.resolve(__dirname,'../.data/homolog/financial-history-repayment.png'),fullPage:true});
   console.log('Chrome HTTPS: lost payment/reversal responses recover one event; old draft blocked; reversal/correction/new payment preserve history and delayed retries.');
  } finally {await browser.close();}

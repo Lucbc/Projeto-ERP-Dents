@@ -8,7 +8,7 @@ from .financial_history import FinancialHistoryMixin
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from src.adapters.db.models.models import DentistModel, FinancialEntryModel, FinancialGenerationModel, PatientModel
+from src.adapters.db.models.models import DentistModel, FinancialEntryModel, FinancialGenerationModel, PatientModel, ProcedureModel
 from src.core.domain.exceptions import ConflictError, ValidationError
 from src.core.domain.entities import (
     FinancialEntry,
@@ -50,6 +50,10 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
                     FinancialEntryModel.notes.ilike(pattern),
                     PatientModel.full_name.ilike(pattern),
                     DentistModel.full_name.ilike(pattern),
+                    text("""EXISTS (SELECT 1 FROM financial_entry_references r
+                      WHERE r.entry_id=financial_entries.id AND r.snapshot::text ILIKE :reference_search)
+                      OR EXISTS (SELECT 1 FROM financial_payment_references r JOIN financial_payments p ON p.id=r.payment_id
+                      WHERE p.entry_id=financial_entries.id AND r.snapshot::text ILIKE :reference_search)""").bindparams(reference_search=pattern),
                 )
             )
 
@@ -272,7 +276,14 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
             except (TypeError, ValueError):
                 continue
 
+        # This field feeds the editor's current selections. Deleted IDs remain
+        # in immutable snapshots, never as invisible, invalid form selections.
+        if procedure_ids:
+            available = set(self.session.scalars(select(ProcedureModel.id).where(ProcedureModel.id.in_(procedure_ids))))
+            procedure_ids = [id for id in procedure_ids if id in available]
+
         return FinancialEntry(
+            reference_snapshot=self.session.scalar(text('SELECT snapshot FROM financial_entry_references WHERE entry_id=:id'), {'id':model.id}),
             version=model.version,
             active_payment_id=model.active_payment_id,
             has_payments=bool(self.session.scalar(text("SELECT EXISTS(SELECT 1 FROM financial_payments WHERE entry_id=:id)"), {"id":model.id})),

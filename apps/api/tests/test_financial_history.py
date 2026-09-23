@@ -25,6 +25,11 @@ class FinancialHistoryTests(unittest.TestCase):
         self.fixture.setUp()
         self.engine = self.fixture.engine
         self.actor = SimpleNamespace(id=uuid4(), name='Fictitious operator')
+        if self._testMethodName in ('test_legacy_import_preserves_timestamp_values_and_unknown_author', 'test_invalid_legacy_migration_is_atomic'):
+            self.assertEqual(self.fixture.fixture.migrate('downgrade', '0019_financial_version').returncode, 0)
+            with Session(self.engine) as db:
+                self.id = self.fixture.legacy_create(db, {**self.fixture.data(), 'status':'pending', 'total_cents':12000}).id
+            return
         with Session(self.engine) as db:
             self.id = self.fixture.use_case(db).create(self.fixture.data()).id
 
@@ -184,7 +189,7 @@ class FinancialHistoryTests(unittest.TestCase):
         self.assertNotEqual(self.fixture.fixture.migrate('downgrade','0019_financial_version').returncode,0)
         with self.engine.connect() as db:
             self.assertEqual(db.scalar(text('SELECT count(*) FROM financial_payments')),1)
-            self.assertEqual(db.scalar(text('SELECT version_num FROM alembic_version')),'0020_financial_history')
+            self.assertEqual(db.scalar(text('SELECT version_num FROM alembic_version')),'0021_financial_references')
 
     def test_failed_receipt_rolls_back_payment_and_entry(self):
         with self.engine.begin() as db:

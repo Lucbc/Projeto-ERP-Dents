@@ -34,9 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**2B.5.2.1 concluída:** [pagamentos, estornos e recibos duráveis](./homologacao-etapa-2B5-2-1.md). CI aprovado com **188 backend e 61 frontend**, HTTP, builds e auditorias. Chrome e preservação dos dados/exames verificados. Homologação em `0020_financial_history`, API/frontend juntos. Próximo recorte: **2B.5.3 — referências históricas e consulta da trilha**. A etapa 2B e os vínculos históricos de R26 continuam parcialmente pendentes.
-
-**Preparação 2B.5.3 concluída:** [contrato de referências históricas](./plano-etapa-2B5-3.md), com captura, exclusão, migração, permissões e matriz de aceite. Entrega documental; próxima implementação conjunta: **2B.5.3.1**. O produto permanece na versão homologada acima.
+**2B.5.3.1 implementada e homologada localmente; publicação/CI pendentes:** [referências históricas](./homologacao-etapa-2B5-3-1.md). Banco/API/Chrome e preservação aprovados; principal em `0021_financial_references`. Regressão de 195 backend, nove testes focados finais (dois novos após início da suíte; CI esperado: 197) e 63 frontend. Não iniciar próximo recorte antes do fechamento.
 
 ### Ponto de retomada — 15/09/2026
 
@@ -376,3 +374,19 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Validação desta entrega: inspeção estática e revisão documental. **Nenhum novo teste de banco, API ou interface executado**; nenhuma migração/reinício ou alteração de dados/volumes. Última regressão continua CI `35756213438` (188 backend/61 frontend); não repetida para documentação. R26 permanece parcial.
 - **Próximo passo: 2B.5.3.1.** Ler o contrato, criar testes em schemas exclusivos de `erp-dents-homolog`, fechar DDL/ordem de bloqueios e implementar banco/API/UI juntos. Cópias obrigatórias antes de atualizar principal. Não repetir revisão geral nem pagamento/estorno. Homologação permanece `0020_financial_history`, em **https://localhost:18443**.
 - Publicar preparação com commit/push e conferir árvore limpa/HEAD remoto. Credenciais e cópias continuam locais; não incluir no Git.
+
+### Implementação 2B.5.3.1 — em andamento
+
+- Base `c1f0699`. Criada `0021_financial_references`: capturas separadas de origem/pagamento, triggers transacionais, imutabilidade e remoção da origem somente junto da exclusão permitida de rascunho. Migração marca referências disponíveis como `migration`, sem alterar eventos. Bloqueios compartilhados não bloqueantes evitam inverter a ordem das exclusões; contenção `55P03` vira HTTP 409, sem repetição automática.
+- API expõe capturas, busca histórica usa EXISTS sem duplicar resultados; interface distingue origem, cada pagamento e nomes atuais, com ausência/legado explícitos. Correção da inspeção anterior: `_normalize_procedure_ids` já verificava existência; acrescentada proteção no banco para a corrida posterior à validação.
+- Primeira rodada: 38/39 testes focados aprovados; um teste esperava erro de banco antes da validação existente. Corrigido para verificar separadamente erro de domínio e barreira de banco. 63 frontend e builds aprovados. HTTP específico aprovado; Chrome descartável aprovou dois pagamentos com nomes diferentes, exclusão posterior, resposta perdida/repetição e formulário antigo bloqueado. Captura inicial conferida; acrescentada rolagem para conferir também o segundo pagamento.
+- Regressão completa em andamento (`.data/financial-references-full.log`), iniciada com 195 casos esperados. Caso extra de pagamento registrado antes da migração e verificação de reagendamento acrescentados depois; executar testes focados finais (CI esperado: 196). Último ajuste visual de cabeçalhos também exige novo build web.
+- Cópias `.data/homolog/pre-2B5-3-1*` e fingerprints salvos; somente schema público no dump enquanto testes isolados rodam. Principal ainda em `0020`; inventário agregado: um lançamento/um pagamento, zero IDs de procedimentos sem cadastro. Fazer dump completo após limpeza dos schemas, antes de atualizar principal. Comparação posterior por `.data/upgrade_2b531.py after` preserva todas as colunas antigas/eventos/recibos/permissões/exames.
+- Pendentes: testes finais, build final, Chrome com rolagem, atualizar principal após aprovações e cópias, verificar preservação/legado/smoke geral, relatório e revisão, commit/push e CI. Não declarar etapa concluída antes dos critérios nem iniciar próximo recorte.
+
+### Ponto de retomada — 2B.5.3.1 aguardando publicação/CI
+
+- **195 backend em 544,450s aprovados**, nove testes finais de referências em 44,033s aprovados, com dois casos novos após início da suíte (CI esperado: **197**). 63 frontend e builds aprovados. Ajuste final impede IDs de procedimentos excluídos como seleções invisíveis no formulário; origem/pagamentos preservam os IDs antigos. HTTP final aprovou também estorno e edição após exclusão.
+- Chrome final descartável aprovado; capturas inicial e com rolagem conferidas. Dois pagamentos mantêm nomes diferentes, exclusão não remove referências, reenvios não recapturam nomes. Principal atualizada em `0021`, API/web juntos; Chrome somente leitura confirmou avisos de migração na origem e pagamento legado.
+- Dump completo salvo após zero schemas descartáveis. Dez verificações gerais aprovadas; comparação posterior confirmou todas as colunas antigas, eventos, recibos, permissões e bytes de exames preservados. Nenhum volume removido. Cópias/fingerprints `pre-2B5-3-1*`, helpers e credenciais ficam locais.
+- Relatório `docs/homologacao-etapa-2B5-3-1.md`; logs `.data/financial-references-*`. Falta publicar implementação e acompanhar CI completo, depois fechar relatório/plano e conferir HEAD remoto. Não repetir testes aprovados sem alteração/falha. Próximo recorte proposto após fechamento: **2B.6 — exclusões concorrentes de cadastros e agenda**, começando pelo mapa das precondições e preservação das referências já protegidas. Disponibilidade entre recursos, datas/resumos e cobrança por itens mantêm recortes próprios.
