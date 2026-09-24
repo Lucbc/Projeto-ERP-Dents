@@ -23,6 +23,14 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
+class PatientDeletionPreview(AppBaseSchema):
+    id: UUID
+    full_name: str
+    version: int
+    exam_count: int
+    exams_fingerprint: str
+
+
 class PatientCreateRequest(BaseModel):
     full_name: str = Field(min_length=1)
     preferred_name: str | None = None

@@ -85,6 +85,12 @@ let stage = 'start';
     await page.screenshot({path:path.join(state,'financial-retry.png'),fullPage:true});
     console.log('OK: Chrome lost response after commit; retry retained key and recovered exactly one charge.');
   } finally {
+    if (api) { const originalApi = api; api = async (method, url, ...args) => {
+      if (method === 'DELETE' && /^\/api\/patients\/[^/?]+$/.test(url))
+        url = await require('./patient_deletion_homolog.cjs').patientDeletionPath(p => originalApi('GET', p), url);
+      return originalApi(method, url, ...args);
+    }; }
+
     try {
       if(api) { for(const url of cleanup.reverse()) { const target=/^\/api\/(financial|procedures|specialties|appointments|dentists)\//.test(url)?url+'?version='+(await api('GET',url)).version:url; await api('DELETE',target); } await api('POST','/api/auth/logout'); }
     } finally { await browser.close(); }

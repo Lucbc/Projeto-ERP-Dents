@@ -5,6 +5,9 @@ from smoke_bootstrap_homolog import main
 
 def verify(request, email, password, token, container, ready, passed, sql, schema):
     def expect(method, path, data=None, status=200, session=token):
+        if method == 'DELETE' and path.startswith('/api/patients/') and '?' not in path:
+            from patient_deletion_homolog import patient_deletion_path
+            path = patient_deletion_path(lambda url: expect('GET', url), path)
         code, body = request(method, path, data, token=session)
         assert code == status, f'{method} expected {status}, got {code}'
         return body

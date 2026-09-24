@@ -31,6 +31,12 @@ class SqlAlchemyExamRepository(ExamRepository):
         item = ExamModel(**data)
         self.session.add(item)
         try:
+            # Serialize the exam set with patient deletion/preview, before autoflush.
+            with self.session.no_autoflush:
+                patient = self.session.scalar(select(PatientModel.id).where(
+                    PatientModel.id == item.patient_id).with_for_update())
+            if patient is None:
+                raise ConflictError("Não foi possível registrar o exame. Confira se o paciente ainda está disponível.")
             self.session.flush()
             result = self._to_entity(item)
             self.session.commit()

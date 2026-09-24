@@ -1,6 +1,6 @@
 ﻿import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -190,14 +190,47 @@ export function PatientsPage() {
     onError: (error) => toast(getApiErrorMessage(error), "error"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => patientService.remove(id),
-    onSuccess: () => {
-      toast("Paciente removido.");
-      void queryClient.invalidateQueries({ queryKey: ["patients"] });
-    },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+  const [deletionPreview, setDeletionPreview] = useState<Awaited<ReturnType<typeof patientService.deletionPreview>> | null>(null);
+  const [deletionReview, setDeletionReview] = useState<string | null>(null);
+  const deletionBusy = useRef(false);
+  const deletionError = (error: unknown) => {
+    setDeletionPreview(null);
+    setDeletionReview(!isAxiosError(error) || !error.response || error.response.status >= 500
+      ? "Não foi possível confirmar a operação. Recarregue e confira antes de excluir novamente."
+      : getApiErrorMessage(error));
+  };
+  const previewMutation = useMutation({
+    retry: false,
+    mutationFn: (patient: Patient) => patientService.deletionPreview(patient.id, patient.version),
+    onSuccess: setDeletionPreview,
+    onError: deletionError,
+    onSettled: () => { deletionBusy.current = false; },
   });
+  const deletionReload = useMutation({
+    retry: false,
+    mutationFn: () => patientsQuery.refetch(),
+    onSuccess: (result) => { if (result.isSuccess) setDeletionReview(null); },
+  });
+  useEffect(() => queryClient.getQueryCache().subscribe((event) => {
+    if (deletionPreview && !deletionBusy.current && event.type === "updated" && event.action.type === "invalidate" &&
+      event.query.queryKey[0] === "exams" && event.query.queryKey[1] === deletionPreview.id) {
+      setDeletionPreview(null);
+      setDeletionReview("Os exames mudaram. Recarregue e confira antes de excluir.");
+    }
+  }), [queryClient, deletionPreview]);
+  const deleteMutation = useMutation({
+    retry: false,
+    mutationFn: (preview: NonNullable<typeof deletionPreview>) => patientService.remove(preview.id, preview.version, preview.exams_fingerprint),
+    onSuccess: (_, preview) => {
+      setDeletionPreview(null);
+      toast("Paciente removido.");
+      for (const queryKey of [["patients"], ["patient", preview.id], ["exams", preview.id], ["appointments"], ["consultations"], ["financial"]])
+        void queryClient.invalidateQueries({ queryKey });
+    },
+    onError: deletionError,
+    onSettled: () => { deletionBusy.current = false; },
+  });
+  const deletionBlocked = previewMutation.isPending || deleteMutation.isPending || deletionReload.isPending || deletionReview !== null || deletionPreview !== null;
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadPatientMutation.isPending;
   const canCreate = can("patients", "create");
@@ -271,6 +304,10 @@ export function PatientsPage() {
 
   return (
     <div className="space-y-4">
+      {deletionReview && <Card><p role="alert">{deletionReview}</p>
+        <p>Confira os dados e exames atualizados antes de confirmar outra exclusão.</p>
+        <Button disabled={deletionReload.isPending} onClick={() => deletionReload.mutate()}>Recarregar lista para conferir</Button>
+      </Card>}
       <Card>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -348,10 +385,11 @@ export function PatientsPage() {
                               <Button
                                 variant="danger"
                                 onClick={() => {
-                                  if (window.confirm("Deseja remover este paciente?")) {
-                                    deleteMutation.mutate(patient.id);
-                                  }
+                                  if (deletionBlocked || deletionBusy.current) return;
+                                  deletionBusy.current = true;
+                                  previewMutation.mutate(patient);
                                 }}
+                                disabled={deletionBlocked}
                               >
                                 Excluir
                               </Button>
@@ -523,6 +561,21 @@ export function PatientsPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+      <Modal open={Boolean(deletionPreview)} title="Confirmar exclusão do paciente" onClose={() => {
+        if (!deletionBusy.current) setDeletionPreview(null);
+      }}>
+        {deletionPreview && <div className="space-y-3">
+          <p>Excluir o cadastro de <strong>{deletionPreview.full_name}</strong>?</p>
+          <p>{deletionPreview.exam_count} exame(s) serão removidos. A remoção dos arquivos será processada pelo servidor.</p>
+          <p>Cobranças e pagamentos já registrados permanecem.</p>
+          <Button variant="outline" disabled={deleteMutation.isPending} onClick={() => setDeletionPreview(null)}>Cancelar exclusão</Button>
+          <Button variant="danger" disabled={deleteMutation.isPending || !canDelete} onClick={() => {
+            if (deletionBusy.current) return;
+            deletionBusy.current = true;
+            deleteMutation.mutate(deletionPreview);
+          }}>Confirmar exclusão</Button>
+        </div>}
       </Modal>
     </div>
   );

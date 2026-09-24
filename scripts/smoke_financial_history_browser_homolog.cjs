@@ -80,7 +80,7 @@ process.on('unhandledRejection',()=>{console.error('Financial history browser fa
   assert.equal(delayedReverse.entry.status,'paid');assert.equal(delayedReverse.entry.version,5);
   history=(await api('GET',endpoint+'/payments')).body;assert.equal(history.length,2);
   assert.equal(history[1].reference_snapshot.patient.name,'Fictitious renamed reference');
-  assert.equal((await api('DELETE','/api/patients/'+patient.id)).status,204);
+  assert.equal((await api('DELETE',await require('./patient_deletion_homolog.cjs').patientDeletionPath(async p => (await api('GET',p)).body,'/api/patients/'+patient.id))).status,204);
   await page.getByText('Paciente: Fictitious renamed reference',{exact:true}).waitFor();
   assert.equal(await page.getByText('Paciente: Fictitious original reference',{exact:true}).count(),2);
   assert.equal((await api('POST',endpoint+'/mark-paid',paymentBody)).body.payment.reference_snapshot.patient.name,'Fictitious original reference');

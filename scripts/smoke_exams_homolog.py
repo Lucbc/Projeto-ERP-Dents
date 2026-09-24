@@ -9,6 +9,9 @@ PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4
 
 def verify(request, email, password, admin, container, ready, passed, sql, schema):
     def expect(method, path, payload=None, token=admin, status=200, headers=None):
+        if method == 'DELETE' and path.startswith('/api/patients/') and '?' not in path:
+            from patient_deletion_homolog import patient_deletion_path
+            path = patient_deletion_path(lambda url: expect('GET', url), path)
         code, body = request(method, path, payload, token=token, extra_headers=headers)
         assert code == status, f"{method} {path}: expected {status}, got {code}"
         return body

@@ -14,6 +14,9 @@ EICAR = base64.b64decode('WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5EQV
 def checks(unavailable=False):
     def verify(request, email, password, token, container, ready, passed, sql, schema):
         def expect(method, path, payload=None, status=200, headers=None):
+            if method == 'DELETE' and path.startswith('/api/patients/') and '?' not in path:
+                from patient_deletion_homolog import patient_deletion_path
+                path = patient_deletion_path(lambda url: expect('GET', url), path)
             code, body = request(method, path, payload, token=token, extra_headers=headers)
             assert code in (status if isinstance(status, tuple) else (status,)), f'{method}: expected {status}, got {code}'
             return body

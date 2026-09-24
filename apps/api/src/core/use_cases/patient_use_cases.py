@@ -81,8 +81,14 @@ class PatientUseCases:
             raise NotFoundError("Paciente não encontrado.")
         return patient
 
-    def delete(self, patient_id: UUID) -> None:
-        deleted = self.patient_repository.delete(patient_id)
+    def deletion_preview(self, patient_id: UUID, version: int, *, can_delete_exams: bool = False) -> dict:
+        result = self.patient_repository.deletion_preview(patient_id, version, can_delete_exams=can_delete_exams)
+        if result is None:
+            raise NotFoundError("Paciente não encontrado.")
+        return result
+
+    def delete(self, patient_id: UUID, version: int, expected_exams: str, *, can_delete_exams: bool = False) -> None:
+        deleted = self.patient_repository.delete(patient_id, version, expected_exams, can_delete_exams=can_delete_exams)
         if not deleted:
             raise NotFoundError("Paciente não encontrado.")
 

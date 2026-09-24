@@ -6,7 +6,9 @@ from sqlalchemy.orm import Session
 from src.adapters.db.models.models import PatientModel, ExamModel
 from src.adapters.db.exam_cleanup import queue_exam_file
 from sqlalchemy.exc import IntegrityError
-from src.core.domain.exceptions import ConflictError, ValidationError
+from src.core.domain.exceptions import ConflictError, ValidationError, ForbiddenError
+from src.adapters.db.repositories.patient_deletion import exams_fingerprint
+import re
 from src.core.domain.entities import Patient
 from src.core.ports.repositories import PatientRepository
 
@@ -92,19 +94,51 @@ class SqlAlchemyPatientRepository(PatientRepository):
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def delete(self, patient_id) -> bool:
-        item = self.session.scalar(select(PatientModel).where(PatientModel.id == patient_id).with_for_update())
+    def _deletion_state(self, patient_id, version, can_delete_exams):
+        if type(version) is not int or version < 1:
+            raise ValidationError("Recarregue o cadastro antes de confirmar a exclusão.")
+        item = self.session.scalar(select(PatientModel).where(PatientModel.id == patient_id)
+            .with_for_update().execution_options(populate_existing=True))
         if item is None:
-            return False
+            return None, []
+        exams = list(self.session.scalars(select(ExamModel).where(ExamModel.patient_id == patient_id)
+            .execution_options(populate_existing=True)))
+        if exams and not can_delete_exams:
+            raise ForbiddenError("Excluir este paciente exige também permissão para excluir exames.")
+        if item.version != version:
+            raise ConflictError("Este paciente foi alterado. Recarregue e confira antes de excluir.", code="stale_version")
+        return item, exams
 
+    def deletion_preview(self, patient_id, version, *, can_delete_exams=False):
         try:
-            for exam in self.session.scalars(select(ExamModel).where(ExamModel.patient_id == patient_id)):
+            item, exams = self._deletion_state(patient_id, version, can_delete_exams)
+            if item is None:
+                return None
+            return {"id": item.id, "full_name": item.full_name, "version": item.version,
+                    "exam_count": len(exams), "exams_fingerprint": exams_fingerprint(patient_id, exams)}
+        finally:
+            # Never retain a lock while the user considers the confirmation.
+            self.session.rollback()
+
+    def delete(self, patient_id, version, expected_exams, *, can_delete_exams=False) -> bool:
+        try:
+            if not isinstance(expected_exams, str) or not re.fullmatch(r'[0-9a-f]{64}', expected_exams):
+                raise ValidationError("Confira os exames antes de confirmar a exclusão.")
+            item, exams = self._deletion_state(patient_id, version, can_delete_exams)
+            if item is None:
+                self.session.rollback()
+                return False
+            if exams_fingerprint(patient_id, exams) != expected_exams:
+                raise ConflictError("Os exames deste paciente mudaram. Recarregue e confira antes de excluir.", code="stale_exams")
+            for exam in exams:
                 queue_exam_file(self.session, patient_id, exam.stored_filename)
             self.session.delete(item)
             self.session.commit()
         except IntegrityError as error:
             self.session.rollback()
-            raise ConflictError("Paciente possui registros vinculados. Inative o cadastro em vez de excluí-lo.") from error
+            if getattr(error.orig, 'sqlstate', None) == '23503':
+                raise ConflictError("Paciente possui registros vinculados. Inative o cadastro em vez de excluí-lo.", code="linked_record") from error
+            raise
         except Exception:
             self.session.rollback()
             raise

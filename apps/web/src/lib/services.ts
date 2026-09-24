@@ -188,8 +188,12 @@ export const patientService = {
     const response = await api.put<Patient>(`/api/patients/${id}`, payload);
     return response.data;
   },
-  async remove(id: string) {
-    await api.delete(`/api/patients/${id}`);
+  async deletionPreview(id: string, version: number) {
+    return (await api.get<{ id: string; full_name: string; version: number; exam_count: number; exams_fingerprint: string }>(
+      `/api/patients/${id}/deletion-preview`, { params: { version } })).data;
+  },
+  async remove(id: string, version: number, exams_fingerprint: string) {
+    await api.delete(`/api/patients/${id}`, { params: { version, exams_fingerprint } });
   },
 };
 

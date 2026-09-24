@@ -187,6 +187,9 @@ def main() -> None:
                     if path.startswith(('/api/financial/', '/api/procedures/', '/api/specialties/', '/api/appointments/', '/api/dentists/')):
                         current = request('GET', path, token=token)
                         path += '?version=' + str(current['version'])
+                    if path.startswith('/api/patients/'):
+                        from patient_deletion_homolog import patient_deletion_path
+                        path = patient_deletion_path(lambda url: request('GET', url, token=token), path)
                     request('DELETE', path, token=token, expected=204)
                 except Exception:
                     errors.append(path)

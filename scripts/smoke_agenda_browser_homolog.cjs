@@ -56,6 +56,12 @@ let stage = 'start';
     await page.screenshot({path:path.join(state,'agenda-conflict.png'),fullPage:true});
     console.log('OK: real HTTP 409 shown in Chrome; appointment draft and dates preserved.');
   } finally {
+    if (api) { const originalApi = api; api = async (method, url, ...args) => {
+      if (method === 'DELETE' && /^\/api\/patients\/[^/?]+$/.test(url))
+        url = await require('./patient_deletion_homolog.cjs').patientDeletionPath(p => originalApi('GET', p), url);
+      return originalApi(method, url, ...args);
+    }; }
+
     try {
       if(api) { for(const url of cleanup.reverse()) await api('DELETE',url+(/^\/api\/(appointments|dentists)\//.test(url)?'?version='+(await api('GET',url)).version:'')); await api('POST','/api/auth/logout'); }
     } finally { await browser.close(); }

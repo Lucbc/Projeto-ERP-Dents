@@ -75,7 +75,9 @@ class ExamTests(ExamFixture):
         def concurrent_delete(*args):
             filename = original(*args)
             with Session(self.engine) as other:
-                SqlAlchemyPatientRepository(other).delete(self.patient.id)
+                repo = SqlAlchemyPatientRepository(other)
+                preview = repo.deletion_preview(self.patient.id, 1, can_delete_exams=True)
+                repo.delete(self.patient.id, 1, preview['exams_fingerprint'], can_delete_exams=True)
             return filename
         with patch.object(self.storage, "save_file", side_effect=concurrent_delete), self.assertRaises(ConflictError):
             self.upload()
@@ -119,7 +121,8 @@ class ExamTests(ExamFixture):
     def test_patient_deletion_queues_all_exam_files(self):
         self.upload()
         self.upload()
-        self.patients.delete(self.patient.id)
+        preview = self.patients.deletion_preview(self.patient.id, 1, can_delete_exams=True)
+        self.patients.delete(self.patient.id, 1, preview['exams_fingerprint'], can_delete_exams=True)
         self.assertEqual(len(self.files()), 2)
         self.assertEqual(len(list(self.db.scalars(select(ExamFileDeletionModel)))), 2)
         self.assertEqual(process_exam_deletions(self.db, self.storage)["removed"], 2)

@@ -82,6 +82,12 @@ let stage='start';
     assert.deepEqual(current.procedure_ids,[procedures[0]]);
     console.log('OK: list and calendar reject stale drafts, preserve selections, reload explicitly and save reviewed versions.');
   } finally {
+    if (api) { const originalApi = api; api = async (method, url, ...args) => {
+      if (method === 'DELETE' && /^\/api\/patients\/[^/?]+$/.test(url))
+        url = await require('./patient_deletion_homolog.cjs').patientDeletionPath(p => originalApi('GET', p), url);
+      return originalApi(method, url, ...args);
+    }; }
+
     try { if(api) {for(const url of cleanup.reverse()) await api('DELETE',url+(/^\/api\/(procedures|appointments|dentists)\//.test(url)?'?version='+(await api('GET',url)).version:''));await api('POST','/api/auth/logout');} }
     finally {await browser.close();}
   }

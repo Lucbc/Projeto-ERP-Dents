@@ -15,6 +15,18 @@ from src.api.schemas.schemas import (
     PatientUpdateRequest,
 )
 from src.core.use_cases.patient_use_cases import PatientUseCases
+from src.api.schemas.schemas import PatientDeletionPreview
+from src.core.domain.entities import User, UserRole
+from src.core.permissions import can_access, normalize_permissions
+from src.adapters.db.repositories.role_permission_repository import SqlAlchemyRolePermissionRepository
+
+
+def may_delete_exams(user, db):
+    if user.role == UserRole.admin:
+        return True
+    current = SqlAlchemyRolePermissionRepository(db).get_by_role(user.role)
+    permissions = normalize_permissions(role=user.role, raw_permissions=current.permissions if current else None)
+    return can_access(role=user.role, permissions=permissions, resource="exams", action="delete")
 
 router = APIRouter(
     prefix="/api/patients",
@@ -76,18 +88,27 @@ def update_patient(
     return use_case.update(patient_id, payload.model_dump(exclude_unset=True))
 
 
+@router.get("/{patient_id}/deletion-preview", response_model=PatientDeletionPreview)
+def patient_deletion_preview(patient_id: UUID, version: int = Query(gt=0),
+    db: Session = Depends(get_db_dep), user: User = Depends(require_permission("patients", "delete"))):
+    return PatientUseCases(SqlAlchemyPatientRepository(db)).deletion_preview(
+        patient_id, version, can_delete_exams=may_delete_exams(user, db))
+
+
 @router.delete(
     "/{patient_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
     dependencies=[Depends(require_permission("patients", "delete"))],
 )
-def delete_patient(patient_id: UUID, db: Session = Depends(get_db_dep)) -> Response:
+def delete_patient(patient_id: UUID, version: int = Query(gt=0),
+    exams_fingerprint: str = Query(pattern=r"^[0-9a-f]{64}$"), db: Session = Depends(get_db_dep),
+    user: User = Depends(require_permission("patients", "delete"))) -> Response:
     use_case = PatientUseCases(SqlAlchemyPatientRepository(db))
     from src.adapters.db.exam_cleanup import process_exam_deletions
     from src.adapters.db.exam_maintenance import exam_storage_lock
     from src.adapters.storage.filesystem_exam_storage import FileSystemExamStorage
     with exam_storage_lock(db.get_bind()):
-        use_case.delete(patient_id)
+        use_case.delete(patient_id, version, exams_fingerprint, can_delete_exams=may_delete_exams(user, db))
         process_exam_deletions(db, FileSystemExamStorage(), limit=100)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

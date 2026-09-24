@@ -63,6 +63,12 @@ let stage='start';
     assert.equal(current.notes,'Operator B reviewed');
     console.log('OK: two Chrome drafts; stale edit rejected, draft preserved, explicit reload and reviewed save passed.');
   } finally {
+    if (api) { const originalApi = api; api = async (method, url, ...args) => {
+      if (method === 'DELETE' && /^\/api\/patients\/[^/?]+$/.test(url))
+        url = await require('./patient_deletion_homolog.cjs').patientDeletionPath(p => originalApi('GET', p), url);
+      return originalApi(method, url, ...args);
+    }; }
+
     try {
       if(api) { if(patient) await api('DELETE','/api/patients/'+patient.id); await api('POST','/api/auth/logout'); }
     } finally { await browser.close(); }
