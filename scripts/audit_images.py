@@ -24,7 +24,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     cache.mkdir(parents=True, exist_ok=True)
     failed = False
-    for service in ('api','web','gateway','db','clamav'):
+    for service in ('api','web','gateway','edge','db','clamav'):
         image = config['services'][service].get('image', 'erp-dents-homolog-'+service)
         result = subprocess.run(['docker','run','--rm',
             '-v','/var/run/docker.sock:/var/run/docker.sock',

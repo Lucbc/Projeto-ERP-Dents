@@ -72,7 +72,8 @@ services:
       start_period: 120s
 
   gateway:
-    image: nginx:stable-alpine@sha256:73c75df4075c918f91017fdda46ad81e55e5af77ba3a64ca3d5014bd9244fe7f
+    build:
+      context: ./ops/nginx
     restart: unless-stopped
     environment:
       EXAM_MAX_BYTES: ${EXAM_MAX_BYTES:-20971520}
@@ -101,7 +102,8 @@ services:
       - api
 
   edge:
-    image: nginx:stable-alpine@sha256:73c75df4075c918f91017fdda46ad81e55e5af77ba3a64ca3d5014bd9244fe7f
+    build:
+      context: ./ops/nginx
     restart: unless-stopped
     environment:
       WEB_INTERNAL_PORT: 80

@@ -20,9 +20,13 @@
 - **Chrome:** aprovado em HTTPS descartável. Duas abas, horários editados, exclusão antiga rejeitada, recarga, conta vinculada impeditiva, reatribuição administrativa pela interface e nova confirmação excluindo só o cadastro revisado. Duas capturas conferidas. Asserção inicial de CRO foi ajustada: fixture tinha valor que o formatador existente normalizava durante edição; usado valor fictício no formato estável.
 - **Regressão antiga interrompida:** fixture de sessões mantinha transação de leitura em `users` enquanto migração em outra conexão tentava bloqueio exclusivo. Liberada transação antes de migrar; atualizada expectativa de revisão final no teste de downgrade financeiro. CI inicial `35933406274` cancelado para substituição. Isso não foi aprovação da suíte; aguardar execução final corrigida.
 
-## Pendências de fechamento
+## Atualização local em 24/09/2026
 
-Regressão completa local (222 casos esperados), CI e atualização principal. Cópias públicas/exames/fingerprints `pre-2B6-3-1*` salvos. Após zero schemas, salvar dump completo; comparar todas as linhas de negócio/referências/bytes de exames, excluindo somente revisão Alembic. Conferir FK RESTRICT e smoke geral após atualizar.
+- Regressão corrigida: **222 backend aprovados em 536,444s**; 13 testes adicionais de sessões/downgrade financeiro em 76,317s. HTTPs anteriores de dentistas/referências financeiras adaptados e aprovados. Implementação `b798cc4`, complemento de testes `1bb1f41`, ambos publicados.
+- Principal em **https://localhost:18443**, API/web atualizados juntos para `0022_dentist_user_restrict`; FK de usuários conferida como RESTRICT. Dez verificações gerais aprovadas.
+- Cópias públicas/exames/fingerprints e dump completo `pre-2B6-3-1*` salvos antes da atualização. Dump completo após zero schemas descartáveis; comparação antes/depois do smoke confirmou todas as linhas de negócio/referências/bytes de exames, excluindo somente revisão Alembic. Zero schemas após entrega; nenhum volume removido.
+- [CI 36000043947](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36000043947): frontend/backend/HTTP aprovados, auditoria de imagens reprovada. Reprodução local identificou CVE-2026-93990 em libexpat 2.8.4-r0 no web/gateway. A imagem oficial mais recente ainda continha essa versão; builds web/gateway/edge passaram a instalar explicitamente 2.8.5-r0, com base nginx fixada por digest. Produção/desenvolvimento/homologação usam o mesmo Dockerfile de gateway/edge; apenas homologação foi atualizada.
+- Auditoria local após correção: seis imagens sem achados (incluindo edge, agora coberto). Builds aprovados; dez verificações gerais aprovadas e dados de negócio/histórico/exames preservados. Falta novo CI e fechamento documental. Logs locais `nginx-security-*`; nenhum volume removido.
 
 ## Reprodução
 
