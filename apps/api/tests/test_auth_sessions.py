@@ -44,6 +44,9 @@ class HomologDatabaseTests(unittest.TestCase):
         self.user = self.repo.create({"name": "Session Test", "email": "session@example.com",
             "role": UserRole.admin, "is_active": True,
             "password_hash": self.auth.hash_password(self.password)})
+        # create() refreshes the row, opening a read transaction. Release it
+        # before a separate migration connection needs an exclusive users lock.
+        self.db.rollback()
         self.migrate("head")
 
     def migrate(self, revision):

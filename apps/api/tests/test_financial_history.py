@@ -189,7 +189,7 @@ class FinancialHistoryTests(unittest.TestCase):
         self.assertNotEqual(self.fixture.fixture.migrate('downgrade','0019_financial_version').returncode,0)
         with self.engine.connect() as db:
             self.assertEqual(db.scalar(text('SELECT count(*) FROM financial_payments')),1)
-            self.assertEqual(db.scalar(text('SELECT version_num FROM alembic_version')),'0021_financial_references')
+            self.assertEqual(db.scalar(text('SELECT version_num FROM alembic_version')),'0022_dentist_user_restrict')
 
     def test_failed_receipt_rolls_back_payment_and_entry(self):
         with self.engine.begin() as db:

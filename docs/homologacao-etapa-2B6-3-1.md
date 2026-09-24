@@ -18,6 +18,7 @@
 - **Componentes:** 81 testes frontend aprovados, incluindo confirmação do nome/CRO/versionamento, rascunho intacto, 409/404/503/rede, falha de recarga, nova confirmação e cancelamento. Builds API/web aprovados.
 - **HTTP:** dez grupos incluindo preparação/limpeza, precondições, conta inativa impeditiva, sessão preservada na recusa, reatribuição explícita revogando sessão, exclusão sem permissões extras, revogação de `dentists.delete`, financeiro e consultas. Primeira inicialização excedeu prazo do harness; repetição isolada passou sem alteração do produto.
 - **Chrome:** aprovado em HTTPS descartável. Duas abas, horários editados, exclusão antiga rejeitada, recarga, conta vinculada impeditiva, reatribuição administrativa pela interface e nova confirmação excluindo só o cadastro revisado. Duas capturas conferidas. Asserção inicial de CRO foi ajustada: fixture tinha valor que o formatador existente normalizava durante edição; usado valor fictício no formato estável.
+- **Regressão antiga interrompida:** fixture de sessões mantinha transação de leitura em `users` enquanto migração em outra conexão tentava bloqueio exclusivo. Liberada transação antes de migrar; atualizada expectativa de revisão final no teste de downgrade financeiro. CI inicial `35933406274` cancelado para substituição. Isso não foi aprovação da suíte; aguardar execução final corrigida.
 
 ## Pendências de fechamento
 
