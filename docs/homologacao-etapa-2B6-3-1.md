@@ -1,6 +1,6 @@
 # 2B.6.3.1 — exclusão de dentistas e proteção das contas
 
-**Em validação em 23/09/2026.** Base `1362185`. [Contrato](./plano-etapa-2B6-3.md). Fechamento depende da regressão completa, atualização principal com preservação e CI.
+**Concluída em 24/09/2026.** Base `1362185`; implementação `b798cc4`, ajustes de testes `1bb1f41`, segurança `7300ea6`. [Contrato](./plano-etapa-2B6-3.md). Banco, API, Chrome, preservação e CI aprovados.
 
 ## Mudanças
 
@@ -18,7 +18,7 @@
 - **Componentes:** 81 testes frontend aprovados, incluindo confirmação do nome/CRO/versionamento, rascunho intacto, 409/404/503/rede, falha de recarga, nova confirmação e cancelamento. Builds API/web aprovados.
 - **HTTP:** dez grupos incluindo preparação/limpeza, precondições, conta inativa impeditiva, sessão preservada na recusa, reatribuição explícita revogando sessão, exclusão sem permissões extras, revogação de `dentists.delete`, financeiro e consultas. Primeira inicialização excedeu prazo do harness; repetição isolada passou sem alteração do produto.
 - **Chrome:** aprovado em HTTPS descartável. Duas abas, horários editados, exclusão antiga rejeitada, recarga, conta vinculada impeditiva, reatribuição administrativa pela interface e nova confirmação excluindo só o cadastro revisado. Duas capturas conferidas. Asserção inicial de CRO foi ajustada: fixture tinha valor que o formatador existente normalizava durante edição; usado valor fictício no formato estável.
-- **Regressão antiga interrompida:** fixture de sessões mantinha transação de leitura em `users` enquanto migração em outra conexão tentava bloqueio exclusivo. Liberada transação antes de migrar; atualizada expectativa de revisão final no teste de downgrade financeiro. CI inicial `35933406274` cancelado para substituição. Isso não foi aprovação da suíte; aguardar execução final corrigida.
+- **Regressão antiga interrompida:** fixture de sessões mantinha transação de leitura em `users` enquanto migração em outra conexão tentava bloqueio exclusivo. Liberada transação antes de migrar; atualizada expectativa de revisão final no teste de downgrade financeiro. CI inicial `35933406274` cancelado para substituição. Isso não foi aprovação da suíte; a execução corrigida foi aprovada posteriormente, conforme fechamento abaixo.
 
 ## Atualização local em 24/09/2026
 
@@ -26,12 +26,20 @@
 - Principal em **https://localhost:18443**, API/web atualizados juntos para `0022_dentist_user_restrict`; FK de usuários conferida como RESTRICT. Dez verificações gerais aprovadas.
 - Cópias públicas/exames/fingerprints e dump completo `pre-2B6-3-1*` salvos antes da atualização. Dump completo após zero schemas descartáveis; comparação antes/depois do smoke confirmou todas as linhas de negócio/referências/bytes de exames, excluindo somente revisão Alembic. Zero schemas após entrega; nenhum volume removido.
 - [CI 36000043947](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36000043947): frontend/backend/HTTP aprovados, auditoria de imagens reprovada. Reprodução local identificou CVE-2026-93990 em libexpat 2.8.4-r0 no web/gateway. A imagem oficial mais recente ainda continha essa versão; builds web/gateway/edge passaram a instalar explicitamente 2.8.5-r0, com base nginx fixada por digest. Produção/desenvolvimento/homologação usam o mesmo Dockerfile de gateway/edge; apenas homologação foi atualizada.
-- Auditoria local após correção: seis imagens sem achados (incluindo edge, agora coberto). Builds aprovados; dez verificações gerais aprovadas e dados de negócio/histórico/exames preservados. Falta novo CI e fechamento documental. Logs locais `nginx-security-*`; nenhum volume removido.
+- Auditoria local após correção: seis imagens sem achados (incluindo edge, agora coberto). Builds aprovados; dez verificações gerais aprovadas e dados de negócio/histórico/exames preservados. Resultado remoto registrado no fechamento abaixo. Logs locais `nginx-security-*`; nenhum volume removido.
+- Complemento de segurança publicado em `7300ea6`, HEAD remoto conferido. [CI 36003711760](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36003711760) aprovado (detalhes abaixo). Web/gateway/edge locais recriados; Chrome repetido no build corrigido, oito grupos aprovados e duas capturas conferidas. Gateway HTTPS: 413/503, JSON 408 em 30,016s, vagas liberadas e 80 chamadas de saúde (p95 local 2,234s). Nova comparação confirmou dados/exames preservados e zero schemas descartáveis.
 
-## Reprodução
+## Fechamento
+
+- [CI 36003711760](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36003711760) aprovado em **15min34s**: **222 backend em 543,774s e 81 frontend**, regressões HTTP, builds e auditorias de pacotes/imagens. As seis imagens, incluindo HTTPS/edge, sem achados nessa execução. Log local `nginx-security-ci.log`.
+- Gateway no CI: 413/503, JSON 408 em 30,011s, vagas liberadas e 80 chamadas de saúde com p95 de 0,0404s. Resultados locais e remotos são medições distintas, sem equivaler a capacidade de produção.
+- Principal em **https://localhost:18443**, revisão `0022_dentist_user_restrict`; banco/exames preservados, cópias locais mantidas e nenhum volume removido. Chrome com build corrigido aprovado e capturas conferidas. Recarregar abas antigas.
+- Fechamento documental posterior ao CI; publicar por commit/push e conferir HEAD local/remoto. Próximo passo: preparação 2B.6.4. Não repetir a revisão geral ou testes aprovados sem nova alteração/falha.
+
+## Comandos de reprodução
 
 ```powershell
-docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml build api web
+docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml build api web gateway edge
 docker compose --project-name erp-dents-homolog --env-file .env.homolog -f docker-compose.homolog.yml run --rm --no-deps -e RUN_HOMOLOG_TESTS=1 -e PYTHONPATH=/app:/app/tests api python -m unittest test_dentist_deletion test_dentist_version -v
 python scripts/smoke_dentist_deletion_homolog.py
 python scripts/smoke_dentist_deletion_browser_homolog.py
