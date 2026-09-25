@@ -4,6 +4,8 @@ Preparação concluída em 24/09/2026, base `3f9dfc7`; naquele momento as corre�
 
 **Atualização em 25/09/2026:** implementação 2B.6.4.1 concluída conforme [relatório](./homologacao-etapa-2B6-4-1.md). O diagnóstico abaixo descreve a base anterior à correção. Próximo recorte: 2B.6.4.2, exclusão individual e download × limpeza.
 
+**Preparação 2B.6.4.2:** [reprodução e decisões detalhadas](./plano-etapa-2B6-4-2.md) confirmaram falhas antes da abertura, após o scanner e após os cabeçalhos. Leitura pelo mesmo descritor preservou bytes nos três cenários de remoção. Implementação pendente; preservar Range, fechamento em desconexão e retorno transacional da exclusão.
+
 ## Comportamento encontrado
 
 | Área | Comportamento atual |

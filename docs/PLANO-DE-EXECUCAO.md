@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**Preparação 2B.6.4.2 concluída em 25/09/2026:** [diagnóstico e decisões](./plano-etapa-2B6-4-2.md), base `52a08ae`. Sete diagnósticos isolados reproduziram falha de download após remoção, demonstraram viabilidade do mesmo descritor e confirmaram retorno de exclusão ignorado no caso de uso. Dados/arquivos preservados; nenhuma alteração funcional. **Próximo passo: implementar 2B.6.4.2**, incluindo Range, fechamento em desconexão, exclusão transacional e interface.
+
 **2B.6.4.1 concluída; fechamento em 25/09/2026:** [relatório](./homologacao-etapa-2B6-4-1.md), implementação `f8ce0ed`. Prévia/fingerprint, exclusão condicionada e permissão da cascata aprovados. [CI 36046114839](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36046114839): **235 backend e 88 frontend**, HTTP, builds e auditorias, em 16min56s. Chrome e atualização principal com dados preservados verificados. **Próximo passo: 2B.6.4.2 — exclusão individual de exames e download × limpeza.**
 
 **Preparação 2B.6.4 concluída em 24/09/2026:** [diagnóstico e contrato](./plano-etapa-2B6-4.md), base `3f9dfc7`. Onze grupos HTTP isolados, quatro diagnósticos: versão antiga ignorada, troca de exame com mesma quantidade não detectada, rollback preservado com consulta vinculada e exclusão indireta de exames sem sua permissão. Dados/exames principais preservados; nenhuma correção funcional nesta preparação. **Próximo passo: implementar 2B.6.4.1**, prévia consistente e comparação do cadastro/conjunto, permissão da cascata e UI. Exclusão individual/download ficam na 2B.6.4.2.
@@ -537,3 +539,17 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Gateway no CI: 413/503, JSON 408 em 30,011s, vagas liberadas e 80 chamadas de saúde com p95 de 0,0388s. Relatório `docs/homologacao-etapa-2B6-4-1.md`. Logs/capturas/cópias/credenciais continuam fora do Git.
 - **Próximo passo: 2B.6.4.2**, conforme `docs/plano-etapa-2B6-4.md`: exclusão individual de exames (identidade, resultado transacional/404, falha/recarga, formulário e prévia local) e reprodução controlada de download × limpeza. Risco da reabertura do caminho por FileResponse ainda somente inspecionado; reproduzir antes de escolher solução. Manter scanner, fila, descritores liberados e não segurar lock global durante transferência lenta. Não repetir revisão geral nem reabrir exclusões concluídas. R18 permanece parcial para exames/regras entre recursos.
 - Retomada de 25/09 confirmou sucesso do mesmo CI/commit; somente fechamento documental, sem alteração executável nem repetição de testes. Publicar fechamento por commit/push e conferir árvore limpa/HEAD remoto.
+
+### Início 2B.6.4.2 — 25/09/2026
+
+- Base `52a08ae`, árvore limpa. Primeiro recorte: reproduzir download × limpeza com arquivos fictícios isolados, verificar o comportamento transacional da exclusão e fechar as decisões de implementação. Nenhuma mudança funcional ou reinício da principal nesta preparação.
+- Verificar as janelas antes da abertura, depois do scanner e depois do início da resposta; distinguir diagnóstico ASGI de teste HTTP/banco/interface. Registrar critérios de descritor, scanner, Range e desconexão antes da correção. Pendentes reprodução, contrato detalhado e publicação deste recorte.
+
+### Ponto de retomada atual — preparação 2B.6.4.2 concluída em 25/09/2026
+
+- Base `52a08ae`, início registrado acima. Probe `.data/probe_exam_download_2b642.py` em container descartável sem volumes/banco, rede exclusiva da homologação; sete diagnósticos, cinco verificações reais do ClamAV. Remoção antes da abertura e após scanner causa 500; remoção após cabeçalhos produz 200 já iniciado seguido de erro sem corpo. Evidência ASGI controlada, não HTTP autenticado/Chrome nem disputa no banco.
+- Mesmo descritor preservou todos os bytes com remoção antes/depois do scanner e entre leituras. Fechamento no contexto do probe aprovado; streaming/cancelamento ainda pendentes. Caso de uso retorna sucesso quando repositório substituído informa exclusão falsa. Contrato detalhado em `docs/plano-etapa-2B6-4-2.md`.
+- Implementação deve preservar Range/If-Range e cabeçalhos, scanner no mesmo descritor, fechamento em todas as saídas e ausência de lock global durante transferência. Exclusão usa resultado transacional e rollback completo; UI confirma identidade, exige recarga após erro e preserva upload/prévia conforme contrato. Nenhuma migração prevista.
+- Principal mantém `0022_dentist_user_restrict`, https://localhost:18443. Sem rebuild/reinício/remoção de volumes. Comparação contra checkpoint da 2B.6.4.1 confirmou linhas de negócio/histórico/bytes preservados; zero schemas descartáveis. Último CI funcional continua `36046114839` (235 backend/88 frontend), não repetido para documentação. R18 continua parcial.
+- **Próximo passo: implementar 2B.6.4.2**, começando por testes permanentes do comportamento corrigido; depois banco/API/componentes/Chrome, atualização preservando dados e CI. Não repetir revisão geral ou tratar esta preparação como correção entregue. Probe e credenciais locais fora do Git.
+- Publicar esta preparação por commit/push e conferir árvore limpa/HEAD remoto. Outra sessão deve partir deste ponto.
