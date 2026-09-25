@@ -6,6 +6,8 @@ Preparação concluída em 24/09/2026, base `3f9dfc7`; naquele momento as corre�
 
 **Preparação 2B.6.4.2:** [reprodução e decisões detalhadas](./plano-etapa-2B6-4-2.md) confirmaram falhas antes da abertura, após o scanner e após os cabeçalhos. Leitura pelo mesmo descritor preservou bytes nos três cenários de remoção. Implementação pendente; preservar Range, fechamento em desconexão e retorno transacional da exclusão.
 
+**Fechamento em 25/09/2026:** 2B.6.4.2 implementada em `3dd58ed`, com download/exclusão/interface e [homologação completa](./homologacao-etapa-2B6-4-2.md) aprovados. Os diagnósticos e encaminhamentos anteriores abaixo são históricos. Próximo recorte: preparação 2B.7, disponibilidade × agendamento.
+
 ## Comportamento encontrado
 
 | Área | Comportamento atual |

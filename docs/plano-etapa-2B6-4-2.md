@@ -1,6 +1,8 @@
 # 2B.6.4.2 — exclusão individual e download de exames
 
-Preparação concluída em 25/09/2026, base `52a08ae`. Complementa o [contrato de pacientes/exames](./plano-etapa-2B6-4.md). **Defeitos reproduzidos; correção funcional pendente.** A 2B.6.4.1 permanece concluída.
+Preparação concluída em 25/09/2026, base `52a08ae`. Complementa o [contrato de pacientes/exames](./plano-etapa-2B6-4.md). Naquele momento os defeitos estavam reproduzidos e a correção funcional ainda estava pendente. A 2B.6.4.1 já estava concluída.
+
+**Atualização de fechamento, 25/09/2026:** correção `3dd58ed` concluída conforme [homologação](./homologacao-etapa-2B6-4-2.md): 247 backend/97 frontend no CI, HTTP/Chrome e preservação aprovados. O restante deste documento registra o diagnóstico anterior e os critérios usados; não representa pendência atual de implementação. Próximo recorte: preparação 2B.7, disponibilidade × agendamento.
 
 ## Diagnóstico reproduzido
 
