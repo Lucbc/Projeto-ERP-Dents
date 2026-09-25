@@ -1,6 +1,8 @@
 # 2B.6.4 — preparação da exclusão de pacientes e exames
 
-Preparação concluída em 24/09/2026, base `3f9dfc7`. **Correções ainda não implementadas.** A subetapa entrega o diagnóstico e o contrato; mantém a principal na revisão `0022_dentist_user_restrict`. Referências: [plano de execução](./PLANO-DE-EXECUCAO.md), [revisão R18](./revisao-tecnica-2026-09-15.md#r18--p1--duas-pessoas-podem-sobrescrever-alterações-uma-da-outra).
+Preparação concluída em 24/09/2026, base `3f9dfc7`; naquele momento as correções ainda não estavam implementadas. A preparação entregou diagnóstico e contrato, mantendo a principal na revisão `0022_dentist_user_restrict`. Referências: [plano de execução](./PLANO-DE-EXECUCAO.md), [revisão R18](./revisao-tecnica-2026-09-15.md#r18--p1--duas-pessoas-podem-sobrescrever-alterações-uma-da-outra).
+
+**Atualização em 25/09/2026:** implementação 2B.6.4.1 concluída conforme [relatório](./homologacao-etapa-2B6-4-1.md). O diagnóstico abaixo descreve a base anterior à correção. Próximo recorte: 2B.6.4.2, exclusão individual e download × limpeza.
 
 ## Comportamento encontrado
 
@@ -83,6 +85,6 @@ Essa regra fecha a exclusão indireta de um recurso cuja exclusão direta é pro
 | Download (2B.6.4.2) | Exclusão antes/depois de abrir arquivo, scanner, transferência interrompida e descritores liberados; bytes completos ou erro controlado |
 | Entrega | Cópias antes de atualizar principal, API/web juntos, preservação, smokes adaptados, regressão/CI, commit/push e HEAD remoto |
 
-## Próximo passo exato
+## Encaminhamento original da preparação (2B.6.4.1 já concluída)
 
 Implementar **2B.6.4.1**, começando pelos testes de prévia/fingerprint e bloqueios em banco isolado; manter 2B.6.4.2 separado para a interface individual/download. Adaptar portas, casos de uso, rotas, schemas, services, tipos, tela e todos os callers de DELETE paciente (inclusive limpezas construídas por variável). Não adicionar teste permanente que espere o defeito diagnosticado. Não repetir a revisão geral nem reabrir catálogos/consultas/dentistas concluídos.
