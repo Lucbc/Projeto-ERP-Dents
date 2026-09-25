@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**Diagnóstico 2B.7 concluído em 25/09/2026:** [evidências e contrato técnico](./plano-etapa-2B7.md), base `71ad428`. Seis interleavings confirmaram disponibilidade antiga na criação/reagendamento/reativação; outros diagnósticos identificaram manutenção de consulta incompatível, segundos truncados e hora inválida aceita. Dados preservados; nenhuma mudança funcional. **Próximo passo: 2B.7.1 — validação de horários.** Política de consultas existentes aguarda resposta do usuário antes da 2B.7.2.
+
 **2B.6.4.2 concluída em 25/09/2026:** implementação `3dd58ed` publicada. Download pelo mesmo descritor, exclusão transacional e confirmação/revisão na interface; [relatório](./homologacao-etapa-2B6-4-2.md). [CI 36147540532](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36147540532) aprovado em 14min23s: **247 backend/97 frontend**, HTTP, builds e auditorias. Chrome e atualização principal com dados preservados aprovados. **Próximo passo: preparação 2B.7 — disponibilidade × agendamento.**
 
 **Preparação 2B.6.4.2 concluída em 25/09/2026:** [diagnóstico e decisões](./plano-etapa-2B6-4-2.md), base `52a08ae`. Sete diagnósticos isolados reproduziram falha de download após remoção, demonstraram viabilidade do mesmo descritor e confirmaram retorno de exclusão ignorado no caso de uso. Dados/arquivos preservados; nenhuma alteração funcional. **Próximo passo: implementar 2B.6.4.2**, incluindo Range, fechamento em desconexão, exclusão transacional e interface.
@@ -576,3 +578,17 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Gateway no CI: 413/503, JSON 408 em 30,007s, vagas liberadas, 80 chamadas de saúde com p95 de 0,0242s. Relatório `docs/homologacao-etapa-2B6-4-2.md`; limites de Docker Linux, métodos internos da Starlette e camadas de teste registrados. Logs/capturas/credenciais/cópias fora do Git.
 - **Próximo passo: preparação 2B.7 — disponibilidade de dentistas × agendamento/reagendamento.** Mapear validações, ordem de bloqueios e alteração concorrente de horários; reproduzir/definir contrato antes de implementar. Não repetir revisão geral nem reabrir exclusões concluídas. Auditoria clínica completa e instalação assistida mantêm etapas próprias. R18 continua parcial para regras entre recursos.
 - Fechamento posterior ao CI somente documental. Publicar commit/push e conferir árvore limpa/HEAD remoto; outra sessão deve partir deste ponto.
+
+### Preparação 2B.7 — iniciada em 25/09/2026
+
+- Base `71ad428`, árvore limpa. Mapear disponibilidade/inativação × criação, reagendamento e reativação de consultas; reproduzir interleavings em conexões independentes, dados fictícios e schema descartável. Nenhuma mudança funcional/migração nesta preparação.
+- Regra para consultas futuras já marcadas apresentada ao usuário: bloquear mudança incompatível até reagendar/cancelar ou manter marcações e aplicar somente às novas. Diagnóstico técnico pode prosseguir enquanto essa decisão está pendente. Faltam evidências, contrato, preservação e publicação.
+
+### Ponto de retomada atual — diagnóstico 2B.7 concluído em 25/09/2026
+
+- Base `71ad428`, árvore inicialmente limpa. Inspecionados casos de uso/repos de consultas/dentistas, schemas, UI de dentistas/lista/calendário e captura financeira `FOR SHARE NOWAIT`. Contrato `docs/plano-etapa-2B7.md`.
+- Probe `.data/probe_availability_2b7.py`: schema migrado próprio, duas sessões e interleaving determinístico após validação/antes da escrita. Seis casos confirmaram criação/reagendamento/reativação fora da disponibilidade ou com dentista já inativo; ambas as escritas confirmam. Outros diagnósticos: consulta futura permanece após esvaziar horários, observação falha/cancelamento funciona; fim 10:30:59 cabe indevidamente em turno até 10:30. Oito diagnósticos no probe, execução de 5,066s; nono via schema instalado aceita 25:00–26:00. Não são testes permanentes nem carga/HTTP/Chrome.
+- Decisão de negócio apresentada por pergunta: bloquear redução/inativação incompatível até reagendar/cancelar (recomendação) ou preservar compromissos existentes e aplicar às novas reservas. **Resposta pendente; não interpretar silêncio como escolha.** Contrato técnico independente cobre validação estrita, segundos, mesma transação/locks e rollback; detalhes da política dependem da escolha.
+- **Próximo passo: implementar 2B.7.1**, validação de horários/fronteiras, independente da resposta. Depois, 2B.7.2 corrige coordenação transacional/UI incorporando a regra escolhida. Não apresentar validação isolada como solução da corrida, nem reabrir exclusões concluídas. R18 continua parcial.
+- Principal mantém `0022_dentist_user_restrict`, https://localhost:18443, sem rebuild/reinício/migração. Comparação integral com checkpoint 2B.6.4.2 confirmou negócio/histórico/bytes preservados; zero schemas descartáveis, nenhum volume removido. Último CI continua `36147540532` (247 backend/97 frontend), não repetido para documentação.
+- Publicar diagnóstico por commit/push e conferir árvore limpa/HEAD remoto. Probe/logs/credenciais/cópias locais fora do Git. Outra sessão deve partir deste ponto e verificar eventual resposta assíncrona do usuário.
