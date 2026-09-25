@@ -6,7 +6,7 @@ import io
 import logging
 
 from src.core.domain.entities import Exam
-from src.core.domain.exceptions import NotFoundError, ValidationError, PayloadTooLargeError
+from src.core.domain.exceptions import NotFoundError, ValidationError, PayloadTooLargeError, StorageUnavailableError
 from src.core.ports.repositories import ExamRepository, PatientRepository
 from src.core.ports.services import ExamStorage
 
@@ -93,17 +93,19 @@ class ExamUseCases:
             path = self.exam_storage.get_file_path(exam.patient_id, exam.stored_filename)
         except ValueError as error:
             raise NotFoundError("Arquivo do exame indisponível.") from error
-        if not path.exists():
-            raise NotFoundError("Arquivo do exame não encontrado no armazenamento.")
+        except OSError as error:
+            raise StorageUnavailableError("Arquivo do exame indisponível no armazenamento.") from error
+        try:
+            if not path.exists():
+                raise NotFoundError("Arquivo do exame não encontrado no armazenamento.")
+        except OSError as error:
+            raise StorageUnavailableError("Arquivo do exame indisponível no armazenamento.") from error
 
         return exam, path
 
     def delete(self, exam_id: UUID) -> None:
-        exam = self.exam_repository.get(exam_id)
-        if exam is None:
+        if not self.exam_repository.delete(exam_id):
             raise NotFoundError("Exame não encontrado.")
-
-        self.exam_repository.delete(exam_id)
 
     def _ensure_patient_exists(self, patient_id: UUID) -> None:
         patient = self.patient_repository.get(patient_id)

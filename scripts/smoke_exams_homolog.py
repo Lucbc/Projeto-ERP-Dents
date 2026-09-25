@@ -33,6 +33,16 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     assert request.last_headers["Content-Disposition"].startswith("attachment;")
     assert "sandbox" in request.last_headers["Content-Security-Policy"]
     passed("real multipart upload detects type and downloads exact bytes with attachment/nosniff/sandbox")
+    download_path = "/api/exams/" + exam["id"] + "/download"
+    etag = request.last_headers["ETag"]
+    assert expect("GET", download_path, status=206, headers={"Range":"bytes=0-7", "If-Range":etag}) == PNG[:8]
+    assert request.last_headers["Content-Range"] == f"bytes 0-7/{len(PNG)}"
+    assert expect("GET", download_path, headers={"Range":"bytes=0-7", "If-Range":'"old"'}) == PNG
+    multipart = expect("GET", download_path, status=206, headers={"Range":"bytes=0-7,20-29"})
+    assert PNG[:8] in multipart and PNG[20:30] in multipart
+    assert int(request.last_headers["Content-Length"]) == len(multipart)
+    expect("GET", download_path, status=416, headers={"Range":"bytes=999999-"})
+    passed("authenticated scanned downloads preserve Range, If-Range, multipart lengths and 416")
     for data, name in ((b"<script>alert(1)</script>", "fake.png"), (PNG, "active.html"),
                        (b"<svg/>", "active.svg"), (b"", "empty.png")):
         upload(data, name, status=400)
@@ -63,6 +73,7 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     pdf = upload(b"%PDF-1.7\n1 0 obj <<>> endobj\n%%EOF", "sample.pdf", "application/pdf")
     upload(b"\xff\xd8\xff\xe0fictitious\xff\xd9", "sample.jpg", "image/jpeg")
     expect("DELETE", "/api/exams/" + pdf["id"], status=204)
+    expect("DELETE", "/api/exams/" + pdf["id"], status=404)
     expect("GET", "/api/exams/" + pdf["id"] + "/download", status=404)
     dentist = expect("POST", "/api/dentists", {"full_name": "Fictitious Exam Dentist",
         "availability": [{"day_of_week": "friday", "start_time": "08:00", "end_time": "18:00"}]}, status=201)

@@ -33,10 +33,19 @@ export function PatientExamsPage() {
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState(0);
   const uploadController = useRef<AbortController>();
-  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
+  const [preview, setPreview] = useState<{ id: string; url: string; name: string } | null>(null);
+  const [deletion, setDeletion] = useState<{ id: string; filename: string; patient: string } | null>(null);
+  const [reviewRequired, setReviewRequired] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const deleteBusy = useRef(false);
+  const pageGeneration = useRef(0);
   const previewRequest = useRef(0);
   useEffect(() => () => { uploadController.current?.abort(); previewRequest.current++; }, []);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
+  useEffect(() => {
+    setPreview(null); setDeletion(null); setReviewRequired(false); setReloading(false);
+    return () => { pageGeneration.current++; previewRequest.current++; };
+  }, [patientId]);
   const policyQuery = useQuery({ queryKey: ["exams", "upload-policy"], queryFn: examService.uploadPolicy });
 
   const form = useForm<UploadForm>({
@@ -83,13 +92,39 @@ export function PatientExamsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (examId: string) => examService.remove(examId),
-    onSuccess: () => {
+    mutationFn: (target: { id: string; patientId: string; generation: number }) => examService.remove(target.id),
+    onSuccess: (_, target) => {
+      void queryClient.invalidateQueries({ queryKey: ["exams", target.patientId] });
+      if (target.generation !== pageGeneration.current) return;
       toast("Exame removido.");
-      void queryClient.invalidateQueries({ queryKey: ["exams", patientId] });
+      previewRequest.current++;
+      setPreview(current => current?.id === target.id ? null : current);
+      setDeletion(null);
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error, target) => {
+      if (target.generation !== pageGeneration.current) return;
+      setDeletion(null); setReviewRequired(true);
+      toast(getApiErrorMessage(error), "error");
+    },
+    onSettled: () => { deleteBusy.current = false; },
   });
+
+  async function reloadExams() {
+    if (reloading) return;
+    const generation = pageGeneration.current;
+    setReloading(true);
+    try {
+      const [exams, patient] = await Promise.all([examsQuery.refetch(), patientQuery.refetch()]);
+      if (generation !== pageGeneration.current) return;
+      if (exams.isError || patient.isError) {
+        toast("Não foi possível recarregar. Confira novamente antes de excluir.", "error");
+        return;
+      }
+      previewRequest.current++; setPreview(null); setDeletion(null); setReviewRequired(false);
+    } finally {
+      if (generation === pageGeneration.current) setReloading(false);
+    }
+  }
 
   const canCreate = can("exams", "create");
   const canDelete = can("exams", "delete");
@@ -159,6 +194,13 @@ export function PatientExamsPage() {
       <Card>
         <h3 className="mb-3 font-semibold text-slate-800">Arquivos enviados</h3>
 
+        {reviewRequired && <div role="alert" className="mb-3 space-y-2">
+          <p>Confira a lista atualizada antes de escolher novamente um exame para excluir.</p>
+          <Button variant="outline" disabled={reloading} onClick={() => void reloadExams()}>
+            {reloading ? "Recarregando..." : "Recarregar lista para conferir"}
+          </Button>
+        </div>}
+
         {examsQuery.isLoading && <LoadingState message="Carregando exames..." />}
         {examsQuery.isError && <ErrorState message="Erro ao carregar exames." />}
 
@@ -201,8 +243,8 @@ export function PatientExamsPage() {
                               onClick={() => {
                                 const request = ++previewRequest.current;
                                 void examService.previewImage(exam.id, exam.mime_type).then((blob) => {
-                                  if (request === previewRequest.current) setPreview({ url: URL.createObjectURL(blob), name: exam.original_filename });
-                                }).catch(() => toast("Não foi possível visualizar a imagem. Tente baixar o arquivo.", "error"));
+                                  if (request === previewRequest.current) setPreview({ id: exam.id, url: URL.createObjectURL(blob), name: exam.original_filename });
+                                }).catch(() => { if (request === previewRequest.current) toast("Não foi possível visualizar a imagem. Tente baixar o arquivo.", "error"); });
                               }}
                             >
                               Visualizar imagem
@@ -210,10 +252,9 @@ export function PatientExamsPage() {
                             {canDelete && (
                               <Button
                                 variant="danger"
+                                disabled={deleteMutation.isPending || reviewRequired || reloading || !patientQuery.data || patientQuery.isError}
                                 onClick={() => {
-                                  if (window.confirm("Deseja remover este exame?")) {
-                                    deleteMutation.mutate(exam.id);
-                                  }
+                                  setDeletion({ id: exam.id, filename: exam.original_filename, patient: patientQuery.data!.full_name });
                                 }}
                               >
                                 Excluir
@@ -230,6 +271,18 @@ export function PatientExamsPage() {
           </>
         )}
       </Card>
+      <Modal open={Boolean(deletion)} title="Excluir exame" onClose={() => { if (!deleteBusy.current) setDeletion(null); }}>
+        {deletion && <div className="space-y-3">
+          <p>Excluir o arquivo <strong>{deletion.filename}</strong> do paciente <strong>{deletion.patient}</strong>?</p>
+          <p>O exame será removido. A remoção do arquivo pode levar alguns instantes.</p>
+          <Button variant="outline" disabled={deleteMutation.isPending} onClick={() => setDeletion(null)}>Cancelar exclusão</Button>
+          <Button variant="danger" disabled={deleteMutation.isPending || reviewRequired || !canDelete} onClick={() => {
+            if (deleteBusy.current || reviewRequired || !canDelete) return;
+            deleteBusy.current = true;
+            deleteMutation.mutate({ id: deletion.id, patientId, generation: pageGeneration.current });
+          }}>{deleteMutation.isPending ? "Excluindo..." : "Confirmar exclusão"}</Button>
+        </div>}
+      </Modal>
       <Modal open={Boolean(preview)} title={preview?.name ?? "Imagem do exame"} onClose={() => { previewRequest.current++; setPreview(null); }}>
         {preview && <img src={preview.url} alt={preview.name} className="max-h-[70vh] max-w-full object-contain"
           onError={() => { setPreview(null); toast("Imagem inválida para prévia. Use o download.", "error"); }} />}

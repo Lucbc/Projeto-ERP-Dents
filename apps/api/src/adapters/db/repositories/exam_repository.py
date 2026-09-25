@@ -53,18 +53,20 @@ class SqlAlchemyExamRepository(ExamRepository):
             ExamModel.stored_filename == stored_filename)) is not None
 
     def delete(self, exam_id) -> bool:
-        item = self.session.get(ExamModel, exam_id)
-        if item is None:
-            return False
-
-        # Same lock order as patient deletion; no physical deletion before commit.
-        self.session.scalar(select(PatientModel).where(PatientModel.id == item.patient_id).with_for_update())
-        item = self.session.scalar(select(ExamModel).where(ExamModel.id == exam_id).with_for_update())
-        if item is None:
-            return False
-        queue_exam_file(self.session, item.patient_id, item.stored_filename)
-        self.session.delete(item)
         try:
+            patient_id = self.session.scalar(select(ExamModel.patient_id).where(ExamModel.id == exam_id))
+            if patient_id is None:
+                self.session.rollback()
+                return False
+            # Same lock order as patient deletion; no physical deletion before commit.
+            self.session.scalar(select(PatientModel.id).where(PatientModel.id == patient_id).with_for_update())
+            item = self.session.scalar(select(ExamModel).where(ExamModel.id == exam_id)
+                .with_for_update().execution_options(populate_existing=True))
+            if item is None:
+                self.session.rollback()
+                return False
+            queue_exam_file(self.session, item.patient_id, item.stored_filename)
+            self.session.delete(item)
             self.session.commit()
         except Exception:
             self.session.rollback()

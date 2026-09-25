@@ -3,7 +3,8 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
-from fastapi.responses import FileResponse
+from src.api.exam_response import OpenExamResponse
+from src.core.domain.exceptions import NotFoundError, StorageUnavailableError
 from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.exam_repository import SqlAlchemyExamRepository
@@ -83,15 +84,24 @@ def upload_exam(
 def download_exam(exam_id: UUID, db: Session = Depends(get_db_dep)):
     use_case = build_use_case(db)
     exam, file_path = use_case.get_download(exam_id)
-    with file_path.open("rb") as stream:
+    # Materialized domain entity; release the read transaction before scanning
+    # or streaming. No database/global storage lock is held for a slow client.
+    db.rollback()
+    try:
+        stream = file_path.open("rb")
+    except FileNotFoundError as error:
+        raise NotFoundError("Arquivo do exame não encontrado no armazenamento.") from error
+    except OSError as error:
+        raise StorageUnavailableError("Arquivo do exame indisponível no armazenamento.") from error
+    try:
         ClamAVScanner(host=get_settings().clamav_host).scan(stream)
-    return FileResponse(
-        path=file_path,
-        media_type="application/octet-stream",
-        filename=exam.original_filename,
-        headers={"X-Content-Type-Options": "nosniff", "Content-Security-Policy": "sandbox; default-src 'none'",
-                 "Cache-Control": "no-store"},
-    )
+        return OpenExamResponse(stream, exam.original_filename)
+    except OSError as error:
+        stream.close()
+        raise StorageUnavailableError("Arquivo do exame indisponível no armazenamento.") from error
+    except BaseException:
+        stream.close()
+        raise
 
 
 @router.delete(

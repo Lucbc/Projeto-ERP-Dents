@@ -553,3 +553,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Principal mantém `0022_dentist_user_restrict`, https://localhost:18443. Sem rebuild/reinício/remoção de volumes. Comparação contra checkpoint da 2B.6.4.1 confirmou linhas de negócio/histórico/bytes preservados; zero schemas descartáveis. Último CI funcional continua `36046114839` (235 backend/88 frontend), não repetido para documentação. R18 continua parcial.
 - **Próximo passo: implementar 2B.6.4.2**, começando por testes permanentes do comportamento corrigido; depois banco/API/componentes/Chrome, atualização preservando dados e CI. Não repetir revisão geral ou tratar esta preparação como correção entregue. Probe e credenciais locais fora do Git.
 - Publicar esta preparação por commit/push e conferir árvore limpa/HEAD remoto. Outra sessão deve partir deste ponto.
+
+### Implementação 2B.6.4.2 — iniciada em 25/09/2026
+
+- Base `b596739`, árvore limpa. Implementar download pelo mesmo descritor com Range e fechamento garantido, exclusão transacional e confirmação/revisão na interface. Pendentes testes focados, banco/API/Chrome isolados, regressão, atualização com preservação e publicação/CI. Sem migração prevista.
+
+- Implementados descritor único, Range/If-Range, transação de leitura encerrada, fechamento/erro controlado, exclusão com retorno transacional/rollback e interface de confirmação/recarga/rascunho/prévia. Primeiros 24 focados e 12 focados finais aprovados; 96 frontend e 13 grupos HTTP aprovados. Build API/web concluído; relatório `docs/homologacao-etapa-2B6-4-2.md`.
+- Regressão completa `.data/exam-642-full.log` em andamento. Chrome final `.data/exam-642-browser-final.log` após corrigir espera do teste de recarga; primeira execução não foi aprovada integralmente. Cópias públicas/exames/fingerprints `pre-2B6-4-2*` salvos; helper `.data/upgrade_2b642.py`. Principal ainda na versão anterior/0022. Após validações e zero schemas, dump completo, atualizar API/web e comparar preservação. Pendentes publicação/CI e fechamento.
+
+- Chrome final aprovado, capturas conferidas: duas abas, download exato, prévia, ausência, revisão/nova confirmação e rascunho intacto. Complementos aprovados: nove casos finais da UI (revogação incluída) e oito de resposta (desconexão antes do corpo incluída). Esperado no CI: 247 backend/97 frontend. Publicar implementação enquanto regressão local e HTTP operacional terminam; acompanhar CI antes do fechamento.
