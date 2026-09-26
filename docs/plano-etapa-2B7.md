@@ -1,6 +1,6 @@
 # 2B.7 — disponibilidade de dentistas e agendamento
 
-Diagnóstico técnico concluído em 25/09/2026, base `71ad428`. Na preparação não houve correção funcional. **2B.7.1 posteriormente concluída**, implementação `b935d5f`: validação de horários e fronteiras, leitura legada e correção explícita na interface; [evidências](./homologacao-etapa-2B7-1.md). Os seis interleavings abaixo continuam pendentes da 2B.7.2. A decisão sobre consultas futuras já existentes foi apresentada ao usuário e permanece pendente.
+**2B.7 concluída:** validação de horários na [2B.7.1](./homologacao-etapa-2B7-1.md), implementação `b935d5f`; coordenação transacional e interface na [2B.7.2](./homologacao-etapa-2B7-2.md), implementação `6dbf767` e ajuste de testes `6170ee0`, concluída em 26/09/2026. Usuário escolheu bloquear alterações incompatíveis até reagendar/cancelar explicitamente. Os seis interleavings abaixo foram corrigidos e testados nas duas ordens. O diagnóstico original, base `71ad428`, é preservado como histórico.
 
 ## O que foi reproduzido
 
@@ -25,7 +25,7 @@ Outros três diagnósticos:
 
 São **nove diagnósticos**: oito no probe (uma execução em 5,066s) e um teste direto do schema. Não adicionar teste permanente que espere esses defeitos.
 
-## Causa e pontos de alteração
+## Causa identificada na preparação
 
 - `AppointmentUseCases.create/update` lê dentista e valida antes de chamar o repositório. `SqlAlchemyAppointmentRepository.create/update` não relê nem bloqueia a disponibilidade para validar/escrever na mesma transação.
 - Atualização de dentista compara sua própria versão; não verifica consultas existentes. Exclusion constraints da agenda impedem sobreposição entre consultas, mas não protegem o JSON de disponibilidade ou o campo `active` do dentista.
@@ -42,7 +42,7 @@ Foi perguntado como tratar consultas futuras quando o dentista é inativado ou s
 
 **Resposta recebida:** bloquear a alteração até reagendar ou cancelar as consultas afetadas. A implementação da 2B.7.2 está autorizada com essa regra. As referências à resposta pendente nos registros da preparação são históricas.
 
-Se for escolhida a proposta recomendada, detalhar na implementação: compromissos `scheduled`/`confirmed` ainda não encerrados (`end_at` posterior ao instante de verificação), incluindo consultas em andamento; cancelados/concluídos e histórico não devem ser cancelados, reagendados ou reclassificados implicitamente. Nome/cor/contato sem mudança efetiva de disponibilidade/ativo não devem ficar bloqueados por dados legados. O recorte temporal deve ser testado com relógio controlado, sem depender da data da execução.
+Regra escolhida e implementada: compromissos `scheduled`/`confirmed` ainda não encerrados (`end_at` posterior ao instante de verificação), incluindo consultas em andamento; cancelados/concluídos e histórico não são cancelados, reagendados ou reclassificados implicitamente. Nome/cor/contato sem mudança efetiva de disponibilidade/ativo não ficam bloqueados por consultas legadas incompatíveis. A validação estrita dos horários enviados da 2B.7.1 permanece. Recorte temporal testado com relógio controlado, sem depender da data da execução.
 
 ## Contrato técnico independente da política
 
@@ -84,6 +84,8 @@ Se for escolhida a proposta recomendada, detalhar na implementação: compromiss
 | Entrega | Cópias, regressão/CI, atualização preservando dados, zero schemas descartáveis, commit/push e HEAD remoto |
 
 ## Ambiente e retomada
+
+- **Estado final após 2B.7.2:** CI `36236034979` aprovado, 262 backend/106 frontend; HTTP e Chrome privado em duas abas aprovados. Principal atualizada, revisão `0022`, dados/histórico/bytes preservados, zero schemas e nenhum volume removido. Próximo passo: preparação 2B.8, concorrência administrativa em usuários/permissões. Não repetir esta etapa nem perguntar novamente a política já escolhida. Os estados seguintes são históricos.
 
 - **Estado após 2B.7.1:** principal atualizada em https://localhost:18443, revisão `0022_dentist_user_restrict`, dados/histórico/bytes preservados, zero schemas descartáveis e nenhum volume removido. CI `36206543443` aprovado, 254 backend/102 frontend; HTTP e Chrome aprovados. Próximo passo é 2B.7.2, incorporando a resposta sobre compromissos existentes antes de implementar a política; não repetir a validação já entregue. Os itens abaixo registram o ambiente da preparação original.
 
