@@ -104,7 +104,9 @@ class DentistDeletionTests(unittest.TestCase):
     def test_new_user_or_appointment_racing_deletion_never_leaves_orphan(self):
         for kind in ('user','appointment','reassign'):
             with self.subTest(kind=kind):
-                with Session(self.engine) as db: target=Repository(db).create({'full_name':'Fictitious race dentist'})
+                with Session(self.engine) as db:
+                    repo = Repository(db)
+                    target=repo.create({'full_name':'Fictitious race dentist', 'availability':repo.get(self.id).availability})
                 user_id=None
                 if kind=='reassign':
                     with Session(self.engine) as db: user_id=self.user(db,self.id)
@@ -122,6 +124,10 @@ class DentistDeletionTests(unittest.TestCase):
                             return True
                         except DBAPIError as error:
                             db.rollback(); self.assertEqual(error.orig.sqlstate,'23503'); return False
+                        except NotFoundError:
+                            self.assertEqual(kind, 'appointment')
+                            self.assertFalse(db.in_transaction())
+                            return False
                 def delete():
                     with Session(self.engine) as db:
                         gate.wait()
@@ -132,6 +138,7 @@ class DentistDeletionTests(unittest.TestCase):
                     a=pool.submit(link); b=pool.submit(delete); self.assertEqual(int(a.result())+int(b.result()),1)
                 with self.engine.begin() as db:
                     self.assertEqual(db.scalar(text('SELECT count(*) FROM users u LEFT JOIN dentists d ON u.dentist_id=d.id WHERE u.dentist_id IS NOT NULL AND d.id IS NULL')),0)
+                    self.assertEqual(db.scalar(text('SELECT count(*) FROM appointments a LEFT JOIN dentists d ON a.dentist_id=d.id WHERE d.id IS NULL')),0)
                     # Free the patient's slot for the next subcase.
                     db.execute(text('DELETE FROM appointments'))
 
@@ -160,8 +167,9 @@ class DentistDeletionTests(unittest.TestCase):
             with Session(self.engine) as db:
                 repo=agenda.SqlAlchemyAppointmentRepository(db); before=repo.get(id)
                 gate.wait(); self.assertTrue(deleted.wait(15))
-                with self.assertRaises(DBAPIError): repo.update(id,{'version':1,'dentist_id':target,'notes':'Rejected change'})
-                db.rollback(); self.assertEqual(repo.get(id),before)
+                with self.assertRaises(NotFoundError): repo.update(id,{'version':1,'dentist_id':target,'notes':'Rejected change'})
+                self.assertFalse(db.in_transaction())
+                self.assertEqual(repo.get(id),before)
         def delete():
             gate.wait()
             try:
