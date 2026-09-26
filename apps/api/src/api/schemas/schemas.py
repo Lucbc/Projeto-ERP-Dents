@@ -13,6 +13,7 @@ from src.core.domain.entities import (
     PaymentMethod,
     UserRole,
 )
+from src.core.domain.availability import validate_slot
 
 
 class AppBaseSchema(BaseModel):
@@ -109,13 +110,12 @@ DayOfWeek = Literal["monday", "tuesday", "wednesday", "thursday", "friday", "sat
 
 class DentistAvailabilitySlot(BaseModel):
     day_of_week: DayOfWeek
-    start_time: str = Field(pattern=r"^\d{2}:\d{2}$")
-    end_time: str = Field(pattern=r"^\d{2}:\d{2}$")
+    start_time: str
+    end_time: str
 
     @model_validator(mode="after")
     def validate_range(self) -> "DentistAvailabilitySlot":
-        if self.end_time <= self.start_time:
-            raise ValueError("end_time must be greater than start_time")
+        validate_slot(self.day_of_week, self.start_time, self.end_time)
         return self
 
 
@@ -142,6 +142,14 @@ class DentistUpdateRequest(BaseModel):
     active: bool | None = None
 
 
+class DentistAvailabilitySlotResponse(BaseModel):
+    # Read legacy strings unchanged so operators can see and correct them.
+    # Strict clock validation belongs to create/update requests, not history.
+    day_of_week: str
+    start_time: str
+    end_time: str
+
+
 class DentistResponse(AppBaseSchema):
     version: int
     id: UUID
@@ -151,7 +159,7 @@ class DentistResponse(AppBaseSchema):
     email: str | None
     specialty: str | None
     color: str | None
-    availability: list[DentistAvailabilitySlot]
+    availability: list[DentistAvailabilitySlotResponse]
     active: bool
     created_at: datetime
     updated_at: datetime

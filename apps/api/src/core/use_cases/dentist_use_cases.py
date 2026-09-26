@@ -4,6 +4,7 @@ import re
 from uuid import UUID
 
 from src.core.domain.entities import Dentist
+from src.core.domain.availability import validate_slot
 from src.core.domain.exceptions import NotFoundError, ValidationError
 from src.core.ports.repositories import DentistRepository
 
@@ -86,15 +87,13 @@ class DentistUseCases:
             if not isinstance(slot_raw, dict):
                 raise ValidationError(f"Disponibilidade invalida na posicao {idx + 1}.")
 
-            day_of_week = str(slot_raw.get("day_of_week", "")).strip().lower()
-            start_time = str(slot_raw.get("start_time", "")).strip()
-            end_time = str(slot_raw.get("end_time", "")).strip()
-
-            if not day_of_week or not start_time or not end_time:
-                raise ValidationError("Cada disponibilidade precisa de dia, inicio e fim.")
-
-            if end_time <= start_time:
-                raise ValidationError("Em cada disponibilidade, o horario final deve ser maior que o inicial.")
+            day_of_week = slot_raw.get("day_of_week")
+            start_time = slot_raw.get("start_time")
+            end_time = slot_raw.get("end_time")
+            try:
+                validate_slot(day_of_week, start_time, end_time)
+            except ValueError as error:
+                raise ValidationError(str(error)) from error
 
             key = (day_of_week, start_time, end_time)
             if key in seen:

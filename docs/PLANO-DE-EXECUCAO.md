@@ -592,3 +592,16 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próximo passo: implementar 2B.7.1**, validação de horários/fronteiras, independente da resposta. Depois, 2B.7.2 corrige coordenação transacional/UI incorporando a regra escolhida. Não apresentar validação isolada como solução da corrida, nem reabrir exclusões concluídas. R18 continua parcial.
 - Principal mantém `0022_dentist_user_restrict`, https://localhost:18443, sem rebuild/reinício/migração. Comparação integral com checkpoint 2B.6.4.2 confirmou negócio/histórico/bytes preservados; zero schemas descartáveis, nenhum volume removido. Último CI continua `36147540532` (247 backend/97 frontend), não repetido para documentação.
 - Publicar diagnóstico por commit/push e conferir árvore limpa/HEAD remoto. Probe/logs/credenciais/cópias locais fora do Git. Outra sessão deve partir deste ponto e verificar eventual resposta assíncrona do usuário.
+
+### Implementação 2B.7.1 — iniciada em 25/09/2026
+
+- Base `0d57960`, árvore limpa. Centralizar horários válidos, comparar fronteiras com segundos/microssegundos, preservar legado e corrigir formulário sem truncamento silencioso. Sem migração nem mudança da política de compromissos existentes; 2B.7.2 continua separada e a escolha do usuário permanece pendente.
+- Pendentes implementação, diagnóstico agregado do legado, testes de domínio/schema/banco/HTTP/formulário/Chrome, cópias/atualização/preservação, commit/push e CI.
+
+- Implementados helper puro de horários, schema de entrada estrito/leitura legada separada, comparação com precisão completa e formulário sem truncamento/remoção silenciosos. **38 backend focados em 183,008s e cinco frontend em 54,73s aprovados**, build API/web e dez grupos HTTP aprovados. Primeira inicialização HTTP excedeu prazo do harness sob carga; repetição sequencial passou sem mudança de produto.
+- Diagnóstico agregado somente de leitura: um dentista e zero intervalos/disponibilidades inválidos na principal. Cópias públicas/exames/fingerprints `pre-2B7-1*` salvos; helper `.data/upgrade_2b71.py`. Chrome privado em andamento, relatório `docs/homologacao-etapa-2B7-1.md`.
+- Pendentes Chrome, publicação/CI (254 backend/102 frontend esperados), dump completo após zero schemas, atualização API/web e preservação, fechamento. Regressão completa será executada no CI; não duplicar localmente sem nova falha. Não iniciar 2B.7.2 nem tratar esta correção de validação como resolução da corrida/política pendente.
+
+- Chrome HTTPS privado aprovado e capturas conferidas: legado com segundos sem truncamento, mensagem de revisão, intervalo invertido sem envio/perda do rascunho e correção explícita persistida. Publicar implementação e acompanhar CI; principal ainda aguarda dump completo/atualização/preservação.
+
+- Revisão final: comprimento exato de cinco caracteres também rejeita quebra de linha após o horário; cinco casos novos de frontend aprovados em 6,67s e build web final aprovado. Total esperado no CI: 254 backend/102 frontend.

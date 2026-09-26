@@ -36,8 +36,10 @@ const dayLabelByValue: Record<DayOfWeek, string> = dayOfWeekOptions.reduce(
 const availabilitySlotSchema = z
   .object({
     day_of_week: z.enum(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/, "Horario inicial invalido."),
-    end_time: z.string().regex(/^\d{2}:\d{2}$/, "Horario final invalido."),
+    start_time: z.string().length(5, "Horario inicial invalido. Use HH:MM.")
+      .regex(/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/, "Horario inicial invalido. Use HH:MM de 00:00 a 23:59."),
+    end_time: z.string().length(5, "Horario final invalido. Use HH:MM.")
+      .regex(/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/, "Horario final invalido. Use HH:MM de 00:00 a 23:59."),
   })
   .refine((slot) => slot.end_time > slot.start_time, {
     message: "Horario final deve ser maior que o inicial.",
@@ -103,37 +105,21 @@ function formatCro(value: string): string {
   return formatted;
 }
 
-function normalizeTime(value?: string | null): string {
-  if (!value) return "";
-  const trimmed = value.trim();
-  if (trimmed.length >= 5) return trimmed.slice(0, 5);
-  return trimmed;
-}
-
-function normalizeAvailability(value: DentistAvailabilitySlot[] | null | undefined): DentistAvailabilitySlot[] {
-  if (!value?.length) return [];
-
-  return value
-    .map((slot) => ({
-      day_of_week: slot.day_of_week,
-      start_time: normalizeTime(slot.start_time),
-      end_time: normalizeTime(slot.end_time),
-    }))
-    .filter((slot) => slot.day_of_week && slot.start_time && slot.end_time);
+function copyAvailability(value: DentistAvailabilitySlot[] | null | undefined): DentistAvailabilitySlot[] {
+  // Keep invalid legacy values visible for explicit correction; never truncate
+  // seconds or silently remove incomplete rows before validation/submission.
+  return (value ?? []).map((slot) => ({ ...slot }));
 }
 
 function formatAvailability(slots: DentistAvailabilitySlot[] | null | undefined): string {
   if (!slots?.length) return "-";
 
-  const normalized = normalizeAvailability(slots);
-  if (!normalized.length) return "-";
-
-  const preview = normalized.slice(0, 2).map((slot) => {
+  const preview = slots.slice(0, 2).map((slot) => {
     const dayLabel = dayLabelByValue[slot.day_of_week] ?? slot.day_of_week;
     return `${dayLabel} ${slot.start_time}-${slot.end_time}`;
   });
 
-  const suffix = normalized.length > 2 ? ` +${normalized.length - 2}` : "";
+  const suffix = slots.length > 2 ? ` +${slots.length - 2}` : "";
   return `${preview.join(" | ")}${suffix}`;
 }
 
@@ -193,7 +179,7 @@ export function DentistsPage() {
         email: nullable(payload.email),
         specialty: nullable(payload.specialty),
         color: normalizeColor(payload.color),
-        availability: normalizeAvailability(payload.availability),
+        availability: copyAvailability(payload.availability),
         active: payload.active === "true",
       }),
     onSuccess: () => {
@@ -215,7 +201,7 @@ export function DentistsPage() {
         email: nullable(payload.email),
         specialty: nullable(payload.specialty),
         color: normalizeColor(payload.color),
-        availability: normalizeAvailability(payload.availability),
+        availability: copyAvailability(payload.availability),
         active: payload.active === "true",
       }),
     onSuccess: () => {
@@ -289,7 +275,7 @@ export function DentistsPage() {
       email: dentist.email ?? "",
       specialty: dentist.specialty ?? "",
       color: dentist.color ?? "#0EA5A5",
-      availability: normalizeAvailability(dentist.availability),
+      availability: copyAvailability(dentist.availability),
       active: dentist.active ? "true" : "false",
     });
     setOpenModal(true);
@@ -511,6 +497,9 @@ export function DentistsPage() {
           </div>
 
           <div className="md:col-span-2 rounded-md border border-slate-200 p-3">
+            {editingDentist && !z.array(availabilitySlotSchema).safeParse(editingDentist.availability).success && (
+              <p role="alert" className="mb-2 text-sm text-red-600">O cadastro contém horários inválidos. Revise os horários antes de salvar.</p>
+            )}
             <div className="mb-2 flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-700">Disponibilidade na clinica</p>
@@ -536,6 +525,9 @@ export function DentistsPage() {
                           </option>
                         ))}
                       </Select>
+                      {form.formState.errors.availability?.[index]?.day_of_week && (
+                        <p className="mt-1 text-xs text-red-600">Selecione um dia da semana válido.</p>
+                      )}
                     </div>
 
                     <div>

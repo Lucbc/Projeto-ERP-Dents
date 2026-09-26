@@ -5,6 +5,7 @@ from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from src.core.domain.entities import Appointment, AppointmentStatus, Dentist
+from src.core.domain.availability import WEEKDAYS, validate_slot
 from src.core.domain.exceptions import ConflictError, NotFoundError, ValidationError
 from src.core.ports.repositories import (
     AppointmentRepository,
@@ -16,15 +17,7 @@ from src.core.ports.repositories import (
 
 class AppointmentUseCases:
     _CLINIC_TIMEZONE = ZoneInfo("America/Sao_Paulo")
-    _WEEKDAY_LABELS = (
-        "monday",
-        "tuesday",
-        "wednesday",
-        "thursday",
-        "friday",
-        "saturday",
-        "sunday",
-    )
+    _WEEKDAY_LABELS = WEEKDAYS
 
     def __init__(
         self,
@@ -150,20 +143,22 @@ class AppointmentUseCases:
             raise ValidationError("Consulta deve iniciar e terminar no mesmo dia.")
 
         weekday_label = self._WEEKDAY_LABELS[start_local.weekday()]
-        start_minutes = start_local.hour * 60 + start_local.minute
-        end_minutes = end_local.hour * 60 + end_local.minute
+        start_clock = start_local.time()
+        end_clock = end_local.time()
 
         for raw_slot in dentist.availability or []:
-            slot_day = str(raw_slot.get("day_of_week", "")).strip().lower()
+            if not isinstance(raw_slot, dict):
+                continue  # Legacy malformed slots never grant scheduling availability.
+            slot_day = raw_slot.get("day_of_week")
             if slot_day != weekday_label:
                 continue
 
-            slot_start = self._parse_minutes(raw_slot.get("start_time"))
-            slot_end = self._parse_minutes(raw_slot.get("end_time"))
-            if slot_start is None or slot_end is None:
+            try:
+                slot_start, slot_end = validate_slot(slot_day, raw_slot.get("start_time"), raw_slot.get("end_time"))
+            except ValueError:
                 continue
 
-            if start_minutes >= slot_start and end_minutes <= slot_end:
+            if start_clock >= slot_start and end_clock <= slot_end:
                 return
 
         raise ValidationError("Dentista nao possui disponibilidade na clinica para este dia/horario.")
@@ -172,20 +167,6 @@ class AppointmentUseCases:
         if value.tzinfo is None:
             return value.replace(tzinfo=self._CLINIC_TIMEZONE)
         return value.astimezone(self._CLINIC_TIMEZONE)
-
-    def _parse_minutes(self, value: object) -> int | None:
-        if not isinstance(value, str) or ":" not in value:
-            return None
-
-        hour_part, minute_part = value.split(":", 1)
-        if not hour_part.isdigit() or not minute_part.isdigit():
-            return None
-
-        hour = int(hour_part)
-        minute = int(minute_part)
-        if hour < 0 or hour > 23 or minute < 0 or minute > 59:
-            return None
-        return hour * 60 + minute
 
     def _validate_overlaps(
         self,
