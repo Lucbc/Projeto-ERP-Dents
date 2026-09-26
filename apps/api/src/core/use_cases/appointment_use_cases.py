@@ -2,10 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from src.core.domain.entities import Appointment, AppointmentStatus, Dentist
-from src.core.domain.availability import WEEKDAYS, validate_slot
+from src.core.domain.availability import WEEKDAYS, validate_booking, requires_booking_validation
 from src.core.domain.exceptions import ConflictError, NotFoundError, ValidationError
 from src.core.ports.repositories import (
     AppointmentRepository,
@@ -16,7 +15,6 @@ from src.core.ports.repositories import (
 
 
 class AppointmentUseCases:
-    _CLINIC_TIMEZONE = ZoneInfo("America/Sao_Paulo")
     _WEEKDAY_LABELS = WEEKDAYS
 
     def __init__(
@@ -55,7 +53,10 @@ class AppointmentUseCases:
         data["status"] = status
 
         if status != AppointmentStatus.cancelled:
-            self._validate_dentist_availability(dentist, data["start_at"], data["end_at"])
+            try:
+                self._validate_dentist_availability(dentist, data["start_at"], data["end_at"])
+            except ValidationError as error:
+                raise ConflictError(str(error), code='availability_conflict') from error
             self._validate_overlaps(
                 dentist_id=data["dentist_id"],
                 patient_id=data["patient_id"],
@@ -93,8 +94,12 @@ class AppointmentUseCases:
         status = AppointmentStatus(merged["status"])
         merged["status"] = status
 
+        if requires_booking_validation(current, merged):
+            try:
+                self._validate_dentist_availability(dentist, merged["start_at"], merged["end_at"])
+            except ValidationError as error:
+                raise ConflictError(str(error), code='availability_conflict') from error
         if status != AppointmentStatus.cancelled:
-            self._validate_dentist_availability(dentist, merged["start_at"], merged["end_at"])
             self._validate_overlaps(
                 dentist_id=merged["dentist_id"],
                 patient_id=merged["patient_id"],
@@ -133,40 +138,7 @@ class AppointmentUseCases:
         start_at: datetime,
         end_at: datetime,
     ) -> None:
-        if not dentist.active:
-            raise ValidationError("Dentista inativo. Nao esta disponivel para agendamento.")
-
-        start_local = self._to_clinic_timezone(start_at)
-        end_local = self._to_clinic_timezone(end_at)
-
-        if start_local.date() != end_local.date():
-            raise ValidationError("Consulta deve iniciar e terminar no mesmo dia.")
-
-        weekday_label = self._WEEKDAY_LABELS[start_local.weekday()]
-        start_clock = start_local.time()
-        end_clock = end_local.time()
-
-        for raw_slot in dentist.availability or []:
-            if not isinstance(raw_slot, dict):
-                continue  # Legacy malformed slots never grant scheduling availability.
-            slot_day = raw_slot.get("day_of_week")
-            if slot_day != weekday_label:
-                continue
-
-            try:
-                slot_start, slot_end = validate_slot(slot_day, raw_slot.get("start_time"), raw_slot.get("end_time"))
-            except ValueError:
-                continue
-
-            if start_clock >= slot_start and end_clock <= slot_end:
-                return
-
-        raise ValidationError("Dentista nao possui disponibilidade na clinica para este dia/horario.")
-
-    def _to_clinic_timezone(self, value: datetime) -> datetime:
-        if value.tzinfo is None:
-            return value.replace(tzinfo=self._CLINIC_TIMEZONE)
-        return value.astimezone(self._CLINIC_TIMEZONE)
+        validate_booking(dentist.active, dentist.availability, start_at, end_at)
 
     def _validate_overlaps(
         self,

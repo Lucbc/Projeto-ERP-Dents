@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from src.adapters.db.models.models import (
@@ -14,7 +14,8 @@ from src.adapters.db.models.models import (
 )
 from src.core.domain.entities import Appointment, AppointmentStatus
 from src.core.ports.repositories import AppointmentRepository
-from src.core.domain.exceptions import ConflictError, ValidationError
+from src.core.domain.availability import validate_booking, requires_booking_validation
+from src.core.domain.exceptions import ConflictError, ValidationError, NotFoundError
 
 
 class SqlAlchemyAppointmentRepository(AppointmentRepository):
@@ -95,44 +96,76 @@ class SqlAlchemyAppointmentRepository(AppointmentRepository):
 
         return self.session.scalar(stmt.limit(1)) is not None
 
+    def _lock_dentists(self, ids):
+        # SHARE (not KEY SHARE) prevents availability/active writes until commit.
+        rows = self.session.scalars(select(DentistModel).where(DentistModel.id.in_(ids))
+            .order_by(DentistModel.id).with_for_update(read=True)
+            .execution_options(populate_existing=True)).all()
+        by_id = {row.id: row for row in rows}
+        if set(ids) != set(by_id):
+            raise NotFoundError("Dentista nao encontrado.")
+        return by_id
+
+    def _validate_booking(self, dentist, values):
+        try:
+            validate_booking(dentist.active, dentist.availability, values['start_at'], values['end_at'])
+        except ValidationError as error:
+            raise ConflictError(
+                "A disponibilidade do dentista não permite este agendamento. Seu rascunho foi mantido. Atualize os horários e revise antes de salvar.",
+                code='availability_conflict') from error
+
     def create(self, data: dict) -> Appointment:
-        procedure_ids = data.pop("procedure_ids", [])
-        item = AppointmentModel(**data)
-        if procedure_ids:
-            item.procedure_links = [
-                AppointmentProcedureModel(procedure_id=procedure_id) for procedure_id in procedure_ids
-            ]
-        self.session.add(item)
-        self.session.commit()
-        self.session.refresh(item)
-        return self._to_entity(item)
+        try:
+            values = dict(data)
+            procedure_ids = values.pop('procedure_ids', [])
+            dentists = self._lock_dentists([values['dentist_id']])
+            if requires_booking_validation(None, values):
+                self._validate_booking(dentists[values['dentist_id']], values)
+            item = AppointmentModel(**values)
+            item.procedure_links = [AppointmentProcedureModel(procedure_id=id) for id in procedure_ids]
+            self.session.add(item)
+            self.session.commit()
+            self.session.refresh(item)
+            return self._to_entity(item)
+        except Exception:
+            self.session.rollback()
+            raise
 
     def update(self, appointment_id, data: dict):
         version = data.get('version')
         if type(version) is not int or version < 1:
             raise ValidationError("Reabra a consulta para obter a versão atual antes de salvar.")
-        values = {key: data[key] for key in ("patient_id", "dentist_id", "start_at", "end_at", "status", "notes") if key in data}
-        # Acquire the row through a conditional write before touching procedure links.
-        item = self.session.scalar(update(AppointmentModel).where(
-            AppointmentModel.id == appointment_id, AppointmentModel.version == version
-        ).values(**values, version=AppointmentModel.version + 1).returning(AppointmentModel),
-            execution_options={'populate_existing': True})
-        if item is None:
-            exists = self.session.scalar(select(AppointmentModel.id).where(AppointmentModel.id == appointment_id))
-            self.session.rollback()
-            if exists is None:
+        try:
+            # Preliminary scalar read avoids using an old ORM entity for lock selection.
+            old_dentist = self.session.scalar(select(AppointmentModel.dentist_id).where(AppointmentModel.id == appointment_id))
+            if old_dentist is None:
+                self.session.rollback()
                 return None
-            raise ConflictError("Esta consulta foi alterada por outra operação. Seu rascunho foi mantido. Carregue a consulta atual antes de salvar novamente.")
-
-        if "procedure_ids" in data:
-            self.session.expire(item, ['procedure_links'])
-            item.procedure_links = [
-                AppointmentProcedureModel(procedure_id=procedure_id) for procedure_id in data["procedure_ids"]
-            ]
-
-        self.session.commit()
-        self.session.refresh(item)
-        return self._to_entity(item)
+            target_dentist = data.get('dentist_id', old_dentist)
+            dentists = self._lock_dentists(sorted({old_dentist, target_dentist}))
+            item = self.session.scalar(select(AppointmentModel).where(AppointmentModel.id == appointment_id)
+                .with_for_update().execution_options(populate_existing=True))
+            if item is None:
+                self.session.rollback()
+                return None
+            if item.version != version or item.dentist_id != old_dentist:
+                raise ConflictError("Esta consulta foi alterada por outra operação. Seu rascunho foi mantido. Carregue a consulta atual antes de salvar novamente.", code='stale_version')
+            values = {key: data.get(key, getattr(item, key)) for key in
+                      ('patient_id', 'dentist_id', 'start_at', 'end_at', 'status', 'notes')}
+            if requires_booking_validation(item, values):
+                self._validate_booking(dentists[target_dentist], values)
+            for key, value in values.items():
+                setattr(item, key, value)
+            item.version += 1
+            if 'procedure_ids' in data:
+                self.session.expire(item, ['procedure_links'])
+                item.procedure_links = [AppointmentProcedureModel(procedure_id=id) for id in data['procedure_ids']]
+            self.session.commit()
+            self.session.refresh(item)
+            return self._to_entity(item)
+        except Exception:
+            self.session.rollback()
+            raise
 
     def delete(self, appointment_id: UUID, version: int) -> bool:
         if type(version) is not int or version < 1:

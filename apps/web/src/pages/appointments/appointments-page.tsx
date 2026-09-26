@@ -1,3 +1,4 @@
+import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -123,6 +124,10 @@ export function AppointmentsPage() {
       }),
   });
 
+  const availabilityReview = useAvailabilityReview(async () => {
+    await dentistsQuery.refetch({ throwOnError: true });
+  });
+
   const createMutation = useMutation({
     mutationFn: (payload: AppointmentForm) =>
       appointmentService.create({
@@ -141,7 +146,9 @@ export function AppointmentsPage() {
       setManualEndOverride(false);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => {
+      if (!availabilityReview.handle(error)) toast(getApiErrorMessage(error), "error");
+    },
   });
 
   const updateMutation = useMutation({
@@ -165,6 +172,7 @@ export function AppointmentsPage() {
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
     onError: (error) => {
+      if (availabilityReview.handle(error)) return;
       if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
     },
@@ -203,7 +211,7 @@ export function AppointmentsPage() {
   const canUpdate = can("appointments", "update");
   const canDelete = can("appointments", "delete");
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadAppointmentMutation.isPending || deletion.mutation.isPending;
+  const isSubmitting = availabilityReview.reload.isPending || createMutation.isPending || updateMutation.isPending || reloadAppointmentMutation.isPending || deletion.mutation.isPending;
 
   useEffect(() => {
     if (manualEndOverride) return;
@@ -236,6 +244,7 @@ export function AppointmentsPage() {
     const start = new Date();
     const end = new Date(start.getTime() + 30 * 60 * 1000);
 
+    availabilityReview.reset();
     setEditingAppointment(null);
     setManualEndOverride(false);
     form.reset({
@@ -251,6 +260,7 @@ export function AppointmentsPage() {
   };
 
   const onEdit = (appointment: Appointment) => {
+    availabilityReview.reset();
     setEditConflict(false);
     if (!canUpdate) return;
     setEditingAppointment(appointment);
@@ -268,6 +278,7 @@ export function AppointmentsPage() {
   };
 
   const onSubmit = (values: AppointmentForm) => {
+    if (availabilityReview.blocked || availabilityReview.reload.isPending) return;
     if (editingAppointment) {
       updateMutation.mutate({ id: editingAppointment.id, version: editingAppointment.version, payload: values });
       return;
@@ -381,6 +392,7 @@ export function AppointmentsPage() {
         title={editingAppointment ? "Editar consulta" : "Nova consulta"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          <AvailabilityReview review={availabilityReview} />
           {editConflict && editingAppointment && (
             <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
               <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar a consulta atual substituirá os campos deste formulário.</p>
@@ -512,7 +524,7 @@ export function AppointmentsPage() {
               <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>

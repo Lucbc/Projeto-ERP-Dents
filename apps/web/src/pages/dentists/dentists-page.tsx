@@ -1,3 +1,4 @@
+import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -170,6 +171,10 @@ export function DentistsPage() {
     queryFn: () => specialtyService.listAll(),
   });
 
+  const availabilityReview = useAvailabilityReview(async () => {
+    await dentistsQuery.refetch({ throwOnError: true });
+  });
+
   const createMutation = useMutation({
     mutationFn: (payload: DentistForm) =>
       dentistService.create({
@@ -188,7 +193,9 @@ export function DentistsPage() {
       form.reset();
       void queryClient.invalidateQueries({ queryKey: ["dentists"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => {
+      if (!availabilityReview.handle(error)) toast(getApiErrorMessage(error), "error");
+    },
   });
 
   const updateMutation = useMutation({
@@ -212,6 +219,7 @@ export function DentistsPage() {
       void queryClient.invalidateQueries({ queryKey: ["dentists"] });
     },
     onError: (error) => {
+      if (availabilityReview.handle(error)) return;
       if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
     },
@@ -242,13 +250,14 @@ export function DentistsPage() {
     }
     return names;
   }, [specialties, selectedSpecialty]);
-  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadDentistMutation.isPending;
+  const isSubmitting = availabilityReview.reload.isPending || createMutation.isPending || updateMutation.isPending || reloadDentistMutation.isPending;
   const canCreate = can("dentists", "create");
   const canUpdate = can("dentists", "update");
   const canDelete = can("dentists", "delete");
 
   const onNew = () => {
     if (!canCreate) return;
+    availabilityReview.reset();
     setEditConflict(false);
     setEditingDentist(null);
     form.reset({
@@ -265,6 +274,7 @@ export function DentistsPage() {
   };
 
   const onEdit = (dentist: Dentist) => {
+    availabilityReview.reset();
     setEditConflict(false);
     if (!canUpdate) return;
     setEditingDentist(dentist);
@@ -282,6 +292,7 @@ export function DentistsPage() {
   };
 
   const onSubmit = (values: DentistForm) => {
+    if (availabilityReview.blocked || availabilityReview.reload.isPending) return;
     if (editingDentist) {
       updateMutation.mutate({ id: editingDentist.id, version: editingDentist.version, payload: values });
       return;
@@ -403,6 +414,7 @@ export function DentistsPage() {
         title={editingDentist ? "Editar dentista" : "Novo dentista"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          <AvailabilityReview review={availabilityReview} />
           {editConflict && editingDentist && (
             <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
               <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá os campos e horários deste formulário.</p>
@@ -565,7 +577,7 @@ export function DentistsPage() {
             <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>

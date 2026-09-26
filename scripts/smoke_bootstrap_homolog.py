@@ -59,7 +59,9 @@ def main(session_checks=None, report_name=None, extra_env=None):
         return status, data
 
     def ready():
-        for _ in range(40):
+        # A cold container migrates an entire private schema before serving HTTP.
+        # Allow 30 seconds on slower Docker Desktop hosts, still failing boundedly.
+        for _ in range(120):
             try:
                 status, body = request("GET", "/api/auth/needs-bootstrap")
                 if status == 200: return body

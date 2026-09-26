@@ -33,14 +33,14 @@ São **nove diagnósticos**: oito no probe (uma execução em 5,066s) e um teste
 - UI de dentista envia disponibilidade/ativo mesmo em edição de outros campos e invalida `dentists`. Lista/calendário consultam dentistas em caches próprios; erros de criação apenas exibem mensagem, enquanto 409 em edição ativa conflito. A recuperação deve distinguir cadastro/consulta alterados de horário indisponível.
 - `0021_financial_references` captura referências com `FOR SHARE NOWAIT`, começando pela consulta, depois paciente/dentista/procedimentos. Novos bloqueios devem manter falhas controladas e rollback; não reescrever pagamentos, recibos ou capturas.
 
-## Decisão de negócio pendente
+## Decisão de negócio — confirmada pelo usuário na 2B.7.2
 
 Foi perguntado como tratar consultas futuras quando o dentista é inativado ou seus horários são reduzidos:
 
 - **Proposta recomendada:** recusar mudança incompatível até que o operador reagende ou cancele explicitamente as consultas afetadas. Nenhuma consulta é alterada automaticamente.
 - Alternativa: conservar compromissos existentes e aplicar a nova disponibilidade somente a novas marcações/reagendamentos. Isso exige explicitar a exceção para consultas antigas e permitir manutenção sem transformar a edição em nova reserva.
 
-Não interpretar ausência de resposta como escolha. Não implementar essa política antes de obter a resposta. A subetapa de validação de horários abaixo independe dessa decisão.
+**Resposta recebida:** bloquear a alteração até reagendar ou cancelar as consultas afetadas. A implementação da 2B.7.2 está autorizada com essa regra. As referências à resposta pendente nos registros da preparação são históricas.
 
 Se for escolhida a proposta recomendada, detalhar na implementação: compromissos `scheduled`/`confirmed` ainda não encerrados (`end_at` posterior ao instante de verificação), incluindo consultas em andamento; cancelados/concluídos e histórico não devem ser cancelados, reagendados ou reclassificados implicitamente. Nome/cor/contato sem mudança efetiva de disponibilidade/ativo não devem ficar bloqueados por dados legados. O recorte temporal deve ser testado com relógio controlado, sem depender da data da execução.
 
