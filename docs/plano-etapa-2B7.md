@@ -1,6 +1,6 @@
 # 2B.7 — disponibilidade de dentistas e agendamento
 
-Diagnóstico técnico concluído em 25/09/2026, base `71ad428`. **Nenhuma correção funcional nesta preparação.** A decisão sobre consultas futuras já existentes foi apresentada ao usuário e permanece pendente; os critérios técnicos independentes estão definidos abaixo.
+Diagnóstico técnico concluído em 25/09/2026, base `71ad428`. Na preparação não houve correção funcional. **2B.7.1 posteriormente concluída**, implementação `b935d5f`: validação de horários e fronteiras, leitura legada e correção explícita na interface; [evidências](./homologacao-etapa-2B7-1.md). Os seis interleavings abaixo continuam pendentes da 2B.7.2. A decisão sobre consultas futuras já existentes foi apresentada ao usuário e permanece pendente.
 
 ## O que foi reproduzido
 
@@ -84,6 +84,8 @@ Se for escolhida a proposta recomendada, detalhar na implementação: compromiss
 | Entrega | Cópias, regressão/CI, atualização preservando dados, zero schemas descartáveis, commit/push e HEAD remoto |
 
 ## Ambiente e retomada
+
+- **Estado após 2B.7.1:** principal atualizada em https://localhost:18443, revisão `0022_dentist_user_restrict`, dados/histórico/bytes preservados, zero schemas descartáveis e nenhum volume removido. CI `36206543443` aprovado, 254 backend/102 frontend; HTTP e Chrome aprovados. Próximo passo é 2B.7.2, incorporando a resposta sobre compromissos existentes antes de implementar a política; não repetir a validação já entregue. Os itens abaixo registram o ambiente da preparação original.
 
 - Principal permanece **https://localhost:18443**, revisão `0022_dentist_user_restrict`, sem reconstrução/reinício/migração nesta preparação. Comparação com checkpoint da 2B.6.4.2 confirmou linhas de negócio, histórico e bytes de exames preservados; zero schemas descartáveis. Nenhum volume removido.
 - Último CI funcional permanece [36147540532](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36147540532), 247 backend/97 frontend, da etapa anterior. Não repetido para documentação. Nesta preparação houve banco/caso de uso/schema; **não houve nova homologação HTTP nem Chrome**.
