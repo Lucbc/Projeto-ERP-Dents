@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**Preparação 2B.8 concluída em 26/09/2026:** [diagnóstico e contrato](./plano-etapa-2B8.md), base `7fcd0bd`. Seis cenários em conexões independentes; três também confirmados por HTTP. Usuários/matrizes antigos sobrescrevem alterações; leitura pode desfazer revogação ao gravar normalização; coordenação da autorização de permissões requer correção. Dados preservados, nenhuma mudança funcional. **Próximo passo: 2B.8.1 — leituras de permissões sem gravação.** Depois, versionamento/coordenação das matrizes e dos usuários em recortes próprios.
+
 **2B.7.2 concluída em 26/09/2026:** implementação `6dbf767` e ajuste de testes `6170ee0` publicados. Disponibilidade e reserva coordenadas na mesma transação; alteração incompatível do dentista bloqueada até reagendar/cancelar, conforme escolha explícita do usuário. Rascunho preservado e revisão após recarga. [Relatório](./homologacao-etapa-2B7-2.md). [CI 36236034979](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36236034979) aprovado: **262 backend/106 frontend**, HTTP, builds e auditorias. Chrome privado e preservação da principal aprovados. **Próximo passo: preparação 2B.8 — concorrência em usuários/permissões.** Nenhuma decisão de negócio pendente na 2B.7.
 
 **2B.7.1 concluída em 25/09/2026:** implementação `b935d5f` publicada; horários reais, fronteiras com precisão completa e correção explícita de legado. [Relatório](./homologacao-etapa-2B7-1.md). [CI 36206543443](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36206543443) aprovado: **254 backend/102 frontend**, HTTP, builds e auditorias. Chrome e atualização com dados preservados aprovados. **Próximo passo: 2B.7.2**, coordenação transacional de disponibilidade × consultas; política sobre compromissos existentes aguarda resposta do usuário.
@@ -649,3 +651,19 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Relatório `docs/homologacao-etapa-2B7-2.md`; contrato `docs/plano-etapa-2B7.md`. Garantia pelos repositórios/API; SQL externo sem protocolo fica fora da coordenação. Sem férias/exceções por data, atualização automática entre PCs, prontuário novo ou instalação assistida nesta entrega. R18 continua parcial na administração.
 - **Próximo passo: preparação 2B.8 — concorrência administrativa em usuários/permissões.** Mapear formulários antigos/edição/exclusão e reproduzir antes de implementar, preservando revogação de sessões, último administrador e controle de acesso da 1C. Não repetir a revisão geral nem reabrir agenda/exclusões concluídas. Nenhuma correção administrativa implementada nesta entrega.
 - Fechamento documental posterior ao CI: publicar commit/push, conferir árvore limpa e HEAD remoto; outra sessão deve partir deste ponto.
+
+### Início da preparação 2B.8 — 26/09/2026
+
+- Base `7fcd0bd`, árvore limpa. Mapear usuários/permissões e reproduzir sobrescrita por formulário antigo, exclusão antiga e revogação durante operação em schema próprio da homologação.
+- Inspeção encontrou serialização das escritas de usuários, mas sem versão do formulário; matrizes de permissões também sem versão. Leituras podem normalizar e gravar permissões. São hipóteses até reprodução; não alterar runtime nesta preparação.
+- Pendentes diagnóstico controlado, contrato/recortes, verificação de preservação e publicação do ponto de retomada.
+
+### Ponto de retomada atual — preparação 2B.8 concluída em 26/09/2026
+
+- Base `7fcd0bd`, árvore inicialmente limpa. Contrato `docs/plano-etapa-2B8.md`; nenhuma correção funcional ou migração nesta preparação.
+- Probe `.data/probe_admin_2b8.py`: seis diagnósticos reunidos em uma execução de 4,071s, conexões independentes/schema migrado privado. Confirmados formulário de usuário restaurando ativação/nome, exclusão antiga, matriz antiga restaurando permissão, normalização de leitura sobrescrevendo revogação, escrita de usuário após revogação e escrita de permissões sem revalidar administrador inativado após dependência resolvida. Últimos dois não são corridas HTTP autenticadas; não exagerar evidência. Sessão revogada não foi recuperada pela reativação.
+- Probe HTTP `.data/probe_admin_http_2b8.py` confirmou os três primeiros cenários em API/schema próprios; dez grupos do harness aprovados. Não houve Chrome nesta preparação. Rascunhos de outros perfis descartados por refetch são achado de inspeção, ainda a reproduzir em interface.
+- **Próximo passo: implementar 2B.8.1**, removendo gravação implícita de leituras/autorização de permissões, mantendo defaults/normalização efetiva e dados JSON originais. Criar testes permanentes do comportamento correto, banco/HTTP e regressão da 1C. Sem necessidade prevista de mudança visual/migração nesse primeiro recorte.
+- Depois: 2B.8.2, versão por perfil e coordenação/rechecagem da autorização; 2B.8.3, versão de usuário/edição/senha/exclusão. Preservar último administrador, delegação, sessões e histórico financeiro; detalhar locks/migrações antes de implementar. R18 continua parcial. Nenhuma decisão de negócio pendente.
+- Principal mantém https://localhost:18443, revisão `0022_dentist_user_restrict`, sem rebuild/reinício. Comparação com checkpoint 2B.7.2 confirmou negócio/histórico/bytes preservados; zero schemas, nenhum volume removido. Último CI funcional `36236034979` (262 backend/106 frontend), não repetido para documentação.
+- Probes/logs/credenciais ignorados pelo Git. Publicar preparação por commit/push e conferir árvore limpa/HEAD remoto. Outra sessão deve partir deste ponto, sem repetir revisão geral nem reabrir agenda concluída.
