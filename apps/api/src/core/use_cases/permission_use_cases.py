@@ -28,12 +28,8 @@ class PermissionUseCases:
             return get_default_permissions(UserRole.admin)
 
         current = self.repository.get_by_role(role)
-        normalized = normalize_permissions(role, current.permissions if current else None)
-
-        if current is None or current.permissions != normalized:
-            self.repository.upsert(role, normalized)
-
-        return normalized
+        # Defaults are an effective view; only an explicit update persists them.
+        return normalize_permissions(role, current.permissions if current else None)
 
     def update_for_role(self, role: UserRole, permissions: dict[str, dict[str, bool]]) -> PermissionMatrix:
         if role == UserRole.admin:

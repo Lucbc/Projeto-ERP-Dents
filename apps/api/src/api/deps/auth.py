@@ -70,9 +70,6 @@ def require_permission(resource: PermissionResource, action: PermissionAction) -
             raw_permissions=current.permissions if current else None,
         )
 
-        if current is None or current.permissions != normalized:
-            repository.upsert(current_user.role, normalized)
-
         if not can_access(
             role=current_user.role,
             permissions=normalized,

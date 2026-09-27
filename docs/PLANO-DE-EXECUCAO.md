@@ -667,3 +667,11 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Depois: 2B.8.2, versão por perfil e coordenação/rechecagem da autorização; 2B.8.3, versão de usuário/edição/senha/exclusão. Preservar último administrador, delegação, sessões e histórico financeiro; detalhar locks/migrações antes de implementar. R18 continua parcial. Nenhuma decisão de negócio pendente.
 - Principal mantém https://localhost:18443, revisão `0022_dentist_user_restrict`, sem rebuild/reinício. Comparação com checkpoint 2B.7.2 confirmou negócio/histórico/bytes preservados; zero schemas, nenhum volume removido. Último CI funcional `36236034979` (262 backend/106 frontend), não repetido para documentação.
 - Probes/logs/credenciais ignorados pelo Git. Publicar preparação por commit/push e conferir árvore limpa/HEAD remoto. Outra sessão deve partir deste ponto, sem repetir revisão geral nem reabrir agenda concluída.
+
+### Início 2B.8.1 — 26/09/2026
+
+- Base `3fef604`, árvore limpa. Remover gravações implícitas da leitura/autorização de permissões, preservando padrões, perfil administrador e JSON armazenado. Sem migração ou mudança visual.
+- Pendentes testes permanentes de banco/intercalação/rollback, HTTP autenticado, regressão 1C, cópias/atualização/preservação, commit/push e CI. Versionamento de formulários e coordenação das escritas ficam para 2B.8.2/3; não declarar essas corridas resolvidas aqui.
+
+- Implementadas somente as duas remoções de gravação implícita. Seis testes novos finais aprovados em 22,051s; 56 testes existentes da 1C aprovados. Execução inicial de 62 em 241,698s teve três falhas de fixture novo (migrações criam matrizes; casos ausentes agora removem apenas essas linhas privadas); repetição dos seis passou. Dez grupos HTTP autenticados aprovados, incluídos no CI. Build API aprovado; sem mudança visual/migração, portanto sem novo Chrome.
+- Cópias públicas/exames/fingerprints e dump completo `pre-2B8-1*` salvos após zero schemas. Relatório `docs/homologacao-etapa-2B8-1.md`. Publicar implementação e acompanhar CI completo (268 backend/106 frontend esperados); atualizar API principal, verificar smoke/preservação e fechar. Não duplicar testes aprovados sem nova alteração/falha.
