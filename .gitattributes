@@ -1,1 +1,2 @@
 ops/clamav/healthcheck.sh text eol=lf
+ops/clamav/reload-after-update.sh text eol=lf
