@@ -72,6 +72,8 @@ R18 continua parcial. Instalação assistida, atualização entre computadores e
 
 Próximo passo: **implementar 2B.8.1**, começando por testes permanentes do comportamento corrigido. Não repetir revisão geral nem reabrir disponibilidade de dentistas. A escolha do usuário da 2B.7 permanece definida; nenhuma nova escolha de negócio é necessária nesta preparação.
 
+**Atualização em 26/09/2026 — 2B.8.1 concluída:** implementação `2279001`, CI `36286375390` aprovado (268 backend/106 frontend). Leituras não persistem matrizes nem confirmam transações; padrões e JSON originais preservados. API principal atualizada, dados/histórico/bytes preservados, revisão `0022` e zero schemas. [Relatório](./homologacao-etapa-2B8-1.md). **Próximo passo atual: 2B.8.2**, detalhar e implementar versão por perfil/coordenação da autorização/rascunhos independentes conforme contrato acima. Não repetir 2B.8.1 nem reabrir disponibilidade. Registros de preparação abaixo são históricos.
+
 - Principal mantém **https://localhost:18443**, revisão `0022_dentist_user_restrict`; sem reconstrução/reinício/migração nesta preparação. Comparação com o checkpoint da 2B.7.2 confirmou todas as linhas de negócio/histórico e bytes dos exames preservados. Zero schemas descartáveis, nenhum volume removido.
 - Último CI funcional permanece [36236034979](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36236034979), 262 backend/106 frontend. Não repetido para documentação; não confundir esses testes da entrega anterior com os diagnósticos desta preparação.
 - Probes/logs/credenciais locais ignorados pelo Git. Publicar somente contrato, revisão e ponto de retomada, com commit/push e conferência do HEAD remoto.
