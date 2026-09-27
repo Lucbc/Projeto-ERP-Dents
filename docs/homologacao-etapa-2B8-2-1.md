@@ -1,6 +1,6 @@
 # Homologação 2B.8.2.1 — autorização coordenada de permissões
 
-Iniciada em 26/09/2026, base `8ecd3b3`. Primeiro recorte da 2B.8.2; sem migração ou alteração visual.
+**Concluída em 27/09/2026**, base `8ecd3b3`, implementação `e9066fa`, diagnóstico `a85ad6e` e correção de inicialização `206df37`. Primeiro recorte da 2B.8.2; sem migração ou alteração visual.
 
 ## Contrato implementado
 
@@ -18,13 +18,13 @@ Iniciada em 26/09/2026, base `8ecd3b3`. Primeiro recorte da 2B.8.2; sem migraç�
 - Regressão de leituras foi adaptada para fornecer autor/sessão válidos nas duas escritas explícitas. Defaults, ausência de gravação em leitura e preservação de JSON continuam cobertos.
 - Novo harness HTTP autenticado verifica ligação da sessão ao PUT, revogação nos cinco fluxos, ausência de matrizes nas recusas e delegação. Não é uma corrida HTTP simultânea; concorrência é evidência dos testes de banco/casos de uso acima.
 - Primeira tentativa HTTP esperava 401 na mutação anônima; o middleware de proteção CSRF corretamente rejeita antes da rota com 403. Corrigida somente a expectativa do teste.
-- **70 testes focados aprovados em 263,547s**; complemento da alteração compatível de nome durante espera aprovado em **4,699s**. Build API aprovado. HTTP de autorização e regressão de leituras aprovados, dez grupos cada. CI e preservação serão registrados ao concluir. Nenhum Chrome novo: não houve alteração de interface.
+- **70 testes focados aprovados em 263,547s**; complemento da alteração compatível de nome durante espera aprovado em **4,699s**. Build API aprovado. HTTP de autorização e regressão de leituras aprovados, dez grupos cada. CI e preservação concluídos abaixo. Nenhum Chrome novo: não houve alteração de interface.
 
 ## Entrega e limites
 
 Cópias públicas/exames/fingerprints `pre-2B8-2-1*` locais, helper `.data/upgrade_2b821.py`. Credenciais, logs e cópias fora do Git; não remover volumes.
 
-Implementação `e9066fa` publicada, HEAD remoto conferido; [CI 36320437271](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36320437271) em andamento. Dump completo salvo após limpeza dos schemas privados; API principal atualizada em **https://localhost:18443**. Primeira chamada durante startup retornou 502; após prontidão, HTTPS 200 e dez verificações gerais aprovadas. Comparação integral confirmou negócio/histórico/bytes preservados; revisão `0022_dentist_user_restrict`, zero schemas e nenhum volume removido. Web sem alteração.
+Implementação `e9066fa` publicada, HEAD remoto conferido. Dump completo salvo após limpeza dos schemas privados; API principal atualizada em **https://localhost:18443**. Primeira chamada durante startup retornou 502; após prontidão, HTTPS 200 e dez verificações gerais aprovadas. Comparação integral confirmou negócio/histórico/bytes preservados; revisão `0022_dentist_user_restrict`, zero schemas e nenhum volume existente removido. Web sem alteração. Histórico do CI e correção complementar abaixo.
 
 Esta etapa **não impede salvar uma matriz antiga**. Isso exige versão por perfil e mudanças de interface na **2B.8.2.2**, conforme [plano](./plano-etapa-2B8.md). Não adiciona rechecagem de sessão sob bloqueio a todos os outros recursos do ERP. SQL externo que ignora o protocolo fica fora da coordenação. R18 permanece parcial; usuários/senha/exclusão versionados continuam na 2B.8.3.
 
@@ -34,4 +34,12 @@ As execuções `36320437271` e `36321056042` falharam antes do backend. Frontend
 
 Adicionado hook oficial `OnUpdateExecute` nos três Compose: solicita RELOAD, aguarda prontidão com prazo de cinco minutos e limita cada chamada a cinco segundos. Não altera healthcheck, política de sete dias, digest ou volumes existentes. Detalhes e fonte em [operação de exames](./operacao-exames.md).
 
-Testes determinísticos de sucesso imediato, atraso e timeout aprovados. Inicialização real em container descartável reproduziu a notificação perdida e confirmou recarga para `28136` pelo hook. Apenas o container e seu volume anônimo exclusivo foram descartados. **28 scripts HTTP/prontidão locais passaram**, seis imagens sem achados. Backend completo local/novo CI e atualização do ClamAV principal ainda pendentes; a regressão local adicional foi motivada pela indisponibilidade do CI.
+Testes determinísticos de sucesso imediato, atraso e timeout aprovados. Inicialização real em container descartável reproduziu a notificação perdida e confirmou recarga para `28136` pelo hook. Apenas o container e seu volume anônimo exclusivo foram descartados. **28 scripts HTTP/prontidão locais passaram**, seis imagens sem achados. A regressão local adicional foi motivada pela indisponibilidade inicial do CI.
+
+## Resultado final
+
+- [CI 36321915279](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36321915279) aprovado em **18min34s**: **276 backend em 640,937s e 106 frontend**, builds, fluxos HTTP, dependências e seis imagens sem achados. Inicialização corrigida passou também no runner que reproduziu o problema.
+- Regressão completa local: **276 testes em 1150,575s**, 28 scripts HTTP/prontidão e auditoria das seis imagens aprovados. Não repetir essas suítes sem alteração/falha.
+- ClamAV principal recriado preservando seu volume. Prontidão/política e hook aprovados; cinco testes de scanner em 0,094s, incluindo PNG limpo e EICAR real, aprovados após atualização. API já atualizada, sem novo build web.
+- Comparação final confirmou dados de negócio, histórico e bytes dos exames preservados. Revisão `0022_dentist_user_restrict`, zero schemas descartáveis. Logs, assinaturas, cópias e credenciais fora do Git.
+- Próxima subetapa: **2B.8.2.2**, versão de matriz por perfil e rascunhos independentes na interface. Não reabrir a coordenação concluída nem contar esta entrega como proteção contra formulário antigo.
