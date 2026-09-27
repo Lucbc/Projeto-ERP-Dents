@@ -86,6 +86,7 @@ jobs:
       - name: Antivirus readiness diagnostics
         if: failure()
         run: |
+          docker logs --tail 100 erp-dents-homolog-clamav-1 || true
           docker exec erp-dents-homolog-clamav-1 clamdscan --version || true
           docker exec erp-dents-homolog-clamav-1 sh /usr/local/bin/erp-clamav-health.sh || true
       - name: Stop isolated services

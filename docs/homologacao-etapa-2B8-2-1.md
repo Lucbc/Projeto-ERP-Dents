@@ -24,4 +24,6 @@ Iniciada em 26/09/2026, base `8ecd3b3`. Primeiro recorte da 2B.8.2; sem migraç�
 
 Cópias públicas/exames/fingerprints `pre-2B8-2-1*` locais, helper `.data/upgrade_2b821.py`. Credenciais, logs e cópias fora do Git; não remover volumes.
 
+Implementação `e9066fa` publicada, HEAD remoto conferido; [CI 36320437271](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36320437271) em andamento. Dump completo salvo após limpeza dos schemas privados; API principal atualizada em **https://localhost:18443**. Primeira chamada durante startup retornou 502; após prontidão, HTTPS 200 e dez verificações gerais aprovadas. Comparação integral confirmou negócio/histórico/bytes preservados; revisão `0022_dentist_user_restrict`, zero schemas e nenhum volume removido. Web sem alteração.
+
 Esta etapa **não impede salvar uma matriz antiga**. Isso exige versão por perfil e mudanças de interface na **2B.8.2.2**, conforme [plano](./plano-etapa-2B8.md). Não adiciona rechecagem de sessão sob bloqueio a todos os outros recursos do ERP. SQL externo que ignora o protocolo fica fora da coordenação. R18 permanece parcial; usuários/senha/exclusão versionados continuam na 2B.8.3.
