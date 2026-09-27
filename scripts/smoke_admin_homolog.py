@@ -25,6 +25,9 @@ def main():
     admin_token = login["session"]
 
     def admin(method, path, data=None, expected=200):
+        if method == 'PUT' and path.startswith('/api/permissions/'):
+            from permission_fixture_homolog import with_permission_version
+            data = with_permission_version(lambda url: admin('GET', url), path, data)
         return smoke.request(method, path, data, token=admin_token, expected=expected)
 
     def save(state):

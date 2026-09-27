@@ -1,3 +1,4 @@
+from permission_fixtures import update_fixture
 """Permission reads must never persist defaults or undo a concurrent revocation."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
@@ -38,7 +39,8 @@ class PermissionReadTests(unittest.TestCase):
 
     def seed(self, raw):
         with Session(self.engine) as db:
-            SqlAlchemyRolePermissionRepository(db).upsert(UserRole.reception, raw)
+            version = db.scalar(text("SELECT version FROM role_permissions WHERE role='reception'")) or 0
+            SqlAlchemyRolePermissionRepository(db).save(UserRole.reception, raw, version)
 
     def stored(self):
         with self.engine.connect() as db:
@@ -65,7 +67,7 @@ class PermissionReadTests(unittest.TestCase):
                         uc = PermissionUseCases(SqlAlchemyRolePermissionRepository(db))
                         expected = normalize_permissions(UserRole.reception, raw)
                         self.assertEqual(uc.get_for_role(UserRole.reception), expected)
-                        self.assertEqual(uc.list_all()[UserRole.reception], expected)
+                        self.assertEqual(uc.list_all()[UserRole.reception][1], expected)
                         self.assertIs(require_permission('patients', 'view')(self.actor, db), self.actor)
                         with self.assertRaises(HTTPException) as denied:
                             require_permission('users', 'delete')(self.actor, db)
@@ -138,7 +140,7 @@ class PermissionReadTests(unittest.TestCase):
         with Session(self.engine) as db:
             uc, actor = self.writable_case(db)
             expected = normalize_permissions(UserRole.reception, raw)
-            self.assertEqual(uc.update_for_role(UserRole.reception, raw, **actor), expected)
+            self.assertEqual(update_fixture(uc, UserRole.reception, raw, **actor), expected)
             result = uc.get_for_role(UserRole.reception)
             result['patients']['view'] = True
             self.assertEqual(uc.get_for_role(UserRole.reception), expected)
@@ -153,5 +155,5 @@ class PermissionReadTests(unittest.TestCase):
             actor = SimpleNamespace(role=UserRole.admin)
             self.assertIs(require_permission('users', 'delete')(actor, db), actor)
             with self.assertRaises(ValidationError):
-                uc.update_for_role(UserRole.admin, {}, **identity)
+                update_fixture(uc, UserRole.admin, {}, **identity)
         self.assertEqual(self.stored(), [])

@@ -200,6 +200,7 @@ export interface SessionResponse {
 }
 
 export interface RolePermission {
+  version: number;
   role: UserRole;
   permissions: Record<string, PermissionActions>;
 }

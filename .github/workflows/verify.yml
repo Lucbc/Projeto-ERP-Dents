@@ -77,6 +77,7 @@ jobs:
           python scripts/smoke_auth_hardening_homolog.py
           python scripts/smoke_permission_reads_homolog.py
           python scripts/smoke_permission_authorization_homolog.py
+          python scripts/smoke_permission_version_homolog.py
           python scripts/smoke_exams_homolog.py
           python scripts/smoke_exam_operations_homolog.py
           python scripts/smoke_exam_gateway_homolog.py

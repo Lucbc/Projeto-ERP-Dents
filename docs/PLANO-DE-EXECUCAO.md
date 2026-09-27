@@ -718,3 +718,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Cópias públicas/exames/fingerprints/dump completo `pre-2B8-2-1*`, helper `.data/upgrade_2b821.py`; logs/cópias/credenciais ignorados. Relatório `docs/homologacao-etapa-2B8-2-1.md` e detalhes operacionais em `docs/operacao-exames.md`.
 - **Próximo passo: 2B.8.2.2**, versão por perfil (incluindo linha ausente/default sem escrita), migração preservando JSON, PUT com pré-condição/CAS e conflito 409, rascunhos independentes por perfil e recarga explícita sem reenvio automático. API/web juntos. Reutilizar protocolo administrativo concluído. Formulários antigos ainda podem sobrescrever matrizes; usuários/senha/exclusão ficam na 2B.8.3. R18 parcial; nenhuma decisão de negócio pendente.
 - Publicar fechamento documental após CI e conferir árvore limpa/HEAD remoto. Outra sessão deve partir deste ponto, sem repetir diagnóstico ou regressão já concluídos.
+
+### Início 2B.8.2.2 — 27/09/2026
+
+- Base `a64c6f9`, árvore limpa. Versão 1 nas matrizes existentes; estado virtual ausente usa versão 0 sem inserir linha. Primeira gravação 0→1; cada PUT aceito incrementa inclusive sem mudança efetiva. Administrador retorna versão 0 e continua imutável. Comparação/gravação atômicas, após revalidar autor/sessão pelo protocolo já concluído.
+- Migração adiciona somente coluna/check de versão, preservando JSON/timestamps. PUT exige inteiro não negativo; conflito 409 `stale_version` sem matriz no erro. API/web atualizados juntos, sem fallback para clientes antigos.
+- UI mantém matriz/versão/estado de revisão separados por perfil. Falha de recarga preserva rascunho/bloqueio; descarte explícito carrega apenas o perfil escolhido, sem salvar automaticamente. Pendentes implementação, banco/migração/HTTP/componentes/Chrome, cópias/atualização/preservação e commit/push/CI.
+
+- Implementação, builds API/web e validações locais concluídos. Dos 37 métodos focados, 35 passaram inicialmente; dois tiveram preparação corrigida e passaram em 17,090s. Sete componentes em 4,00s, dez grupos HTTP privados e Chrome com duas abas aprovados; capturas inspecionadas. Relatório `docs/homologacao-etapa-2B8-2-2.md` distingue banco, HTTP e interface.
+- Próximo: publicar implementação/CI (283 backend/113 frontend esperados), cópia completa após zero schemas, atualizar API/web juntos, smoke e preservação. Principal ainda na revisão 0022; cópias públicas/exames/fingerprints `pre-2B8-2-2*` salvas. Não repetir testes aprovados sem nova falha.

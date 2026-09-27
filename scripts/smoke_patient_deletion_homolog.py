@@ -7,6 +7,9 @@ from smoke_exams_homolog import PNG
 
 def verify(request, email, password, token, container, ready, passed, sql, schema):
     def expect(method, path, data=None, status=200, session=token, headers=None):
+        if method == 'PUT' and path.startswith('/api/permissions/') and data is not None and 'version' not in data:
+            from permission_fixture_homolog import with_permission_version
+            data = with_permission_version(lambda url: expect('GET', url), path, data)
         code, body = request(method, path, data, token=session, extra_headers=headers)
         assert code == status, f'{method}: expected {status}, got {code}'
         return body

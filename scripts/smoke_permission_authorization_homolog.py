@@ -4,6 +4,9 @@ from smoke_bootstrap_homolog import main
 
 def verify(request, email, password, token, container, ready, passed, sql, schema):
     def expect(method, path, data=None, status=200, session=token):
+        if method == 'PUT' and path.startswith('/api/permissions/') and data is not None and 'version' not in data:
+            from permission_fixture_homolog import with_permission_version
+            data = with_permission_version(lambda url: expect('GET', url), path, data)
         code, body = request(method, path, data, token=session)
         assert code == status, f'{method}: expected {status}, got {code}'
         if status in (401, 403):

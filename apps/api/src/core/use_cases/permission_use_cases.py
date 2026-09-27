@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from src.core.domain.entities import UserRole
+from src.core.domain.entities import RolePermission, UserRole
 from src.core.domain.exceptions import ForbiddenError, UnauthorizedError, ValidationError
 from src.core.permissions import (
     PERMISSION_RESOURCES,
@@ -18,24 +18,27 @@ class PermissionUseCases:
         self.repository = repository
         self.user_repository = user_repository
 
-    def list_all(self) -> dict[UserRole, PermissionMatrix]:
-        result: dict[UserRole, PermissionMatrix] = {}
+    def list_all(self) -> dict[UserRole, tuple[int, PermissionMatrix]]:
+        result: dict[UserRole, tuple[int, PermissionMatrix]] = {}
 
         for role in UserRole:
-            result[role] = self.get_for_role(role)
+            result[role] = self.get_versioned(role)
 
         return result
 
     def get_for_role(self, role: UserRole) -> PermissionMatrix:
+        return self.get_versioned(role)[1]
+
+    def get_versioned(self, role: UserRole) -> tuple[int, PermissionMatrix]:
         if role == UserRole.admin:
-            return get_default_permissions(UserRole.admin)
+            return 0, get_default_permissions(UserRole.admin)
 
         current = self.repository.get_by_role(role)
         # Defaults are an effective view; only an explicit update persists them.
-        return normalize_permissions(role, current.permissions if current else None)
+        return (current.version if current else 0), normalize_permissions(role, current.permissions if current else None)
 
     def update_for_role(self, role: UserRole, permissions: dict[str, dict[str, bool]], *,
-                        actor_id: UUID, session_id: UUID) -> PermissionMatrix:
+                        version: int, actor_id: UUID, session_id: UUID) -> RolePermission:
         if self.user_repository is None:
             raise RuntimeError("Permission writes require the administration repository")
         # Same transaction/lock as user edits and session revocation. Recheck after
@@ -48,11 +51,12 @@ class PermissionUseCases:
                 raise ForbiddenError("Acesso restrito a administrador ativo.")
             if role == UserRole.admin:
                 raise ValidationError("Permissões do perfil Administrador não podem ser alteradas.")
+            if type(version) is not int or not 0 <= version < 2**63 - 1:
+                raise ValidationError('Informe uma versão válida das permissões.')
 
             self._validate_resources(permissions)
             normalized = normalize_permissions(role, permissions)
-            self.repository.upsert(role, normalized)
-            return normalized
+            return self.repository.save(role, normalized, version)
 
     def _validate_resources(self, permissions: dict[str, dict[str, bool]]) -> None:
         invalid_resources = sorted(resource for resource in permissions.keys() if resource not in PERMISSION_RESOURCES)

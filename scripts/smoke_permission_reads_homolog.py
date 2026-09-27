@@ -6,6 +6,9 @@ from smoke_bootstrap_homolog import main
 
 def verify(request, email, password, token, container, ready, passed, sql, schema):
     def expect(method, path, data=None, status=200, session=token):
+        if method == 'PUT' and path.startswith('/api/permissions/') and data is not None and 'version' not in data:
+            from permission_fixture_homolog import with_permission_version
+            data = with_permission_version(lambda url: expect('GET', url), path, data)
         code, body = request(method, path, data, token=session)
         assert code == status, f'{method}: expected {status}, got {code}'
         return body
@@ -29,7 +32,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     passed('absent matrices retain defaults; list/me and allowed/denied gates create no rows')
 
     raw = {'patients': {'view': True, 'create': False}, 'legacy': {'keep': True}}
-    sql(f"INSERT INTO {table} VALUES ('reception', '{json.dumps(raw)}'::json, now(), now())")
+    sql(f"INSERT INTO {table} (role, permissions, created_at, updated_at) VALUES ('reception', '{json.dumps(raw)}'::json, now(), now())")
 
     def snapshot():
         return sql(f'SELECT permissions::text, created_at, updated_at FROM {table}')

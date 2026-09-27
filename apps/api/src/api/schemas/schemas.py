@@ -274,6 +274,7 @@ class PermissionActionSchema(BaseModel):
 
 
 class RolePermissionResponse(BaseModel):
+    version: int
     role: UserRole
     permissions: dict[str, PermissionActionSchema]
 
@@ -283,6 +284,7 @@ class RolePermissionListResponse(BaseModel):
 
 
 class RolePermissionUpdateRequest(BaseModel):
+    version: int = Field(ge=0, lt=2**63 - 1, strict=True)
     permissions: dict[str, PermissionActionSchema]
 
 

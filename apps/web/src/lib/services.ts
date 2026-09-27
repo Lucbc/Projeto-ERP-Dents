@@ -341,7 +341,7 @@ export const permissionService = {
     const response = await api.get<RolePermissionListResponse>("/api/permissions");
     return response.data;
   },
-  async update(role: UserRole, payload: { permissions: Record<string, PermissionActions> }) {
+  async update(role: UserRole, payload: { version: number; permissions: Record<string, PermissionActions> }) {
     const response = await api.put<RolePermission>(`/api/permissions/${role}`, payload);
     return response.data;
   },

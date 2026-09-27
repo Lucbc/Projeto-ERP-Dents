@@ -1,3 +1,4 @@
+from permission_fixtures import update_fixture
 """Administrative serialization on migrated, disposable PostgreSQL schemas."""
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
@@ -98,7 +99,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                         pid.append(db.scalar(text('SELECT pg_backend_pid()')))
                         ready.set()
                         with self.assertRaises(UnauthorizedError) if operation != 'rename' else nullcontext():
-                            self.cases(db)[2].update_for_role(UserRole.reception, self.changed(),
+                            update_fixture(self.cases(db)[2], UserRole.reception, self.changed(),
                                                              actor_id=actor.id, session_id=sid)
 
                 with ThreadPoolExecutor(max_workers=1) as pool:
@@ -120,13 +121,13 @@ class PermissionAuthorizationTests(unittest.TestCase):
                 def save():
                     with Session(self.engine) as db:
                         _, repo, uc = self.cases(db)
-                        original = repo.upsert
+                        original = repo.save
                         def held(*args):
                             ready.set()
                             self.assertTrue(release.wait(10))
                             return original(*args)
-                        with patch.object(repo, 'upsert', held):
-                            return uc.update_for_role(UserRole.reception, self.changed(), actor_id=actor.id, session_id=sid)
+                        with patch.object(repo, 'save', held):
+                            return update_fixture(uc, UserRole.reception, self.changed(), actor_id=actor.id, session_id=sid)
 
                 def revoke():
                     with Session(self.engine) as db:
@@ -163,7 +164,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                         pid.append(db.scalar(text('SELECT pg_backend_pid()')))
                         ready.set()
                         with self.assertRaises(ForbiddenError):
-                            self.cases(db)[2].update_for_role(UserRole.reception, self.changed(),
+                            update_fixture(self.cases(db)[2], UserRole.reception, self.changed(),
                                                              actor_id=actor.id, session_id=sid)
                 with ThreadPoolExecutor(max_workers=1) as pool:
                     with Session(self.engine) as db:
@@ -185,7 +186,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                 pid.append(db.scalar(text('SELECT pg_backend_pid()')))
                 ready.set()
                 with self.assertRaises(UnauthorizedError):
-                    uc.update_for_role(UserRole.reception, self.changed(), actor_id=self.admin.id, session_id=self.session_id)
+                    update_fixture(uc, UserRole.reception, self.changed(), actor_id=self.admin.id, session_id=self.session_id)
         with ThreadPoolExecutor(max_workers=1) as pool:
             with Session(self.engine) as db:
                 with SqlAlchemyUserRepository(db).administration_lock():
@@ -202,7 +203,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
         before = self.matrix()
         with Session(self.engine) as db:
             with self.assertRaises(UnauthorizedError):
-                self.cases(db)[2].update_for_role(UserRole.admin, {'private-invalid': {}},
+                update_fixture(self.cases(db)[2], UserRole.admin, {'private-invalid': {}},
                                                  actor_id=self.admin.id, session_id=foreign)
         self.assertEqual(self.matrix(), before)
 
@@ -210,15 +211,15 @@ class PermissionAuthorizationTests(unittest.TestCase):
         before = self.matrix()
         with Session(self.engine) as db:
             _, repo, uc = self.cases(db)
-            def failing(role, matrix):
+            def failing(role, matrix, version):
                 db.get(RolePermissionModel, role).permissions = matrix
                 db.flush()
                 raise RuntimeError('Fictitious failure after flush')
-            with patch.object(repo, 'upsert', failing), self.assertRaises(RuntimeError):
-                uc.update_for_role(UserRole.reception, self.changed(), actor_id=self.admin.id, session_id=self.session_id)
+            with patch.object(repo, 'save', failing), self.assertRaises(RuntimeError):
+                update_fixture(uc, UserRole.reception, self.changed(), actor_id=self.admin.id, session_id=self.session_id)
         self.assertEqual(self.matrix(), before)
         with Session(self.engine) as db:
-            self.cases(db)[2].update_for_role(UserRole.reception, self.changed(), actor_id=self.admin.id, session_id=self.session_id)
+            update_fixture(self.cases(db)[2], UserRole.reception, self.changed(), actor_id=self.admin.id, session_id=self.session_id)
         self.assertEqual(self.matrix(), self.changed())
 
     def test_permission_revocation_and_delegated_user_write_are_ordered(self):
@@ -231,7 +232,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                 denied = get_default_permissions(UserRole.coordinator)
                 denied['users']['update'] = False
                 with Session(self.engine) as db:
-                    self.cases(db)[2].update_for_role(UserRole.coordinator, allowed, actor_id=self.admin.id, session_id=self.session_id)
+                    update_fixture(self.cases(db)[2], UserRole.coordinator, allowed, actor_id=self.admin.id, session_id=self.session_id)
                 ready, release, waiting, pid = threading.Event(), threading.Event(), threading.Event(), []
 
                 def operation(revoke, held):
@@ -244,7 +245,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                         if not held:
                             pid.append(db.scalar(text('SELECT pg_backend_pid()')))
                             waiting.set()
-                        repo, method = (permissions, 'upsert') if revoke else (users, 'update')
+                        repo, method = (permissions, 'save') if revoke else (users, 'update')
                         original = getattr(repo, method)
                         def hook(*args):
                             ready.set()
@@ -252,7 +253,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                             return original(*args)
                         def run():
                             if revoke:
-                                return uc.update_for_role(UserRole.coordinator, denied, actor_id=self.admin.id, session_id=self.session_id)
+                                return update_fixture(uc, UserRole.coordinator, denied, actor_id=self.admin.id, session_id=self.session_id)
                             return user_uc.update(target.id, {'name': 'Fictitious Ordered Edit'}, actor_id=delegate.id)
                         if held:
                             with patch.object(repo, method, hook):
@@ -281,5 +282,5 @@ class PermissionAuthorizationTests(unittest.TestCase):
         before = self.matrix()
         for role, matrix in ((UserRole.admin, {}), (UserRole.reception, {'unknown': {}})):
             with Session(self.engine) as db, self.assertRaises(ValidationError):
-                self.cases(db)[2].update_for_role(role, matrix, actor_id=self.admin.id, session_id=self.session_id)
+                update_fixture(self.cases(db)[2], role, matrix, actor_id=self.admin.id, session_id=self.session_id)
         self.assertEqual(self.matrix(), before)

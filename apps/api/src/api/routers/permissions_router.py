@@ -30,15 +30,15 @@ def get_my_permissions(
     db: Session = Depends(get_db_dep),
 ) -> RolePermissionResponse:
     use_case = build_use_case(db)
-    permissions = use_case.get_for_role(current_user.role)
-    return RolePermissionResponse(role=current_user.role, permissions=permissions)
+    version, permissions = use_case.get_versioned(current_user.role)
+    return RolePermissionResponse(role=current_user.role, version=version, permissions=permissions)
 
 
 @router.get("", response_model=RolePermissionListResponse, dependencies=[Depends(require_admin)])
 def list_role_permissions(db: Session = Depends(get_db_dep)) -> RolePermissionListResponse:
     use_case = build_use_case(db)
     mapped = use_case.list_all()
-    items = [RolePermissionResponse(role=role, permissions=mapped[role]) for role in UserRole]
+    items = [RolePermissionResponse(role=role, version=mapped[role][0], permissions=mapped[role][1]) for role in UserRole]
     return RolePermissionListResponse(items=items)
 
 
@@ -57,8 +57,9 @@ def update_role_permissions(
     use_case = build_use_case(db)
     permissions = use_case.update_for_role(
         role=role,
+        version=payload.version,
         permissions={key: value.model_dump() for key, value in payload.permissions.items()},
         actor_id=current_user.id,
         session_id=session_id,
     )
-    return RolePermissionResponse(role=role, permissions=permissions)
+    return RolePermissionResponse(role=role, version=permissions.version, permissions=permissions.permissions)

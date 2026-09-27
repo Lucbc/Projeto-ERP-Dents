@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -21,7 +22,8 @@ import type { PermissionAction, PermissionActions, PermissionResource, UserRole 
 const editableRoles: UserRole[] = ["coordinator", "dentist", "reception"];
 
 type RoleMatrixDraft = Record<PermissionResource, PermissionActions>;
-type DraftState = Partial<Record<UserRole, RoleMatrixDraft>>;
+type RoleDraft = { permissions: RoleMatrixDraft; version: number; review: boolean; reloading: boolean };
+type DraftState = Partial<Record<UserRole, RoleDraft>>;
 
 function createEmptyActions(): PermissionActions {
   return { view: false, create: false, update: false, delete: false };
@@ -56,41 +58,68 @@ export function PermissionsPage() {
   const [draft, setDraft] = useState<DraftState>({});
   const [savingRole, setSavingRole] = useState<UserRole | null>(null);
   const [openRole, setOpenRole] = useState<UserRole | null>(null);
+  const [accessLost, setAccessLost] = useState(false);
 
   const permissionsQuery = useQuery({
     queryKey: ["permissions", "roles"],
     queryFn: () => permissionService.list(),
+    enabled: !accessLost,
   });
 
-  const roleMap = useMemo(() => {
-    const mapped: Partial<Record<UserRole, Record<string, PermissionActions>>> = {};
-    for (const item of permissionsQuery.data?.items ?? []) {
-      mapped[item.role] = item.permissions;
+  useEffect(() => {
+    if (!permissionsQuery.data || accessLost) return;
+    setDraft((previous) => {
+      const next = { ...previous };
+      for (const item of permissionsQuery.data.items) {
+        if (editableRoles.includes(item.role) && !next[item.role]) {
+          next[item.role] = { permissions: normalizeRoleMatrix(item.permissions), version: item.version,
+            review: false, reloading: false };
+        }
+      }
+      return next;
+    });
+  }, [permissionsQuery.data, accessLost]);
+
+  const handleAccessLoss = (error: unknown) => {
+    if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+      setAccessLost(true);
+      setDraft({});
+      queryClient.removeQueries({ queryKey: ["permissions", "roles"] });
+      return true;
     }
-    return mapped;
-  }, [permissionsQuery.data]);
+    return false;
+  };
 
   useEffect(() => {
-    if (!permissionsQuery.data) return;
-
-    const nextDraft: DraftState = {};
-    for (const role of editableRoles) {
-      nextDraft[role] = normalizeRoleMatrix(roleMap[role]);
+    const error = permissionsQuery.error;
+    if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+      setAccessLost(true);
+      setDraft({});
+      queryClient.removeQueries({ queryKey: ["permissions", "roles"] });
     }
-    setDraft(nextDraft);
-  }, [permissionsQuery.data, roleMap]);
+  }, [permissionsQuery.error, queryClient]);
 
   const updateMutation = useMutation({
-    mutationFn: (payload: { role: UserRole; permissions: Record<string, PermissionActions> }) =>
-      permissionService.update(payload.role, { permissions: payload.permissions }),
+    mutationFn: (payload: { role: UserRole; version: number; permissions: Record<string, PermissionActions> }) =>
+      permissionService.update(payload.role, { version: payload.version, permissions: payload.permissions }),
     onMutate: (payload) => {
       setSavingRole(payload.role);
     },
-    onSuccess: (_, payload) => {
+    onSuccess: (saved, payload) => {
+      setDraft((previous) => ({ ...previous, [payload.role]: {
+        permissions: normalizeRoleMatrix(saved.permissions), version: saved.version, review: false, reloading: false,
+      } }));
       toast(`Permissões de ${userRoleLabels[payload.role]} atualizadas.`);
       void queryClient.invalidateQueries({ queryKey: ["permissions"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error, payload) => {
+      if (handleAccessLoss(error)) return;
+      const response = axios.isAxiosError(error) ? error.response : undefined;
+      if (!response || response.status >= 500 || response.data?.code === "stale_version") {
+        setDraft((previous) => ({ ...previous, [payload.role]: { ...previous[payload.role]!, review: true } }));
+      }
+      toast(getApiErrorMessage(error), "error");
+    },
     onSettled: () => setSavingRole(null),
   });
 
@@ -103,11 +132,10 @@ export function PermissionsPage() {
     setDraft((prev) => ({
       ...prev,
       [role]: {
-        ...createEmptyRoleMatrix(),
-        ...(prev[role] ?? createEmptyRoleMatrix()),
-        [resource]: {
-          ...(prev[role]?.[resource] ?? createEmptyActions()),
-          [action]: checked,
+        ...prev[role]!,
+        permissions: {
+          ...prev[role]!.permissions,
+          [resource]: { ...prev[role]!.permissions[resource], [action]: checked },
         },
       },
     }));
@@ -115,19 +143,39 @@ export function PermissionsPage() {
 
   const saveRole = (role: UserRole) => {
     const roleDraft = draft[role];
-    if (!roleDraft) return;
-    updateMutation.mutate({ role, permissions: roleDraft });
+    if (!roleDraft || roleDraft.review || roleDraft.reloading || updateMutation.isPending || accessLost) return;
+    updateMutation.mutate({ role, permissions: roleDraft.permissions, version: roleDraft.version });
+  };
+
+  const reloadRole = async (role: UserRole) => {
+    if (!draft[role] || draft[role]?.reloading || updateMutation.isPending) return;
+    setDraft((previous) => ({ ...previous, [role]: { ...previous[role]!, review: true, reloading: true } }));
+    try {
+      const response = await permissionService.list();
+      const current = response.items.find((item) => item.role === role);
+      if (!current) throw new Error("Perfil indisponível.");
+      setDraft((previous) => ({ ...previous, [role]: { permissions: normalizeRoleMatrix(current.permissions),
+        version: current.version, review: false, reloading: false } }));
+      toast("Permissões atuais carregadas. Revise antes de salvar.");
+    } catch (error) {
+      if (!handleAccessLoss(error)) {
+        setDraft((previous) => ({ ...previous, [role]: { ...previous[role]!, reloading: false } }));
+        toast(getApiErrorMessage(error), "error");
+      }
+    }
   };
 
   const toggleRoleAccordion = (role: UserRole) => {
     setOpenRole((prev) => (prev === role ? null : role));
   };
 
+  if (accessLost) return <ErrorState message="Seu acesso à administração de permissões foi encerrado. Entre novamente." />;
+
   if (permissionsQuery.isLoading) {
     return <LoadingState message="Carregando permissões..." />;
   }
 
-  if (permissionsQuery.isError) {
+  if (permissionsQuery.isError && !permissionsQuery.data) {
     return <ErrorState message="Erro ao carregar permissões." />;
   }
 
@@ -150,7 +198,8 @@ export function PermissionsPage() {
       </Card>
 
       {editableRoles.map((role) => {
-        const roleDraft = draft[role] ?? createEmptyRoleMatrix();
+        const state = draft[role];
+        const roleDraft = state?.permissions ?? createEmptyRoleMatrix();
         const isOpen = openRole === role;
 
         return (
@@ -174,11 +223,19 @@ export function PermissionsPage() {
 
             {isOpen && (
               <>
+                {state?.review && (
+                  <div role="alert" className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+                    <p>Este perfil precisa de revisão. Seu rascunho foi mantido. Carregue as permissões atuais antes de salvar novamente.</p>
+                    <Button variant="outline" onClick={() => void reloadRole(role)} disabled={state.reloading || updateMutation.isPending}>
+                      {state.reloading ? "Carregando..." : "Descartar rascunho e carregar atual"}
+                    </Button>
+                  </div>
+                )}
                 <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <p className="text-sm text-slate-500">Marque as ações permitidas para este perfil.</p>
                   <Button
                     onClick={() => saveRole(role)}
-                    disabled={savingRole === role || updateMutation.isPending}
+                    disabled={!state || state.review || state.reloading || updateMutation.isPending}
                   >
                     {savingRole === role ? "Salvando..." : "Salvar Permissões"}
                   </Button>
@@ -206,6 +263,8 @@ export function PermissionsPage() {
                             <td key={`${resource}-${action}`} className="p-2 text-center">
                               <input
                                 type="checkbox"
+                                aria-label={`${userRoleLabels[role]}: ${permissionResourceLabels[resource]} — ${permissionActionLabels[action]}`}
+                                disabled={!state || state.reloading || savingRole === role}
                                 checked={Boolean(roleDraft[resource][action])}
                                 onChange={(event) =>
                                   togglePermission(role, resource, action, event.target.checked)

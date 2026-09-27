@@ -19,6 +19,10 @@ process.on('unhandledRejection',()=>{console.error('Patient deletion browser fai
   stage='login';const logged=await login(first,credentials);
   const headers={'Content-Type':'application/json','X-Session-ID':logged.session_id,'X-CSRF-Token':logged.csrf_token};
   const api=(method,url,data)=>first.evaluate(async({method,url,data,headers})=>{
+   if(method==='PUT'&&url.startsWith('/api/permissions/')) {
+    const current=await(await fetch('/api/permissions',{headers})).json();
+    data={...data,version:current.items.find(item=>item.role===url.split('/').at(-1)).version};
+   }
    const response=await fetch(url,{method,headers,body:data?JSON.stringify(data):undefined});
    return {status:response.status,body:response.status===204?null:await response.json()};
   },{method,url,data,headers});

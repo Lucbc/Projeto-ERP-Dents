@@ -126,6 +126,7 @@ class RolePermission:
     permissions: dict[str, dict[str, bool]]
     created_at: datetime
     updated_at: datetime
+    version: int = 1
 
 
 @dataclass(slots=True)

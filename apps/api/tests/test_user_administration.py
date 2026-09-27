@@ -1,3 +1,4 @@
+from permission_fixtures import save_fixture
 """PostgreSQL regression tests. Run only inside the isolated homologation API.
 
 RUN_HOMOLOG_TESTS=1 python -m unittest discover -s tests -v
@@ -53,7 +54,7 @@ class UserAdministrationTests(unittest.TestCase):
         self.ordinary = self.seed("ordinary", UserRole.reception)
         matrix = get_default_permissions(UserRole.coordinator)
         matrix["users"] = {action: True for action in ("view", "create", "update", "delete")}
-        self.permissions.upsert(UserRole.coordinator, matrix)
+        save_fixture(self.permissions, UserRole.coordinator, matrix)
 
     def dispose_schema(self):
         self.engine.dispose()

@@ -169,7 +169,9 @@ class UserModel(Base):
 
 class RolePermissionModel(Base):
     __tablename__ = "role_permissions"
+    __table_args__ = (CheckConstraint('version > 0', name='ck_role_permissions_version_positive'),)
 
+    version: Mapped[int] = mapped_column(BigInteger, server_default='1', nullable=False)
     role: Mapped[UserRole] = mapped_column(SAEnum(UserRole, name="user_role"), primary_key=True)
     permissions: Mapped[dict[str, dict[str, bool]]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
