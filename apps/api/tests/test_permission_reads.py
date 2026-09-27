@@ -1,11 +1,13 @@
 """Permission reads must never persist defaults or undo a concurrent revocation."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from datetime import datetime, timedelta, timezone
 import os
 import threading
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import text
@@ -13,6 +15,7 @@ from sqlalchemy.orm import Session
 
 import test_appointment_concurrency as fixture
 from src.adapters.db.repositories.role_permission_repository import SqlAlchemyRolePermissionRepository
+from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 from src.api.deps.auth import require_permission
 from src.core.domain.entities import UserRole
 from src.core.domain.exceptions import ValidationError
@@ -40,6 +43,14 @@ class PermissionReadTests(unittest.TestCase):
     def stored(self):
         with self.engine.connect() as db:
             return db.execute(text('SELECT role, permissions::text, updated_at FROM role_permissions ORDER BY role')).all()
+
+    def writable_case(self, db):
+        users = SqlAlchemyUserRepository(db)
+        actor = users.create({'name': 'Fictitious Admin', 'email': 'permission-admin@example.com',
+                              'role': UserRole.admin, 'password_hash': 'test-only'})
+        session_id = uuid4()
+        users.create_session(session_id, actor.id, datetime.now(timezone.utc) + timedelta(hours=1))
+        return PermissionUseCases(SqlAlchemyRolePermissionRepository(db), users), dict(actor_id=actor.id, session_id=session_id)
 
     def test_missing_partial_and_canonical_reads_in_read_only_transaction(self):
         for raw in (None, {'patients': {'view': True, 'create': False}, 'legacy': {'keep': True}},
@@ -125,9 +136,9 @@ class PermissionReadTests(unittest.TestCase):
         raw = {'patients': {'view': False}}
         untouched = deepcopy(raw)
         with Session(self.engine) as db:
-            uc = PermissionUseCases(SqlAlchemyRolePermissionRepository(db))
+            uc, actor = self.writable_case(db)
             expected = normalize_permissions(UserRole.reception, raw)
-            self.assertEqual(uc.update_for_role(UserRole.reception, raw), expected)
+            self.assertEqual(uc.update_for_role(UserRole.reception, raw, **actor), expected)
             result = uc.get_for_role(UserRole.reception)
             result['patients']['view'] = True
             self.assertEqual(uc.get_for_role(UserRole.reception), expected)
@@ -137,10 +148,10 @@ class PermissionReadTests(unittest.TestCase):
 
     def test_admin_defaults_and_immutability_are_preserved(self):
         with Session(self.engine) as db:
-            uc = PermissionUseCases(SqlAlchemyRolePermissionRepository(db))
+            uc, identity = self.writable_case(db)
             self.assertEqual(uc.get_for_role(UserRole.admin), get_default_permissions(UserRole.admin))
             actor = SimpleNamespace(role=UserRole.admin)
             self.assertIs(require_permission('users', 'delete')(actor, db), actor)
             with self.assertRaises(ValidationError):
-                uc.update_for_role(UserRole.admin, {})
+                uc.update_for_role(UserRole.admin, {}, **identity)
         self.assertEqual(self.stored(), [])

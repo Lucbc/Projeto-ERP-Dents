@@ -42,6 +42,10 @@ Primeiro recorte, independente de migração/versionamento:
 
 ### 2B.8.2 — escrita versionada de permissões e coordenação da autorização
 
+Execução em dois recortes verificáveis: **2B.8.2.1**, coordenação/rechecagem de autor e sessão nas escritas de permissões, incluindo logout; **2B.8.2.2**, versão por perfil, migração e rascunhos independentes na interface. O primeiro não muda payloads públicos nem corrige sobrescrita por formulários antigos.
+
+Protocolo da 2B.8.2.1: adquirir `LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE`, descartar cache ORM, consultar sessão ainda válida e autor ativo/administrador, validar matriz e gravar antes de liberar. Alterações de usuários/senha/login já seguem esse bloqueio; logout deve passar a segui-lo. Revogação de permissão e autorização de escrita de usuários ficam ordenadas pelo mesmo bloqueio. Sem lock de linha adquirido antes do bloqueio administrativo. A expiração é verificada pelo relógio atual do banco após eventual espera, não pelo horário de início da transação. Operação autorizada e confirmada antes da revogação permanece válida; revogação confirmada primeiro impede a escrita de permissões. Isso não adiciona rechecagem de sessão a todos os outros recursos.
+
 - Versão por perfil editável, pré-condição obrigatória no PUT, comparação/incremento na mesma transação; retorno 409 `stale_version` sem matriz sensível para quem perdeu acesso. Tratar primeiro cadastro/linha ausente e padrões sem gravação em GET. Definir migração preservando JSON existente e defaults antes de implementar.
 - Escritas de permissões devem participar do protocolo de administração de usuários: revalidar ator ativo e administrador sob coordenação, reler ORM e manter lock até commit/rollback. Não autorizar somente com objeto retornado pela dependência antes da espera.
 - Definir a ordem de locks e o ponto de autorização em relação a inativação, rebaixamento, exclusão, redefinição de senha e revogação de sessão. Verificar o contexto de sessão passado pelas dependências e não prometer interrupção retroativa de operações já confirmadas. Reproduzir as duas ordens antes de escolher a solução final.

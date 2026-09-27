@@ -55,6 +55,18 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
+def get_current_session_id(
+    token: str = Depends(get_cookie_token),
+    auth_service: JwtAuthService = Depends(get_auth_service),
+) -> UUID:
+    """Pass the signed session identity to operations that reauthorize under lock."""
+    payload = auth_service.decode_access_token(token)
+    try:
+        return UUID(str(payload["jti"]))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sessão inválida.") from exc
+
+
 def require_permission(resource: PermissionResource, action: PermissionAction) -> Callable:
     def dependency(
         current_user: User = Depends(get_current_user),

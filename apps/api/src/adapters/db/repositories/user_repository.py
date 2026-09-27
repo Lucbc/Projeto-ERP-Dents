@@ -16,7 +16,8 @@ class SqlAlchemyUserRepository(UserRepository):
 
     @contextmanager
     def administration_lock(self):
-        # Serialize user writes through validation + commit. Ordinary SELECTs remain available.
+        # Serialize user/permission writes and logout through validation + commit.
+        # Ordinary SELECTs remain available.
         # Unlike locking only existing admin rows, this also covers role changes and inserts.
         try:
             self.session.execute(text("LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE"))
@@ -40,14 +41,16 @@ class SqlAlchemyUserRepository(UserRepository):
     def session_active(self, session_id, user_id) -> bool:
         return self.session.scalar(select(AuthSessionModel.id).where(
             AuthSessionModel.id == session_id, AuthSessionModel.user_id == user_id,
-            AuthSessionModel.expires_at > func.now(),
+            # now() is the transaction start, potentially before a long lock wait.
+            AuthSessionModel.expires_at > func.clock_timestamp(),
         )) is not None
 
     def revoke_session(self, session_id, user_id) -> None:
-        self.session.execute(delete(AuthSessionModel).where(
-            AuthSessionModel.id == session_id, AuthSessionModel.user_id == user_id,
-        ))
-        self.session.commit()
+        with self.administration_lock():
+            self.session.execute(delete(AuthSessionModel).where(
+                AuthSessionModel.id == session_id, AuthSessionModel.user_id == user_id,
+            ))
+            self.session.commit()
 
     def bootstrap_completed(self) -> bool:
         state = self.session.get(InstallationStateModel, 1)

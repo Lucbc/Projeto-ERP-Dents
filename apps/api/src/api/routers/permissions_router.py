@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.role_permission_repository import SqlAlchemyRolePermissionRepository
-from src.api.deps.auth import get_current_user, require_admin
+from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
+from src.api.deps.auth import get_current_user, get_current_session_id, require_admin
 from src.api.deps.db import get_db_dep
 from src.api.schemas.schemas import (
     RolePermissionListResponse,
@@ -18,7 +21,7 @@ router = APIRouter(prefix="/api/permissions", tags=["permissions"])
 
 
 def build_use_case(db: Session) -> PermissionUseCases:
-    return PermissionUseCases(SqlAlchemyRolePermissionRepository(db))
+    return PermissionUseCases(SqlAlchemyRolePermissionRepository(db), SqlAlchemyUserRepository(db))
 
 
 @router.get("/me", response_model=RolePermissionResponse)
@@ -47,11 +50,15 @@ def list_role_permissions(db: Session = Depends(get_db_dep)) -> RolePermissionLi
 def update_role_permissions(
     role: UserRole,
     payload: RolePermissionUpdateRequest,
+    current_user: User = Depends(require_admin),
+    session_id: UUID = Depends(get_current_session_id),
     db: Session = Depends(get_db_dep),
 ) -> RolePermissionResponse:
     use_case = build_use_case(db)
     permissions = use_case.update_for_role(
         role=role,
         permissions={key: value.model_dump() for key, value in payload.permissions.items()},
+        actor_id=current_user.id,
+        session_id=session_id,
     )
     return RolePermissionResponse(role=role, permissions=permissions)
