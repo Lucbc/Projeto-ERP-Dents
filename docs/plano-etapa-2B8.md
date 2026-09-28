@@ -56,6 +56,8 @@ Protocolo da 2B.8.2.1: adquirir `LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE`, 
 
 ### 2B.8.3 — versão do usuário e operações destrutivas
 
+**Preparação detalhada em 28/09/2026:** [inventário, evidências e contrato](./plano-etapa-2B8-3.md). Executar primeiro **2B.8.3.1**, revalidação transacional da sessão nas escritas administrativas e troca própria; depois **2B.8.3.2**, versão de usuário/migração/interface. Sessão revogada após autenticação inicial foi confirmada como janela em seis diagnósticos de casos de uso/banco; nenhuma correção funcional nesta preparação.
+
 - Versão de usuário na resposta e edição; incremento atômico sob o protocolo administrativo, sem contornar rechecagem do ator. Inventariar todas as escritas: bootstrap/criação, edição, senha administrativa/própria e rehash interno. Não expor hash/senha nem permitir que um caller interno abra bypass pela API.
 - Incluir redefinição administrativa de senha e exclusão com versão/identidade revisada; falha preserva usuário, sessões, vínculos e histórico. Mensagens nunca incluem segredos. Não preservar senha digitada em cache persistente, logs ou relatório; definir limpeza do campo sensível ao reabrir/encerrar o modal.
 - Nome/e-mail/perfil/ativação/vínculo antigo não pode desfazer mudança confirmada; manter revogação de sessões quando exigida. Senha alterada por outro fluxo deve invalidar confirmação administrativa antiga conforme contrato a detalhar na implementação.
@@ -75,6 +77,8 @@ Protocolo da 2B.8.2.1: adquirir `LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE`, 
 R18 continua parcial. Instalação assistida, atualização entre computadores e auditoria clínica completa seguem seus recortes próprios.
 
 ## Retomada
+
+**Ponto atual — 28/09/2026:** preparação 2B.8.3 concluída, sem mudança funcional. Próximo: **implementar 2B.8.3.1**, conforme [contrato detalhado](./plano-etapa-2B8-3.md#2b831--revalidar-sessão-antes-das-escritas). Homologação na revisão 0023, dados preservados e zero schemas privados; não repetir diagnóstico/preparação.
 
 **Ponto atual — 27/09/2026: 2B.8.2.2 concluída.** Implementação `362c051`, adaptação de testes `577afd0`; CI `36364884916` aprovado (283 backend/113 frontend, HTTP, builds e auditorias). Versões de matrizes e rascunhos independentes validados também em Chrome; migração 0023/API/web aplicados juntos e dados preservados. [Relatório](./homologacao-etapa-2B8-2-2.md). **Próximo passo: detalhar e implementar 2B.8.3 em subetapas**, inventariando todas as escritas de usuários, senha e exclusão antes de definir migração/contrato. Não repetir permissões/agenda concluídas. As retomadas abaixo são históricas.
 
