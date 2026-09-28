@@ -78,6 +78,8 @@ R18 continua parcial. Instalação assistida, atualização entre computadores e
 
 ## Retomada
 
+**Ponto atual — 28/09/2026: 2B.8.3.1 concluída.** Sessões revalidadas sob bloqueio nas cinco escritas de usuários/senhas; CI `36452387233` aprovado (291 backend/113 frontend), API atualizada e dados preservados. [Relatório](./homologacao-etapa-2B8-3-1.md). Próximo: **2B.8.3.2**, versão/migração/interface e script local de recuperação, conforme [contrato](./plano-etapa-2B8-3.md). Retomadas anteriores abaixo são históricas.
+
 **Ponto atual — 28/09/2026:** preparação 2B.8.3 concluída, sem mudança funcional. Próximo: **implementar 2B.8.3.1**, conforme [contrato detalhado](./plano-etapa-2B8-3.md#2b831--revalidar-sessão-antes-das-escritas). Homologação na revisão 0023, dados preservados e zero schemas privados; não repetir diagnóstico/preparação.
 
 **Ponto atual — 27/09/2026: 2B.8.2.2 concluída.** Implementação `362c051`, adaptação de testes `577afd0`; CI `36364884916` aprovado (283 backend/113 frontend, HTTP, builds e auditorias). Versões de matrizes e rascunhos independentes validados também em Chrome; migração 0023/API/web aplicados juntos e dados preservados. [Relatório](./homologacao-etapa-2B8-2-2.md). **Próximo passo: detalhar e implementar 2B.8.3 em subetapas**, inventariando todas as escritas de usuários, senha e exclusão antes de definir migração/contrato. Não repetir permissões/agenda concluídas. As retomadas abaixo são históricas.

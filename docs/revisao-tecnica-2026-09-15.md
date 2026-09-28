@@ -233,6 +233,8 @@ A regra de um lançamento ativo por consulta usa consulta prévia, seguida de cr
 
 ### R18 — P1 — Duas pessoas podem sobrescrever alterações uma da outra
 
+**2B.8.3.1 concluída em 28/09/2026:** criação/edição/senha administrativa/exclusão e troca própria revalidam sessão sob bloqueio antes de gravar. Cinco operações contra cinco revogações, ambas as ordens, expiração/cache/rollback e regressões aprovados. [Evidências](./homologacao-etapa-2B8-3-1.md): CI 291 backend/113 frontend, HTTP e auditorias; API atualizada e dados preservados. R18 permanece parcial para formulários antigos de usuários, senha e exclusão na 2B.8.3.2; nenhuma versão de usuário foi adicionada neste recorte.
+
 **Preparação 2B.8.3 em 28/09/2026:** inventariadas todas as escritas de usuários/senhas; rehash automático não existe. Seis intercalações de banco/casos de uso confirmam gravações administrativas após logout e troca própria após logout/inativação, com sessão previamente válida; sessão revogada não é recuperada. [Contrato](./plano-etapa-2B8-3.md): primeiro revalidar sessão sob bloqueio na 2B.8.3.1, depois versões/migração/UI na 2B.8.3.2. Diagnóstico complementar, sem correção funcional nesta preparação; R18 permanece parcial.
 
 **2B.8.2.2 concluída em 27/09/2026:** versão por perfil e gravação atômica impedem sobrescrita por matriz antiga; ausência usa versão virtual zero sem escrita em GET. Interface mantém rascunhos independentes e exige recarga explícita após conflito/falha ambígua. [Evidências](./homologacao-etapa-2B8-2-2.md): CI 283 backend/113 frontend, HTTP e Chrome aprovados; API/web atualizados, migração 0023 e dados preservados. R18 permanece parcial para usuários, senha e exclusão na 2B.8.3. Registros abaixo são históricos.
