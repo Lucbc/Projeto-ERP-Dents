@@ -76,6 +76,8 @@ R18 continua parcial. Instalação assistida, atualização entre computadores e
 
 ## Retomada
 
+**Ponto atual — 27/09/2026: 2B.8.2.2 concluída.** Implementação `362c051`, adaptação de testes `577afd0`; CI `36364884916` aprovado (283 backend/113 frontend, HTTP, builds e auditorias). Versões de matrizes e rascunhos independentes validados também em Chrome; migração 0023/API/web aplicados juntos e dados preservados. [Relatório](./homologacao-etapa-2B8-2-2.md). **Próximo passo: detalhar e implementar 2B.8.3 em subetapas**, inventariando todas as escritas de usuários, senha e exclusão antes de definir migração/contrato. Não repetir permissões/agenda concluídas. As retomadas abaixo são históricas.
+
 Próximo passo: **implementar 2B.8.1**, começando por testes permanentes do comportamento corrigido. Não repetir revisão geral nem reabrir disponibilidade de dentistas. A escolha do usuário da 2B.7 permanece definida; nenhuma nova escolha de negócio é necessária nesta preparação.
 
 **Atualização em 26/09/2026 — 2B.8.1 concluída:** implementação `2279001`, CI `36286375390` aprovado (268 backend/106 frontend). Leituras não persistem matrizes nem confirmam transações; padrões e JSON originais preservados. API principal atualizada, dados/histórico/bytes preservados, revisão `0022` e zero schemas. [Relatório](./homologacao-etapa-2B8-1.md). **Próximo passo atual: 2B.8.2**, detalhar e implementar versão por perfil/coordenação da autorização/rascunhos independentes conforme contrato acima. Não repetir 2B.8.1 nem reabrir disponibilidade. Registros de preparação abaixo são históricos.
