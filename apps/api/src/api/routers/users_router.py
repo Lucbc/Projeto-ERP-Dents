@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 from src.adapters.db.repositories.role_permission_repository import SqlAlchemyRolePermissionRepository
 from src.adapters.security.jwt_auth_service import JwtAuthService
-from src.api.deps.auth import require_permission
+from src.api.deps.auth import get_current_session_id, require_permission
 from src.api.deps.db import get_db_dep
 from src.api.schemas.schemas import (
     SetPasswordRequest,
@@ -55,8 +55,9 @@ def list_users(
     status_code=status.HTTP_201_CREATED,
 )
 def create_user(payload: UserCreateRequest, db: Session = Depends(get_db_dep),
+                session_id: UUID = Depends(get_current_session_id),
                 actor: User = Depends(require_permission("users", "create"))):
-    return build_use_case(db).create(payload.model_dump(), actor_id=actor.id)
+    return build_use_case(db).create(payload.model_dump(), actor_id=actor.id, session_id=session_id)
 
 
 @router.get(
@@ -74,8 +75,9 @@ def get_user(user_id: UUID, db: Session = Depends(get_db_dep)):
     response_model=UserResponse,
 )
 def update_user(user_id: UUID, payload: UserUpdateRequest, db: Session = Depends(get_db_dep),
+                session_id: UUID = Depends(get_current_session_id),
                 actor: User = Depends(require_permission("users", "update"))):
-    return build_use_case(db).update(user_id, payload.model_dump(exclude_unset=True), actor_id=actor.id)
+    return build_use_case(db).update(user_id, payload.model_dump(exclude_unset=True), actor_id=actor.id, session_id=session_id)
 
 
 @router.post(
@@ -83,8 +85,9 @@ def update_user(user_id: UUID, payload: UserUpdateRequest, db: Session = Depends
     response_model=UserResponse,
 )
 def set_password(user_id: UUID, payload: SetPasswordRequest, db: Session = Depends(get_db_dep),
+                 session_id: UUID = Depends(get_current_session_id),
                  actor: User = Depends(require_permission("users", "update"))):
-    return build_use_case(db).set_password(user_id, payload.new_password, actor_id=actor.id)
+    return build_use_case(db).set_password(user_id, payload.new_password, actor_id=actor.id, session_id=session_id)
 
 
 @router.delete(
@@ -93,6 +96,7 @@ def set_password(user_id: UUID, payload: SetPasswordRequest, db: Session = Depen
     response_class=Response,
 )
 def delete_user(user_id: UUID, db: Session = Depends(get_db_dep),
+                session_id: UUID = Depends(get_current_session_id),
                 actor: User = Depends(require_permission("users", "delete"))) -> Response:
-    build_use_case(db).delete(user_id, actor_id=actor.id)
+    build_use_case(db).delete(user_id, actor_id=actor.id, session_id=session_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

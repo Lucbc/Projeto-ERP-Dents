@@ -13,9 +13,10 @@ Preparação em 28/09/2026, base `c039f1d`. Este documento define o contrato e o
 | Senha própria | `AuthUseCases.change_password` → `update(password_hash)` | Revalidar sessão/conta ativa; conferir senha atual e versão do usuário; incrementar e revogar sessões |
 | Exclusão | `UserUseCases.delete` → repositório `delete` | Versão obrigatória, comparação e exclusão atômicas; preservar último administrador e histórico |
 | Login/logout | Login verifica credencial novamente sob bloqueio e cria sessão; logout revoga sob o mesmo bloqueio | Não incrementar versão de cadastro por login/logout; conservar coordenação |
+| Recuperação local | `apps/api/scripts/reset_admin_password.py` lê a conta sob bloqueio e chama o repositório para trocar o hash/revogar sessões | Operação local de manutenção, sem sessão web; na 2B.8.3.2 usar versão recém-lida sob bloqueio e consumir versão. Não criar rota/bypass HTTP |
 | Rehash automático | Não encontrado: `verify_password` apenas verifica bcrypt/bcrypt_sha256; não chama `verify_and_update`/`needs_update` | Não implementar rehash nesta etapa. Se introduzido futuramente, definir operação interna específica e testes; não expor bypass de versão |
 
-As escritas de usuários em produção estão concentradas em `user_repository.py`; casos de uso de usuários e autenticação são seus chamadores. `UserResponse` hoje não tem versão e não expõe hash. `UserUpdateRequest`, `SetPasswordRequest`, `ChangePasswordRequest` e DELETE ainda não exigem versão.
+As escritas de usuários em produção estão concentradas em `user_repository.py`; casos de uso de usuários/autenticação e o script local de recuperação são seus chamadores. O script foi acrescentado ao inventário na implementação da 2B.8.3.1; o levantamento inicial em `src` não o incluía. `UserResponse` hoje não tem versão e não expõe hash. `UserUpdateRequest`, `SetPasswordRequest`, `ChangePasswordRequest` e DELETE ainda não exigem versão.
 
 Sessões são apagadas quando mudam e-mail, perfil, ativação, vínculo com dentista ou hash. Nome isolado não revoga sessões. Esses efeitos permanecem; adicionar versão não deve revogar por si só. A exclusão remove as sessões por FK CASCADE, mas não deve apagar dentistas, consultas ou eventos financeiros. Autor dos pagamentos/estornos é registrado como identidade histórica, sem FK destrutiva para usuários.
 

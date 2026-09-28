@@ -11,6 +11,7 @@ import threading
 import time
 import unittest
 from uuid import uuid4
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
@@ -21,7 +22,7 @@ from src.adapters.db.models.models import UserModel
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 from src.adapters.db.repositories.role_permission_repository import SqlAlchemyRolePermissionRepository
 from src.core.domain.entities import UserRole
-from src.core.domain.exceptions import ConflictError, ForbiddenError, ValidationError
+from src.core.domain.exceptions import ConflictError, ForbiddenError, UnauthorizedError, ValidationError
 from src.core.permissions import get_default_permissions
 from src.core.use_cases.user_use_cases import UserUseCases
 
@@ -49,6 +50,7 @@ class UserAdministrationTests(unittest.TestCase):
         self.repo = SqlAlchemyUserRepository(self.db)
         self.permissions = SqlAlchemyRolePermissionRepository(self.db)
         self.uc = UserUseCases(self.repo, TestAuth(), self.permissions)
+        self.sessions = {}
         self.admin = self.seed("admin", UserRole.admin)
         self.delegate = self.seed("delegate", UserRole.coordinator)
         self.ordinary = self.seed("ordinary", UserRole.reception)
@@ -65,26 +67,30 @@ class UserAdministrationTests(unittest.TestCase):
         self.root.dispose()
 
     def seed(self, name, role, active=True):
-        return self.repo.create({"name": name, "email": name + "@example.com", "role": role,
+        user = self.repo.create({"name": name, "email": name + "@example.com", "role": role,
                                  "is_active": active, "password_hash": "test-only"})
+        sid = uuid4()
+        self.repo.create_session(sid, user.id, datetime.now(timezone.utc) + timedelta(hours=1))
+        self.sessions[user.id] = sid
+        return user
 
     def test_delegate_cannot_create_admin(self):
         with self.assertRaises(ForbiddenError):
-            self.uc.create({"role": "admin"}, actor_id=self.delegate.id)
+            self.uc.create({"role": "admin"}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id])
 
     def test_delegate_cannot_promote_self_or_other(self):
         for target in (self.delegate, self.ordinary):
             with self.subTest(target=target.name), self.assertRaises(ForbiddenError):
-                self.uc.update(target.id, {"role": "admin"}, actor_id=self.delegate.id)
+                self.uc.update(target.id, {"role": "admin"}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id])
 
     def test_delegate_cannot_modify_delete_demote_or_reset_admin(self):
         operations = [
-            lambda: self.uc.update(self.admin.id, {"name": "changed"}, actor_id=self.delegate.id),
-            lambda: self.uc.update(self.admin.id, {"email": "other@example.com"}, actor_id=self.delegate.id),
-            lambda: self.uc.update(self.admin.id, {"role": "reception"}, actor_id=self.delegate.id),
-            lambda: self.uc.update(self.admin.id, {"is_active": False}, actor_id=self.delegate.id),
-            lambda: self.uc.set_password(self.admin.id, "test-password", actor_id=self.delegate.id),
-            lambda: self.uc.delete(self.admin.id, actor_id=self.delegate.id),
+            lambda: self.uc.update(self.admin.id, {"name": "changed"}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id]),
+            lambda: self.uc.update(self.admin.id, {"email": "other@example.com"}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id]),
+            lambda: self.uc.update(self.admin.id, {"role": "reception"}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id]),
+            lambda: self.uc.update(self.admin.id, {"is_active": False}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id]),
+            lambda: self.uc.set_password(self.admin.id, "test-password", actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id]),
+            lambda: self.uc.delete(self.admin.id, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id]),
         ]
         for operation in operations:
             with self.subTest(operation=operations.index(operation)), self.assertRaises(ForbiddenError):
@@ -94,22 +100,22 @@ class UserAdministrationTests(unittest.TestCase):
     def test_inactive_admin_is_also_protected_from_delegate(self):
         other = self.seed("inactive", UserRole.admin, False)
         with self.assertRaises(ForbiddenError):
-            self.uc.set_password(other.id, "test-password", actor_id=self.delegate.id)
+            self.uc.set_password(other.id, "test-password", actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id])
 
     def test_delegation_still_manages_non_admin_users(self):
         user = self.uc.create({"name": "new", "email": "new@example.com", "role": "reception",
-                               "password": "test-password"}, actor_id=self.delegate.id)
-        self.uc.update(user.id, {"name": "changed"}, actor_id=self.delegate.id)
-        self.uc.set_password(user.id, "another-password", actor_id=self.delegate.id)
+                               "password": "test-password"}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id])
+        self.uc.update(user.id, {"name": "changed"}, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id])
+        self.uc.set_password(user.id, "another-password", actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id])
         self.assertEqual(self.repo.get(user.id).name, "changed")
-        self.uc.delete(user.id, actor_id=self.delegate.id)
+        self.uc.delete(user.id, actor_id=self.delegate.id, session_id=self.sessions[self.delegate.id])
         self.assertIsNone(self.repo.get(user.id))
 
     def test_last_active_admin_cannot_be_removed(self):
         operations = [
-            lambda: self.uc.delete(self.admin.id, actor_id=self.admin.id),
-            lambda: self.uc.update(self.admin.id, {"role": "reception"}, actor_id=self.admin.id),
-            lambda: self.uc.update(self.admin.id, {"is_active": False}, actor_id=self.admin.id),
+            lambda: self.uc.delete(self.admin.id, actor_id=self.admin.id, session_id=self.sessions[self.admin.id]),
+            lambda: self.uc.update(self.admin.id, {"role": "reception"}, actor_id=self.admin.id, session_id=self.sessions[self.admin.id]),
+            lambda: self.uc.update(self.admin.id, {"is_active": False}, actor_id=self.admin.id, session_id=self.sessions[self.admin.id]),
         ]
         for operation in operations:
             with self.subTest(operation=operations.index(operation)), self.assertRaises(ConflictError):
@@ -119,36 +125,36 @@ class UserAdministrationTests(unittest.TestCase):
     def test_inactive_admin_does_not_count_as_backup(self):
         self.seed("inactive", UserRole.admin, False)
         with self.assertRaises(ConflictError):
-            self.uc.delete(self.admin.id, actor_id=self.admin.id)
+            self.uc.delete(self.admin.id, actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
 
     def test_last_admin_can_edit_identity_and_password(self):
-        updated = self.uc.update(self.admin.id, {"name": "Updated Admin"}, actor_id=self.admin.id)
+        updated = self.uc.update(self.admin.id, {"name": "Updated Admin"}, actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
         self.assertEqual(updated.name, "Updated Admin")
-        self.uc.set_password(self.admin.id, "test-password", actor_id=self.admin.id)
+        self.uc.set_password(self.admin.id, "test-password", actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
         self.assertEqual(self.repo.count_active_admins(), 1)
 
     def test_admin_can_create_promote_and_remove_other_admin(self):
         new = self.uc.create({"name": "new", "email": "new@example.com", "role": "admin",
-                              "password": "test-password"}, actor_id=self.admin.id)
-        self.uc.set_password(new.id, "other-password", actor_id=self.admin.id)
-        self.uc.delete(new.id, actor_id=self.admin.id)
-        self.uc.update(self.ordinary.id, {"role": "admin"}, actor_id=self.admin.id)
-        self.uc.update(self.ordinary.id, {"role": "reception"}, actor_id=self.admin.id)
+                              "password": "test-password"}, actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
+        self.uc.set_password(new.id, "other-password", actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
+        self.uc.delete(new.id, actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
+        self.uc.update(self.ordinary.id, {"role": "admin"}, actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
+        self.uc.update(self.ordinary.id, {"role": "reception"}, actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
         self.assertEqual(self.repo.count_active_admins(), 1)
 
     def test_non_admin_without_delegation_is_denied(self):
         with self.assertRaises(ForbiddenError):
-            self.uc.update(self.delegate.id, {"name": "changed"}, actor_id=self.ordinary.id)
+            self.uc.update(self.delegate.id, {"name": "changed"}, actor_id=self.ordinary.id, session_id=self.sessions[self.ordinary.id])
 
     def test_inactive_actor_is_denied(self):
         actor = self.seed("inactive", UserRole.admin, False)
         with self.assertRaises(ForbiddenError):
-            self.uc.update(self.ordinary.id, {"name": "changed"}, actor_id=actor.id)
+            self.uc.update(self.ordinary.id, {"name": "changed"}, actor_id=actor.id, session_id=self.sessions[actor.id])
 
     def test_null_required_fields_are_rejected_without_losing_admin(self):
         for key in ("name", "email", "role", "is_active"):
             with self.subTest(field=key), self.assertRaises(ValidationError):
-                self.uc.update(self.admin.id, {key: None}, actor_id=self.admin.id)
+                self.uc.update(self.admin.id, {key: None}, actor_id=self.admin.id, session_id=self.sessions[self.admin.id])
         self.assertEqual(self.repo.count_active_admins(), 1)
 
     def wait_for_blocked(self, expected):
@@ -173,8 +179,8 @@ class UserAdministrationTests(unittest.TestCase):
                 ready.wait(timeout=5)
                 uc = UserUseCases(repo, TestAuth(), SqlAlchemyRolePermissionRepository(db))
                 try:
-                    if operation == "delete": uc.delete(actor_id, actor_id=actor_id)
-                    else: uc.update(actor_id, operation, actor_id=actor_id)
+                    if operation == "delete": uc.delete(actor_id, actor_id=actor_id, session_id=self.sessions[actor_id])
+                    else: uc.update(actor_id, operation, actor_id=actor_id, session_id=self.sessions[actor_id])
                     return "success"
                 except ConflictError:
                     return "conflict"
@@ -200,8 +206,8 @@ class UserAdministrationTests(unittest.TestCase):
                 self.assertEqual(cached.role, UserRole.admin)
                 ready.set()
                 uc = UserUseCases(SqlAlchemyUserRepository(db), TestAuth(), SqlAlchemyRolePermissionRepository(db))
-                with self.assertRaises(ForbiddenError):
-                    uc.update(self.ordinary.id, {"name": "changed"}, actor_id=second.id)
+                with self.assertRaises(UnauthorizedError):
+                    uc.update(self.ordinary.id, {"name": "changed"}, actor_id=second.id, session_id=self.sessions[second.id])
         with ThreadPoolExecutor(max_workers=1) as pool:
             with self.repo.administration_lock():
                 future = pool.submit(attempt)

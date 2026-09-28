@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, Header, Request, Response, HTTPException
 from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 from src.adapters.security.jwt_auth_service import JwtAuthService
-from src.api.deps.auth import get_current_user
+from src.api.deps.auth import get_current_session_id, get_current_user
 from src.api.browser_session import (get_cookie_token, session_cookie, set_session_cookie,
                                      anonymous_context, marker, csrf)
 from src.api.deps.db import get_db_dep
@@ -101,9 +103,10 @@ def me(current_user: User = Depends(get_current_user)) -> User:
 def change_password(
     payload: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
+    session_id: UUID = Depends(get_current_session_id),
     db: Session = Depends(get_db_dep),
 ) -> MessageResponse:
     AuthLimiter(db, get_settings().jwt_secret_key).consume([("change-password", str(current_user.id), 5)])
     use_case = AuthUseCases(SqlAlchemyUserRepository(db), JwtAuthService())
-    use_case.change_password(current_user.id, payload.current_password, payload.new_password)
+    use_case.change_password(current_user.id, payload.current_password, payload.new_password, session_id=session_id)
     return MessageResponse(detail="Senha atualizada com sucesso.")

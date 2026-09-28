@@ -757,3 +757,11 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Depois **2B.8.3.2**, migração proposta 0024, versão de usuário obrigatória na edição/senhas/exclusão e API/web juntos. Rascunho não sensível preservado, recarga explícita, campos de senha limpos, confirmação de exclusão por identidade/versão e validação Chrome. Contrato completo já registrado; R18 continua parcial e nenhuma decisão de negócio pendente para 2B.8.3.1.
 - Principal permanece na revisão `0023_permission_version`, sem rebuild/reinício nesta preparação. Comparação com checkpoint 2B.8.2.2 confirmou negócio/histórico/bytes preservados; zero schemas privados e nenhum volume removido. Último CI funcional `36364884916` aprovado (283 backend/113 frontend); não repetido para documentação. Probe/logs/credenciais ignorados.
 - Publicar preparação com commit/push e conferir árvore limpa/HEAD remoto. Retomar em 2B.8.3.1, sem repetir revisão geral nem reabrir permissões/agenda concluídas.
+
+### Início 2B.8.3.1 — 28/09/2026
+
+- Base `1d4c86b`, árvore limpa. Sessão obrigatória nas cinco operações de usuários/senhas; conferir validade/pertencimento após bloqueio, preservando autorização, delegação e último administrador. Sem migração/UI/payload novo.
+- Pendentes implementação, testes de disputas e regressão, HTTP, cópias/atualização/preservação, commit/push/CI e fechamento. Versionamento fica na 2B.8.3.2.
+
+- Implementação/build API concluídos. **51 focados aprovados em 173,703s**, incluindo oito novos de sessão/espera nas duas ordens, cinco operações × cinco revogações, expiração, sessão alheia, rollback e mudança compatível. Dez grupos HTTP privados aprovados e incluídos no CI; sem migração/interface nova, sem novo Chrome. Relatório `docs/homologacao-etapa-2B8-3-1.md`.
+- Cópias públicas/exames/fingerprints `pre-2B8-3-1*` salvas; helper `.data/upgrade_2b831.py`. Próximo: publicar implementação e acompanhar CI completo (291 backend/113 frontend esperados), dump completo após zero schemas, atualizar API, smoke/preservação e fechamento. Script local de recuperação acrescentado ao inventário da 2B.8.3.2; ele não passa a exigir sessão web.

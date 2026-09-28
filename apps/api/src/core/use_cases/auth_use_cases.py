@@ -82,11 +82,13 @@ class AuthUseCases:
             return
         self.user_repository.revoke_session(session_id, user_id)
 
-    def change_password(self, user_id: UUID, current_password: str, new_password: str) -> None:
+    def change_password(self, user_id: UUID, current_password: str, new_password: str, *, session_id: UUID) -> None:
         with self.user_repository.administration_lock():
+            if not self.user_repository.session_active(session_id, user_id):
+                raise UnauthorizedError("Sessão encerrada. Entre novamente.")
             user = self.user_repository.get(user_id)
-            if user is None:
-                raise NotFoundError("Usuário não encontrado.")
+            if user is None or not user.is_active:
+                raise UnauthorizedError("Usuário sem acesso ativo.")
 
             if not self.auth_service.verify_password(current_password, user.password_hash):
                 raise ValidationError("Senha atual inválida.")

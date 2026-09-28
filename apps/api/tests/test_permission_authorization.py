@@ -37,7 +37,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
         self.fixture.setUp()
         self.engine = self.fixture.engine
         self.admin, self.session_id = self.seed(UserRole.admin)
-        self.backup, _ = self.seed(UserRole.admin)
+        self.backup, self.backup_session_id = self.seed(UserRole.admin)
 
     def seed(self, role):
         with Session(self.engine) as db:
@@ -76,14 +76,14 @@ class PermissionAuthorizationTests(unittest.TestCase):
         if operation == 'logout':
             users.revoke_session(sid, actor.id)
         elif operation == 'delete':
-            uc.delete(actor.id, actor_id=self.backup.id)
+            uc.delete(actor.id, actor_id=self.backup.id, session_id=self.backup_session_id)
         elif operation == 'password':
-            uc.set_password(actor.id, 'fictitious-reset-password', actor_id=self.backup.id)
+            uc.set_password(actor.id, 'fictitious-reset-password', actor_id=self.backup.id, session_id=self.backup_session_id)
         elif operation == 'rename':
-            uc.update(actor.id, {'name': 'Fictitious Renamed Admin'}, actor_id=self.backup.id)
+            uc.update(actor.id, {'name': 'Fictitious Renamed Admin'}, actor_id=self.backup.id, session_id=self.backup_session_id)
         else:
             uc.update(actor.id, {'is_active': False} if operation == 'disable' else {'role': UserRole.reception},
-                      actor_id=self.backup.id)
+                      actor_id=self.backup.id, session_id=self.backup_session_id)
 
     def test_revocation_first_denies_waiting_write_with_cached_identity(self):
         for operation in ('disable', 'demote', 'delete', 'password', 'logout', 'rename'):
@@ -223,7 +223,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
         self.assertEqual(self.matrix(), self.changed())
 
     def test_permission_revocation_and_delegated_user_write_are_ordered(self):
-        delegate, _ = self.seed(UserRole.coordinator)
+        delegate, delegate_session_id = self.seed(UserRole.coordinator)
         target, _ = self.seed(UserRole.reception)
         for revoke_first in (True, False):
             with self.subTest(revoke_first=revoke_first):
@@ -254,7 +254,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                         def run():
                             if revoke:
                                 return update_fixture(uc, UserRole.coordinator, denied, actor_id=self.admin.id, session_id=self.session_id)
-                            return user_uc.update(target.id, {'name': 'Fictitious Ordered Edit'}, actor_id=delegate.id)
+                            return user_uc.update(target.id, {'name': 'Fictitious Ordered Edit'}, actor_id=delegate.id, session_id=delegate_session_id)
                         if held:
                             with patch.object(repo, method, hook):
                                 return run()

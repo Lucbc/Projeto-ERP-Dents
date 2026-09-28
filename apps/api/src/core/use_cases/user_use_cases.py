@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from uuid import UUID
 
 from src.core.domain.entities import User, UserRole
-from src.core.domain.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+from src.core.domain.exceptions import ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError
 from src.core.permissions import PermissionAction, can_access, normalize_permissions
 from src.core.ports.repositories import RolePermissionRepository, UserRepository
 from src.core.ports.services import AuthService
@@ -28,8 +28,10 @@ class UserUseCases:
         return user
 
     @contextmanager
-    def _authorize(self, actor_id: UUID, action: PermissionAction):
+    def _authorize(self, actor_id: UUID, session_id: UUID, action: PermissionAction):
         with self.user_repository.administration_lock():
+            if not self.user_repository.session_active(session_id, actor_id):
+                raise UnauthorizedError("Sessão encerrada. Entre novamente.")
             actor = self.user_repository.get(actor_id)
             if actor is None or not actor.is_active:
                 raise ForbiddenError("Usuário sem acesso ativo.")
@@ -54,8 +56,8 @@ class UserUseCases:
                     "Cadastre ou ative outro administrador antes desta alteração."
                 )
 
-    def create(self, data: dict, *, actor_id: UUID) -> User:
-        with self._authorize(actor_id, "create") as actor:
+    def create(self, data: dict, *, actor_id: UUID, session_id: UUID) -> User:
+        with self._authorize(actor_id, session_id, "create") as actor:
             role = UserRole(data["role"])
             self._protect_admin(actor, role)
             validate_new_password(data.get("password", ""))
@@ -70,8 +72,8 @@ class UserUseCases:
                 "is_active": data.get("is_active", True),
             })
 
-    def update(self, user_id: UUID, data: dict, *, actor_id: UUID) -> User:
-        with self._authorize(actor_id, "update") as actor:
+    def update(self, user_id: UUID, data: dict, *, actor_id: UUID, session_id: UUID) -> User:
+        with self._authorize(actor_id, session_id, "update") as actor:
             current = self.get(user_id)
             self._protect_admin(actor, current.role)
             # Null is meaningful only for the optional dentist association.
@@ -98,8 +100,8 @@ class UserUseCases:
                 raise NotFoundError("Usuário não encontrado.")
             return user
 
-    def set_password(self, user_id: UUID, new_password: str, *, actor_id: UUID) -> User:
-        with self._authorize(actor_id, "update") as actor:
+    def set_password(self, user_id: UUID, new_password: str, *, actor_id: UUID, session_id: UUID) -> User:
+        with self._authorize(actor_id, session_id, "update") as actor:
             current = self.get(user_id)
             self._protect_admin(actor, current.role)
             validate_new_password(new_password)
@@ -110,8 +112,8 @@ class UserUseCases:
                 raise NotFoundError("Usuário não encontrado.")
             return user
 
-    def delete(self, user_id: UUID, *, actor_id: UUID) -> None:
-        with self._authorize(actor_id, "delete") as actor:
+    def delete(self, user_id: UUID, *, actor_id: UUID, session_id: UUID) -> None:
+        with self._authorize(actor_id, session_id, "delete") as actor:
             current = self.get(user_id)
             self._protect_admin(actor, current.role)
             self._protect_last_admin(current, None, False)

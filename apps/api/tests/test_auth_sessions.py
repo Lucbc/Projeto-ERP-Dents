@@ -7,7 +7,7 @@ import sys
 import threading
 import unittest
 from unittest.mock import patch
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import create_engine, select, text
@@ -94,7 +94,7 @@ class AuthSessionTests(HomologDatabaseTests):
 
     def test_password_change_revokes_all_and_old_password_fails(self):
         first, second = self.login(), self.login()
-        self.uc.change_password(self.user.id, self.password, "new-fictitious-password")
+        self.uc.change_password(self.user.id, self.password, "new-fictitious-password", session_id=UUID(self.auth.decode_access_token(first)["jti"]))
         self.rejected(first)
         self.rejected(second)
         with self.assertRaises(UnauthorizedError): self.login()
@@ -103,7 +103,7 @@ class AuthSessionTests(HomologDatabaseTests):
     def test_failed_password_change_preserves_sessions(self):
         token = self.login()
         with self.assertRaises(ValidationError):
-            self.uc.change_password(self.user.id, "wrong-password", "new-fictitious-password")
+            self.uc.change_password(self.user.id, "wrong-password", "new-fictitious-password", session_id=UUID(self.auth.decode_access_token(token)["jti"]))
         self.accepted(token)
 
     def test_reset_password_revokes_sessions_atomically(self):
@@ -153,6 +153,7 @@ class AuthSessionTests(HomologDatabaseTests):
         self.assertTrue(self.repo.get(self.user.id).is_active)
 
     def test_login_verified_before_reset_cannot_mint_session_after_reset(self):
+        current_token = self.login()
         verified, proceed = threading.Event(), threading.Event()
         service = JwtAuthService()
         original = service.verify_password
@@ -173,7 +174,7 @@ class AuthSessionTests(HomologDatabaseTests):
             future = pool.submit(pending_login)
             try:
                 self.assertTrue(verified.wait(10))
-                self.uc.change_password(self.user.id, self.password, "concurrent-new-password")
+                self.uc.change_password(self.user.id, self.password, "concurrent-new-password", session_id=UUID(self.auth.decode_access_token(current_token)["jti"]))
             finally:
                 proceed.set()
             self.assertEqual(future.result(timeout=10), "rejected")
