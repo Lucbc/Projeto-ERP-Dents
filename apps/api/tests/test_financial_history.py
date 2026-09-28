@@ -182,6 +182,8 @@ class FinancialHistoryTests(unittest.TestCase):
 
     def test_direct_inconsistent_active_snapshot_and_destructive_downgrade_are_rejected(self):
         with Session(self.engine) as db: self.pay(self.fixture.use_case(db))
+        with self.engine.connect() as db:
+            revision_before=db.scalar(text('SELECT version_num FROM alembic_version'))
         for statement in ("UPDATE financial_entries SET amount_cents=1,total_cents=1",
                           "UPDATE financial_entries SET active_payment_id=NULL",
                           "DELETE FROM financial_entries"):
@@ -189,7 +191,7 @@ class FinancialHistoryTests(unittest.TestCase):
         self.assertNotEqual(self.fixture.fixture.migrate('downgrade','0019_financial_version').returncode,0)
         with self.engine.connect() as db:
             self.assertEqual(db.scalar(text('SELECT count(*) FROM financial_payments')),1)
-            self.assertEqual(db.scalar(text('SELECT version_num FROM alembic_version')),'0022_dentist_user_restrict')
+            self.assertEqual(db.scalar(text('SELECT version_num FROM alembic_version')),revision_before)
 
     def test_failed_receipt_rolls_back_payment_and_entry(self):
         with self.engine.begin() as db:

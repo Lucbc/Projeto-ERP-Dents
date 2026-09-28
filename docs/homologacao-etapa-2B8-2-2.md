@@ -18,7 +18,9 @@ A interface mantém rascunhos independentes por perfil. Conflito ou falha de res
 
 ## Publicação e preservação
 
-Pendentes commit/push, CI completo, cópia completa após limpeza dos schemas privados, atualização conjunta da homologação, smoke e comparação final. Cópias públicas/exames/fingerprints anteriores já salvos em `pre-2B8-2-2*`; helper local `.data/upgrade_2b822.py`. A comparação exclui somente a nova coluna e a revisão Alembic, mantendo comparação do JSON original e timestamps.
+Implementação `362c051` publicada e HEAD remoto conferido. CI completo `36345652856` em andamento; ainda não contar como aprovado.
+
+Cópias públicas/exames/fingerprints e dump completo salvos em `pre-2B8-2-2*`, este último após limpeza dos schemas privados; helper local `.data/upgrade_2b822.py`. API e web da homologação atualizados juntos. HTTPS 200 e dez verificações gerais aprovados. Comparação confirmou negócio, referências históricas e bytes dos exames preservados. Revisão `0023_permission_version`, três matrizes originais na versão 1, zero schemas privados e nenhum volume removido. A comparação exclui somente a nova coluna e a revisão Alembic, mantendo comparação do JSON original e timestamps.
 
 ## Limite e próximo passo
 
