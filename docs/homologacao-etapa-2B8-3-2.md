@@ -25,4 +25,8 @@ Concorrência é demonstrada por conexões independentes no PostgreSQL. HTTP e C
 
 Somente `erp-dents-homolog`, dados fictícios. Cópias públicas/exames/fingerprints `pre-2B8-3-2*` salvas antes da atualização; helper local `.data/upgrade_2b832.py`. A comparação ignora apenas revisão Alembic/coluna nova, mantendo os demais campos e bytes sob verificação sem imprimir conteúdo.
 
-**Pendente neste registro:** CI completo, dump integral após limpeza dos schemas privados, atualização conjunta API/web, smoke/preservação e fechamento documental. Nenhum volume deve ser removido. Logs, cópias e credenciais permanecem ignorados pelo Git.
+Implementação `4b922ba` publicada e HEAD remoto conferido. Dump integral salvo após zero schemas privados. API/web atualizados juntos em https://localhost:18443, HTTPS 200 e dez verificações gerais aprovados. Revisão `0024_user_version`, usuários originais na versão 1, zero schemas privados. Comparação confirmou cadastros/histórico/bytes preservados; nenhum volume removido.
+
+O [primeiro CI 36569908545](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36569908545) executou 301 testes backend em 751,576s, com cinco erros em preparação antiga: duas alterações e uma exclusão sem versão, dois cadastros usando ORM atual sobre revisão 0007. Frontend aprovado; HTTP/auditoria de imagens não executaram. Corrigidas as fixtures de `test_auth_hardening` e `test_bootstrap`: versão explícita/helper de preparação e INSERT somente com colunas antigas antes da migração. Nenhuma mudança funcional adicional.
+
+**Pendente neste registro:** validar as cinco correções, publicar e repetir CI completo; fechamento documental. Logs, cópias e credenciais permanecem ignorados pelo Git.

@@ -62,6 +62,16 @@ class BootstrapTests(unittest.TestCase):
     def initialize(self, code=TEST_CODE, email="initial@example.com"):
         return self.uc.bootstrap_admin(" Initial Admin ", email, "test-password", code)
 
+    def seed_legacy_user(self, role, active):
+        # Use only columns present at 0007, before installation/session/version migrations.
+        user_id = uuid4()
+        self.db.execute(text("""INSERT INTO users
+            (id,name,email,role,is_active,password_hash,created_at,updated_at)
+            VALUES (:id,'Existing','existing@example.com',:role,:active,:hash,now(),now())"""),
+            {"id": user_id, "role": role.value, "active": active, "hash": "preserved-hash"})
+        self.db.commit()
+        return user_id
+
     def test_fresh_installation_and_single_use(self):
         self.migrate("head")
         self.assertTrue(self.uc.needs_bootstrap())
@@ -97,25 +107,21 @@ class BootstrapTests(unittest.TestCase):
         self.assertTrue(self.uc.needs_bootstrap())
 
     def test_existing_installation_migrates_as_completed_without_changing_users(self):
-        user = self.repo.create({"name": "Existing", "email": "existing@example.com", "role": UserRole.admin,
-                                 "is_active": True, "password_hash": "preserved-hash"})
-        self.db.rollback()
+        user_id = self.seed_legacy_user(UserRole.admin, True)
         self.migrate("head")
         self.assertFalse(self.uc.needs_bootstrap())
-        self.assertEqual(self.repo.get(user.id).password_hash, "preserved-hash")
+        self.assertEqual(self.repo.get(user_id).password_hash, "preserved-hash")
         with self.assertRaises(ConflictError): self.initialize()
 
     def test_existing_inactive_non_admin_also_closes_initialization(self):
-        self.repo.create({"name": "Existing", "email": "existing@example.com", "role": UserRole.reception,
-                          "is_active": False, "password_hash": "preserved-hash"})
-        self.db.rollback()
+        self.seed_legacy_user(UserRole.reception, False)
         self.migrate("head")
         self.assertFalse(self.uc.needs_bootstrap())
 
     def test_external_user_deletion_does_not_reopen_setup(self):
         self.migrate("head")
         user = self.initialize()
-        self.repo.delete(user.id)  # Deliberate direct deletion in this disposable schema only.
+        self.repo.delete(user.id, user.version)  # Deliberate direct deletion in this disposable schema only.
         self.assertEqual(self.repo.count_all(), 0)
         with Session(self.engine) as fresh:
             uc = AuthUseCases(SqlAlchemyUserRepository(fresh), TestAuth(), TEST_CODE)

@@ -12,6 +12,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from test_auth_sessions import HomologDatabaseTests
+from user_version_fixtures import update_fixture
 from src.adapters.db.auth_limiter import AuthLimiter
 from src.adapters.db.models.models import AuthAttemptModel
 from src.config import get_settings
@@ -37,7 +38,7 @@ class AuthHardeningTests(HomologDatabaseTests):
 
     def test_legacy_hash_login_is_preserved_without_silent_rewrite(self):
         legacy = CryptContext(schemes=["bcrypt"]).hash(self.password)
-        with self.repo.administration_lock(): self.repo.update(self.user.id, {"password_hash": legacy})
+        with self.repo.administration_lock(): update_fixture(self.repo, self.user.id, {"password_hash": legacy})
         self.accepted(self.login())
         self.assertEqual(self.repo.get(self.user.id).password_hash, legacy)
         # Old bcrypt cannot distinguish beyond byte 72: preserve old semantics until explicit reset.
@@ -60,7 +61,7 @@ class AuthHardeningTests(HomologDatabaseTests):
         for email, password in (("missing@example.com", self.password), (self.user.email, "wrong")):
             with self.assertRaises(UnauthorizedError) as error: self.uc.login(email, password)
             messages.append(str(error.exception))
-        with self.repo.administration_lock(): self.repo.update(self.user.id, {"is_active": False})
+        with self.repo.administration_lock(): update_fixture(self.repo, self.user.id, {"is_active": False})
         with self.assertRaises(UnauthorizedError) as error: self.login()
         messages.append(str(error.exception))
         self.assertEqual(len(set(messages)), 1)
