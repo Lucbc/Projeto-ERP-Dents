@@ -65,6 +65,8 @@ Segundo recorte, API e web juntos:
 
 ## Retomada
 
+**Atualização final — 29/09/2026: 2B.8.3.2 concluída.** Versão obrigatória nas edições/senhas/exclusões, migração 0024 e revisão explícita na interface; recuperação local também consome versão. Implementação `4b922ba`, fixtures `ef0a72a`, CI `36571964718` aprovado (301 backend/121 frontend), HTTP/Chrome e preservação verificados. [Relatório](./homologacao-etapa-2B8-3-2.md). Não há pendência deste contrato. Próximo: preparação da etapa 3, atualização entre computadores; registros abaixo são históricos.
+
 **Atualização — 28/09/2026: 2B.8.3.1 concluída.** Implementação `5b58c4e`, CI `36452387233` aprovado (291 backend/113 frontend, HTTP e auditorias), API atualizada e dados preservados. [Relatório](./homologacao-etapa-2B8-3-1.md). **Próximo passo atual: 2B.8.3.2**, versão/migração/interface conforme contrato acima, incluindo recuperação local de senha. A orientação de preparação abaixo é histórica.
 
 Próximo passo: **implementar 2B.8.3.1**, começando pelos testes que esperam rejeição após revogação e pelo transporte obrigatório de sessão aos casos de uso. Não repetir diagnóstico geral ou os seis probes. Versionamento/UI ficam explicitamente pendentes da 2B.8.3.2; R18 continua parcial. Não há decisão de negócio pendente para iniciar o primeiro recorte.

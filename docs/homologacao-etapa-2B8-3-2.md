@@ -29,4 +29,12 @@ Implementação `4b922ba` publicada e HEAD remoto conferido. Dump integral salvo
 
 O [primeiro CI 36569908545](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36569908545) executou 301 testes backend em 751,576s, com cinco erros em preparação antiga: duas alterações e uma exclusão sem versão, dois cadastros usando ORM atual sobre revisão 0007. Frontend aprovado; HTTP/auditoria de imagens não executaram. Corrigidas as fixtures de `test_auth_hardening` e `test_bootstrap`: versão explícita/helper de preparação e INSERT somente com colunas antigas antes da migração. Nenhuma mudança funcional adicional.
 
-**Pendente neste registro:** validar as cinco correções, publicar e repetir CI completo; fechamento documental. Logs, cópias e credenciais permanecem ignorados pelo Git.
+Os cinco casos corrigidos passaram em 27,035s. Ajuste publicado em `ef0a72a`, HEAD remoto conferido. Regressão HTTP local adicional: **31 scripts de HTTP/prontidão aprovados**, incluindo autenticação, permissões, usuários, agenda, financeiro, exclusões, exames e armazenamento. Dados preservados e zero schemas privados confirmados novamente após a suíte.
+
+**Concluída em 29/09/2026.** [CI final 36571964718](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36571964718) aprovado em 20min17s: **301 backend em 713,449s e 121 frontend**, builds, regressão HTTP, dependências e auditoria das seis imagens. Nenhuma falha pendente desta subetapa. Logs, cópias e credenciais permanecem ignorados pelo Git.
+
+## Continuidade
+
+2B.8 concluída: leituras de permissões sem escrita, coordenação da autorização/sessão e versões de matrizes/usuários entregues. O escopo de sobrescrita e integridade tratado na etapa 2B está concluído, com evidências específicas por recurso. Isso não equivale a atualização automática das telas entre computadores nem auditoria de todas as alterações clínicas.
+
+Próximo passo: preparar a etapa 3, começando pelo diagnóstico focado de atualização entre PCs (R19), preservação dos rascunhos versionados e estados de conexão. Datas, cadastros, permissões de leitura, paginação e interação seguem os demais recortes da etapa 3. Instalação/atalhos, backup e atualização assistida continuam na etapa 5. Não repetir a revisão geral ou testes já aprovados sem nova alteração/falha.

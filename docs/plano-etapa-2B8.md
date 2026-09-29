@@ -78,6 +78,8 @@ R18 continua parcial. Instalação assistida, atualização entre computadores e
 
 ## Retomada
 
+**Atualização final — 29/09/2026: 2B.8 concluída.** Último recorte 2B.8.3.2 entregue em `4b922ba`, fixtures antigas ajustadas em `ef0a72a`; CI `36571964718` aprovado (301 backend/121 frontend, HTTP, builds e auditorias). API/web atualizados juntos, revisão 0024 e dados preservados. [Relatório](./homologacao-etapa-2B8-3-2.md). R18 tratado nos fluxos mapeados da etapa 2B; atualização automática entre PCs permanece em R19. Próximo: preparar etapa 3, começando por esse diagnóstico focado. Retomadas e menções a pendências abaixo são históricas.
+
 **Ponto atual — 28/09/2026: 2B.8.3.1 concluída.** Sessões revalidadas sob bloqueio nas cinco escritas de usuários/senhas; CI `36452387233` aprovado (291 backend/113 frontend), API atualizada e dados preservados. [Relatório](./homologacao-etapa-2B8-3-1.md). Próximo: **2B.8.3.2**, versão/migração/interface e script local de recuperação, conforme [contrato](./plano-etapa-2B8-3.md). Retomadas anteriores abaixo são históricas.
 
 **Ponto atual — 28/09/2026:** preparação 2B.8.3 concluída, sem mudança funcional. Próximo: **implementar 2B.8.3.1**, conforme [contrato detalhado](./plano-etapa-2B8-3.md#2b831--revalidar-sessão-antes-das-escritas). Homologação na revisão 0023, dados preservados e zero schemas privados; não repetir diagnóstico/preparação.

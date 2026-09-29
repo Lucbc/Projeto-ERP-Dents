@@ -24,7 +24,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 | 1C | Administração, bootstrap e autenticação | Concluída: 1C.1 a 1C.4 | Sem promoção indevida; último administrador protegido; bootstrap exclusivo; sessões revogáveis; segredos/tentativas/senhas tratados; limitações de hashes legados registradas |
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
-| 2B | Edição concorrente e histórico financeiro | Em andamento: 2B.1 a 2B.5.3, exclusões 2B.6 e disponibilidade 2B.7 concluídas; administração pendente | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
+| 2B | Edição concorrente e histórico financeiro | Concluída: 2B.1 a 2B.8 | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Pendente | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**2B.8.3.2 em fechamento, 29/09/2026:** versão de usuários implementada; banco, HTTP, oito componentes e Chrome com duas abas aprovados. [Relatório](./homologacao-etapa-2B8-3-2.md). Pendentes CI, atualização conjunta API/web e preservação. Ponto de retomada detalhado no fim deste arquivo; entregas abaixo são históricas.
+**2B.8.3.2 concluída, 29/09/2026:** versão de usuários, senhas e exclusões entregue; migração 0024/API/web aplicados juntos, dados preservados. [Relatório](./homologacao-etapa-2B8-3-2.md). CI final `36571964718` aprovado: **301 backend/121 frontend**, HTTP, builds e auditorias; Chrome com duas abas aprovado. **Etapa 2B concluída. Próximo: preparação da etapa 3, começando pela atualização entre PCs (R19).** Ponto de retomada detalhado no fim deste arquivo; entregas abaixo são históricas.
 
 **Preparação 2B.8 concluída em 26/09/2026:** [diagnóstico e contrato](./plano-etapa-2B8.md), base `7fcd0bd`. Seis cenários em conexões independentes; três também confirmados por HTTP. Usuários/matrizes antigos sobrescrevem alterações; leitura pode desfazer revogação ao gravar normalização; coordenação da autorização de permissões requer correção. Dados preservados, nenhuma mudança funcional. **Próximo passo: 2B.8.1 — leituras de permissões sem gravação.** Depois, versionamento/coordenação das matrizes e dos usuários em recortes próprios.
 
@@ -795,3 +795,15 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - CI 36569908545 falhou: 301 backend em 751,576s, cinco erros de preparacao antiga em test_auth_hardening/test_bootstrap (tres chamadas sem versao; dois cadastros ORM na revisao 0007). Frontend aprovado, HTTP/auditoria de imagens nao executaram. Fixtures corrigidas, sem mudanca funcional; cinco casos em revalidacao. Publicar ajuste e repetir CI completo. Nao contar o primeiro CI como aprovado.
 
 - Os cinco casos corrigidos passaram em 27,035s. Regressao HTTP local adicional justificada porque o CI parou antes dessa camada. Runtime funcional ja validado permanece igual; publicar ajustes de testes e acompanhar novo CI.
+
+- Ajuste publicado em ef0a72a, HEAD remoto conferido. CI atual 36571964718 em andamento; anterior reprovado nao e evidencia de aprovacao. Regressao local complementar: 31 scripts HTTP/prontidao aprovados, comparacao de dados/arquivos preservados e zero schemas privados. Falta somente CI atual e fechamento; nao repetir validacoes aprovadas.
+
+### Ponto de retomada atual — 2B.8.3.2 e etapa 2B concluídas em 29/09/2026
+
+- Implementação `4b922ba`, adaptação de fixtures `ef0a72a`, publicadas e HEAD remoto conferido. **CI final `36571964718` aprovado em 20min17s: 301 backend em 713,449s e 121 frontend**, HTTP, builds, dependências e seis imagens sem achados. Primeiro CI `36569908545` reprovou cinco preparações antigas, corrigidas e revalidadas (cinco casos em 27,035s). Não repetir testes aprovados sem alteração/falha. Relatório `docs/homologacao-etapa-2B8-3-2.md`.
+- Versão positiva obrigatória nas edições, senha administrativa/própria e exclusões; comparação/escrita após autorização transacional. No-op aceito consome versão; login/logout/leitura não consomem. Revogação e alteração confirmam ou revertem juntas. Script local de recuperação usa versão lida sob bloqueio, sem sessão web/bypass HTTP.
+- UI captura versão original, conserva somente rascunho não sensível, exige recarga explícita e não reenvia automaticamente. Campos/variáveis de senha limpos, troca própria consulta identidade atual, exclusão confirma identidade/efeitos e versão. Oito componentes e Chrome com duas abas/temas claro e escuro aprovados; corrigidos separadores de identidade identificados visualmente. Onze grupos HTTP específicos e 31 scripts HTTP/prontidão da regressão local aprovados.
+- API/web principais atualizados juntos em **https://localhost:18443**, HTTPS 200 e dez verificações gerais aprovados. Revisão `0024_user_version`, usuários originais na versão 1, zero schemas privados. Cadastros/histórico/bytes preservados antes e depois da regressão adicional; nenhum volume removido. Cópias públicas/exames/fingerprints/dump integral `pre-2B8-3-2*`; helper `.data/upgrade_2b832.py`. Logs/cópias/credenciais ignorados pelo Git.
+- **Etapa 2B concluída no escopo mapeado**, incluindo administração 2B.8. R18 tratado nesses fluxos; não confundir proteção contra sobrescrita com atualização automática entre PCs ou auditoria clínica universal.
+- **Próximo passo: preparar a etapa 3, começando por atualização entre computadores (R19)**. Inventariar consultas/cache, demonstrar comportamento em duas sessões e definir recorte/aceite para atualização e estados de conexão preservando rascunhos. Depois datas, cadastros, permissões de leitura, paginação e interação em subetapas. Não iniciar implementação ampla nem repetir revisão geral. Instalação/atalhos/backup/atualização assistida continuam na etapa 5.
+- Publicar este fechamento documental posterior ao CI e conferir árvore limpa/HEAD remoto. Nenhuma decisão de negócio pendente para iniciar o diagnóstico focado da próxima etapa.
