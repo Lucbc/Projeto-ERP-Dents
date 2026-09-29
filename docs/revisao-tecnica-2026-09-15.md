@@ -281,6 +281,8 @@ Formulários enviam o registro inteiro; casos de uso também mesclam e regravam 
 
 ### R19 — P1 — Uma estação não acompanha automaticamente as mudanças das outras
 
+**Preparação 3A, 29/09/2026:** Chrome com duas sessões independentes confirmou ausência de leitura automática da lista de usuários após alteração remota durante 18s/retorno à página; reload recebeu dados atuais. Versão antiga continuou recebendo 409 com rascunho preservado. [Inventário, limites e contrato](./plano-etapa-3A.md): começar pela agenda/lista/calendário, com atualização e estado de conexão sem substituir formulário. Nenhuma correção funcional nesta preparação; R19 permanece aberto. Agenda e demais recursos foram inspecionados, não homologados individualmente neste diagnóstico.
+
 **Confirmado.** [query-client.ts](../apps/web/src/lib/query-client.ts#L7), [calendar-page.tsx](../apps/web/src/pages/appointments/calendar-page.tsx#L258), [consultation-page.tsx](../apps/web/src/pages/consultations/consultation-page.tsx#L22).
 
 `refetchOnWindowFocus` está desativado e não há polling, SSE ou WebSocket. Invalidar cache depois de salvar atualiza somente aquele navegador. `staleTime` marca dados como antigos, mas não funciona como temporizador de atualização. [TanStack Query](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults).
