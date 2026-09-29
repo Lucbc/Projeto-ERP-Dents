@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from sqlalchemy import delete, func, or_, select, text
+from sqlalchemy import delete, func, or_, select, text, update
 from sqlalchemy.orm import Session
 
 from src.adapters.db.models.models import AuthSessionModel, InstallationStateModel, UserModel
 from src.core.domain.exceptions import ConflictError
+from src.core.user_version import check_user_version
 from src.core.domain.entities import User, UserRole
 from src.core.ports.repositories import UserRepository
 
@@ -105,34 +106,37 @@ class SqlAlchemyUserRepository(UserRepository):
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def update(self, user_id, data: dict):
-        item = self.session.get(UserModel, user_id)
-        if item is None:
-            return None
+    def update(self, user_id, data: dict, version: int):
+        with self.administration_lock():
+            current = self.get(user_id)
+            if current is None:
+                return None
+            check_user_version(current, version)
+            values = {key: data[key] for key in ('name', 'email', 'role', 'dentist_id', 'password_hash', 'is_active')
+                      if key in data}
+            item = self.session.scalars(update(UserModel).where(UserModel.id == user_id,
+                UserModel.version == version).values(**values, version=version + 1).returning(UserModel),
+                execution_options={'populate_existing': True}).one()
+            if any(key in values and values[key] != getattr(current, key)
+                   for key in ('password_hash', 'is_active', 'role', 'dentist_id', 'email')):
+                self.session.execute(delete(AuthSessionModel).where(AuthSessionModel.user_id == user_id))
+            result = self._to_entity(item)
+            self.session.commit()
+            return result
 
-        if any(key in data and data[key] != getattr(item, key)
-               for key in ("password_hash", "is_active", "role", "dentist_id", "email")):
-            self.session.execute(delete(AuthSessionModel).where(AuthSessionModel.user_id == user_id))
-
-        for key in ["name", "email", "role", "dentist_id", "password_hash", "is_active"]:
-            if key in data:
-                setattr(item, key, data[key])
-
-        self.session.commit()
-        self.session.refresh(item)
-        return self._to_entity(item)
-
-    def delete(self, user_id) -> bool:
-        item = self.session.get(UserModel, user_id)
-        if item is None:
-            return False
-
-        self.session.delete(item)
-        self.session.commit()
-        return True
+    def delete(self, user_id, version: int) -> bool:
+        with self.administration_lock():
+            current = self.get(user_id)
+            if current is None:
+                return False
+            check_user_version(current, version)
+            self.session.execute(delete(UserModel).where(UserModel.id == user_id, UserModel.version == version))
+            self.session.commit()
+            return True
 
     def _to_entity(self, model: UserModel) -> User:
         return User(
+            version=model.version,
             id=model.id,
             name=model.name,
             email=model.email,

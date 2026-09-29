@@ -18,7 +18,8 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { z } from "zod";
@@ -96,6 +97,8 @@ export function AppLayout() {
   const { toast } = useToast();
   const location = useLocation();
   const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
+  const [passwordVersion, setPasswordVersion] = useState<number | null>(null);
+  const [loadingPasswordUser, setLoadingPasswordUser] = useState(false);
 
   const form = useForm<ChangePasswordForm>({
     resolver: zodResolver(changePasswordSchema),
@@ -107,8 +110,10 @@ export function AppLayout() {
   });
 
   const changePasswordMutation = useMutation({
-    mutationFn: (payload: ChangePasswordForm) =>
+    gcTime: 0,
+    mutationFn: (payload: ChangePasswordForm & { version: number }) =>
       authService.changePassword({
+        version: payload.version,
         current_password: payload.current_password,
         new_password: payload.new_password,
       }),
@@ -118,8 +123,34 @@ export function AppLayout() {
       form.reset();
       logout();
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => {
+      form.reset(); setPasswordVersion(null);
+      if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+        setOpenChangePasswordModal(false); logout();
+      }
+      toast(getApiErrorMessage(error), "error");
+    },
   });
+
+  const passwordBusy = loadingPasswordUser || changePasswordMutation.isPending;
+  const loadPasswordUser = async () => {
+    if (passwordBusy) return;
+    form.reset(); setPasswordVersion(null); setLoadingPasswordUser(true);
+    try { const current = await authService.me(); setPasswordVersion(current.version); }
+    catch (error) {
+      if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+        setOpenChangePasswordModal(false); logout();
+      }
+      toast(getApiErrorMessage(error), "error");
+    } finally { setLoadingPasswordUser(false); }
+  };
+  const closePassword = () => {
+    if (passwordBusy) return;
+    setOpenChangePasswordModal(false); setPasswordVersion(null); form.reset(); changePasswordMutation.reset();
+  };
+  useEffect(() => {
+    if (!changePasswordMutation.isPending && changePasswordMutation.variables) changePasswordMutation.reset();
+  }, [changePasswordMutation.isPending]);
 
   const isMenuItemVisible = (item: MenuItem): boolean => {
     if (!user) return false;
@@ -154,7 +185,8 @@ export function AppLayout() {
   );
 
   const handleSubmitChangePassword = (values: ChangePasswordForm) => {
-    changePasswordMutation.mutate(values);
+    if (passwordBusy || passwordVersion === null) return;
+    changePasswordMutation.mutate({ ...values, version: passwordVersion });
   };
 
   return (
@@ -198,7 +230,7 @@ export function AppLayout() {
             {theme === "dark" ? "Modo claro" : "Modo escuro"}
           </Button>
           <Button
-            onClick={() => setOpenChangePasswordModal(true)}
+            onClick={() => { setOpenChangePasswordModal(true); void loadPasswordUser(); }}
             variant="outline"
             className="mb-2 w-full"
           >
@@ -225,17 +257,18 @@ export function AppLayout() {
 
       <Modal
         open={openChangePasswordModal}
-        onClose={() => {
-          setOpenChangePasswordModal(false);
-          form.reset();
-        }}
+        onClose={closePassword}
         title="Trocar senha"
       >
         <form className="grid gap-3" onSubmit={form.handleSubmit(handleSubmitChangePassword)}>
+          {passwordVersion === null && <div role="alert" className="rounded border border-amber-300 bg-muted p-3 text-foreground">
+            <p>Carregue seus dados atuais antes de digitar a senha.</p>
+            <Button type="button" variant="outline" disabled={passwordBusy} onClick={() => void loadPasswordUser()}>{loadingPasswordUser ? "Carregando..." : "Carregar dados atuais"}</Button>
+          </div>}
           <p className="text-sm text-muted-foreground">Ao atualizar a senha, seus acessos serão encerrados em todos os computadores. Entre novamente com a nova senha.</p>
           <div>
             <label className="mb-1 block text-sm font-semibold text-foreground">Senha atual *</label>
-            <Input type="password" {...form.register("current_password")} />
+            <Input disabled={passwordBusy || passwordVersion === null} type="password" {...form.register("current_password")} />
             {form.formState.errors.current_password && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.current_password.message}</p>
             )}
@@ -243,7 +276,7 @@ export function AppLayout() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-foreground">Nova senha *</label>
-            <Input type="password" {...form.register("new_password")} />
+            <Input disabled={passwordBusy || passwordVersion === null} type="password" {...form.register("new_password")} />
             {form.formState.errors.new_password && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.new_password.message}</p>
             )}
@@ -251,7 +284,7 @@ export function AppLayout() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-foreground">Confirmar nova senha *</label>
-            <Input type="password" {...form.register("confirm_new_password")} />
+            <Input disabled={passwordBusy || passwordVersion === null} type="password" {...form.register("confirm_new_password")} />
             {form.formState.errors.confirm_new_password && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.confirm_new_password.message}</p>
             )}
@@ -261,14 +294,11 @@ export function AppLayout() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                setOpenChangePasswordModal(false);
-                form.reset();
-              }}
+              onClick={closePassword}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={changePasswordMutation.isPending}>
+            <Button type="submit" disabled={passwordBusy || passwordVersion === null}>
               {changePasswordMutation.isPending ? "Salvando..." : "Atualizar senha"}
             </Button>
           </div>

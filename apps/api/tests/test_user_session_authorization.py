@@ -1,3 +1,4 @@
+from user_version_fixtures import delete_fixture, own_password_fixture, password_fixture, update_fixture
 """Session reauthorization under real administrative locks in private schemas."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
@@ -46,10 +47,10 @@ class UserSessionAuthorizationTests(unittest.TestCase):
         if operation == 'create':
             return uc.create({'name': 'Fictitious Created', 'email': uuid4().hex + '@example.com',
                               'password': 'fictitious-new', 'role': 'reception'}, **identity)
-        if operation == 'update': return uc.update(target.id, {'name': 'Fictitious Updated'}, **identity)
-        if operation == 'password': return uc.set_password(target.id, 'fictitious-new', **identity)
-        if operation == 'delete': return uc.delete(target.id, **identity)
-        return AuthUseCases(users, FakeAuth()).change_password(actor.id, 'fictitious-original',
+        if operation == 'update': return update_fixture(uc, target.id, {'name': 'Fictitious Updated'}, **identity)
+        if operation == 'password': return password_fixture(uc, target.id, 'fictitious-new', **identity)
+        if operation == 'delete': return delete_fixture(uc, target.id, **identity)
+        return own_password_fixture(AuthUseCases(users, FakeAuth()), actor.id, 'fictitious-original',
                                                               'fictitious-new', session_id=sid)
 
     def snapshot(self):

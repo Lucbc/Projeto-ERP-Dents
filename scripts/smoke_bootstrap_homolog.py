@@ -24,7 +24,7 @@ def docker(*args, check=True):
     return result
 
 
-def main(session_checks=None, report_name=None, extra_env=None):
+def main(session_checks=None, report_name=None, extra_env=None, *, versioned_user_fixtures=True):
     smoke.verify_target()
     db_info = json.loads(docker("inspect", "erp-dents-homolog-db-1").stdout)[0]
     db_env = dict(line.split("=", 1) for line in db_info["Config"]["Env"] if "=" in line)
@@ -46,6 +46,11 @@ def main(session_checks=None, report_name=None, extra_env=None):
 
     def request(method, path, payload=None, activation=None, token=None, extra_headers=None):
         from cookie_client import CookieClient
+        if versioned_user_fixtures:
+            from user_version_fixture_homolog import prepare_user_fixture
+            path, payload = prepare_user_fixture(method, path, payload, lambda url:
+                CookieClient('http://127.0.0.1:18001', origin=(extra_env or {}).get('PUBLIC_ORIGIN',
+                    'https://localhost:18443')).request('GET', url, None, token, timeout=10)[1])
         headers = dict(extra_headers or {})
         if activation is not None: headers['X-Bootstrap-Token'] = activation
         status, data, response_headers = CookieClient('http://127.0.0.1:18001',

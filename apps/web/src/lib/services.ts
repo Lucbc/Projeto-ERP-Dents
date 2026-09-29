@@ -162,7 +162,7 @@ export const authService = {
     const response = await api.get<User>("/api/auth/me");
     return response.data;
   },
-  async changePassword(payload: { current_password: string; new_password: string }) {
+  async changePassword(payload: { version: number; current_password: string; new_password: string }) {
     const response = await api.post<{ detail: string }>("/api/auth/change-password", payload);
     return response.data;
   },
@@ -273,6 +273,9 @@ export const specialtyService = {
 };
 
 export const userService = {
+  async get(id: string) {
+    return (await api.get<User>(`/api/users/${id}`)).data;
+  },
   async list(params: PaginationParams) {
     const response = await api.get<ListResponse<User>>("/api/users", { params });
     return response.data;
@@ -291,6 +294,7 @@ export const userService = {
   async update(
     id: string,
     payload: {
+      version: number;
       name?: string;
       email?: string;
       role?: UserRole;
@@ -301,12 +305,12 @@ export const userService = {
     const response = await api.put<User>(`/api/users/${id}`, payload);
     return response.data;
   },
-  async setPassword(id: string, new_password: string) {
-    const response = await api.post<User>(`/api/users/${id}/set-password`, { new_password });
+  async setPassword(id: string, new_password: string, version: number) {
+    const response = await api.post<User>(`/api/users/${id}/set-password`, { new_password, version });
     return response.data;
   },
-  async remove(id: string) {
-    await api.delete(`/api/users/${id}`);
+  async remove(id: string, version: number) {
+    await api.delete(`/api/users/${id}`, { params: { version } });
   },
 };
 

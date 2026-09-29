@@ -239,6 +239,7 @@ class UserCreateRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
+    version: int = Field(gt=0, lt=2**63 - 1, strict=True)
     name: str | None = None
     email: EmailStr | None = None
     role: UserRole | None = None
@@ -247,10 +248,12 @@ class UserUpdateRequest(BaseModel):
 
 
 class SetPasswordRequest(BaseModel):
+    version: int = Field(gt=0, lt=2**63 - 1, strict=True)
     new_password: str = Field(min_length=8, max_length=128)
 
 
 class UserResponse(AppBaseSchema):
+    version: int
     id: UUID
     name: str
     email: str
@@ -479,6 +482,7 @@ class LoginRequest(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
+    version: int = Field(gt=0, lt=2**63 - 1, strict=True)
     current_password: str = Field(min_length=1, max_length=4096)
     new_password: str = Field(min_length=8, max_length=128)
 

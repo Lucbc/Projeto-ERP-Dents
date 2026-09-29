@@ -1,3 +1,4 @@
+from user_version_fixtures import delete_fixture, own_password_fixture, update_fixture
 """Real PostgreSQL migrations/session revocation; isolated homologation schemas only."""
 from concurrent.futures import ThreadPoolExecutor
 import os
@@ -41,13 +42,16 @@ class HomologDatabaseTests(unittest.TestCase):
         self.auth = JwtAuthService()
         self.uc = AuthUseCases(self.repo, self.auth)
         self.password = "fictitious-session-password"
-        self.user = self.repo.create({"name": "Session Test", "email": "session@example.com",
-            "role": UserRole.admin, "is_active": True,
-            "password_hash": self.auth.hash_password(self.password)})
+        user_id = uuid4()
+        self.db.execute(text("""INSERT INTO users (id,name,email,role,is_active,password_hash,created_at,updated_at)
+            VALUES (:id,'Session Test','session@example.com','admin',true,:hash,now(),now())"""),
+            {'id': user_id, 'hash': self.auth.hash_password(self.password)})
+        self.db.commit()
         # create() refreshes the row, opening a read transaction. Release it
         # before a separate migration connection needs an exclusive users lock.
         self.db.rollback()
         self.migrate("head")
+        self.user = self.repo.get(user_id)
 
     def migrate(self, revision):
         result = subprocess.run([sys.executable, "-m", "alembic", "upgrade", revision],
@@ -94,7 +98,7 @@ class AuthSessionTests(HomologDatabaseTests):
 
     def test_password_change_revokes_all_and_old_password_fails(self):
         first, second = self.login(), self.login()
-        self.uc.change_password(self.user.id, self.password, "new-fictitious-password", session_id=UUID(self.auth.decode_access_token(first)["jti"]))
+        own_password_fixture(self.uc, self.user.id, self.password, "new-fictitious-password", session_id=UUID(self.auth.decode_access_token(first)["jti"]))
         self.rejected(first)
         self.rejected(second)
         with self.assertRaises(UnauthorizedError): self.login()
@@ -103,33 +107,33 @@ class AuthSessionTests(HomologDatabaseTests):
     def test_failed_password_change_preserves_sessions(self):
         token = self.login()
         with self.assertRaises(ValidationError):
-            self.uc.change_password(self.user.id, "wrong-password", "new-fictitious-password", session_id=UUID(self.auth.decode_access_token(token)["jti"]))
+            own_password_fixture(self.uc, self.user.id, "wrong-password", "new-fictitious-password", session_id=UUID(self.auth.decode_access_token(token)["jti"]))
         self.accepted(token)
 
     def test_reset_password_revokes_sessions_atomically(self):
         token = self.login()
         with self.repo.administration_lock():
-            self.repo.update(self.user.id, {"password_hash": self.auth.hash_password("reset-fictitious")})
+            update_fixture(self.repo, self.user.id, {"password_hash": self.auth.hash_password("reset-fictitious")})
         self.rejected(token)
         self.accepted(self.uc.login(self.user.email, "reset-fictitious")[0])
 
     def test_disable_reenable_never_resurrects_session(self):
         token = self.login()
         for active in (False, True):
-            with self.repo.administration_lock(): self.repo.update(self.user.id, {"is_active": active})
+            with self.repo.administration_lock(): update_fixture(self.repo, self.user.id, {"is_active": active})
             self.rejected(token)
         self.accepted(self.login())
 
     def test_role_change_revokes_but_name_change_preserves(self):
         token = self.login()
-        with self.repo.administration_lock(): self.repo.update(self.user.id, {"name": "New Name"})
+        with self.repo.administration_lock(): update_fixture(self.repo, self.user.id, {"name": "New Name"})
         self.accepted(token)
-        with self.repo.administration_lock(): self.repo.update(self.user.id, {"role": UserRole.reception})
+        with self.repo.administration_lock(): update_fixture(self.repo, self.user.id, {"role": UserRole.reception})
         self.rejected(token)
 
     def test_delete_user_cascades_sessions(self):
         token = self.login()
-        with self.repo.administration_lock(): self.repo.delete(self.user.id)
+        with self.repo.administration_lock(): delete_fixture(self.repo, self.user.id)
         self.rejected(token)
         self.assertEqual(list(self.db.scalars(select(AuthSessionModel))), [])
 
@@ -148,7 +152,7 @@ class AuthSessionTests(HomologDatabaseTests):
         token = self.login()
         with self.assertRaises(RuntimeError), self.repo.administration_lock():
             with patch.object(self.db, "commit", side_effect=RuntimeError("simulated failure")):
-                self.repo.update(self.user.id, {"is_active": False})
+                update_fixture(self.repo, self.user.id, {"is_active": False})
         self.accepted(token)
         self.assertTrue(self.repo.get(self.user.id).is_active)
 
@@ -174,7 +178,7 @@ class AuthSessionTests(HomologDatabaseTests):
             future = pool.submit(pending_login)
             try:
                 self.assertTrue(verified.wait(10))
-                self.uc.change_password(self.user.id, self.password, "concurrent-new-password", session_id=UUID(self.auth.decode_access_token(current_token)["jti"]))
+                own_password_fixture(self.uc, self.user.id, self.password, "concurrent-new-password", session_id=UUID(self.auth.decode_access_token(current_token)["jti"]))
             finally:
                 proceed.set()
             self.assertEqual(future.result(timeout=10), "rejected")

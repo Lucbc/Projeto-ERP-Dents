@@ -108,5 +108,5 @@ def change_password(
 ) -> MessageResponse:
     AuthLimiter(db, get_settings().jwt_secret_key).consume([("change-password", str(current_user.id), 5)])
     use_case = AuthUseCases(SqlAlchemyUserRepository(db), JwtAuthService())
-    use_case.change_password(current_user.id, payload.current_password, payload.new_password, session_id=session_id)
+    use_case.change_password(current_user.id, payload.current_password, payload.new_password, version=payload.version, session_id=session_id)
     return MessageResponse(detail="Senha atualizada com sucesso.")

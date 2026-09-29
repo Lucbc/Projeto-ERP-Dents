@@ -1,0 +1,61 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+let stage='start';
+process.on('unhandledRejection',()=>{console.error('Users browser failed at stage: '+stage);process.exit(1);});
+(async()=>{
+ const credentials=JSON.parse(fs.readFileSync(0,'utf8'));
+ const browser=await chromium.launch({channel:'chrome',headless:true});
+ try {
+  const context=await browser.newContext({ignoreHTTPSErrors:false,viewport:{width:1440,height:1000}});
+  const first=await context.newPage(),second=await context.newPage();
+  const button=(p,name)=>p.getByRole('button',{name,exact:true});
+  stage='login';await first.goto('https://localhost:18444/login');
+  await first.locator('[name=email]').fill(credentials.email);await first.locator('[name=password]').fill(credentials.password);
+  const pending=first.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST');
+  await button(first,'Entrar').click();const logged=await(await pending).json();
+  await first.getByText('Pacientes cadastrados',{exact:true}).waitFor();
+  const headers={'Content-Type':'application/json','X-Session-ID':logged.session_id,'X-CSRF-Token':logged.csrf_token};
+  const api=(method,url,data)=>first.evaluate(async({method,url,data,headers})=>{
+   const r=await fetch(url,{method,headers,body:data?JSON.stringify(data):undefined});
+   return {status:r.status,body:r.status===204?null:await r.json()};
+  },{method,url,data,headers});
+  const target=(await api('POST','/api/users',{name:'Fictitious Version User',email:'user-version@example.com',password:credentials.password,role:'reception'})).body;
+  const url='/api/users/'+target.id,row=p=>p.getByRole('row').filter({hasText:target.email});
+  const reload=p=>button(p,'Descartar e carregar atual');
+  const save=async(p,method,endpoint,name)=>{const r=p.waitForResponse(r=>r.url().includes(endpoint)&&r.request().method()===method);await button(p,name).click();return r;};
+  const enabled=async(p,name)=>{await p.waitForFunction(name=>{const b=Array.from(document.querySelectorAll('button')).find(x=>x.textContent===name);return b&&!b.disabled;},name);};
+  const load=async p=>{await p.goto('https://localhost:18444/users');await row(p).waitFor();};
+  stage='two captured forms';for(const p of [first,second]) {await load(p);await row(p).getByRole('button',{name:'Editar',exact:true}).click();}
+  await first.locator('[name=name]').fill('Fictitious Current User');assert.equal((await save(first,'PUT',url,'Salvar')).status(),200);
+  await second.locator('[name=name]').fill('Fictitious Draft');assert.equal((await save(second,'PUT',url,'Salvar')).status(),409);await reload(second).waitFor();
+  stage='failed reload';await second.route('**'+url,r=>r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({detail:'Fictitious unavailable'})}));
+  const failed=second.waitForResponse(r=>r.url().endsWith(url)&&r.status()===503);await reload(second).click();await failed;
+  await second.getByText(/serviço está temporariamente indisponível/).waitFor();
+  assert.equal(await second.locator('[name=name]').inputValue(),'Fictitious Draft');assert.equal(await button(second,'Salvar').isDisabled(),true);
+  await second.screenshot({path:path.resolve(__dirname,'../.data/homolog/user-version-light.png'),fullPage:true});
+  stage='explicit edit review';await second.unroute('**'+url);await reload(second).click();await enabled(second,'Salvar');
+  assert.equal(await second.locator('[name=name]').inputValue(),'Fictitious Current User');assert.equal((await api('GET',url)).body.version,2);
+  await second.locator('[name=name]').fill('Fictitious Reviewed User');assert.equal((await save(second,'PUT',url,'Salvar')).status(),200);
+  stage='dark password conflict';await load(first);await button(first,'Modo escuro').click();await row(first).getByRole('button',{name:'Senha',exact:true}).click();
+  assert.equal((await api('PUT',url,{version:3,name:'Fictitious New Identity'})).status,200);
+  const fillPassword=async(p,own=false)=>{if(own)await p.locator('[name=current_password]').fill(credentials.password);await p.locator('[name=new_password]').fill(credentials.password+'-new');await p.locator(own?'[name=confirm_new_password]':'[name=confirm_password]').fill(credentials.password+'-new');};
+  await fillPassword(first);assert.equal((await save(first,'POST',url+'/set-password','Salvar senha')).status(),409);await reload(first).waitFor();
+  assert.equal(await first.locator('[name=new_password]').inputValue(),'');assert.equal(await first.locator('[name=confirm_password]').inputValue(),'');
+  await first.screenshot({path:path.resolve(__dirname,'../.data/homolog/user-version-dark.png'),fullPage:true});
+  await reload(first).click();await enabled(first,'Salvar senha');assert.equal((await api('GET',url)).body.version,4);
+  await fillPassword(first);assert.equal((await save(first,'POST',url+'/set-password','Salvar senha')).status(),200);
+  await row(first).getByRole('button',{name:'Senha',exact:true}).click();assert.equal(await first.locator('[name=new_password]').inputValue(),'');await button(first,'Cancelar').click();
+  stage='reviewed deletion';await load(first);await row(first).getByRole('button',{name:'Excluir',exact:true}).click();
+  stage='delete remote edit';assert.equal((await api('PUT',url,{version:5,name:'Fictitious Final Identity'})).status,200);
+  stage='delete stale submit';assert.equal((await save(first,'DELETE',url,'Confirmar exclusão')).status(),409);await reload(first).waitFor();stage='delete explicit reload';await reload(first).click();await enabled(first,'Confirmar exclusão');
+  stage='delete displayed identity';await first.screenshot({path:path.resolve(__dirname,'../.data/homolog/user-version-delete.png'),fullPage:true});await first.getByText(/Fictitious Final Identity —/).waitFor();assert.equal((await api('GET',url)).status,200);
+  assert.equal((await save(first,'DELETE',url,'Confirmar exclusão')).status(),204);
+  stage='own password conflict';await button(first,'Trocar senha').click();await enabled(first,'Atualizar senha');
+  const admin=(await api('GET','/api/auth/me')).body;assert.equal((await api('PUT','/api/users/'+admin.id,{name:'Fictitious Updated Admin',version:admin.version})).status,200);
+  await fillPassword(first,true);assert.equal((await save(first,'POST','/api/auth/change-password','Atualizar senha')).status(),409);
+  await button(first,'Carregar dados atuais').waitFor();assert.equal(await first.locator('[name=current_password]').inputValue(),'');
+  await button(first,'Carregar dados atuais').click();await enabled(first,'Atualizar senha');await fillPassword(first,true);
+  assert.equal((await save(first,'POST','/api/auth/change-password','Atualizar senha')).status(),200);await first.waitForURL('**/login');
+  console.log('PASS: two Chrome tabs, stale edits/passwords/deletions, explicit review, secret cleanup, own password and light/dark views.');
+ } finally {await browser.close();}
+})().catch(()=>{console.error('Users browser failed at stage: '+stage);process.exitCode=1;});

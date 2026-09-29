@@ -148,7 +148,10 @@ class InstallationStateModel(Base):
 
 class UserModel(Base):
     __tablename__ = "users"
-    __table_args__ = (UniqueConstraint("email", name="uq_users_email"),)
+    __table_args__ = (UniqueConstraint("email", name="uq_users_email"),
+                      CheckConstraint('version > 0', name='ck_users_version_positive'))
+
+    version: Mapped[int] = mapped_column(BigInteger, server_default='1', nullable=False)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(Text, nullable=False)

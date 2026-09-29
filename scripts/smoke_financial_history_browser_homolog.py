@@ -30,6 +30,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema, *, br
             # Script emits only stage labels, never credentials or request bodies.
             stages=[line for line in result.stderr.splitlines() if line.startswith(('Financial history browser failed at stage: ', 'Catalog deletion browser failed at stage: ', 'Appointment deletion browser failed at stage: ', 'Dentist deletion browser failed at stage: ', 'Patient deletion browser failed at stage: ', 'Exam deletion browser failed at stage: ', 'Availability browser failed at stage: '))]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Permissions browser failed at stage: ')]
+            stages += [line for line in result.stderr.splitlines() if line.startswith('Users browser failed at stage: ')]
             raise AssertionError(stages[-1] if stages else 'Financial history browser failed; raw diagnostics suppressed')
         passed(result.stdout.strip())
     finally:

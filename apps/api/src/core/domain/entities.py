@@ -109,6 +109,7 @@ class Specialty:
 
 @dataclass(slots=True)
 class User:
+    version: int
     id: UUID
     name: str
     email: str

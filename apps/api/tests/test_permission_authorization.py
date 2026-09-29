@@ -1,3 +1,4 @@
+from user_version_fixtures import delete_fixture, password_fixture, update_fixture as update_user_fixture
 from permission_fixtures import update_fixture
 """Administrative serialization on migrated, disposable PostgreSQL schemas."""
 from concurrent.futures import ThreadPoolExecutor
@@ -76,13 +77,13 @@ class PermissionAuthorizationTests(unittest.TestCase):
         if operation == 'logout':
             users.revoke_session(sid, actor.id)
         elif operation == 'delete':
-            uc.delete(actor.id, actor_id=self.backup.id, session_id=self.backup_session_id)
+            delete_fixture(uc, actor.id, actor_id=self.backup.id, session_id=self.backup_session_id)
         elif operation == 'password':
-            uc.set_password(actor.id, 'fictitious-reset-password', actor_id=self.backup.id, session_id=self.backup_session_id)
+            password_fixture(uc, actor.id, 'fictitious-reset-password', actor_id=self.backup.id, session_id=self.backup_session_id)
         elif operation == 'rename':
-            uc.update(actor.id, {'name': 'Fictitious Renamed Admin'}, actor_id=self.backup.id, session_id=self.backup_session_id)
+            update_user_fixture(uc, actor.id, {'name': 'Fictitious Renamed Admin'}, actor_id=self.backup.id, session_id=self.backup_session_id)
         else:
-            uc.update(actor.id, {'is_active': False} if operation == 'disable' else {'role': UserRole.reception},
+            update_user_fixture(uc, actor.id, {'is_active': False} if operation == 'disable' else {'role': UserRole.reception},
                       actor_id=self.backup.id, session_id=self.backup_session_id)
 
     def test_revocation_first_denies_waiting_write_with_cached_identity(self):
@@ -254,7 +255,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
                         def run():
                             if revoke:
                                 return update_fixture(uc, UserRole.coordinator, denied, actor_id=self.admin.id, session_id=self.session_id)
-                            return user_uc.update(target.id, {'name': 'Fictitious Ordered Edit'}, actor_id=delegate.id, session_id=delegate_session_id)
+                            return update_user_fixture(user_uc, target.id, {'name': 'Fictitious Ordered Edit'}, actor_id=delegate.id, session_id=delegate_session_id)
                         if held:
                             with patch.object(repo, method, hook):
                                 return run()

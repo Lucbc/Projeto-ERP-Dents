@@ -58,7 +58,7 @@ def main() -> int:
             if user is None:
                 print("Erro: usuario nao encontrado.")
                 return 1
-            repository.update(user.id, {"password_hash": password_hash})
+            repository.update(user.id, {"password_hash": password_hash}, user.version)
 
     print("Senha redefinida com sucesso.")
     return 0

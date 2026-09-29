@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import axios from "axios";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -61,7 +62,11 @@ export function UsersPage() {
   const [openModal, setOpenModal] = useState(false);
   const [openPasswordModal, setOpenPasswordModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [review, setReview] = useState(false);
+  const [reloading, setReloading] = useState(false);
+  const [accessLost, setAccessLost] = useState(false);
 
   const form = useForm<UserForm>({
     resolver: zodResolver(userSchema),
@@ -85,6 +90,7 @@ export function UsersPage() {
 
   const usersQuery = useQuery({
     queryKey: ["users", search],
+    enabled: !accessLost,
     queryFn: () => userService.list({ search, limit: 100, offset: 0 }),
   });
 
@@ -94,6 +100,7 @@ export function UsersPage() {
   });
 
   const createMutation = useMutation({
+    gcTime: 0,
     mutationFn: (payload: UserForm) =>
       userService.create({
         name: payload.name,
@@ -109,12 +116,13 @@ export function UsersPage() {
       form.reset();
       void queryClient.invalidateQueries({ queryKey: ["users"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => handleFailure(error),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UserForm }) =>
       userService.update(id, {
+        version: editingUser!.version,
         name: payload.name,
         email: payload.email,
         role: payload.role as UserRole,
@@ -127,34 +135,89 @@ export function UsersPage() {
       setEditingUser(null);
       form.reset();
       void queryClient.invalidateQueries({ queryKey: ["users"] });
-      if (updated.id === currentUser?.id && (updated.role !== currentUser.role || !updated.is_active)) logout();
+      if (updated.id === currentUser?.id && (updated.role !== currentUser.role || updated.email !== currentUser.email || updated.dentist_id !== currentUser.dentist_id || !updated.is_active)) logout();
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => handleFailure(error),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => userService.remove(id),
+    mutationFn: (target: User) => userService.remove(target.id, target.version),
     onSuccess: (_result, deletedId) => {
       toast("Usuário removido.");
       void queryClient.invalidateQueries({ queryKey: ["users"] });
-      if (deletedId === currentUser?.id) logout();
+      setDeletingUser(null);
+      if (deletedId.id === currentUser?.id) logout();
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => handleFailure(error),
   });
 
   const setPasswordMutation = useMutation({
+    gcTime: 0,
     mutationFn: ({ id, new_password }: { id: string; new_password: string }) =>
-      userService.setPassword(id, new_password),
+      userService.setPassword(id, new_password, selectedUser!.version),
     onSuccess: () => {
       toast("Senha redefinida com sucesso.");
       setOpenPasswordModal(false);
       passwordForm.reset();
-      setSelectedUserId(null);
+      setSelectedUser(null);
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
+      if (selectedUser?.id === currentUser?.id) logout();
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => handleFailure(error),
   });
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const busy = isSubmitting || deleteMutation.isPending || setPasswordMutation.isPending || reloading;
+  const clearFlows = () => {
+    setOpenModal(false); setOpenPasswordModal(false); setEditingUser(null); setSelectedUser(null);
+    setDeletingUser(null); setReview(false); form.reset(); passwordForm.reset();
+  };
+  const closeFlows = () => { if (!busy) clearFlows(); };
+  const handleFailure = (error: unknown) => {
+    passwordForm.reset(); form.setValue("password", "");
+    const response = axios.isAxiosError(error) ? error.response : undefined;
+    if ([401, 403].includes(response?.status ?? 0)) {
+      clearFlows(); setAccessLost(true); queryClient.removeQueries({ queryKey: ["users"] });
+    } else if (response?.status === 404) {
+      clearFlows(); void queryClient.invalidateQueries({ queryKey: ["users"] });
+    } else if (!response || response.status >= 500 || response.data?.code === "stale_version") {
+      if (editingUser || selectedUser || deletingUser) setReview(true);
+      else { clearFlows(); void queryClient.invalidateQueries({ queryKey: ["users"] }); }
+    }
+    toast(getApiErrorMessage(error), "error");
+  };
+  useEffect(() => {
+    if (axios.isAxiosError(usersQuery.error) && [401, 403].includes(usersQuery.error.response?.status ?? 0)) {
+      clearFlows(); setAccessLost(true); queryClient.removeQueries({ queryKey: ["users"] });
+    }
+  }, [usersQuery.error]);
+  useEffect(() => {
+    if (!createMutation.isPending && createMutation.variables) createMutation.reset();
+    if (!setPasswordMutation.isPending && setPasswordMutation.variables) setPasswordMutation.reset();
+  }, [createMutation.isPending, setPasswordMutation.isPending]);
+  const reloadTarget = async () => {
+    const target = editingUser ?? selectedUser ?? deletingUser;
+    if (!target || busy) return;
+    setReloading(true); passwordForm.reset();
+    try {
+      const current = await userService.get(target.id);
+      if (current.role === "admin" && !isAdmin) { clearFlows(); return; }
+      if (editingUser) {
+        const references = await dentistService.listAll();
+        queryClient.setQueryData(["dentists", "users-form"], references);
+        setEditingUser(current);
+        form.reset({ name: current.name, email: current.email, role: current.role,
+          dentist_id: current.dentist_id ?? "", is_active: current.is_active ? "true" : "false", password: "" });
+      } else if (selectedUser) setSelectedUser(current);
+      else setDeletingUser(current);
+      setReview(false);
+    } catch (error) { handleFailure(error); }
+    finally { setReloading(false); }
+  };
+  const reviewNotice = review && <div role="alert" className="rounded border border-amber-300 bg-muted p-3 text-foreground">
+    <p>Os dados precisam de revisão. Carregue o usuário atual antes de tentar novamente.</p>
+    <Button type="button" variant="outline" disabled={busy} onClick={() => void reloadTarget()}>Descartar e carregar atual</Button>
+  </div>;
 
   const users = useMemo(() => usersQuery.data?.items ?? [], [usersQuery.data]);
   const dentists = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
@@ -163,7 +226,8 @@ export function UsersPage() {
   const canDelete = can("users", "delete");
 
   const onNew = () => {
-    if (!canCreate) return;
+    if (!canCreate || busy || accessLost) return;
+    setReview(false);
     setEditingUser(null);
     form.reset({
       name: "",
@@ -177,7 +241,8 @@ export function UsersPage() {
   };
 
   const onEdit = (user: User) => {
-    if (!canUpdate || (user.role === "admin" && !isAdmin)) return;
+    if (!canUpdate || busy || accessLost || (user.role === "admin" && !isAdmin)) return;
+    setReview(false);
     setEditingUser(user);
     form.reset({
       name: user.name,
@@ -191,6 +256,7 @@ export function UsersPage() {
   };
 
   const onSubmit = (values: UserForm) => {
+    if (busy || review || accessLost) return;
     if (editingUser) {
       updateMutation.mutate({ id: editingUser.id, payload: values });
       return;
@@ -203,6 +269,8 @@ export function UsersPage() {
 
     createMutation.mutate(values);
   };
+
+  if (accessLost) return <ErrorState message="Seu acesso à administração de usuários foi encerrado. Entre novamente." />;
 
   return (
     <div className="space-y-4">
@@ -271,7 +339,9 @@ export function UsersPage() {
                                 <Button
                                   variant="outline"
                                   onClick={() => {
-                                    setSelectedUserId(user.id);
+                                    if (busy) return;
+                                    setReview(false);
+                                    setSelectedUser(user);
                                     passwordForm.reset();
                                     setOpenPasswordModal(true);
                                   }}
@@ -284,9 +354,8 @@ export function UsersPage() {
                               <Button
                                 variant="danger"
                                 onClick={() => {
-                                  if (window.confirm("Deseja remover este usuário?")) {
-                                    deleteMutation.mutate(user.id);
-                                  }
+                                  if (busy) return;
+                                  setReview(false); setDeletingUser(user);
                                 }}
                               >
                                 Excluir
@@ -306,13 +375,14 @@ export function UsersPage() {
 
       <Modal
         open={openModal}
-        onClose={() => setOpenModal(false)}
+        onClose={closeFlows}
         title={editingUser ? "Editar usuário" : "Novo usuário"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="md:col-span-2">{reviewNotice}</div>
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Nome *</label>
-            <Input {...form.register("name")} />
+            <Input disabled={busy} {...form.register("name")} />
             {form.formState.errors.name && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.name.message}</p>
             )}
@@ -320,7 +390,7 @@ export function UsersPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">E-mail *</label>
-            <Input type="email" {...form.register("email")} />
+            <Input disabled={busy} type="email" {...form.register("email")} />
             {form.formState.errors.email && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.email.message}</p>
             )}
@@ -328,7 +398,7 @@ export function UsersPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Perfil *</label>
-            <Select {...form.register("role")}>
+            <Select disabled={busy} {...form.register("role")}>
               {userRoleOptions.filter((option) => isAdmin || option.value !== "admin").map((roleOption) => (
                 <option key={roleOption.value} value={roleOption.value}>
                   {roleOption.label}
@@ -339,7 +409,7 @@ export function UsersPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Dentista associado</label>
-            <Select {...form.register("dentist_id")}>
+            <Select disabled={busy} {...form.register("dentist_id")}>
               <option value="">Nenhum</option>
               {dentists.map((dentist) => (
                 <option key={dentist.id} value={dentist.id}>
@@ -352,7 +422,7 @@ export function UsersPage() {
           {!editingUser && (
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">Senha *</label>
-              <Input type="password" {...form.register("password")} />
+              <Input disabled={busy} type="password" {...form.register("password")} />
               {form.formState.errors.password && (
                 <p className="mt-1 text-xs text-red-600">{form.formState.errors.password.message}</p>
               )}
@@ -361,17 +431,17 @@ export function UsersPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Ativo</label>
-            <Select searchable={false} {...form.register("is_active")}>
+            <Select disabled={busy} searchable={false} {...form.register("is_active")}>
               <option value="true">Sim</option>
               <option value="false">Não</option>
             </Select>
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpenModal(false)}>
+            <Button type="button" variant="outline" onClick={closeFlows}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={busy || review}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
@@ -380,19 +450,21 @@ export function UsersPage() {
 
       <Modal
         open={openPasswordModal}
-        onClose={() => setOpenPasswordModal(false)}
+        onClose={closeFlows}
         title="Redefinir senha"
       >
+        <p className="mb-3 text-sm text-muted-foreground">{selectedUser?.name} — {selectedUser?.email} — {selectedUser && userRoleLabels[selectedUser.role]}</p>
+        {reviewNotice}
         <form
           className="space-y-3"
           onSubmit={passwordForm.handleSubmit((values) => {
-            if (!selectedUserId) return;
-            setPasswordMutation.mutate({ id: selectedUserId, new_password: values.new_password });
+            if (!selectedUser || busy || review || accessLost) return;
+            setPasswordMutation.mutate({ id: selectedUser.id, new_password: values.new_password });
           })}
         >
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Nova senha</label>
-            <Input type="password" {...passwordForm.register("new_password")} />
+            <Input disabled={busy} type="password" {...passwordForm.register("new_password")} />
             {passwordForm.formState.errors.new_password && (
               <p className="mt-1 text-xs text-red-600">
                 {passwordForm.formState.errors.new_password.message}
@@ -402,7 +474,7 @@ export function UsersPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Confirmar senha</label>
-            <Input type="password" {...passwordForm.register("confirm_password")} />
+            <Input disabled={busy} type="password" {...passwordForm.register("confirm_password")} />
             {passwordForm.formState.errors.confirm_password && (
               <p className="mt-1 text-xs text-red-600">
                 {passwordForm.formState.errors.confirm_password.message}
@@ -411,14 +483,23 @@ export function UsersPage() {
           </div>
 
           <div className="mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpenPasswordModal(false)}>
+            <Button type="button" variant="outline" onClick={closeFlows}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={setPasswordMutation.isPending}>
+            <Button type="submit" disabled={busy || review}>
               {setPasswordMutation.isPending ? "Salvando..." : "Salvar senha"}
             </Button>
           </div>
         </form>
+      </Modal>
+      <Modal open={Boolean(deletingUser)} onClose={closeFlows} title="Excluir usuário">
+        <p className="mb-3 text-sm text-muted-foreground">{deletingUser?.name} — {deletingUser?.email} — {deletingUser && userRoleLabels[deletingUser.role]}</p>
+        <p>A conta e suas sessões serão removidas. O histórico financeiro será preservado.</p>
+        {reviewNotice}
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={closeFlows} disabled={busy}>Cancelar</Button>
+          <Button variant="danger" disabled={busy || review} onClick={() => { if (deletingUser && !busy && !review) deleteMutation.mutate(deletingUser); }}>Confirmar exclusão</Button>
+        </div>
       </Modal>
     </div>
   );

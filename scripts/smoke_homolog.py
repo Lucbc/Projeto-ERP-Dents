@@ -47,6 +47,9 @@ def verify_target() -> None:
 def request(method: str, path: str, payload=None, *, token=None, expected=200,
             raw=False, content_type='application/json', extra_headers=None):
     from cookie_client import CookieClient
+    from user_version_fixture_homolog import prepare_user_fixture
+    path, payload = prepare_user_fixture(method, path, payload,
+        lambda url: CookieClient(API).request('GET', url, None, token)[1])
     headers = {'Content-Type': content_type, **(extra_headers or {})}
     status, data, _ = CookieClient(API).request(method, path, payload, token, headers)
     if status != expected:

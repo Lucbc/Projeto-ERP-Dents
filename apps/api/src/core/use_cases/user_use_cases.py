@@ -9,6 +9,7 @@ from src.core.permissions import PermissionAction, can_access, normalize_permiss
 from src.core.ports.repositories import RolePermissionRepository, UserRepository
 from src.core.ports.services import AuthService
 from src.core.password_policy import validate_new_password
+from src.core.user_version import check_user_version
 
 
 class UserUseCases:
@@ -76,6 +77,7 @@ class UserUseCases:
         with self._authorize(actor_id, session_id, "update") as actor:
             current = self.get(user_id)
             self._protect_admin(actor, current.role)
+            check_user_version(current, data.get('version'))
             # Null is meaningful only for the optional dentist association.
             if any(key in data and data[key] is None for key in ("name", "email", "role", "is_active")):
                 raise ValidationError("Nome, e-mail, perfil e status não podem ser nulos.")
@@ -95,29 +97,31 @@ class UserUseCases:
             data["role"] = role
             dentist_id = data["dentist_id"] if "dentist_id" in data else current.dentist_id
             data["dentist_id"] = self._normalize_dentist_id(role, dentist_id)
-            user = self.user_repository.update(user_id, data)
+            user = self.user_repository.update(user_id, data, data['version'])
             if user is None:
                 raise NotFoundError("Usuário não encontrado.")
             return user
 
-    def set_password(self, user_id: UUID, new_password: str, *, actor_id: UUID, session_id: UUID) -> User:
+    def set_password(self, user_id: UUID, new_password: str, *, version: int, actor_id: UUID, session_id: UUID) -> User:
         with self._authorize(actor_id, session_id, "update") as actor:
             current = self.get(user_id)
             self._protect_admin(actor, current.role)
+            check_user_version(current, version)
             validate_new_password(new_password)
             user = self.user_repository.update(user_id, {
                 "password_hash": self.auth_service.hash_password(new_password),
-            })
+            }, version)
             if user is None:
                 raise NotFoundError("Usuário não encontrado.")
             return user
 
-    def delete(self, user_id: UUID, *, actor_id: UUID, session_id: UUID) -> None:
+    def delete(self, user_id: UUID, *, version: int, actor_id: UUID, session_id: UUID) -> None:
         with self._authorize(actor_id, session_id, "delete") as actor:
             current = self.get(user_id)
             self._protect_admin(actor, current.role)
+            check_user_version(current, version)
             self._protect_last_admin(current, None, False)
-            if not self.user_repository.delete(user_id):
+            if not self.user_repository.delete(user_id, version):
                 raise NotFoundError("Usuário não encontrado.")
 
     def _normalize_dentist_id(self, role: UserRole, dentist_id: UUID | None) -> UUID | None:

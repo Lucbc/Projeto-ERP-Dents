@@ -87,7 +87,7 @@ def update_user(user_id: UUID, payload: UserUpdateRequest, db: Session = Depends
 def set_password(user_id: UUID, payload: SetPasswordRequest, db: Session = Depends(get_db_dep),
                  session_id: UUID = Depends(get_current_session_id),
                  actor: User = Depends(require_permission("users", "update"))):
-    return build_use_case(db).set_password(user_id, payload.new_password, actor_id=actor.id, session_id=session_id)
+    return build_use_case(db).set_password(user_id, payload.new_password, version=payload.version, actor_id=actor.id, session_id=session_id)
 
 
 @router.delete(
@@ -95,8 +95,8 @@ def set_password(user_id: UUID, payload: SetPasswordRequest, db: Session = Depen
     status_code=status.HTTP_204_NO_CONTENT,
     response_class=Response,
 )
-def delete_user(user_id: UUID, db: Session = Depends(get_db_dep),
+def delete_user(user_id: UUID, version: int = Query(gt=0, lt=2**63 - 1), db: Session = Depends(get_db_dep),
                 session_id: UUID = Depends(get_current_session_id),
                 actor: User = Depends(require_permission("users", "delete"))) -> Response:
-    build_use_case(db).delete(user_id, actor_id=actor.id, session_id=session_id)
+    build_use_case(db).delete(user_id, version=version, actor_id=actor.id, session_id=session_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

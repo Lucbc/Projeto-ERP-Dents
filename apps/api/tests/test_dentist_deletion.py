@@ -30,12 +30,12 @@ class DentistDeletionTests(unittest.TestCase):
         db.add(user); db.commit(); return user.id
 
     def test_migration_preserves_rows_orphans_and_sessions_and_handles_actual_fk_name(self):
-        # Exercise this migration's boundary, without downgrading later features.
-        self.assertEqual(self.fixture.migrate('downgrade','0022_dentist_user_restrict').returncode,0)
         with Session(self.engine) as db:
             user_id=self.user(db,self.id); self.user(db,None)
             db.add(AuthSessionModel(id=uuid4(),user_id=user_id,expires_at=datetime.now(timezone.utc)+timedelta(days=1)))
             db.commit()
+        # Arrange with current models, then exercise only this migration's boundary.
+        self.assertEqual(self.fixture.migrate('downgrade','0022_dentist_user_restrict').returncode,0)
         with self.engine.begin() as db:
             name=next(fk['name'] for fk in inspect(db).get_foreign_keys('users') if fk['constrained_columns']==['dentist_id'])
             quoted=db.dialect.identifier_preparer.quote(name)

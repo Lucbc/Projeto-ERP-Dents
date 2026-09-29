@@ -110,6 +110,7 @@ export interface Specialty {
 }
 
 export interface User {
+  version: number;
   id: string;
   name: string;
   email: string;

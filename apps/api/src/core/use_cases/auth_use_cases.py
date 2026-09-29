@@ -9,6 +9,7 @@ from src.core.domain.exceptions import ConflictError, ForbiddenError, NotFoundEr
 from src.core.ports.repositories import UserRepository
 from src.core.ports.services import AuthService
 from src.core.password_policy import validate_new_password
+from src.core.user_version import check_user_version
 
 
 class AuthUseCases:
@@ -82,13 +83,14 @@ class AuthUseCases:
             return
         self.user_repository.revoke_session(session_id, user_id)
 
-    def change_password(self, user_id: UUID, current_password: str, new_password: str, *, session_id: UUID) -> None:
+    def change_password(self, user_id: UUID, current_password: str, new_password: str, *, version: int, session_id: UUID) -> None:
         with self.user_repository.administration_lock():
             if not self.user_repository.session_active(session_id, user_id):
                 raise UnauthorizedError("Sessão encerrada. Entre novamente.")
             user = self.user_repository.get(user_id)
             if user is None or not user.is_active:
                 raise UnauthorizedError("Usuário sem acesso ativo.")
+            check_user_version(user, version)
 
             if not self.auth_service.verify_password(current_password, user.password_hash):
                 raise ValidationError("Senha atual inválida.")
@@ -99,7 +101,7 @@ class AuthUseCases:
                 raise ValidationError("A nova senha deve ser diferente da senha atual.")
 
             password_hash = self.auth_service.hash_password(new_password)
-            self.user_repository.update(user_id, {"password_hash": password_hash})
+            self.user_repository.update(user_id, {"password_hash": password_hash}, version)
 
     def me(self, user_id: UUID) -> User:
         user = self.user_repository.get(user_id)
