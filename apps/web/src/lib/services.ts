@@ -315,8 +315,8 @@ export const userService = {
 };
 
 export const appointmentService = {
-  async list(filters: AppointmentFilters) {
-    const response = await api.get<Appointment[]>("/api/appointments", { params: filters });
+  async list(filters: AppointmentFilters, signal?: AbortSignal) {
+    const response = await api.get<Appointment[]>("/api/appointments", { params: filters, signal });
     return response.data;
   },
   async get(id: string) {

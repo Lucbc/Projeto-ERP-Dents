@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**3A.1 iniciada em 30/09/2026**, base `8184f83`, árvore limpa. Atualização periódica somente da agenda/lista/calendário, estado de conexão e preservação dos formulários. Sem migração prevista. Pendentes implementação, componentes, HTTP/Chrome, cópias/preservação, atualização web, CI e commit/push.
+
 **Preparação 3A concluída em 29/09/2026**, base `42546fc`: [diagnóstico e contrato](./plano-etapa-3A.md). Chrome com duas sessões independentes confirmou lista antiga após 18 segundos/retorno à página, atualização ao recarregar e rascunho antigo protegido por 409. Inventário por recurso concluído, dados preservados; nenhuma correção funcional aplicada. **Próximo: implementar 3A.1, atualização da agenda em lista/calendário e estados de conexão**, sem alterar formulários abertos. R19 permanece aberto.
 
 **2B.8.3.2 concluída, 29/09/2026:** versão de usuários, senhas e exclusões entregue; migração 0024/API/web aplicados juntos, dados preservados. [Relatório](./homologacao-etapa-2B8-3-2.md). CI final `36571964718` aprovado: **301 backend/121 frontend**, HTTP, builds e auditorias; Chrome com duas abas aprovado. **Etapa 2B concluída. Próximo: preparação da etapa 3, começando pela atualização entre PCs (R19).** Ponto de retomada detalhado no fim deste arquivo; entregas abaixo são históricas.
@@ -818,3 +820,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Principal permanece em https://localhost:18443, revisão `0024_user_version`, zero schemas privados. Comparação com checkpoint 2B.8.3.2 confirmou cadastros/histórico/bytes preservados; nenhum volume removido. Último CI funcional `36571964718` aprovado (301 backend/121 frontend), não repetido para documentação. Probe/logs/credenciais ignorados.
 - **Próximo: implementar 3A.1**, testes controlados de leitura/visibilidade/rede e preservação de formulário, depois agenda em lista/calendário, Chrome em duas sessões, CI/atualização/preservação/publicação. Detalhar fila/painel na 3A.2 e demais recursos na 3A.3. R19 aberto; não repetir este diagnóstico nem reabrir 2B. Nenhuma decisão de negócio pendente para iniciar 3A.1.
 - Publicar preparação com commit/push e conferir árvore limpa/HEAD remoto. Instalação assistida, atalhos, backup e atualização entre servidores permanecem na etapa 5.
+
+### Início 3A.1 — 30/09/2026
+
+- Base `8184f83`, árvore limpa. Política opt-in somente para consultas da lista/calendário: intervalo 15s, falhas 60s, pausa/retorno/conexão e leitura manual. Última atualização/erro visíveis, rascunhos/versões independentes. Catálogos fora do polling e reconexão de referências suspensa durante formulário aberto. Sem migração/API nova.
+- Builds TypeScript/Vite/web aprovados. Oito testes novos e dois de formulário ampliados passaram; suíte inteira inicial teve 128/129 aprovados, um teste detectou avisos duplicados no calendário. Unificados; 14 testes dos três módulos afetados passaram em 5,66s, complemento 403 nas duas telas passou em 3,29s.
+- Chrome inicial aprovado em duas sessões independentes: criação/reagendamento/cancelamento/exclusão remotos, rascunho/409, 503/recuperação, leitura limitada e nenhuma escrita automática. Visibilidade controlada por eventos, não suspensão física. Complemento de filtros/capturas sem modal/métricas em andamento (`.data/browser-final-3a1.log`). Não repetir diagnóstico de R19. Relatório `docs/homologacao-etapa-3A-1.md`.
+- Cópias públicas/exames/fingerprints `pre-3A-1*` salvas, helper `.data/upgrade_3a1.py`; principal ainda usa web anterior, revisão 0024. Pendentes complemento Chrome/inspeção visual, HTTP, publicação/CI (301 backend/129 frontend esperados), dump completo após zero schemas, atualização apenas web e preservação. Logs/cópias/credenciais ignorados; nenhum commit desta etapa ainda.
+
+- Complemento Chrome aprovado: filtros/periodo preservados, criacao remota em 15044ms (lista) e 14983ms (calendario); oito GETs em cada cenario completo e nenhum durante 17s ocultos. Capturas claro/escuro, com e sem modal, inspecionadas. Dez grupos HTTP de versao da agenda aprovados. Proximo: publicar implementacao/CI, dump completo, atualizar web e comparar preservacao; nenhuma mudanca de API/migracao.

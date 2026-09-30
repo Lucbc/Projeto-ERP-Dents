@@ -65,7 +65,7 @@ it("calendar distinguishes loading/failure from an empty schedule and recovers",
   await act(async () => reject(failure(503, {})));
   expect((await screen.findByRole("alert")).textContent).toContain("não puderam ser verificadas");
   expect((screen.getByRole("button", { name: "Nova consulta" }) as HTMLButtonElement).disabled).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  fireEvent.click(screen.getByRole("button", { name: "Atualizar agenda" }));
   await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   expect((screen.getByRole("button", { name: "Nova consulta" }) as HTMLButtonElement).disabled).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "Nova consulta" }));

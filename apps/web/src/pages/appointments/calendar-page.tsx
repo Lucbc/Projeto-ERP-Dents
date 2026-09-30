@@ -16,6 +16,8 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useMemo, useState } from "react";
+import { useLiveQuery } from "@/hooks/use-live-query";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useForm } from "react-hook-form";
 import { Calendar, type Event, type View, Views, dateFnsLocalizer } from "react-big-calendar";
 import { z } from "zod";
@@ -248,23 +250,31 @@ export function CalendarPage() {
 
   const patientsQuery = useQuery({
     queryKey: ["patients", "calendar-form"],
+    refetchOnReconnect: !openModal,
     queryFn: () => patientService.listAll(),
   });
 
   const dentistsQuery = useQuery({
     queryKey: ["dentists", "calendar-form"],
+    refetchOnReconnect: !openModal,
     queryFn: () => dentistService.listAll(),
   });
 
   const proceduresQuery = useQuery({
     queryKey: ["procedures", "calendar-form"],
+    refetchOnReconnect: !openModal,
     queryFn: () => procedureService.listAll(),
   });
 
-  const appointmentsQuery = useQuery({
-    queryKey: ["appointments", "calendar", rangeFrom, rangeTo],
-    queryFn: () => appointmentService.list({ from: rangeFrom, to: rangeTo }),
-  });
+  const appointmentsQuery = useLiveQuery(
+    ["appointments", "calendar", rangeFrom, rangeTo],
+    (signal) => appointmentService.list({ from: rangeFrom, to: rangeTo }, signal),
+  );
+  useEffect(() => {
+    if (appointmentsQuery.accessDenied) {
+      setOpenModal(false); setEditingAppointment(null); form.reset();
+    }
+  }, [appointmentsQuery.accessDenied, form]);
 
   const availabilityReview = useAvailabilityReview(async () => {
     await dentistsQuery.refetch({ throwOnError: true });
@@ -490,6 +500,8 @@ export function CalendarPage() {
   const goNext = () => setCurrentDate((prev) => moveDateByView(prev, currentView, 1));
   const goToday = () => setCurrentDate(new Date());
 
+  if (appointmentsQuery.accessDenied) return <p role="alert">Seu acesso à agenda foi encerrado. Entre novamente.</p>;
+
   return (
     <div className="space-y-4">
       <Card>
@@ -526,14 +538,9 @@ export function CalendarPage() {
         </div>
       </Card>
 
-      <Card>
-        {appointmentsQuery.isPending ? <p role="status">Carregando agenda...</p> : appointmentsQuery.isError ? (
-          <div role="alert" className="space-y-3">
-            <p>Não foi possível carregar a agenda. As consultas não puderam ser verificadas.</p>
-            <p>{getApiErrorMessage(appointmentsQuery.error)}</p>
-            <Button disabled={appointmentsQuery.isFetching} onClick={() => void appointmentsQuery.refetch()}>Tentar novamente</Button>
-          </div>
-        ) : <div className="h-[720px]">
+      <LiveQueryStatus query={appointmentsQuery} />
+      {appointmentsQuery.data !== undefined && <Card>
+        <div className="h-[720px]">
           <Calendar
             localizer={localizer}
             events={events}
@@ -585,8 +592,8 @@ export function CalendarPage() {
               };
             }}
           />
-        </div>}
-      </Card>
+        </div>
+      </Card>}
 
       <Modal
         open={openModal}

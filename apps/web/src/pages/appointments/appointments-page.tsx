@@ -1,4 +1,6 @@
 import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
+import { useLiveQuery } from "@/hooks/use-live-query";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +13,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { EmptyState, ErrorState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
@@ -100,29 +102,37 @@ export function AppointmentsPage() {
 
   const patientsQuery = useQuery({
     queryKey: ["patients", "appointments-form"],
+    refetchOnReconnect: !openModal,
     queryFn: () => patientService.listAll(),
   });
 
   const dentistsQuery = useQuery({
     queryKey: ["dentists", "appointments-form"],
+    refetchOnReconnect: !openModal,
     queryFn: () => dentistService.listAll(),
   });
 
   const proceduresQuery = useQuery({
     queryKey: ["procedures", "appointments-form"],
+    refetchOnReconnect: !openModal,
     queryFn: () => procedureService.listAll(),
   });
 
-  const appointmentsQuery = useQuery({
-    queryKey: ["appointments", fromDate, toDate, dentistFilter, patientFilter],
-    queryFn: () =>
+  const appointmentsQuery = useLiveQuery(
+    ["appointments", fromDate, toDate, dentistFilter, patientFilter],
+    (signal) =>
       appointmentService.list({
         from: fromDate ? new Date(`${fromDate}T00:00:00`).toISOString() : undefined,
         to: toDate ? new Date(`${toDate}T23:59:59`).toISOString() : undefined,
         dentist_id: dentistFilter || undefined,
         patient_id: patientFilter || undefined,
-      }),
-  });
+      }, signal),
+  );
+  useEffect(() => {
+    if (appointmentsQuery.accessDenied) {
+      setOpenModal(false); setEditingAppointment(null); form.reset();
+    }
+  }, [appointmentsQuery.accessDenied, form]);
 
   const availabilityReview = useAvailabilityReview(async () => {
     await dentistsQuery.refetch({ throwOnError: true });
@@ -286,6 +296,8 @@ export function AppointmentsPage() {
     createMutation.mutate(values);
   };
 
+  if (appointmentsQuery.accessDenied) return <ErrorState message="Seu acesso à agenda foi encerrado. Entre novamente." />;
+
   return (
     <div className="space-y-4">
       {deletion.review && <div role="alert" className="rounded border border-amber-300 p-3 space-y-2">
@@ -320,10 +332,9 @@ export function AppointmentsPage() {
         </div>
       </Card>
 
-      {appointmentsQuery.isLoading && <LoadingState message="Carregando consultas..." />}
-      {appointmentsQuery.isError && <ErrorState message="Erro ao carregar consultas." />}
+      <LiveQueryStatus query={appointmentsQuery} />
 
-      {!appointmentsQuery.isLoading && !appointmentsQuery.isError && (
+      {appointmentsQuery.data !== undefined && (
         <Card>
           {items.length === 0 ? (
             <EmptyState message="Nenhuma consulta encontrada para o filtro informado." />

@@ -26,7 +26,7 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     const appointment={id:"44444444-4444-4444-8444-444444444444",version:1,patient_id:patientId,dentist_id:dentistId,
       patient_name:"Fictitious Patient",dentist_name:"Fictitious Dentist",start_at:"2030-01-07T13:00:00Z",
       end_at:"2030-01-07T14:00:00Z",status:"scheduled",notes:"Original",procedure_ids:[procedureId]} as Appointment;
-    vi.spyOn(appointmentService,"list").mockResolvedValue([appointment]);
+    const list = vi.spyOn(appointmentService,"list").mockResolvedValue([appointment]);
     vi.spyOn(patientService,"listAll").mockResolvedValue({items:[{id:patientId,full_name:"Fictitious Patient",active:true} as Patient],total:1});
     vi.spyOn(dentistService,"listAll").mockResolvedValue({items:[{id:dentistId,full_name:"Fictitious Dentist",active:true} as Dentist],total:1});
     vi.spyOn(procedureService,"listAll").mockResolvedValue({items:[{id:procedureId,name:"Fictitious Procedure",active:true,duration_minutes:15} as Procedure],total:1});
@@ -44,6 +44,17 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     const end=()=>container.querySelector('input[name="end_at"]') as HTMLInputElement;
     const originalEnd=end().value;
     fireEvent.change(notes(),{target:{value:"My draft"}});
+    // A background list refresh must not adopt the remote form/version/references.
+    list.mockResolvedValue([{...appointment,version:2,notes:"Remote list",end_at:"2030-01-07T14:30:00Z"}]);
+    fireEvent.click(screen.getByRole("button",{name:"Atualizar agenda",exact:true}));
+    await waitFor(()=>expect(list).toHaveBeenCalledTimes(2));
+    await waitFor(()=>expect((screen.getByRole("button",{name:"Atualizar agenda"}) as HTMLButtonElement).disabled).toBe(false));
+    expect(notes().value).toBe("My draft"); expect(end().value).toBe(originalEnd);
+    expect(procedureService.listAll).toHaveBeenCalledTimes(1);
+    list.mockRejectedValueOnce(failure(503));
+    fireEvent.click(screen.getByRole("button",{name:"Atualizar agenda",exact:true}));
+    await screen.findByText(/Não foi possível atualizar a agenda/);
+    expect(notes().value).toBe("My draft"); expect(end().value).toBe(originalEnd);
     fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
     const reload=await screen.findByRole("button",{name:/Descartar rascunho e carregar (consulta )?atual/});
     expect(notes().value).toBe("My draft");
@@ -62,4 +73,8 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     await waitFor(()=>expect(update).toHaveBeenCalledTimes(2));
     expect(update.mock.calls[1][1]).toMatchObject({version:2,procedure_ids:[],notes:"Reviewed",end_at:"2030-01-07T14:30:00.000Z"});
     await waitFor(()=>expect(container.querySelector('textarea[name="notes"]')).toBeNull());
+    list.mockRejectedValue(failure(403));
+    fireEvent.click(screen.getByRole("button",{name:"Atualizar agenda",exact:true}));
+    await screen.findByText("Seu acesso à agenda foi encerrado. Entre novamente.");
+    expect(screen.queryByText("Fictitious Patient")).toBeNull();
   });
