@@ -39,4 +39,8 @@ O ERP verifica assinatura HS256 e não usa `PyJWKClient` nem `verify_signature=F
 
 Em 01/10/2026, build API concluído; **17 testes de compatibilidade/sessões/hash legado aprovados em 85,981s**, incluindo rejeição do payload recursivo. Doze grupos HTTP de sessões aprovados, com logout, senhas, inativação/reativação, alteração de perfil e exclusão. Auditorias npm/Python revalidadas e aprovadas.
 
-Essa manutenção exige atualizar também a API, sem migração. Pendentes auditoria de imagens, atualização preservando sessão anterior, novo CI completo e fechamento. Não contar o CI interrompido como regressão aprovada.
+Correção publicada em `576509d`, HEAD remoto conferido. API principal atualizada para PyJWT 2.15.0, sem migração. Sessão criada antes da substituição foi aceita por HTTPS depois e revogada normalmente; credenciais permaneceram somente em memória no helper local `.data/upgrade_pyjwt_3a1.py`. Dez verificações gerais e comparação de dados/arquivos aprovadas novamente; revisão 0024 e zero schemas privados.
+
+O [segundo CI 36864924883](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36864924883) aprovou dependências/frontend e parou no build PostgreSQL, antes de backend/HTTP: OpenSSL 3.5.8-r0 não estava disponível. Probe descartável da mesma base confirmou Alpine 3.24 e oferta 3.5.9-r0; pins de libssl3/libcrypto3 atualizados, sem downgrade ou relaxamento da auditoria.
+
+A auditoria local também encontrou CVE-2026-46675 no libpng das imagens web/gateway/edge. Scanner classificou UNKNOWN; a [release oficial 1.6.59](https://sourceforge.net/projects/libpng/files/libpng16/1.6.59/) descreve gravidade média e correção. Pacote 1.6.59-r0 confirmado no repositório e fixado nos dois Dockerfiles Nginx. Quatro imagens construídas; pendentes auditoria, atualização/smoke/preservação, publicação, novo CI e fechamento. Não contar os CIs interrompidos como regressão aprovada.

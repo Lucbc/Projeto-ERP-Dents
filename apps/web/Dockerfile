@@ -13,8 +13,8 @@ RUN npm run build
 
 FROM nginx:stable-alpine@sha256:985220252f3863977e468f611ef118ebd01421289dd86ee1ae99cb068c3bce2b
 
-# Keep the runtime aligned with ops/nginx/Dockerfile (CVE-2026-93990).
-RUN apk add --no-cache 'libexpat=2.8.5-r0'
+# Keep runtime patches aligned with ops/nginx/Dockerfile (libexpat/libpng).
+RUN apk add --no-cache 'libexpat=2.8.5-r0' 'libpng=1.6.59-r0'
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
