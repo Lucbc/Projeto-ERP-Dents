@@ -27,11 +27,15 @@ def verify(request,email,password,token,container,ready,passed,sql,schema, *, br
                               input=json.dumps({'email':email,'password':password}),text=True,capture_output=True,
                               env={**os.environ,'NODE_EXTRA_CA_CERTS':str(root/'.data/tls/homolog/ca.crt')})
         if result.returncode:
+            for line in result.stdout.splitlines():
+                if line.startswith('Dashboard: creation observed in '):
+                    print(line, flush=True)
             # Script emits only stage labels, never credentials or request bodies.
             stages=[line for line in result.stderr.splitlines() if line.startswith(('Financial history browser failed at stage: ', 'Catalog deletion browser failed at stage: ', 'Appointment deletion browser failed at stage: ', 'Dentist deletion browser failed at stage: ', 'Patient deletion browser failed at stage: ', 'Exam deletion browser failed at stage: ', 'Availability browser failed at stage: '))]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Permissions browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Users browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Agenda refresh browser failed at stage: ')]
+            stages += [line for line in result.stderr.splitlines() if line.startswith('Dashboard refresh browser failed at stage: ')]
             raise AssertionError(stages[-1] if stages else 'Financial history browser failed; raw diagnostics suppressed')
         passed(result.stdout.strip())
     finally:

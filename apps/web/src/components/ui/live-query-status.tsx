@@ -8,9 +8,13 @@ interface LiveStatus {
   refresh: () => void;
 }
 
-export function LiveQueryStatus({ query }: { query: LiveStatus }) {
+export function LiveQueryStatus({ query, subject }: { query: LiveStatus; subject?: string }) {
   const { online, isFetching, isError, dataUpdatedAt, refresh } = query;
-  const message = !online ? "Sem conexão. A agenda pode estar desatualizada."
+  const message = subject ? (!online ? `Sem conexão. ${subject}: os dados podem estar desatualizados.`
+    : isError ? (dataUpdatedAt ? `Não foi possível atualizar ${subject}. Os dados exibidos podem estar desatualizados.`
+      : `Não foi possível carregar ${subject}.`)
+    : isFetching ? `Atualizando ${subject}...` : "Atualização automática ativa.")
+    : !online ? "Sem conexão. A agenda pode estar desatualizada."
     : isError ? (dataUpdatedAt ? "Não foi possível atualizar a agenda. Os dados exibidos podem estar desatualizados."
       : "Não foi possível carregar a agenda. As consultas não puderam ser verificadas.")
     : isFetching ? (dataUpdatedAt ? "Atualizando agenda..." : "Carregando agenda...") : "Atualização automática ativa.";
@@ -19,8 +23,8 @@ export function LiveQueryStatus({ query }: { query: LiveStatus }) {
       <p>{message}</p>
       <p className="text-sm text-muted-foreground">{dataUpdatedAt
         ? `Última atualização: ${new Date(dataUpdatedAt).toLocaleString("pt-BR")}`
-        : "Ainda não foi possível verificar as consultas."}</p>
+        : subject ? "Ainda não foi possível verificar estes dados." : "Ainda não foi possível verificar as consultas."}</p>
     </div>
-    <Button type="button" variant="outline" disabled={!online || isFetching} onClick={refresh}>Atualizar agenda</Button>
+    <Button type="button" variant="outline" disabled={!online || isFetching} onClick={refresh}>Atualizar {subject ?? "agenda"}</Button>
   </div>;
 }

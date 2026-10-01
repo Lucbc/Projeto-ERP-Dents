@@ -39,9 +39,7 @@ export default function App() {
                 <Route
                   index
                   element={
-                    <ProtectedRoute permission={{ resource: "dashboard", action: "view" }}>
-                      <DashboardPage />
-                    </ProtectedRoute>
+                    <DashboardPage />
                   }
                 />
                 <Route

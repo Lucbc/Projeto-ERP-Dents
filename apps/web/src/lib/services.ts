@@ -169,8 +169,8 @@ export const authService = {
 };
 
 export const patientService = {
-  async list(params: PaginationParams) {
-    const response = await api.get<ListResponse<Patient>>("/api/patients", { params });
+  async list(params: PaginationParams, signal?: AbortSignal) {
+    const response = await api.get<ListResponse<Patient>>("/api/patients", { params, signal });
     return response.data;
   },
   async listAll(params: ListAllParams = {}) {
@@ -198,8 +198,8 @@ export const patientService = {
 };
 
 export const dentistService = {
-  async list(params: PaginationParams) {
-    const response = await api.get<ListResponse<Dentist>>("/api/dentists", { params });
+  async list(params: PaginationParams, signal?: AbortSignal) {
+    const response = await api.get<ListResponse<Dentist>>("/api/dentists", { params, signal });
     return response.data;
   },
   async listAll(params: ListAllParams = {}) {
@@ -337,8 +337,8 @@ export const appointmentService = {
 };
 
 export const permissionService = {
-  async me() {
-    const response = await api.get<RolePermission>("/api/permissions/me");
+  async me(signal?: AbortSignal) {
+    const response = await api.get<RolePermission>("/api/permissions/me", { signal });
     return response.data;
   },
   async list() {
