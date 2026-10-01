@@ -27,4 +27,16 @@ Chrome usa uma sessão autora de requisições e outra receptora na UI, com uma 
 
 Cópias públicas/exames/fingerprints `pre-3A-1*` salvas antes da atualização; helper local `.data/upgrade_3a1.py` compara todas as colunas de negócio, incluindo versões, e bytes dos exames, sem imprimir conteúdo. Apenas `erp-dents-homolog`, dados fictícios e arquivos locais ignorados.
 
-**Pendentes:** CI completo, cópia integral após zero schemas privados, atualização web/preservação e publicação do fechamento. Principal ainda usa a imagem anterior; API/banco não requerem atualização nesta entrega.
+Implementação `f3fbbeb` publicada e HEAD remoto conferido. Cópia integral salva após zero schemas privados; somente web principal atualizada em https://localhost:18443. HTTPS 200 e dez verificações gerais aprovados. Comparação confirmou todas as linhas de negócio e bytes preservados; revisão `0024_user_version`, zero schemas privados e nenhum volume removido. API/banco mantidos.
+
+**Pendente:** resultado do [CI 36769926757](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36769926757) e fechamento documental. Não repetir validações aprovadas sem nova alteração/falha.
+
+## Manutenção de dependência identificada no CI
+
+O primeiro CI parou na auditoria Python, antes de frontend/backend/HTTP. Auditoria local confirmou PyJWT 2.14.0 afetado por CVE-2026-101918/GHSA-42vr-xj54-vc7v; npm passou. [Aviso oficial](https://github.com/jpadilla/pyjwt/security/advisories/GHSA-42vr-xj54-vc7v) e [release 2.15.0](https://github.com/jpadilla/pyjwt/releases/tag/2.15.0) confirmam a correção do tratamento de payload JSON recursivo.
+
+O ERP verifica assinatura HS256 e não usa `PyJWKClient` nem `verify_signature=False`; a inspeção não identificou o caminho pré-verificação descrito no aviso. Atualização limitada a PyJWT 2.15.0 e seus dois hashes, sem relaxar auditoria. Teste adicional verifica rejeição controlada de payload recursivo assinado com chave fictícia. Auditorias npm/Python após o ajuste aprovadas.
+
+Em 01/10/2026, build API concluído; **17 testes de compatibilidade/sessões/hash legado aprovados em 85,981s**, incluindo rejeição do payload recursivo. Doze grupos HTTP de sessões aprovados, com logout, senhas, inativação/reativação, alteração de perfil e exclusão. Auditorias npm/Python revalidadas e aprovadas.
+
+Essa manutenção exige atualizar também a API, sem migração. Pendentes auditoria de imagens, atualização preservando sessão anterior, novo CI completo e fechamento. Não contar o CI interrompido como regressão aprovada.

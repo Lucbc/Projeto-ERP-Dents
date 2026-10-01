@@ -45,3 +45,11 @@ class JwtCompatibilityTests(unittest.TestCase):
         claims = self.auth.decode_access_token(token)
         self.assertEqual(claims['jti'], 'fictitious-session')
         self.assertEqual(claims['sub'], 'fictitious-user')
+
+    def test_recursive_payload_is_rejected_without_uncaught_parser_error(self):
+        header = base64.urlsafe_b64encode(b'{"alg":"HS256","typ":"JWT"}').rstrip(b'=')
+        payload = base64.urlsafe_b64encode(b'[' * 20_000 + b']' * 20_000).rstrip(b'=')
+        body = header + b'.' + payload
+        signature = base64.urlsafe_b64encode(hmac.new(self.key.encode(), body, hashlib.sha256).digest()).rstrip(b'=')
+        token = (body + b'.' + signature).decode()
+        self.assertIsNone(self.auth.decode_access_token(token))
