@@ -59,8 +59,14 @@ Após 3A.1, detalhar atualização de indicadores/próxima consulta/lista/detalh
 
 Detalhar financeiro, cadastros, exames e permissões por recurso; preservar confirmações, rascunhos e dados sensíveis. Avaliar seletores e dependências antes de ampliar a política. R19 só se encerra após cobertura dos fluxos acordados; não declarar solução universal com a agenda apenas.
 
-## Entrega e retomada
+## Entrega da preparação (histórico)
 
 Principal permanece na revisão `0024_user_version`, sem rebuild/reinício/migração nesta preparação. Preservação comparada com checkpoint 2B.8.3.2 e limpeza dos schemas privados verificadas. Probe/logs ignorados pelo Git, sem segredos publicados. Último CI funcional `36571964718` aprovado (301 backend/121 frontend); não repetido para documentação.
 
 **Próximo: implementar 3A.1**, começando por testes de atualização e preservação de formulário. Não repetir a revisão geral nem reabrir 2B. Instalação assistida/atalhos/backup permanecem na etapa 5. Nenhuma decisão de negócio bloqueia este primeiro recorte; o intervalo inicial é uma escolha técnica a validar, não compromisso de latência já homologado.
+
+## Retomada atual — 01/10/2026
+
+**3A.1 concluída.** [Evidências](./homologacao-etapa-3A-1.md): lista/calendário com atualização em 15s sob condições de visibilidade/conexão, falhas espaçadas, estado explícito e rascunhos preservados. Chrome com duas sessões aprovado; CI `36865996602` com 302 backend/129 frontend, HTTP, builds e auditorias aprovados. API/web/infra atualizados com preservação de dados/arquivos; revisão 0024, sem migração. Manutenções de PyJWT/OpenSSL/libpng e recuperação de travamento local do Docker documentadas.
+
+**Próximo: preparar 3A.2**, detalhando indicadores, fila/próxima consulta e detalhe do dentista, mudança de dia e perda de acesso. Não ampliar polling de referências sem avaliar formulários. R19 parcial até os próximos recortes; não repetir diagnóstico geral ou validações aprovadas de 3A.1. Instalação/atalhos/backup assistidos permanecem na etapa 5.

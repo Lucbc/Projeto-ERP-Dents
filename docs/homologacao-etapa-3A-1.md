@@ -1,6 +1,8 @@
 # Homologação 3A.1 — agenda atualizada entre sessões
 
-Início em 30/09/2026 sobre `8184f83`. Sem migração ou mudança de API. Escopo: consultas da lista e calendário da agenda; painel, fila do dentista e demais recursos permanecem nos próximos recortes de R19.
+Início em 30/09/2026 sobre `8184f83`. Sem migração ou mudança do contrato HTTP. Escopo: consultas da lista e calendário da agenda; painel, fila do dentista e demais recursos permanecem nos próximos recortes de R19. Manutenção de dependências identificada durante o CI também exigiu atualização da API e das imagens de infraestrutura, descrita abaixo.
+
+**Concluída em 01/10/2026.** [CI final 36865996602](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36865996602) aprovado em 21min13s: **302 backend em 746,973s e 129 frontend**, builds, HTTP, dependências e seis imagens sem achados. Implementação `f3fbbeb`, manutenção PyJWT `576509d` e Alpine `2d02534` publicadas. Evidências intermediárias abaixo explicam as falhas corrigidas; não representam pendências atuais.
 
 ## Comportamento
 
@@ -29,7 +31,7 @@ Cópias públicas/exames/fingerprints `pre-3A-1*` salvas antes da atualização;
 
 Implementação `f3fbbeb` publicada e HEAD remoto conferido. Cópia integral salva após zero schemas privados; somente web principal atualizada em https://localhost:18443. HTTPS 200 e dez verificações gerais aprovados. Comparação confirmou todas as linhas de negócio e bytes preservados; revisão `0024_user_version`, zero schemas privados e nenhum volume removido. API/banco mantidos.
 
-**Pendente:** resultado do [CI 36769926757](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36769926757) e fechamento documental. Não repetir validações aprovadas sem nova alteração/falha.
+O [primeiro CI 36769926757](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36769926757) interrompeu a entrega na auditoria de dependências, conforme manutenção abaixo. Não repetir validações aprovadas sem nova alteração/falha.
 
 ## Manutenção de dependência identificada no CI
 
@@ -43,4 +45,16 @@ Correção publicada em `576509d`, HEAD remoto conferido. API principal atualiza
 
 O [segundo CI 36864924883](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36864924883) aprovou dependências/frontend e parou no build PostgreSQL, antes de backend/HTTP: OpenSSL 3.5.8-r0 não estava disponível. Probe descartável da mesma base confirmou Alpine 3.24 e oferta 3.5.9-r0; pins de libssl3/libcrypto3 atualizados, sem downgrade ou relaxamento da auditoria.
 
-A auditoria local também encontrou CVE-2026-46675 no libpng das imagens web/gateway/edge. Scanner classificou UNKNOWN; a [release oficial 1.6.59](https://sourceforge.net/projects/libpng/files/libpng16/1.6.59/) descreve gravidade média e correção. Pacote 1.6.59-r0 confirmado no repositório e fixado nos dois Dockerfiles Nginx. Quatro imagens construídas; pendentes auditoria, atualização/smoke/preservação, publicação, novo CI e fechamento. Não contar os CIs interrompidos como regressão aprovada.
+A auditoria local também encontrou CVE-2026-46675 no libpng das imagens web/gateway/edge. Scanner classificou UNKNOWN; a [release oficial 1.6.59](https://sourceforge.net/projects/libpng/files/libpng16/1.6.59/) descreve gravidade média e correção. Pacote 1.6.59-r0 confirmado no repositório e fixado nos dois Dockerfiles Nginx. Quatro imagens construídas e seis auditadas sem achados. Pins publicados em `2d02534`; terceiro CI `36865996602` em andamento. Não contar os CIs interrompidos como regressão aprovada; segundo CI confirmou 129 testes frontend aprovados.
+
+## Recuperação da atualização local das imagens
+
+Cópias públicas/exames/fingerprints/dump completo adicionais `pre-3A-1-infra*` salvas antes da substituição. O Docker Desktop deixou de responder a listagem/inspeção durante a troca de containers, embora respondesse versão. Memória disponível e banco encerrado com código 0; sem atribuir causa interna definitiva. Inventário do estado persistido confirmou exclusivamente containers de `erp-dents-homolog`. Comando travado encerrado, Docker Desktop reiniciado e Compose retomado; nome temporário do edge restaurado. Nenhum volume removido.
+
+Todos os serviços voltaram prontos; versões OpenSSL 3.5.9-r0/libpng 1.6.59-r0 confirmadas nos containers. Dez verificações gerais e comparação de todas as linhas/bytes aprovadas; revisão 0024 e zero schemas privados. A tentativa de validar a sessão em memória durante esta substituição foi interrompida, portanto não comprova preservação de sessão neste reinício. A prova anterior da troca de API/PyJWT foi concluída e permanece válida.
+
+`smoke_cookie_homolog.py` aprovou TLS confiável, rota SPA, flags dos cookies, CSRF de login, vínculo de sessão, rejeição de aba antiga e revogação. `smoke_exam_gateway_homolog.py` aprovou tamanho (413), concorrência (503), corpo lento (408 em 30,078s) e liberação posterior das vagas de upload; 80 verificações de saúde com oito workers, p95 2,109s. É um teste local de limites do proxy, não capacidade comprovada da clínica. Comparações finais contra ambos os checkpoints (original e infra) confirmaram dados/histórico/bytes preservados.
+
+## Fechamento e próximo passo
+
+Terceiro CI aprovado integralmente; nenhum critério de aceite pendente para 3A.1. Principal disponível em https://localhost:18443, revisão `0024_user_version`, sem migração e zero schemas privados. Publicar este fechamento documental com árvore limpa/HEAD remoto conferidos. Próximo: preparar 3A.2 (painel/fila do dentista), mantendo R19 parcial para os recursos ainda não cobertos. Não repetir os testes aprovados sem mudança/falha nova; instalação assistida e capacidade da clínica permanecem nas etapas 5 e 6.
