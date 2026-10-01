@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**Preparação 3A.2 concluída em 01/10/2026**, base `ac60b3d`: [diagnóstico, contrato e aceite](./plano-etapa-3A-2.md). Inspeção de painel/consulta, datas, permissões e infraestrutura compartilhada; sem alteração funcional, migração, rebuild ou novos testes de runtime. **Próximo: implementar 3A.2.1 (painel, indicadores independentes, autorização e virada do dia)**; depois 3A.2.2 (próxima consulta, pacientes/detalhe). Semântica atual preservada; R19 parcial. Ponto de retomada no fim deste arquivo.
+
 **3A.1 concluída em 01/10/2026.** Agenda/lista/calendário atualizados entre sessões, com estado de conexão e rascunhos preservados. [Relatório](./homologacao-etapa-3A-1.md): componentes/HTTP/Chrome aprovados e **CI `36865996602` aprovado (302 backend/129 frontend)**, builds, dependências e seis imagens sem achados. Homologação atualizada; dados/arquivos preservados, revisão 0024, sem migração. Implementação `f3fbbeb`, PyJWT `576509d`, manutenção Alpine `2d02534`. **Próximo: preparar 3A.2, painel e fila do dentista.** R19 parcial; detalhes de recuperação do Docker e ponto de retomada no fim deste arquivo. Registros seguintes de entregas anteriores são históricos.
 
 **Preparação 3A concluída em 29/09/2026**, base `42546fc`: [diagnóstico e contrato](./plano-etapa-3A.md). Chrome com duas sessões independentes confirmou lista antiga após 18 segundos/retorno à página, atualização ao recarregar e rascunho antigo protegido por 409. Inventário por recurso concluído, dados preservados; nenhuma correção funcional aplicada. **Próximo: implementar 3A.1, atualização da agenda em lista/calendário e estados de conexão**, sem alterar formulários abertos. R19 permanece aberto.
@@ -846,7 +848,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 - HTTPS/cookies/CSRF/sessões aprovados; proxy aprovou tamanho/concorrência/tempo/liberação de upload, saúde com 80 requisições e oito workers (p95 2,109s, corpo lento 30,078s), sem alegar carga da clínica. Comparações finais com checkpoints original e infra aprovadas. **Falta somente CI `36865996602` e fechamento documental**; não repetir testes locais aprovados. Próximo após conclusão: preparar 3A.2 (painel/fila do dentista), conforme contrato, sem iniciar antes do CI.
 
-### Ponto de retomada atual — 3A.1 concluída em 01/10/2026
+### Ponto de retomada — 3A.1 concluída em 01/10/2026
 
 - Implementação `f3fbbeb`, PyJWT `576509d`, manutenção Alpine `2d02534` publicados e HEAD remoto conferido. **CI final `36865996602` aprovado em 21min13s: 302 backend em 746,973s e 129 frontend**, builds, regressões HTTP, dependências e seis imagens sem achados. Primeiro CI parou em PyJWT, segundo no pin OpenSSL indisponível; ambos corrigidos, não contados como aprovação. Relatório `docs/homologacao-etapa-3A-1.md`.
 - Agenda/lista/calendário recebem leitura a cada 15s quando visíveis/conectados, falhas espaçadas em 60s, retorno/reconexão/manual e última atualização visível. Erro não vira lista vazia, 401/403 oculta dados e interrompe leituras. Rascunho/versão/confirmação independentes; referências sem polling/reconexão durante edição e nenhuma escrita automática. Política opt-in, sem atualização universal dos demais recursos.
@@ -855,3 +857,16 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Docker travou durante a substituição de containers; inventário confirmou somente homologação. Reinício do Desktop e retomada Compose recuperaram os serviços, com preservação comprovada depois. Não inferir causa definitiva nem aprovação do teste de sessão interrompido nesse reinício. Teste concluído da substituição anterior da API preservou a sessão e confirmou revogação.
 - **Próximo: preparar 3A.2**, detalhar painel e fila do dentista: indicadores/próxima consulta/lista/detalhe, mudança de dia, perfis/erros/perda de acesso. Usar `docs/plano-etapa-3A.md`, sem repetir revisão geral ou testes aprovados. R19 permanece parcial; demais telas na 3A.3, instalação/atalhos/backup assistidos na etapa 5. Nenhuma decisão de negócio bloqueia a preparação.
 - Publicar fechamento documental posterior ao CI, conferir árvore limpa e HEAD igual ao remoto. Outra sessão deve partir deste ponto.
+
+### Início da preparação 3A.2 — 01/10/2026
+
+- Base `ac60b3d`, árvore limpa. Inspecionar painel, próxima consulta, pacientes/detalhe, datas e autorização; definir recortes e aceite antes de implementar. Sem alteração funcional ou migração nesta preparação. Pendentes contrato, validação documental e publicação do ponto de retomada.
+
+### Ponto de retomada atual — preparação 3A.2 concluída em 01/10/2026
+
+- Base `ac60b3d`, árvore inicialmente limpa. Contrato em `docs/plano-etapa-3A-2.md`; inspeção de UI, serviços, infraestrutura de consultas, rotas, casos de uso, repositório e permissões. Somente documentação, sem prova dinâmica nova de API/banco/Chrome; não repetir probe genérico ou suíte aprovada da 3A.1.
+- Painel: três leituras independentes sem intervalo, falha de uma substitui tudo, chave do dia constante. Contagem inclui passadas/canceladas; preservar conjunto e corrigir título/status. Dia continua local do navegador neste recorte, com chave por período e detecção de virada/retorno. Fuso central da clínica terá contrato próprio.
+- Consulta: próxima/lista/detalhe independentes, detalhe condicionado à seleção; lista global de pacientes, próximas do dentista a partir do horário atual excluindo canceladas. Preservar regras, busca/seleção e limite atual de 100; não ampliar acesso clínico ou rota, atualmente exclusiva de dentista. Tratar ausência de detalhe e respostas atrasadas sem exibir dados do paciente anterior.
+- Permissão da rota do painel é diferente das permissões dos GETs. Revalidação local de permissões nesses recortes deve cobrir revogação de `dashboard.view` mesmo quando os GETs continuam permitidos. Atualização global de permissões permanece na 3A.3. Adaptar infraestrutura opt-in com habilitação/textos/cancelamento/erro sem regressão da agenda ou ciclos entre consultas irmãs.
+- **Próximo: implementar 3A.2.1**, testes de indicadores independentes, autorização e virada do dia, depois Chrome/HTTP/CI e atualização/preservação/publicação. Só depois 3A.2.2, consulta do dentista. Critérios detalhados no contrato; nenhuma decisão de negócio bloqueia 3A.2.1. R19 parcial; instalação assistida permanece na etapa 5.
+- Principal não alterado nesta preparação; último CI funcional `36865996602` aprovado (302 backend/129 frontend), não repetido para documentação. Validar referências/diff, publicar preparação com commit/push e conferir árvore limpa/HEAD remoto. Nenhum segredo ou dado local incluído.
