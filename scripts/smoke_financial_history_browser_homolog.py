@@ -36,6 +36,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema, *, br
             stages += [line for line in result.stderr.splitlines() if line.startswith('Users browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Agenda refresh browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Dashboard refresh browser failed at stage: ')]
+            stages += [line for line in result.stderr.splitlines() if line.startswith('Consultation refresh browser failed at stage: ')]
             raise AssertionError(stages[-1] if stages else 'Financial history browser failed; raw diagnostics suppressed')
         passed(result.stdout.strip())
     finally:

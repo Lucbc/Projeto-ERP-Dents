@@ -95,7 +95,6 @@ export default function App() {
                   element={
                     <ProtectedRoute
                       allowedRoles={["dentist"]}
-                      permission={{ resource: "consultations", action: "view" }}
                     >
                       <ConsultationPage />
                     </ProtectedRoute>

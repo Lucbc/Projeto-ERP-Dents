@@ -352,22 +352,22 @@ export const permissionService = {
 };
 
 export const consultationService = {
-  async next(dentist_id?: string) {
+  async next(dentist_id?: string, signal?: AbortSignal) {
     const response = await api.get<Appointment | null>("/api/consultations/next", {
-      params: { dentist_id },
+      params: { dentist_id }, signal,
     });
     return response.data;
   },
-  async listPatients(params: ConsultationFilters) {
+  async listPatients(params: ConsultationFilters, signal?: AbortSignal) {
     const response = await api.get<ConsultationPatientListResponse>("/api/consultations/patients", {
-      params,
+      params, signal,
     });
     return response.data;
   },
-  async getPatientDetail(patientId: string, dentist_id?: string) {
+  async getPatientDetail(patientId: string, dentist_id?: string, signal?: AbortSignal) {
     const response = await api.get<ConsultationPatientDetailResponse>(
       `/api/consultations/patients/${patientId}`,
-      { params: { dentist_id } },
+      { params: { dentist_id }, signal },
     );
     return response.data;
   },
