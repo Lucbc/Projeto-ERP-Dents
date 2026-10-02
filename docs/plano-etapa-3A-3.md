@@ -60,6 +60,12 @@ Cada linha é um recorte com implementação, testes apropriados, homologação,
 
 O primeiro recorte deve definir a interface de estados de acesso usada no segundo. Não declarar revalidação universal concluída só por trocar `useQuery` no hook. Durante a transição, registrar quais telas já consomem o novo estado; o aceite de 3A.3.1 exige ambos os recortes e regressões de agenda/painel/consulta.
 
+### Ajuste de integração — 02/10/2026
+
+Ao iniciar 3A.3.1.1, a inspeção confirmou que ativar o novo agendamento na chave consumida pelo hook legado provocaria desmontagem de formulários nos guards atuais em falha transitória. Por isso, **3A.3.1.1 entrega a fundação testada, sem montar o provider no aplicativo**. O aceite desta fundação é componente/build/regressão/CI; Chrome/HTTP de ativação, atualização da homologação e preservação correspondente ficam na 3A.3.1.2, quando guards/menu/ações e leitores de painel/consulta serão migrados juntos. Não adicionar provider ao `App` isoladamente nem declarar permissões globais atualizadas após esta fundação.
+
+O novo contrato expõe `status` (`anonymous`, `checking`, `verified`, `unavailable`, `denied`, `identity-mismatch`), matriz/versão apenas quando verificadas, conectividade, leitura em andamento, instante da leitura e ação manual. Consumidores só leem contexto. Perfil divergente não concede autoridade: a integração deverá revalidar identidade antes de aceitar a matriz. 401 continua responsabilidade do transporte global; o teste isolado do leitor não prova logout real.
+
 ## Verificação exigida em cada implementação
 
 - **Componentes:** relógio controlado para intervalo/pausa/retorno, resposta lenta e sobreposição; falha inicial/parcial, 401/403/404 aplicáveis, troca de chave/sessão, rascunho/versão/confirmação estáveis. Com múltiplos consumidores, medir leituras efetivas, não só instâncias do hook.

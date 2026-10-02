@@ -34,6 +34,8 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
+**3A.3.1.1 em andamento em 02/10/2026**, base `249b605`: fundação do leitor compartilhado, inicialmente sem montagem no aplicativo. Inspeção confirmou que ativar polling no hook legado faria guards desmontarem rascunhos em falha transitória; ativação e migração coordenada de painel/consulta ficam na 3A.3.1.2. Implementar/testar contexto único, estados de autoridade e cancelamento antes dessa integração. Sem alteração de API/banco.
+
 **Preparação 3A.3 concluída em 02/10/2026**, base `e7a67b5`: [inventário, contrato e aceite](./plano-etapa-3A-3.md). Inspeção de permissões/guards/sessão, financeiro, cadastros, usuários/matrizes, exames e seletores; recortes pequenos definidos. Somente documentação, sem alteração funcional, migração, reinício ou nova homologação de runtime. **Próximo: implementar 3A.3.1.1, leitor compartilhado de permissões efetivas**, depois integração de menu/rota/ações na 3A.3.1.2. R19 permanece parcial.
 
 **3A.2.2 e 3A.2 concluídas em 02/10/2026**, implementação `2500b01` e manutenção `f40bde9` publicadas. Próxima consulta/lista/detalhe atualizados, busca/seleção preservadas, 404/manual e perda de acesso tratados. **CI final `37050828988` aprovado: 302 backend/153 frontend**, HTTP, builds, dependências e seis imagens sem achados. Chrome aprovado, homologação atualizada e dados/arquivos preservados, sem migração. [Relatório](./homologacao-etapa-3A-2-2.md). **Próximo: preparar 3A.3, demais telas e permissões efetivas.** Registros anteriores abaixo são históricos; ponto de retomada atual no fim deste arquivo.
@@ -939,3 +941,10 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - **Próximo: implementar 3A.3.1.1**, conforme contrato novo: testes com múltiplos consumidores e todos os perfis, cancelamento por sessão, revogação/falha/recuperação, fonte de agendamento única e compatibilidade com painel/consulta. Não declarar revalidação universal entregue antes da integração 3A.3.1.2 e seus testes de rascunho/rota/ações.
 - R19 permanece parcial. Preservar regras clínicas, bloqueio de consultas futuras afetadas, versões/fingerprints/idempotência e limites de listagem; paginação completa/datas/instalação assistida ficam nos recortes próprios. Nenhuma decisão de negócio bloqueia o início.
 - Publicar preparação documental e conferir árvore limpa/HEAD remoto. Outra sessão deve partir deste contrato, sem refazer revisão geral nem homologação da 3A.2.2.
+
+### Início e validação local 3A.3.1.1 — 02/10/2026
+
+- Base `249b605`, árvore limpa. Implementado provider/leitor compartilhado em `use-effective-permissions.tsx` e 16 testes novos. Uma fonte de leitura por provider, consumidores de contexto, todos os perfis verificados, estados de autoridade explícitos, matriz antiga oculta em erro/perfil divergente, cancelamento e negação por chave exata. Nenhuma escrita/API/migração.
+- Ajuste de fronteira documentado no contrato: provider **não montado no aplicativo**. Ativá-lo antes de corrigir guards faria erro transitório desmontar rascunhos; integração e migração coordenada dos leitores legados/painel/consulta ficam na 3A.3.1.2. Não declarar atualização universal nem criar agendadores paralelos.
+- 16 testes focados e suíte completa **169 testes/25 arquivos em 32,08s** aprovados, TypeScript/Vite aprovados (aviso existente de bundle mantido). Fixtures e respostas simuladas não provam logout HTTP. Nenhum teste novo de banco/Chrome, rebuild/reinício da homologação; runtime não alterado por esta fundação. Relatório `docs/homologacao-etapa-3A-3-1-1.md`.
+- Próximo: publicar implementação e acompanhar CI, depois fechamento documental. Só após aceite iniciar 3A.3.1.2, barreiras que preservam rascunhos transitórios e limpam dados na revogação confirmada, menu/rota/ações e identidade divergente. Não repetir validações locais aprovadas sem nova mudança/falha.
