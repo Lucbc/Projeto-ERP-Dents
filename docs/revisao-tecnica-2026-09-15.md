@@ -281,6 +281,8 @@ Formulários enviam o registro inteiro; casos de uso também mesclam e regravam 
 
 ### R19 — P1 — Uma estação não acompanha automaticamente as mudanças das outras
 
+**Preparação 3A.3 — 02/10/2026:** inspeção mapeou permissões compartilhadas/guards, financeiro, cadastros, usuários/matrizes, exames e referências de formulários. [Contrato e recortes](./plano-etapa-3A-3.md): começar pelo leitor compartilhado de permissões, integrar menu/rota/ações e depois atualizar recursos sem substituir snapshots. Somente documentação, sem correção funcional ou nova prova de runtime. R19 permanece parcial.
+
 **Avanço parcial — 3A.2.2 concluída em 02/10/2026:** consulta do dentista atualiza próxima/lista/detalhe preservando busca/seleção; 404 oculta detalhe até verificação manual, perda de acesso bloqueia dados e respostas antigas são canceladas. [Evidências](./homologacao-etapa-3A-2-2.md): CI final 302 backend/153 frontend, HTTP/Chrome, seis imagens sem achados e preservação aprovados. Encerra 3A.2; próximo é preparar 3A.3 para financeiro/cadastros/exames e permissões efetivas. Limite de 100 pacientes permanece; não é atualização universal ou ensaio de carga. Registros abaixo são históricos.
 
 **Avanço parcial — 3A.2.1, fechamento em 02/10/2026:** painel atualiza indicadores independentemente, revalida permissões e acompanha virada do dia local sem dados do período anterior. [Evidências](./homologacao-etapa-3A-2-1.md): CI 302 backend/141 frontend, HTTP/Chrome e preservação aprovados. Próximo: consulta do dentista (3A.2.2); demais recursos e atualização universal de permissões continuam pendentes. Registros anteriores abaixo são históricos.
