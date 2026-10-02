@@ -70,8 +70,14 @@ Somente documentação. Nenhum rebuild, reinício ou acesso a dados necessário;
 
 **Próximo: implementar 3A.2.1**, começando por testes dos estados independentes, autorização e virada do dia. Nenhuma decisão de negócio bloqueia esse recorte: semântica atual preservada e escolhas técnicas acima explícitas. R19 continua parcial; não declarar painel/fila corrigidos antes de implementação e aceite. Instalação assistida/atalhos/backup permanecem na etapa 5.
 
-## Retomada atual — 02/10/2026
+## Retomada anterior — 02/10/2026
 
 **3A.2.1 concluída**, implementação `558a3fd`; [homologação](./homologacao-etapa-3A-2-1.md). CI `36907712732` aprovado em 01/10 (302 backend/141 frontend, HTTP, builds e auditorias), Chrome com duas sessões e datas controladas em dois fusos aprovados. Web atualizada, dados/arquivos preservados, revisão 0024 sem migração. Fechamento documental em 02/10.
 
 **Próximo: implementar 3A.2.2**, usando o contrato e aceite acima. Preservar busca/seleção, escopo clínico e autorização; distinguir ausência de paciente de falha transitória. Não repetir diagnóstico geral ou testes aprovados do painel sem mudança/falha. R19 parcial, instalação assistida na etapa 5.
+
+## Retomada atual — 3A.2 concluída em 02/10/2026
+
+**3A.2.2 concluída**, implementação `2500b01` e manutenção de imagens `f40bde9`. [Homologação](./homologacao-etapa-3A-2-2.md): CI final `37050828988` aprovado, 302 backend/153 frontend, HTTP, builds e seis imagens sem achados. Chrome verificou atualização independente, busca/seleção preservadas, 404/manual e perda de acesso. Homologação atualizada, dados/arquivos preservados, revisão 0024 sem migração. Regras clínicas e limite de 100 pacientes mantidos.
+
+Painel e consulta encerram 3A.2. **Próximo: preparar 3A.3**, conforme [plano geral](./plano-etapa-3A.md), dividindo financeiro/cadastros/exames/permissões efetivas em recortes verificáveis. R19 permanece parcial; não repetir testes aprovados ou ampliar automaticamente a política para todos os formulários. Instalação assistida permanece na etapa 5.

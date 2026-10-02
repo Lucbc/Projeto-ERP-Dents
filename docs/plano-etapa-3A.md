@@ -74,3 +74,9 @@ Principal permanece na revisão `0024_user_version`, sem rebuild/reinício/migra
 **Preparação 3A.2 concluída em 01/10/2026:** [contrato detalhado](./plano-etapa-3A-2.md), baseado em inspeção, sem mudança funcional ou nova homologação de runtime. Próximo: **3A.2.1**, painel, indicadores independentes, autorização e virada do dia. Depois **3A.2.2**, próxima consulta, pacientes/detalhe. Semântica e acesso atuais preservados; revalidar permissões nas telas abrangidas sem alegar atualização universal.
 
 **Retomada em 02/10/2026: 3A.2.1 concluída.** [Painel homologado](./homologacao-etapa-3A-2-1.md), CI `36907712732` aprovado (302 backend/141 frontend), HTTP/Chrome e preservação aprovados. **Próximo: implementar 3A.2.2, consulta do dentista**, conforme contrato detalhado. R19 continua parcial.
+
+## Retomada atual — 3A.2 concluída em 02/10/2026
+
+**3A.2.2 concluída**, encerrando painel/consulta. [Evidências](./homologacao-etapa-3A-2-2.md): CI `37050828988` aprovado (302 backend/153 frontend), HTTP/Chrome, auditorias e preservação aprovados. Próxima/lista/detalhe atualizados sem trocar busca/seleção, 404/manual e revogação tratados. Web/proxies/ClamAV atualizados, revisão 0024 sem migração; manutenção pcre2/nghttp2 registrada.
+
+**Próximo: preparar 3A.3, demais telas e permissões efetivas.** Inventariar financeiro/cadastros/exames, chaves, seletores e formulários; definir subetapas e critérios por recurso antes de implementar. Preservar rascunhos, confirmações, versões e dados sensíveis. R19 permanece parcial; não repetir diagnóstico geral ou validações aprovadas de agenda/painel/consulta. Instalação assistida continua na etapa 5.

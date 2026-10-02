@@ -38,4 +38,10 @@ Implementação `2500b01` publicada, HEAD remoto conferido. [CI 37022048989](htt
 - Web/proxies mantêm correções anteriores e digest-base. Novo `ops/clamav/Dockerfile` mantém digest-base, entrypoint e caminhos de dados; os três Compose passam a construir essa imagem corrigida. Nenhuma alteração de política de detecção, saúde, assinatura ou volumes.
 - Quatro imagens construídas; auditoria local final sem achados nas seis imagens. Somente web/gateway/edge/ClamAV atualizados na homologação. Saúde/recarga do antivírus, dez verificações gerais, HTTPS/cookies/CSRF/sessões, regressões de exames e limites do proxy aprovados. Proxy: 80 requisições/oito workers, p95 2,094s, corpo lento 30,047s; não ensaio de carga da clínica.
 - Cópias públicas/exames/fingerprints/dump integral `pre-3A-2-2-infra*`, helper local `.data/upgrade_infra_3a22.py`. Comparação final confirmou linhas de negócio/histórico/bytes preservados. Revisão `0024_user_version`, zero schemas privados, nenhum volume removido. Logs e cópias ignorados pelo Git.
-- Pendente publicar manutenção, acompanhar novo CI completo e fechar documentação. Não iniciar 3A.3 antes do aceite final.
+- Manutenção publicada em `f40bde9`, HEAD remoto conferido. [CI final 37050828988](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/37050828988) aprovado em 02/10/2026, 21min02s: **302 backend em 718,066s/153 frontend**, builds, regressões HTTP e auditorias aprovados; seis imagens sem achados.
+
+## Fechamento — 02/10/2026
+
+Critérios de 3A.2.2 verificados nas camadas acima; 3A.2 concluída com painel e consulta do dentista. Homologação em `https://localhost:18443`, HTTPS confiável aprovado, dados/arquivos preservados e nenhuma migração. Evidência de interface vem dos testes de componentes e Chrome; evidência HTTP e auditoria não substituem ensaio de usabilidade/capacidade da clínica. Aviso de bundle >500kB e limite de 100 pacientes permanecem.
+
+Próximo: preparar 3A.3, demais telas e permissões efetivas, com contrato e aceite por recurso. R19 continua parcial; não iniciar atualização universal nem alterar formulários abertos sem avaliar suas dependências. Fechamento documental publicado separadamente após o CI, sem repetir runtime aprovado.
