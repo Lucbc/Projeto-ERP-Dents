@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**3A.2.2 iniciada em 02/10/2026**, base `e78a0a3`, árvore limpa. Atualizar próxima consulta, lista/busca e detalhe do dentista, preservando seleção/escopo e tratando ausência/perda de acesso. Contrato em `docs/plano-etapa-3A-2.md`. Pendentes implementação, componentes/HTTP/Chrome, CI, cópias/atualização/preservação e publicação. Sem migração prevista.
+**3A.2.2 em validação final em 02/10/2026**, implementação `2500b01` publicada. Próxima consulta/lista/detalhe atualizados, busca/seleção preservadas, 404/manual e perda de acesso tratados. 153 testes frontend, seis grupos HTTP e Chrome aprovados. Web principal atualizada, dez verificações gerais e preservação aprovados. Sem migração. CI `37022048989` aprovou 302 backend/153 frontend e HTTP, mas falhou na auditoria de imagens: pcre2/nghttp2-libs. Correção de dependências em andamento; não iniciar 3A.3 antes do aceite final. [Relatório](./homologacao-etapa-3A-2-2.md).
 
 **3A.2.1 concluída, fechamento em 02/10/2026**, implementação `558a3fd` publicada. Painel com indicadores independentes, autorização e virada do dia. **CI `36907712732` aprovado: 302 backend/141 frontend**, HTTP, builds e seis imagens sem achados; Chrome aprovado. Somente web principal atualizada em 01/10, HTTPS 200 e preservação verificados, revisão 0024/zero schemas. [Relatório](./homologacao-etapa-3A-2-1.md). **Próximo: implementar 3A.2.2, próxima consulta e pacientes/detalhe do dentista.** Registros seguintes são históricos; ponto de retomada no fim deste arquivo.
 
@@ -903,3 +903,12 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 - Chrome privado em andamento (`.data/browser-3a22.log`). Cópias públicas/exames/fingerprints `pre-3A-2-2*` salvas, helper `.data/upgrade_3a22.py`. Pendentes Chrome/capturas, revisão/publicação/CI (302 backend/153 frontend esperados), dump integral após zero schemas, atualização somente web/preservação/fechamento. Nenhum commit desta subetapa ainda.
 
 - Chrome aprovado: admin autor/dentista receptor, detalhe atualizado em 15229ms, 19 GETs clínicos no cenário completo, nenhuma escrita automática. Busca/seleção, reagendamento/cancelamento/exclusão, 503/recuperação, pausa por 17s ocultos, 404/manual sem dados antigos e revogação verificados. Capturas claro/escuro inspecionadas. Relatório `docs/homologacao-etapa-3A-2-2.md`. Publicar implementação, CI, dump integral, atualizar apenas web e verificar preservação; não repetir testes aprovados.
+
+- Implementação `2500b01` publicada e HEAD remoto conferido. CI `37022048989` em andamento. Dump integral salvo após zero schemas; somente web principal atualizada. Dez verificações gerais e comparação de linhas de negócio/histórico/bytes aprovadas, nenhum volume removido ou migração nova. Falta CI e fechamento documental; não repetir validações aprovadas.
+
+### Ponto de retomada — manutenção de segurança 3A.2.2, 02/10/2026
+
+- CI `37022048989` aprovou 302 backend em 729,534s/153 frontend, builds e HTTP, mas falhou em imagens: pcre2/nghttp2-libs, reproduzido localmente. Fixadas versões 10.49-r0/1.70.0-r0 em web/proxies e nova imagem derivada ClamAV; três Compose alinhados. Digest-base, inicialização, política de saúde/assinaturas e volumes preservados, nenhum critério do auditor relaxado.
+- Imagens construídas e auditoria local das seis imagens sem achados. Web/gateway/edge/ClamAV atualizados. Saúde/recarga do antivírus, dez verificações gerais, HTTPS/cookies/CSRF/sessões, exames e proxy aprovados. Logs `.data/3a22-security-*.log`; proxy 80 requisições/oito workers, p95 2,094s/corpo lento 30,047s. Não repetir frontend/Chrome já aprovados: mudanças apenas nos pacotes de runtime.
+- Cópias/fingerprints/dumps `pre-3A-2-2-infra*`, helper `.data/upgrade_infra_3a22.py`; comparação final aprovada, revisão 0024, zero schemas privados e nenhum volume removido. Retomada confirmou logs completos e preservação após perda do identificador da sessão do terminal; nenhum processo de teste permaneceu ativo.
+- **Próximo: publicar manutenção e acompanhar novo CI**, depois fechamento documental de 3A.2.2/3A.2 e preparação 3A.3. Não considerar o primeiro CI integralmente aprovado nem reabrir diagnóstico geral. Relatório `docs/homologacao-etapa-3A-2-2.md`.

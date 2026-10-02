@@ -26,8 +26,16 @@ Primeira execução focada teve 25/32 aprovados: seis expectativas precisavam ag
 
 ## Entrega e pendências
 
-Cópias públicas/exames/fingerprints `pre-3A-2-2*` salvas, helper `.data/upgrade_3a22.py`; dados exclusivamente fictícios em `erp-dents-homolog`. Principal ainda não atualizado; revisão 0024. Logs/capturas/credenciais ignorados pelo Git.
+Cópias públicas/exames/fingerprints e dump integral `pre-3A-2-2*` salvos, helper `.data/upgrade_3a22.py`, dump após zero schemas; dados exclusivamente fictícios em `erp-dents-homolog`. Somente web principal atualizada, dez verificações gerais aprovadas e comparação confirmou linhas de negócio/histórico/bytes preservados. Sem migração, revisão 0024 e nenhum volume removido. Logs/capturas/credenciais ignorados pelo Git.
 
 Chrome usa duas sessões no mesmo computador e eventos controlados de visibilidade; massa de dois pacientes/consultas, não ensaio físico de estações/capacidade da clínica. Métrica conta leituras clínicas no cenário com várias ações, não requisições por intervalo estável.
 
-Pendentes publicação, CI completo, dump integral após zero schemas, atualização web, smoke/preservação e fechamento documental. Não iniciar 3A.3 antes de concluir os critérios deste recorte.
+Implementação `2500b01` publicada, HEAD remoto conferido. [CI 37022048989](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/37022048989) aprovou 302 testes backend em 729,534s, 153 frontend, builds e regressões HTTP, mas falhou na auditoria das imagens. Não contar essa execução como aprovação integral.
+
+### Manutenção de segurança — 02/10/2026
+
+- Auditoria local reproduziu dois achados em web/gateway/edge/ClamAV: `pcre2` 10.48-r0 (CVE-2026-103111, alta) e `nghttp2-libs` 1.69.0-r0 (CVE-2026-58055, média). Repositório Alpine da imagem confirmou disponibilidade das correções 10.49-r0/1.70.0-r0; versões fixadas nos Dockerfiles, sem exceção no auditor.
+- Web/proxies mantêm correções anteriores e digest-base. Novo `ops/clamav/Dockerfile` mantém digest-base, entrypoint e caminhos de dados; os três Compose passam a construir essa imagem corrigida. Nenhuma alteração de política de detecção, saúde, assinatura ou volumes.
+- Quatro imagens construídas; auditoria local final sem achados nas seis imagens. Somente web/gateway/edge/ClamAV atualizados na homologação. Saúde/recarga do antivírus, dez verificações gerais, HTTPS/cookies/CSRF/sessões, regressões de exames e limites do proxy aprovados. Proxy: 80 requisições/oito workers, p95 2,094s, corpo lento 30,047s; não ensaio de carga da clínica.
+- Cópias públicas/exames/fingerprints/dump integral `pre-3A-2-2-infra*`, helper local `.data/upgrade_infra_3a22.py`. Comparação final confirmou linhas de negócio/histórico/bytes preservados. Revisão `0024_user_version`, zero schemas privados, nenhum volume removido. Logs e cópias ignorados pelo Git.
+- Pendente publicar manutenção, acompanhar novo CI completo e fechar documentação. Não iniciar 3A.3 antes do aceite final.
