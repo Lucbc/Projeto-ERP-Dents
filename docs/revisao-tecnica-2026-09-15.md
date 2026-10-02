@@ -281,6 +281,8 @@ Formulários enviam o registro inteiro; casos de uso também mesclam e regravam 
 
 ### R19 — P1 — Uma estação não acompanha automaticamente as mudanças das outras
 
+**Avanço parcial — 3A.2.1, fechamento em 02/10/2026:** painel atualiza indicadores independentemente, revalida permissões e acompanha virada do dia local sem dados do período anterior. [Evidências](./homologacao-etapa-3A-2-1.md): CI 302 backend/141 frontend, HTTP/Chrome e preservação aprovados. Próximo: consulta do dentista (3A.2.2); demais recursos e atualização universal de permissões continuam pendentes. Registros anteriores abaixo são históricos.
+
 **Tratado parcialmente em 01/10/2026 — 3A.1:** agenda/lista/calendário atualizados periodicamente quando visíveis/conectados, com aviso de falha/última atualização, pausa/retorno e rascunhos/versões preservados. [Homologação](./homologacao-etapa-3A-1.md): Chrome em duas sessões e CI final com 302 backend/129 frontend aprovados; dados/arquivos preservados. Não é cobertura universal nem ensaio de carga/estações físicas. Próximo: painel e fila do dentista (3A.2), depois demais recursos (3A.3). Diagnóstico abaixo é histórico.
 
 **Preparação 3A, 29/09/2026:** Chrome com duas sessões independentes confirmou ausência de leitura automática da lista de usuários após alteração remota durante 18s/retorno à página; reload recebeu dados atuais. Versão antiga continuou recebendo 409 com rascunho preservado. [Inventário, limites e contrato](./plano-etapa-3A.md): começar pela agenda/lista/calendário, com atualização e estado de conexão sem substituir formulário. Nenhuma correção funcional nesta preparação; R19 permanece aberto. Agenda e demais recursos foram inspecionados, não homologados individualmente neste diagnóstico.

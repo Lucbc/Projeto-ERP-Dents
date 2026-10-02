@@ -72,3 +72,5 @@ Principal permanece na revisão `0024_user_version`, sem rebuild/reinício/migra
 **Próximo: preparar 3A.2**, detalhando indicadores, fila/próxima consulta e detalhe do dentista, mudança de dia e perda de acesso. Não ampliar polling de referências sem avaliar formulários. R19 parcial até os próximos recortes; não repetir diagnóstico geral ou validações aprovadas de 3A.1. Instalação/atalhos/backup assistidos permanecem na etapa 5.
 
 **Preparação 3A.2 concluída em 01/10/2026:** [contrato detalhado](./plano-etapa-3A-2.md), baseado em inspeção, sem mudança funcional ou nova homologação de runtime. Próximo: **3A.2.1**, painel, indicadores independentes, autorização e virada do dia. Depois **3A.2.2**, próxima consulta, pacientes/detalhe. Semântica e acesso atuais preservados; revalidar permissões nas telas abrangidas sem alegar atualização universal.
+
+**Retomada em 02/10/2026: 3A.2.1 concluída.** [Painel homologado](./homologacao-etapa-3A-2-1.md), CI `36907712732` aprovado (302 backend/141 frontend), HTTP/Chrome e preservação aprovados. **Próximo: implementar 3A.2.2, consulta do dentista**, conforme contrato detalhado. R19 continua parcial.

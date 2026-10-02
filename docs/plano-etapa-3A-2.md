@@ -64,8 +64,14 @@ Depois do fechamento de 3A.2.1. Rota permanece restrita a dentista.
 - Chrome com sessão dentista receptora e sessão administrativa autora: mudança de cadastro/próxima consulta refletida nas seções, seleção e busca estáveis, exclusão do paciente sem dados remanescentes, erro/recuperação e perda de acesso. Massa pequena explicitada, sem promessa de capacidade da clínica.
 - Regressão apropriada de 3A.2.1/agenda, CI, cópias/atualização/preservação/publicação e fechamento. Sem migração prevista.
 
-## Entrega desta preparação e retomada
+## Entrega da preparação (histórico)
 
 Somente documentação. Nenhum rebuild, reinício ou acesso a dados necessário; não foi repetida a suíte aprovada da 3A.1 (`36865996602`, 302 backend/129 frontend). Principal não alterado por esta preparação. Documentação revisada contra fontes de UI/serviços/rotas/casos de uso/repositório/permissões; validar links locais e diff antes de publicar.
 
 **Próximo: implementar 3A.2.1**, começando por testes dos estados independentes, autorização e virada do dia. Nenhuma decisão de negócio bloqueia esse recorte: semântica atual preservada e escolhas técnicas acima explícitas. R19 continua parcial; não declarar painel/fila corrigidos antes de implementação e aceite. Instalação assistida/atalhos/backup permanecem na etapa 5.
+
+## Retomada atual — 02/10/2026
+
+**3A.2.1 concluída**, implementação `558a3fd`; [homologação](./homologacao-etapa-3A-2-1.md). CI `36907712732` aprovado em 01/10 (302 backend/141 frontend, HTTP, builds e auditorias), Chrome com duas sessões e datas controladas em dois fusos aprovados. Web atualizada, dados/arquivos preservados, revisão 0024 sem migração. Fechamento documental em 02/10.
+
+**Próximo: implementar 3A.2.2**, usando o contrato e aceite acima. Preservar busca/seleção, escopo clínico e autorização; distinguir ausência de paciente de falha transitória. Não repetir diagnóstico geral ou testes aprovados do painel sem mudança/falha. R19 parcial, instalação assistida na etapa 5.

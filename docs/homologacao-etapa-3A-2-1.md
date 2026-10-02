@@ -24,8 +24,10 @@ Início em 01/10/2026, base `6eeb036`. Contrato: [3A.2.1](./plano-etapa-3A-2.md)
 
 Primeiras tentativas de Chrome interrompidas na automação: seletor ambíguo para dois títulos “Painel”; depois ajuste da instalação do relógio antes de temporizadores da aplicação e uso de fronteira passada sem cruzar expiração real da sessão. Corrigido somente o harness; execução final completa aprovada. Não contar tentativas anteriores como aprovação. Visibilidade é evento controlado no mesmo computador, não suspensão física/ensaio de carga da clínica. API real foi usada no cenário principal; complemento de dois fusos usa respostas controladas.
 
-Cópias públicas/exames/fingerprints `pre-3A-2-1*` salvas pelo helper local `.data/upgrade_3a21.py`. Principal ainda não atualizado; API/banco permanecem na revisão 0024. Logs/capturas/credenciais locais ignorados pelo Git.
+Cópias públicas/exames/fingerprints e dump integral `pre-3A-2-1*` salvos pelo helper local `.data/upgrade_3a21.py`, dump integral após zero schemas privados. Somente web principal atualizada, dez verificações gerais aprovadas e comparação confirmou linhas de negócio/histórico/bytes preservados. API/banco permanecem na revisão 0024, nenhum volume removido. Logs/capturas/credenciais locais ignorados pelo Git.
 
-## Pendências
+## Fechamento — 02/10/2026
 
-Publicar implementação, acompanhar CI, salvar dump integral após zero schemas, atualizar apenas web, verificar preservação/fluxo geral e fechar documentação. Não declarar conclusão antes desses critérios.
+Implementação `558a3fd` publicada e HEAD remoto conferido. [CI 36907712732](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/36907712732) aprovado em 01/10/2026, em 20min53s: **302 backend em 731,710s e 141 frontend**, builds, regressões HTTP, dependências e seis imagens sem achados. Resultado conferido na retomada de 02/10; nenhum teste aprovado foi repetido apenas para fechar documentação.
+
+Homologação atualizada em 01/10 em https://localhost:18443, HTTPS confiável 200 e bundle atual conferidos, revisão `0024_user_version`, zero schemas privados e dados preservados. Nenhum critério de aceite pendente para 3A.2.1. Publicar fechamento documental e conferir árvore limpa/HEAD remoto. **Próximo: 3A.2.2, próxima consulta e pacientes/detalhe do dentista**, conforme contrato. R19 continua parcial; fuso central da clínica, paginação geral e instalação assistida permanecem nos recortes próprios.
