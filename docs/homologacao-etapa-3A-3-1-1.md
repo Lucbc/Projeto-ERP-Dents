@@ -19,10 +19,12 @@ Início em 02/10/2026, base `249b605`. [Contrato e ajuste de integração](./pla
 | Regressão frontend | 169 testes em 25 arquivos aprovados em 32,08s, incluindo agenda/painel/consulta e fluxos versionados existentes |
 | API/banco | Sem mudança ou novo teste específico. O leitor usa serviço existente; respostas de componentes são simuladas. Não alegar logout HTTP ou proteção transacional nova |
 | Chrome/ambiente principal | Sem ativação, rebuild/reinício ou migração da homologação. Interface real e preservação após ativação serão verificadas na 3A.3.1.2 |
-| CI | Pendente publicação/execução completa |
+| CI | [37055537228](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/37055537228) aprovado em 02/10/2026, 16min19s: 302 backend em 542,762s/169 frontend, HTTP, builds, dependências e seis imagens sem achados |
 
 Logs locais em `.data/tests-3a311-focused.log`, `.data/frontend-full-3a311.log` e `.data/build-3a311.log`, ignorados pelo Git. Nenhuma credencial/dado local incluído. Testes usam apenas fixtures fictícias.
 
 ## Próximo passo
 
-Concluir regressão/CI e publicar fechamento. Depois implementar 3A.3.1.2: integrar a fonte única no aplicativo, migrar consumidores de permissões e leitores locais juntos, preservar rascunhos ocultos em falha transitória, limpar dados na revogação confirmada e revalidar identidade divergente. Testar administrador revogado pelo transporte real e menu/rota/ações coerentes; só então ativar na homologação. R19 continua parcial.
+**Fundação 3A.3.1.1 concluída**, implementação `9068759`, resultado do CI confirmado e fechamento documental em 03/10/2026. Nenhum novo teste ou reinício necessário nesta retomada.
+
+Próximo: implementar 3A.3.1.2: integrar a fonte única no aplicativo, migrar consumidores de permissões e leitores locais juntos, preservar rascunhos ocultos em falha transitória, limpar dados na revogação confirmada e revalidar identidade divergente. Testar administrador revogado pelo transporte real e menu/rota/ações coerentes; só então ativar na homologação. R19 continua parcial.

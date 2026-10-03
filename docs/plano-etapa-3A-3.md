@@ -78,3 +78,9 @@ O novo contrato expõe `status` (`anonymous`, `checking`, `verified`, `unavailab
 Preparação concluída por inspeção e validação documental. Nenhum rebuild/reinício/migração ou teste de runtime nesta entrega. Último CI funcional aprovado: `37050828988`, 302 backend/153 frontend e seis imagens sem achados; homologação permanece no estado validado da 3A.2.2.
 
 **Próximo: implementar 3A.3.1.1**, iniciando pelos testes de vários consumidores/perfis e falha/recuperação do leitor compartilhado. Inspecionar o contrato atual de `usePermissions`, os leitores locais de painel/consulta e o tratamento global de 401 antes de editar. Não reabrir revisão geral nem implementar todos os recortes acima de uma vez. Nenhuma decisão de negócio bloqueia este início.
+
+### Retomada atual — 03/10/2026
+
+**3A.3.1.1 concluída como fundação sem ativação**, implementação `9068759`; [evidências](./homologacao-etapa-3A-3-1-1.md). CI `37055537228` aprovado (302 backend/169 frontend, HTTP, builds e seis imagens sem achados). Provider/estados/cancelamento testados, sem alterar runtime da homologação. Não é prova de revalidação universal ou de preservação de formulários nos guards reais.
+
+**Próximo: 3A.3.1.2**, conforme ajuste de integração acima: montar fonte única, migrar consumidores e leitores locais de forma coordenada, implementar barreiras/limpeza/revisão de ações e revalidar perfil divergente. Testar integração e Chrome/HTTP reais antes de ativar na homologação. Não adicionar o provider isoladamente ao App nem repetir testes aprovados sem mudança/falha.
