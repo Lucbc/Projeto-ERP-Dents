@@ -90,3 +90,9 @@ Preparação concluída por inspeção e validação documental. Nenhum rebuild/
 Implementação `5f68df1` publicada: fonte única ativada, guards/menu/ações integrados, rascunhos preservados sob barreira transitória, suspensão de escrita com retomada explícita e tentativa financeira preservada. 178 frontend, builds, Chrome e capturas aprovados; dados preservados. [Relatório](./homologacao-etapa-3A-3-1-2.md).
 
 **3A.3.1.2 ainda não concluída:** CI `37132642265` parou na auditoria npm por vulnerabilidade de `braces`, dependência da cadeia Tailwind 3 sem versão corrigida disponível. Homologação principal não atualizada. Próximo recorte é manutenção da cadeia Tailwind com revisão de compatibilidade/estilos e testes, depois novo CI completo e atualização/preservação. Não iniciar 3A.3.2.1 nem suprimir a auditoria para declarar aceite.
+
+### Retomada atual — integração concluída em 03/10/2026
+
+**3A.3.1.2 e 3A.3.1 concluídas**, commits `5f68df1`/`8424963`. Migração Tailwind removeu cadeia vulnerável; CI `37140978695` aprovado, 302 backend/178 frontend, HTTP, builds e auditorias/seis imagens sem achados. Chrome e revisão visual aprovados; somente web principal atualizada, dez verificações integradas/HTTPS e preservação confirmados, revisão 0024/zero schemas. [Evidências](./homologacao-etapa-3A-3-1-2.md).
+
+**Próximo: 3A.3.2.1, lista/resumo financeiro.** Inspecionar consultas/chaves/filtros e estado das ações; atualizar leituras sem substituir formulário, versão ou identidade de tentativa. Histórico/detalhe fica em 3A.3.2.2. R19 permanece parcial; não reabrir diagnóstico geral nem repetir validações sem mudança/falha. Requisitos de navegador atualizados em `sessao-e-https.md`.

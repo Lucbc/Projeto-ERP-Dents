@@ -2,6 +2,8 @@
 
 Início em 03/10/2026, base `5067241`. [Contrato](./plano-etapa-3A-3.md). Ativação da fundação 3A.3.1.1; sem migração ou mudança de autorização no backend.
 
+**Concluída em 03/10/2026**, implementação `5f68df1` e manutenção `8424963`. [CI final 37140978695](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/37140978695) aprovado em 16min44s: 302 backend/178 frontend, regressões HTTP, builds e auditorias aprovadas. Homologação principal atualizada e preservação confirmada. Registros de bloqueio abaixo são históricos, resolvidos pela manutenção Tailwind.
+
 ## Implementação
 
 - Provider único por sessão acima da interface. `usePermissions` passa a consumir contexto; painel e consulta deixam de agendar permissões localmente. Leitura para todos os perfis, inclusive administrador; 15s/60s e visibilidade/conexão conforme política existente.
@@ -19,10 +21,10 @@ Início em 03/10/2026, base `5067241`. [Contrato](./plano-etapa-3A-3.md). Ativa�
 | Componentes | Nove testes novos: formulário real de pacientes/versão preservados sob barreira, foco e invisibilidade, revogação/concessão de leitura/escrita, menu/rota/formulário com leitura única, 401/403 para administrador, divergência de perfil e verificação lenta sem sobreposição; baixa financeira incerta mantém mesma versão/chave após revogação e recuperação explícita |
 | Regressão frontend | Versão final: 178 testes em 26 arquivos aprovados em 26,88s. Painel/consulta usam provider/gate reais; sessão, agenda e fluxos versionados incluídos |
 | Build | TypeScript/Vite e imagem web aprovados; aviso existente de bundle >500kB permanece |
-| Banco/API | Nenhuma mudança transacional ou migração. Verificação HTTP do navegador usa sessão real e schema privado; regressão backend deste commit não executada pelo CI devido à falha anterior na auditoria |
+| Banco/API | Sem mudança transacional/migração. CI final: 302 backend em 559,494s e regressões HTTP aprovados. Navegador usa sessão real e schema privado |
 | Chrome | Fluxo final de permissões aprovado: uma leitura em 17s com menu/rota/formulário, barreira/foco/rascunho, suspensão e revisão explícita de escrita, leitura revogada/concedida, 403 HTTP e sessão administrativa revogada reais, nenhuma escrita automática. Painel/consulta/agenda também aprovados. Execução final com transições desabilitadas na captura aprovada; imagens claro/escuro inspecionadas, texto, botões e foco legíveis |
 | Auditoria local | Seis imagens sem achados |
-| Atualização/CI | Implementação `5f68df1` publicada; CI `37132642265` falhou na auditoria npm. Web principal não atualizada; comparação após limpeza privada aprovada, revisão 0024_user_version e zero schemas de teste |
+| Atualização/CI | CI final `37140978695` aprovado após manutenção `8424963`. Somente web principal atualizada; dez verificações integradas, HTTPS 200/assets idênticos ao build e preservação aprovados, revisão 0024_user_version/zero schemas privados |
 
 Primeiro foco teve 62/63 testes aprovados: fixture do painel respondeu perfil admin após o teste trocar para recepção; corrigida fixture, regressão aprovada. Primeiras tentativas Chrome pararam no seletor de entrada no painel e na verificação HTTP sem identificador de sessão; ajustes no harness, não contados como aprovação. Acrescentada proteção/teste de revalidação de identidade lenta. Inspeção das capturas encontrou contraste insuficiente no aviso escuro, corrigido com cor semântica. Revisão do fluxo financeiro substituiu o descarte inicial de ações por suspensão e revisão explícita, preservando tentativas incertas; novo teste aprovado antes de repetir build/Chrome final.
 
@@ -30,7 +32,7 @@ Cópias públicas/exames/fingerprints/dump integral `pre-3A-3-1-2*` salvos, help
 
 Regressões Chrome: painel observou criação em 15298ms/22 GETs no cenário completo, consulta em 15222ms/19 GETs clínicos, agenda lista/calendário em 15033ms/14968ms e oito leituras cada. Preservação de filtros/rascunhos/versões, falha/recuperação, pausa por visibilidade e ausência de escrita automática aprovadas; painel incluiu meia-noite controlada em São Paulo/Tóquio. Cenários de leitura aprovados antes do último ajuste do guard de escrita; novo fluxo de permissões e suíte completa repetidos depois dele.
 
-## Retomada
+## Bloqueio intermediário de auditoria — resolvido
 
 **Entrega ainda não concluída.** [CI 37132642265](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/37132642265) falhou em `Locked tools and package audit`, antes de frontend/Docker/backend. Auditoria Python passou. `npm audit` local reproduziu cinco entradas de severidade alta derivadas de um mesmo aviso: [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm), recursão sem limite em `braces <=3.0.3`. Consulta em 03/10 confirmou versão mais recente 3.0.3 e nenhuma corrigida no aviso. Cadeia local: Tailwind 3.4.19 → chokidar 3.6.0/micromatch 4.0.8 → braces 3.0.3. A auditoria sugere Tailwind 4.3.3, mudança de versão principal; não executar `audit fix --force` nem suprimir o aviso para fechar a etapa.
 
@@ -40,7 +42,7 @@ O pacote pertence à cadeia de desenvolvimento/compilação. A imagem web final 
 
 Depois do CI aprovado: atualizar somente web principal, executar smoke integrado/HTTPS e comparar preservação, fechar 3A.3.1.2/3A.3.1. Apenas depois iniciar 3A.3.2.1 (lista/resumo financeiro). R19 permanece parcial. Cópias originais já existem: não sobrescrever `pre-3A-3-1-2*`; helper local aceita `after`. Logs finais: `.data/browser-3a312-visual.log`, `.data/ci-failed-3a312.log`, `.data/npm-audit-3a312.json`; todos ignorados. Nenhum processo de teste ficou pendente.
 
-## Manutenção Tailwind — 03/10/2026, em validação
+## Manutenção Tailwind — 03/10/2026, concluída
 
 - Migração para Tailwind e plugin PostCSS **4.3.3 exatos**; lock regenerado. Removidos autoprefixer/configuração antiga e cadeia braces/chokidar/micromatch. Tema migrou para CSS, importação do calendário usa camada de componentes; bordas padrão ficam na camada base, permitindo cores explícitas. Utilitários de sombra, desfoque, arredondamento e foco adaptados. Cursor de botão e placeholder preservados. Requisitos dos navegadores documentados em [sessão/HTTPS](./sessao-e-https.md).
 - Ferramenta oficial de migração revisada: reverteu-se alteração indevida do tipo `ButtonVariant` e do evento DOM `blur`; nenhuma lógica de negócio foi migrada. Houve erro intermediário de acesso ao lock pelo instalador automático; instalação explícita, lock final e `npm ci` posteriores aprovados.
@@ -49,3 +51,11 @@ Depois do CI aprovado: atualizar somente web principal, executar smoke integrado
 - Comparação identificou margens de `space-y` alcançando overlay: modal recebe margem zero prioritária para cobrir toda a janela. Conteúdo principal passa a aceitar encolhimento (`min-w-0`), evitando que a largura mínima do financeiro expanda a página. Harness agora verifica ausência de overflow horizontal, cobertura do overlay e foco visível nos campos. Capturas/testes desses ajustes finais em execução; não declarar aceite antes de conferir.
 - Navegador final aprovado (`browser-styles-reviewed.log`): 42 capturas, sem overflow da página, overlays cobrindo a janela, campos com foco visível. Capturas representativas inspecionadas nos dois temas, incluindo listas, calendário, formulários, seletores abertos e pagamento. Não é ensaio completo de acessibilidade, navegadores alternativos ou estações físicas.
 - Pendentes: regressões de permissões/agenda/financeiro após CSS (em execução sequencial), revisão/publicação/CI e atualização web/preservação. Evidências locais em `.data/tailwind-migration`; backups anteriores intactos. Sem migração de banco.
+
+## Fechamento e próximo passo
+
+Pendências acima resolvidas: Chrome final de permissões, agenda e histórico financeiro aprovado. Financeiro confirmou recuperação de respostas perdidas de baixa/estorno sem duplicar eventos, conflito de rascunho e preservação de histórico/tentativas atrasadas. CI final completo aprovado, com seis imagens sem achados.
+
+Após limpeza dos testes privados e aprovação do CI, atualizada somente a web da principal com `up -d --no-deps web`. `smoke_homolog.py`: dez verificações aprovadas. HTTPS confiável 200, JS/CSS servidos idênticos ao build local validado. Fingerprints de negócio/referências e bytes de exames preservados após atualização/testes; `0024_user_version`, zero schemas de teste. Backups anteriores intactos. Logs de fechamento em `.data/tailwind-migration/ci-final.log` e `smoke-main.log`; sem segredos ou dados locais publicados.
+
+**Próximo: 3A.3.2.1, lista/resumo financeiro**, conforme contrato. Não repetir validações aprovadas sem mudança/falha. R19 continua parcial; 3A.3.1 está concluída. Não se afirma ensaio de capacidade, estações físicas ou homologação de todos os navegadores.
