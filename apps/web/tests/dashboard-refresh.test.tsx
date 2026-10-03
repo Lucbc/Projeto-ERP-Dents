@@ -7,19 +7,22 @@ import { DashboardPage } from "../src/pages/dashboard-page";
 import { appointmentService, dentistService, patientService, permissionService } from "../src/lib/services";
 import type { Appointment, RolePermission, User } from "../src/types";
 
+import { EffectivePermissionsProvider } from "../src/hooks/use-effective-permissions";
+import { EffectiveAccessGate } from "../src/components/layout/effective-access-gate";
+
 let user: User;
 vi.mock("@/hooks/use-auth", () => ({ useAuth: () => ({ user }) }));
 let client: QueryClient;
 const failure = (status: number) => new AxiosError("Fictitious", "ERR_BAD_RESPONSE", undefined, undefined,
   { status, data: {}, headers: {}, statusText: "Error", config: {} as never });
-const tick = async (ms = 5) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); };
+const tick = async (ms = 5) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); await act(async () => { await vi.advanceTimersByTimeAsync(1); }); };
 const section = (name: string) => within(screen.getByRole("region", { name }));
-const permissions = (denied: string[] = []) => ({ role: "reception", version: 1,
+const permissions = (denied: string[] = []) => ({ role: user.role, version: 1,
   permissions: Object.fromEntries(["dashboard", "patients", "dentists", "appointments"].map(resource =>
     [resource, { view: !denied.includes(resource), create: false, update: false, delete: false }])) } as RolePermission);
 const visit = { id: "visit", patient_name: "Fictitious Patient", dentist_name: "Fictitious Dentist",
   start_at: "2026-10-01T13:00:00Z", end_at: "2026-10-01T14:00:00Z", status: "cancelled" } as Appointment;
-function show() { return render(<QueryClientProvider client={client}><DashboardPage /></QueryClientProvider>); }
+function show() { return render(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate><DashboardPage /></EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>); }
 
 beforeEach(() => {
   vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 9, 1, 12));
@@ -28,7 +31,7 @@ beforeEach(() => {
   vi.spyOn(patientService, "list").mockResolvedValue({ items: [], total: 4 });
   vi.spyOn(dentistService, "list").mockResolvedValue({ items: [], total: 2 });
   vi.spyOn(appointmentService, "list").mockResolvedValue([visit]);
-  vi.spyOn(permissionService, "me").mockResolvedValue(permissions());
+  vi.spyOn(permissionService, "me").mockImplementation(async () => permissions());
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
@@ -44,7 +47,7 @@ it("refreshes independent totals and includes cancelled appointments without aut
   expect(section("Consultas de hoje").getByText("0")).toBeTruthy();
   expect(screen.getByText("Nenhuma consulta para hoje.")).toBeTruthy();
   expect(patientService.list).toHaveBeenCalledTimes(2); expect(dentistService.list).toHaveBeenCalledTimes(2);
-  expect(permissionService.me).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled();
+  expect(permissionService.me).toHaveBeenCalledTimes(2); expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled();
 });
 
 it("keeps successful siblings and timestamps when one resource fails, then recovers manually", async () => {
@@ -106,10 +109,10 @@ it("revokes the page while underlying resources remain allowed, then returns wit
 it("hides indicators while permission verification fails and recovers without unmounting its timer", async () => {
   user = { id: "reader", role: "reception" } as User; show(); await tick(); await tick();
   vi.mocked(permissionService.me).mockRejectedValue(failure(503)); await tick(15_010);
-  expect(screen.queryByText("Fictitious Patient")).toBeNull();
-  expect(screen.getByText(/indicadores estão ocultos/)).toBeTruthy();
+  expect(screen.queryByRole("region", { name: "Consultas de hoje" })).toBeNull();
+  expect(screen.getByText(/conteúdo está oculto/)).toBeTruthy();
   vi.mocked(permissionService.me).mockResolvedValue(permissions());
-  fireEvent.click(screen.getByRole("button", { name: "Atualizar permissões" })); await tick(); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Verificar acesso novamente" })); await tick(); await tick();
   expect(screen.getByText("Fictitious Patient")).toBeTruthy();
 });
 
@@ -155,7 +158,7 @@ it("aborts pending reads on identity change and never shows the prior identity's
   let signal!: AbortSignal; let finish!: (value: Appointment[]) => void;
   vi.mocked(appointmentService.list).mockImplementationOnce((_params, current) => { signal = current!; return new Promise(resolve => { finish = resolve; }); }).mockResolvedValue([]);
   const view = show(); await tick(); user = { id: "admin-two", role: "admin" } as User;
-  view.rerender(<QueryClientProvider client={client}><DashboardPage /></QueryClientProvider>); await tick();
+  view.rerender(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate><DashboardPage /></EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>); await tick();
   expect(signal.aborted).toBe(true); await act(async () => finish([visit])); await tick();
   expect(screen.queryByText("Fictitious Patient")).toBeNull();
 });

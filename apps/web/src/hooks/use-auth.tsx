@@ -17,6 +17,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  revalidateIdentity: () => Promise<void>;
 }
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -112,8 +113,15 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
       changeSession(response.data.session_id, response.data.csrf_token, response.data.expires_at);
     });
   }, [session]);
-  const value = useMemo(() => ({ user, isLoading, login, logout }),
-    [user, session.sessionId, isLoading, login, logout]);
+  const revalidateIdentity = useCallback(async () => {
+    const attempt = ++validation.current;
+    const response = await api.get<User>("/api/auth/me");
+    if (!isCurrentSession(session) || attempt !== validation.current) return;
+    if (response.data.id !== user?.id || response.data.role !== user?.role || response.data.dentist_id !== user?.dentist_id) queryClient.clear();
+    setUser(response.data);
+  }, [session, user, queryClient]);
+  const value = useMemo(() => ({ user, isLoading, login, logout, revalidateIdentity }),
+    [user, session.sessionId, isLoading, login, logout, revalidateIdentity]);
 
   return (
     <QueryClientProvider client={queryClient}>

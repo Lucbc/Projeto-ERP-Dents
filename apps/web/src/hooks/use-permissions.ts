@@ -1,32 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
-import { useCallback } from "react";
+import { createContext, useContext } from "react";
+import { useEffectivePermissions, type EffectivePermissions } from "./use-effective-permissions";
 
-import { useAuth } from "@/hooks/use-auth";
-import { permissionService } from "@/lib/services";
-import type { PermissionAction, PermissionResource } from "@/types";
+// Used only below the hidden/inert barrier to keep conditional drafts mounted.
+export const PermissionDisplayContext = createContext<EffectivePermissions | null>(null);
 
 export function usePermissions() {
-  const { user } = useAuth();
-
-  const query = useQuery({
-    queryKey: ["permissions", "me", user?.id],
-    queryFn: () => permissionService.me(),
-    enabled: Boolean(user && user.role !== "admin"),
-    staleTime: 30_000,
-  });
-
-  const can = useCallback(
-    (resource: PermissionResource, action: PermissionAction): boolean => {
-      if (!user) return false;
-      if (user.role === "admin") return true;
-      return Boolean(query.data?.permissions?.[resource]?.[action]);
-    },
-    [user, query.data],
-  );
-
-  return {
-    ...query,
-    permissions: query.data?.permissions ?? {},
-    can,
-  };
+  const effective = useEffectivePermissions();
+  const display = useContext(PermissionDisplayContext);
+  const access = display ?? effective;
+  return { ...access, isLoading: access.status === "checking",
+    isError: ["unavailable", "denied", "identity-mismatch"].includes(access.status) };
 }

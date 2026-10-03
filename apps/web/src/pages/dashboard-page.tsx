@@ -5,8 +5,9 @@ import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useAuth } from "@/hooks/use-auth";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { useLocalDay } from "@/hooks/use-local-day";
+import { usePermissions } from "@/hooks/use-permissions";
 import { appointmentStatusLabels } from "@/lib/labels";
-import { appointmentService, dentistService, patientService, permissionService } from "@/lib/services";
+import { appointmentService, dentistService, patientService } from "@/lib/services";
 import type { PermissionResource, User } from "@/types";
 
 const isolated = { exactOnDenied: true, gcTime: 0 };
@@ -44,19 +45,9 @@ function Today({ userId }: { userId: string }) {
 }
 
 function Dashboard({ user }: { user: User }) {
-  // Remains mounted when access is unknown/denied so permission recovery can run.
-  // The outer authenticated route and server still enforce session validity.
-  const permissions = useLiveQuery(["permissions", "me", user.id], signal => permissionService.me(signal),
-    { enabled: user.role !== "admin", exactOnDenied: true });
-  if (user.role !== "admin") {
-    if (permissions.accessDenied) return <p role="alert">Sem permissão para acessar esta página. Entre novamente após revisar o acesso.</p>;
-    if (permissions.isError || !permissions.data) return <section aria-label="Permissões do painel">
-      <p className="mb-3">Os indicadores estão ocultos até verificar as permissões.</p>
-      <LiveQueryStatus query={permissions} subject="permissões" />
-    </section>;
-    if (!permissions.data.permissions.dashboard?.view) return <p role="alert">Sem permissão para acessar esta página.</p>;
-  }
-  const can = (resource: PermissionResource) => user.role === "admin" || Boolean(permissions.data?.permissions[resource]?.view);
+  const permissions = usePermissions();
+  if (!permissions.can("dashboard", "view")) return <p role="alert">Sem permissão para acessar esta página.</p>;
+  const can = (resource: PermissionResource) => permissions.can(resource, "view");
   return <div className="space-y-6">
     <header><h1 className="font-display text-2xl font-semibold">Painel</h1>
       <p className="text-sm text-muted-foreground">Visão geral da clínica. Cada indicador informa sua última atualização.</p></header>

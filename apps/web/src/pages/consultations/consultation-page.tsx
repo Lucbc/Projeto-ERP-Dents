@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useAuth } from "@/hooks/use-auth";
 import { useLiveQuery } from "@/hooks/use-live-query";
+import { usePermissions } from "@/hooks/use-permissions";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import { appointmentStatusLabels } from "@/lib/labels";
-import { consultationService, permissionService } from "@/lib/services";
+import { consultationService } from "@/lib/services";
 import type { Appointment, User } from "@/types";
 
 const isolated = { exactOnDenied: true, gcTime: 0 };
@@ -97,7 +98,7 @@ function Consultation({ user }: { user: User }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
-  const permissions = useLiveQuery(["permissions", "me", user.id], signal => permissionService.me(signal), { exactOnDenied: true });
+  const permissions = usePermissions();
   const guard: Guard = useCallback(async read => {
     try { return await read(); }
     catch (error) {
@@ -106,12 +107,8 @@ function Consultation({ user }: { user: User }) {
     }
   }, []);
   useEffect(() => { if (denied) client.removeQueries({ queryKey: ["consultations"] }); }, [denied, client]);
-  if (denied || permissions.accessDenied) return <p role="alert">Sem permissão para acessar a consulta. Entre novamente nesta página após revisar o acesso.</p>;
-  if (permissions.isError || !permissions.data) return <>
-    <p>Os dados da consulta estão ocultos até verificar as permissões.</p>
-    <LiveQueryStatus query={permissions} subject="permissões" />
-  </>;
-  if (!permissions.data.permissions.consultations?.view) return <p role="alert">Sem permissão para acessar a consulta.</p>;
+  if (denied) return <p role="alert">Sem permissão para acessar a consulta. Entre novamente nesta página após revisar o acesso.</p>;
+  if (!permissions.can("consultations", "view")) return <p role="alert">Sem permissão para acessar a consulta.</p>;
   return <div className="space-y-4">
     <Card><h2 className="font-display text-xl font-semibold">Consulta</h2>
       <p className="text-sm text-muted-foreground">Próxima consulta e dados dos pacientes. Cada seção informa sua última atualização.</p></Card>

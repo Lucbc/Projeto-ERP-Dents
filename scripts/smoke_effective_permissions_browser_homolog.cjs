@@ -1,0 +1,76 @@
+// Fictitious records only. Do not emit credentials, responses or patient bodies.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+let stage='start';
+process.on('unhandledRejection',()=>{console.error('Effective permissions browser failed at stage: '+stage);process.exit(1);});
+(async()=>{
+ const credentials=JSON.parse(fs.readFileSync(0,'utf8'));
+ const browser=await chromium.launch({channel:'chrome',headless:true});
+ const origin='https://localhost:18444';
+ try {
+  const context=()=>browser.newContext({timezoneId:'America/Sao_Paulo',viewport:{width:1440,height:1100}});
+  const writer=await(await context()).newPage(),reader=await(await context()).newPage();
+  const login=async(page,email,password)=>{
+   await page.goto(origin+'/login');await page.locator('[name=email]').fill(email);await page.locator('[name=password]').fill(password);
+   const response=page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST');
+   await page.getByRole('button',{name:'Entrar',exact:true}).click();const identity=await(await response).json();
+   await page.getByRole('region',{name:'Pacientes cadastrados',exact:true}).waitFor();return identity;
+  };
+  stage='author login';const author=await login(writer,credentials.email,credentials.password);
+  const api=(method,url,data)=>writer.evaluate(async({method,url,data,author})=>{
+   const r=await fetch(url,{method,headers:{'Content-Type':'application/json','X-Session-ID':author.session_id,'X-CSRF-Token':author.csrf_token},body:data?JSON.stringify(data):undefined});
+   return {status:r.status,body:r.status===204?null:await r.json()};
+  },{method,url,data,author});
+  stage='fixtures';
+  const patient=(await api('POST','/api/patients',{full_name:'Fictitious Access Patient'})).body;
+  const account=(await api('POST','/api/users',{name:'Fictitious Access Reader',email:'access-reader@example.com',password:credentials.password,role:'reception'})).body;
+  let matrix=(await api('GET','/api/permissions')).body.items.find(item=>item.role==='reception');
+  const save=async()=>{const result=await api('PUT','/api/permissions/reception',{version:matrix.version,permissions:matrix.permissions});assert.equal(result.status,200);matrix=result.body;};
+  matrix.permissions.patients={view:true,create:true,update:true,delete:true};await save();
+  stage='reader login';const receiver=await login(reader,account.email,credentials.password);assert.notEqual(receiver.session_id,author.session_id);
+  await reader.goto(origin+'/patients');
+  const row=()=>reader.getByRole('row').filter({hasText:patient.full_name});
+  await row().getByRole('button',{name:'Editar',exact:true}).click();
+  const notes=reader.locator('textarea[name=notes]');await notes.fill('Fictitious draft retained');
+  let reads=0,writes=0;
+  reader.on('request',r=>{if(new URL(r.url()).pathname==='/api/permissions/me'&&r.method()==='GET')reads++;
+   if(['POST','PUT','DELETE'].includes(r.method())&&new URL(r.url()).pathname.startsWith('/api/'))writes++;});
+  stage='single reader';await reader.waitForTimeout(17000);assert.ok(reads>=1&&reads<=2);const stableReads=reads;
+  stage='permission failure';const pattern=/\/api\/permissions\/me$/;
+  await reader.route(pattern,route=>route.fulfill({status:503,contentType:'application/json',body:'{"detail":"Fictitious unavailable"}'}));
+  await reader.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await reader.getByText('Verificação de acesso',{exact:true}).waitFor({timeout:25000});
+  assert.equal(await notes.isVisible(),false);assert.equal(await notes.inputValue(),'Fictitious draft retained');
+  assert.equal(await reader.evaluate(()=>Boolean(document.activeElement.closest('[hidden],[inert]'))),false);
+  await reader.keyboard.press('Tab');assert.equal(await reader.evaluate(()=>Boolean(document.activeElement.closest('[hidden],[inert]'))),false);
+  await reader.screenshot({path:path.resolve(__dirname,'../.data/homolog/permission-barrier-light.png'),fullPage:true,animations:'disabled'});
+  await reader.evaluate(()=>document.documentElement.classList.add('dark'));
+  await reader.screenshot({path:path.resolve(__dirname,'../.data/homolog/permission-barrier-dark.png'),fullPage:true,animations:'disabled'});
+  await reader.evaluate(()=>document.documentElement.classList.remove('dark'));
+  stage='recover draft';await reader.unroute(pattern);await reader.getByRole('button',{name:'Verificar acesso novamente',exact:true}).click();
+  await notes.waitFor({state:'visible'});assert.equal(await notes.inputValue(),'Fictitious draft retained');
+  stage='write revocation';matrix.permissions.patients.update=false;await save();
+  await reader.getByText(/ações estão suspensas/).waitFor({timeout:25000});await row().waitFor();
+  assert.equal(await notes.isDisabled(),true);assert.equal(await notes.inputValue(),'Fictitious draft retained');
+  assert.equal(await row().getByRole('button',{name:'Editar',exact:true}).count(),0);
+  matrix.permissions.patients.update=true;await save();
+  await row().getByRole('button',{name:'Editar',exact:true}).waitFor({timeout:25000});assert.equal(await notes.isDisabled(),true);
+  await reader.getByRole('button',{name:'Revisar e retomar ações',exact:true}).click();assert.equal(await notes.isDisabled(),false);
+  assert.equal(await notes.inputValue(),'Fictitious draft retained');
+  stage='read revocation';matrix.permissions.patients.view=false;await save();
+  await reader.getByText('Sem permissão para acessar esta página.',{exact:true}).waitFor({timeout:25000});
+  assert.equal(await row().count(),0);assert.equal(await reader.getByRole('link',{name:'Pacientes',exact:true}).count(),0);
+  stage='read revocation HTTP';
+  const forbidden=await reader.evaluate(async sessionId=> (await fetch('/api/patients',{headers:{'X-Session-ID':sessionId}})).status,receiver.session_id);assert.equal(forbidden,403);
+  stage='read grant';matrix.permissions.patients.view=true;await save();await row().waitFor({timeout:25000});
+  assert.equal(writes,0);
+  stage='admin revocation';
+  const admin=(await api('POST','/api/users',{name:'Fictitious Revoked Admin',email:'revoked-admin@example.com',password:credentials.password,role:'admin'})).body;
+  const adminPage=await(await context()).newPage();await login(adminPage,admin.email,credentials.password);
+  await adminPage.goto(origin+'/patients');await adminPage.getByText(patient.full_name,{exact:true}).waitFor();
+  assert.equal((await api('PUT','/api/users/'+admin.id,{version:admin.version,is_active:false})).status,200);
+  await adminPage.getByRole('button',{name:'Entrar',exact:true}).waitFor({timeout:25000});
+  assert.equal(await adminPage.getByText(patient.full_name,{exact:true}).count(),0);
+  console.log('PASS: independent sessions; '+stableReads+' permission GETs in 17s with menu/route/form; hidden inert draft and focus; recovery; read/write revoke and grant; HTTP 403; real admin session revoked; no automatic writes; light/dark captures.');
+ } finally {await browser.close();}
+})().catch(()=>{console.error('Effective permissions browser failed at stage: '+stage);process.exitCode=1;});

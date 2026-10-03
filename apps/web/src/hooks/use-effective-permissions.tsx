@@ -1,4 +1,4 @@
-import { createContext, useContext, type PropsWithChildren } from "react";
+import { createContext, useContext, useEffect, useRef, type PropsWithChildren } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { permissionService } from "@/lib/services";
@@ -23,6 +23,10 @@ const anonymous: EffectivePermissions = {
 const Context = createContext<EffectivePermissions | null>(null);
 
 function Reader({ user, children }: PropsWithChildren<{ user: User }>) {
+  const { revalidateIdentity } = useAuth();
+  const revalidate = useRef(revalidateIdentity);
+  const validatingIdentity = useRef(false);
+  revalidate.current = revalidateIdentity;
   const query = useLiveQuery(["permissions", "me", user.id], signal => permissionService.me(signal),
     { exactOnDenied: true, gcTime: 0 });
   const status: AccessStatus = query.accessDenied ? "denied"
@@ -31,6 +35,13 @@ function Reader({ user, children }: PropsWithChildren<{ user: User }>) {
     : query.data.role !== user.role ? "identity-mismatch" : "verified";
   // Never expose an old matrix as current authority after a failed verification.
   const data = status === "verified" ? query.data : undefined;
+  useEffect(() => {
+    if (status !== "identity-mismatch" || validatingIdentity.current || !revalidate.current) return;
+    validatingIdentity.current = true;
+    void revalidate.current().catch(() => {
+      // Keep the barrier until a later verification/manual retry succeeds.
+    }).finally(() => { validatingIdentity.current = false; });
+  }, [status, query.dataUpdatedAt]);
   const value: EffectivePermissions = {
     status, permissions: data?.permissions ?? {}, version: data?.version ?? null,
     online: query.online, isFetching: query.isFetching, dataUpdatedAt: query.dataUpdatedAt,
@@ -41,7 +52,6 @@ function Reader({ user, children }: PropsWithChildren<{ user: User }>) {
 }
 
 /** Mount once inside the session's QueryClient, outside all resource guards.
- * Integration is deliberately deferred until guards preserve hidden drafts.
  * Consumers subscribe to context only; they never create query observers/timers.
  */
 export function EffectivePermissionsProvider({ children }: PropsWithChildren) {

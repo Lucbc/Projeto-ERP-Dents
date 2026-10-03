@@ -80,7 +80,7 @@ process.on('unhandledRejection',()=>{console.error('Consultation refresh browser
   stage='permission revocation';const matrix=(await api('GET','/api/permissions')).body.items.find(item=>item.role==='dentist');
   matrix.permissions.consultations.view=false;
   assert.equal((await api('PUT','/api/permissions/dentist',{version:matrix.version,permissions:matrix.permissions})).status,200);
-  await reader.getByText(/Sem permissão para acessar a consulta/).waitFor({timeout:25000});
+  await reader.getByText('Sem permissão para acessar esta página.',{exact:true}).waitFor({timeout:25000});
   assert.equal(await list.count(),0);assert.equal(await detail.count(),0);assert.equal(writes,0);
   console.log('PASS: admin/dentist sessions; detail update in '+latency+' ms; '+reads+' clinical GETs across scenario; search/selection preserved; reschedule/cancel/delete; 503 recovery; hidden pause; missing detail hidden with manual-only verification; permission revocation; no automatic writes; light/dark.');
  } finally {await browser.close();}

@@ -7,6 +7,9 @@ import { ConsultationPage } from "../src/pages/consultations/consultation-page";
 import { consultationService, permissionService, patientService } from "../src/lib/services";
 import type { User, Patient, Appointment, RolePermission, ConsultationPatientDetailResponse, ConsultationPatientListResponse } from "../src/types";
 
+import { EffectivePermissionsProvider } from "../src/hooks/use-effective-permissions";
+import { EffectiveAccessGate } from "../src/components/layout/effective-access-gate";
+
 let user: User; let client: QueryClient;
 vi.mock("@/hooks/use-auth", () => ({ useAuth: () => ({ user }) }));
 const patient = { id: "one", full_name: "Fictitious One", phone: "111", version: 1 } as Patient;
@@ -23,7 +26,7 @@ const tick = async (ms = 10) => {
   await act(async () => { await vi.advanceTimersByTimeAsync(1); });
 };
 const section = (name: string) => within(screen.getByRole("region", { name }));
-function show() { return render(<QueryClientProvider client={client}><ConsultationPage /></QueryClientProvider>); }
+function show() { return render(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate><ConsultationPage /></EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>); }
 function open(index = 0) { fireEvent.click(screen.getAllByRole("button", { name: "Abrir", exact: true })[index]); }
 beforeEach(() => {
   vi.useFakeTimers(); focusManager.setFocused(true); onlineManager.setOnline(true); client = new QueryClient();
@@ -101,7 +104,7 @@ it("revalidates permission, hides on verification failure, and preserves selecti
   show(); await tick(); fireEvent.change(screen.getByRole("textbox"), { target: { value: "Fictitious" } }); await tick(); open(); await tick();
   vi.mocked(permissionService.me).mockRejectedValue(failure(503)); await tick(15_010);
   expect(screen.queryByRole("region", { name: "Pacientes" })).toBeNull();
-  vi.mocked(permissionService.me).mockResolvedValue(matrix()); fireEvent.click(screen.getByRole("button", { name: "Atualizar permissões" })); await tick();
+  vi.mocked(permissionService.me).mockResolvedValue(matrix()); fireEvent.click(screen.getByRole("button", { name: "Verificar acesso novamente" })); await tick();
   expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("Fictitious");
   expect(section("Dados do paciente").getByText("Telefone: 111")).toBeTruthy();
   vi.mocked(permissionService.me).mockResolvedValue(matrix(false)); await tick(15_010);
@@ -128,10 +131,10 @@ it("resets state and aborts old reads after a dentist link or identity changes",
   let signal!: AbortSignal;
   vi.mocked(consultationService.getPatientDetail).mockImplementation((_id, _scope, value) => { signal = value!; return new Promise(() => {}); });
   open(); await tick(); user = { ...user, dentist_id: "dentist-two" };
-  view.rerender(<QueryClientProvider client={client}><ConsultationPage /></QueryClientProvider>); await tick();
+  view.rerender(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate><ConsultationPage /></EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>); await tick();
   expect(signal.aborted).toBe(true); expect(screen.queryByRole("region", { name: "Dados do paciente" })).toBeNull();
   expect((screen.getByRole("textbox") as HTMLInputElement).value).toBe("");
-  user = { ...user, id: "another-user" }; view.rerender(<QueryClientProvider client={client}><ConsultationPage /></QueryClientProvider>); await tick();
+  user = { ...user, id: "another-user" }; view.rerender(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate><ConsultationPage /></EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>); await tick();
   expect(screen.queryByRole("region", { name: "Dados do paciente" })).toBeNull();
 });
 

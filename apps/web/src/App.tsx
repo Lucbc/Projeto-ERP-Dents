@@ -4,6 +4,8 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { ProtectedRoute } from "@/components/layout/protected-route";
 import { ToastProvider } from "@/components/ui/toast";
 import { AuthProvider } from "@/hooks/use-auth";
+import { EffectivePermissionsProvider } from "@/hooks/use-effective-permissions";
+import { EffectiveAccessGate } from "@/components/layout/effective-access-gate";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { AppointmentsPage } from "@/pages/appointments/appointments-page";
 import { CalendarPage } from "@/pages/appointments/calendar-page";
@@ -23,6 +25,8 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <EffectivePermissionsProvider>
+        <EffectiveAccessGate>
         <ToastProvider>
           <BrowserRouter>
             <Routes>
@@ -39,7 +43,7 @@ export default function App() {
                 <Route
                   index
                   element={
-                    <DashboardPage />
+                    <ProtectedRoute permission={{ resource: "dashboard", action: "view" }}><DashboardPage /></ProtectedRoute>
                   }
                 />
                 <Route
@@ -95,6 +99,7 @@ export default function App() {
                   element={
                     <ProtectedRoute
                       allowedRoles={["dentist"]}
+                      permission={{ resource: "consultations", action: "view" }}
                     >
                       <ConsultationPage />
                     </ProtectedRoute>
@@ -137,6 +142,8 @@ export default function App() {
             </Routes>
           </BrowserRouter>
         </ToastProvider>
+        </EffectiveAccessGate>
+        </EffectivePermissionsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

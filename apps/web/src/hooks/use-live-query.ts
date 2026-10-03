@@ -1,6 +1,7 @@
 import { focusManager, onlineManager, useQuery, useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useContext, useEffect, useState, useSyncExternalStore } from "react";
+import { ReadSuspensionContext } from "./read-suspension";
 
 const subscribeOnline = (notify: () => void) => onlineManager.subscribe(notify);
 const subscribeFocus = (notify: () => void) => focusManager.subscribe(notify);
@@ -9,8 +10,9 @@ const isVisible = () => focusManager.isFocused();
 
 /** Opt-in reads only: never refresh form references or replace captured versions. */
 export function useLiveQuery<T>(queryKey: QueryKey, read: (signal: AbortSignal) => Promise<T>,
-  { enabled = true, exactOnDenied = false, gcTime, stopOnNotFound = false }:
+  { enabled: requested = true, exactOnDenied = false, gcTime, stopOnNotFound = false }:
     { enabled?: boolean; exactOnDenied?: boolean; gcTime?: number; stopOnNotFound?: boolean } = {}) {
+  const enabled = !useContext(ReadSuspensionContext) && requested;
   const client = useQueryClient();
   const online = useSyncExternalStore(subscribeOnline, isOnline);
   const visible = useSyncExternalStore(subscribeFocus, isVisible);
