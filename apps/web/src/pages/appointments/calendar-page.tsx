@@ -603,7 +603,7 @@ export function CalendarPage() {
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
           <AvailabilityReview review={availabilityReview} />
           {(editConflict || deleteReview) && editingAppointment && (
-            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+            <div role="alert" className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3">
               <p>{deleteReview ?? "Não foi possível salvar."} Seu rascunho permanece abaixo. Carregar a consulta atual substituirá os campos deste formulário.</p>
               <Button type="button" variant="outline" disabled={isSubmitting}
                 onClick={() => reloadAppointmentMutation.mutate(editingAppointment.id)}>

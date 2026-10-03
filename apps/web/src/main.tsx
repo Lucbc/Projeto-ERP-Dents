@@ -1,6 +1,5 @@
 ﻿import React from "react";
 import ReactDOM from "react-dom/client";
-import "react-big-calendar/lib/css/react-big-calendar.css";
 
 import App from "./App";
 import "./index.css";

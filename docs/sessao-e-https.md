@@ -4,6 +4,8 @@
 
 O destino é um único endereço HTTPS para abrir no navegador. A interface e `/api` usam a mesma origem; o serviço `edge` termina TLS e encaminha a API pelo gateway de uploads. Na composição de produção, web, gateway e API não publicam portas individuais.
 
+Nos computadores clientes, use Chrome ou Edge atualizado; não é necessário instalar Node, Python ou Docker. A interface com Tailwind 4 requer no mínimo Chrome/Chromium 111, Firefox 128 ou Safari 16.4 ([compatibilidade do framework](https://tailwindcss.com/docs/upgrade-guide#browser-requirements)). Esses mínimos de CSS não constituem homologação completa de todos os navegadores: os ensaios atuais usam Chrome. HTTPS confiável e Web Locks também são necessários para a sessão.
+
 Configuração de produção no `.env` local:
 
 ```dotenv

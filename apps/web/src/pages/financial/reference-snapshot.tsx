@@ -1,7 +1,7 @@
 import type { FinancialReferenceSnapshot } from "@/types";
 
 export function ReferenceSnapshot({ snapshot, title }: { snapshot?: FinancialReferenceSnapshot | null; title: string }) {
-  return <section className="rounded border p-3 space-y-1">
+  return <section className="rounded-sm border p-3 space-y-1">
     <h4 className="font-semibold">{title}</h4>
     {!snapshot ? <p>Referências históricas indisponíveis.</p> : <>
       <p className="text-sm">{snapshot.origin === "migration"

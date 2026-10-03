@@ -45,7 +45,7 @@ export function EffectiveAccessGate({ children }: PropsWithChildren) {
   }, [access, client]);
   const display = access.status === "verified" ? access : snapshot.current;
   return <>
-    {blocked && <div ref={notice} tabIndex={-1} role="alert" className="mx-auto mt-16 max-w-lg space-y-4 rounded border bg-card p-6 text-card-foreground">
+    {blocked && <div ref={notice} tabIndex={-1} role="alert" className="mx-auto mt-16 max-w-lg space-y-4 rounded-sm border bg-card p-6 text-card-foreground">
       <h1 className="text-lg font-semibold">{terminal ? "Acesso não autorizado" : "Verificação de acesso"}</h1>
       <p>{terminal ? "Seu acesso não pôde ser autorizado. Entre novamente após revisar as permissões."
         : access.status === "identity-mismatch" ? "Seu perfil mudou. Validando a identidade antes de continuar."

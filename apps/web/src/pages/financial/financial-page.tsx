@@ -437,11 +437,11 @@ export function FinancialPage() {
 
   return (
     <div className="space-y-4">
-      {reviewCreation && <div role="alert" className="rounded border border-amber-300 p-3"><p>Uma criação anterior ficou sem confirmação. Confira os lançamentos e pagamentos antes de criar outro.</p><Button disabled={!financialEntriesQuery.isSuccess || financialEntriesQuery.isFetching} onClick={() => { uncertainFinancialEntry("creation", false); setReviewCreation(false); }}>Conferi os lançamentos</Button></div>}
+      {reviewCreation && <div role="alert" className="rounded-sm border border-amber-300 p-3"><p>Uma criação anterior ficou sem confirmação. Confira os lançamentos e pagamentos antes de criar outro.</p><Button disabled={!financialEntriesQuery.isSuccess || financialEntriesQuery.isFetching} onClick={() => { uncertainFinancialEntry("creation", false); setReviewCreation(false); }}>Conferi os lançamentos</Button></div>}
       {paymentDialog && <PaymentDialog key={paymentDialog.entry.id + paymentDialog.mode} entry={paymentDialog.entry} mode={paymentDialog.mode}
         onClose={() => setPaymentDialog(null)} onChanged={() => void queryClient.invalidateQueries({ queryKey: ["financial"] })} />}
       {actionConflict && (
-        <div role="alert" className="rounded border border-amber-300 bg-amber-50 p-3">
+        <div role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-3">
           <p>O lançamento mudou. Recarregue a lista e confira o estado atual antes de escolher uma nova ação. A operação não será repetida automaticamente.</p>
           <Button variant="outline" disabled={refreshActionsMutation.isPending}
             onClick={() => refreshActionsMutation.mutate()}>Recarregar financeiro</Button>
@@ -676,7 +676,7 @@ export function FinancialPage() {
         <form className="grid gap-3 md:grid-cols-2" onSubmit={entryForm.handleSubmit(submitEntry)}>
           <fieldset disabled={createUncertain || editingEntry?.status === "paid"} className="contents">
           {editConflict && editingEntry && (
-            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+            <div role="alert" className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3">
               <p>Este lançamento mudou. Seu rascunho foi mantido. Carregar o atual substituirá valores, datas, status e vínculos deste formulário.</p>
               <Button type="button" variant="outline" disabled={isSubmittingEntry || createUncertain}
                 onClick={() => reloadEntryMutation.mutate(editingEntry.id)}>Descartar rascunho e carregar atual</Button>

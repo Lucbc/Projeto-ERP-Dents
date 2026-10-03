@@ -61,7 +61,7 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
       <p>{current.entry_type === "income" ? "Recebimento" : "Pagamento de despesa"}: <strong>{money(current.total_cents)}</strong></p>
       <p>Estado atual: {current.status === "paid" ? "Pago" : current.status === "pending" ? "Pendente" : "Cancelado"}.</p>
       {message && <p role="alert">{message}</p>}
-      {uncertain && <div role="alert" className="rounded border border-amber-300 p-3">
+      {uncertain && <div role="alert" className="rounded-sm border border-amber-300 p-3">
         <p>Há uma operação com resultado incerto. Confira o histórico antes de iniciar outra.</p>
         {attempt.current ? <Button disabled={mutation.isPending} onClick={() => mutation.mutate(attempt.current!)}>Consultar/repetir esta operação</Button>
           : <Button disabled={!history.isSuccess || history.isFetching} onClick={() => { uncertainFinancialEntry(entry.id, false); setUncertain(false); setBlocked(true); setMessage("Feche esta janela e recarregue a lista antes de escolher uma nova ação."); onChanged(); }}>Conferi o histórico</Button>}
@@ -81,7 +81,7 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
       {history.isPending && <p>Carregando...</p>}
       {history.isError && <Button onClick={() => void history.refetch()}>Tentar carregar histórico</Button>}
       {history.data?.length === 0 && <p>Nenhum pagamento registrado.</p>}
-      {history.data?.map(payment => <article key={payment.id} className="rounded border p-3 space-y-1">
+      {history.data?.map(payment => <article key={payment.id} className="rounded-sm border p-3 space-y-1">
         <p>{money(payment.total_cents)} — {new Date(payment.paid_at).toLocaleString("pt-BR")} — {paymentMethodOptions.find(p => p.value === payment.payment_method)?.label || "Forma não informada"}</p>
         <p>{payment.origin === "legacy" ? "Registro anterior ao histórico; autor desconhecido" : `Registrado por ${payment.actor_name}`}</p>
         <p className="text-sm">Registro: {new Date(payment.recorded_at).toLocaleString("pt-BR")}</p>

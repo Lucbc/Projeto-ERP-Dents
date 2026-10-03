@@ -413,7 +413,7 @@ export function PatientsPage() {
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
           {editConflict && editingPatient && (
-            <div className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3" role="alert">
+            <div className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3" role="alert">
               <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá os campos deste formulário.</p>
               <Button type="button" variant="outline" disabled={isSubmitting}
                 onClick={() => reloadPatientMutation.mutate(editingPatient.id)}>

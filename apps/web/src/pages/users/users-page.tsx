@@ -214,7 +214,7 @@ export function UsersPage() {
     } catch (error) { handleFailure(error); }
     finally { setReloading(false); }
   };
-  const reviewNotice = review && <div role="alert" className="rounded border border-amber-300 bg-muted p-3 text-foreground">
+  const reviewNotice = review && <div role="alert" className="rounded-sm border border-amber-300 bg-muted p-3 text-foreground">
     <p>Os dados precisam de revisão. Carregue o usuário atual antes de tentar novamente.</p>
     <Button type="button" variant="outline" disabled={busy} onClick={() => void reloadTarget()}>Descartar e carregar atual</Button>
   </div>;

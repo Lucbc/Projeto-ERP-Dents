@@ -18,7 +18,7 @@ export function LiveQueryStatus({ query, subject }: { query: LiveStatus; subject
     : isError ? (dataUpdatedAt ? "Não foi possível atualizar a agenda. Os dados exibidos podem estar desatualizados."
       : "Não foi possível carregar a agenda. As consultas não puderam ser verificadas.")
     : isFetching ? (dataUpdatedAt ? "Atualizando agenda..." : "Carregando agenda...") : "Atualização automática ativa.";
-  return <div className="flex flex-wrap items-center justify-between gap-3 rounded border bg-card p-3 text-foreground">
+  return <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border bg-card p-3 text-foreground">
     <div role={!online || isError ? "alert" : "status"}>
       <p>{message}</p>
       <p className="text-sm text-muted-foreground">{dataUpdatedAt

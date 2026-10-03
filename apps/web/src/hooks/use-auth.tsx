@@ -130,7 +130,7 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
           <div role="alert" className="mx-auto mt-16 max-w-lg space-y-4 rounded-lg border p-6">
             {logoutState === "pending" ? <p>Encerrando sessão no servidor...</p> : <>
               <p>Não foi possível confirmar a saída no servidor. Verifique a conexão e tente novamente.</p>
-              <button onClick={logout} className="rounded bg-cyan-600 px-4 py-2 text-white">Tentar sair novamente</button>
+              <button onClick={logout} className="rounded-sm bg-cyan-600 px-4 py-2 text-white">Tentar sair novamente</button>
             </>}
           </div>
         ) : isLoading ? <div role="status" className="p-8">Carregando sessão...</div> : sessionError ? (
@@ -139,8 +139,8 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
             <p>{navigator.locks ? "Verifique a conexão com o servidor e tente novamente. Seu acesso salvo foi preservado."
               : "Abra o endereço HTTPS do sistema em uma versão atualizada do Chrome ou Edge."}</p>
             <div className="flex gap-4">
-              <button className="rounded bg-cyan-600 px-4 py-2 text-white" onClick={() => void refreshMe()}>Tentar novamente</button>
-              {session.ready && <button className="rounded border px-4 py-2" onClick={logout}>Sair</button>}
+              <button className="rounded-sm bg-cyan-600 px-4 py-2 text-white" onClick={() => void refreshMe()}>Tentar novamente</button>
+              {session.ready && <button className="rounded-sm border px-4 py-2" onClick={logout}>Sair</button>}
             </div>
           </div>
         ) : children}

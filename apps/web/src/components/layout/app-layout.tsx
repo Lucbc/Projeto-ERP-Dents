@@ -191,7 +191,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background text-foreground md:grid md:grid-cols-[240px_1fr]">
-      <aside className="border-r border-border bg-card/95 p-4 backdrop-blur md:min-h-screen">
+      <aside className="border-r border-border bg-card/95 p-4 backdrop-blur-sm md:min-h-screen">
         <div className="mb-6">
           <p className="font-display text-xl font-semibold text-foreground">ERP Dents</p>
           <p className="text-xs text-muted-foreground">Clinica Odontologica</p>
@@ -244,8 +244,8 @@ export function AppLayout() {
         </div>
       </aside>
 
-      <div className="flex min-h-screen flex-col">
-        <header className="border-b border-border bg-card/75 px-4 py-3 backdrop-blur md:px-6">
+      <div className="flex min-h-screen min-w-0 flex-col">
+        <header className="border-b border-border bg-card/75 px-4 py-3 backdrop-blur-sm md:px-6">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">ERP Dents</p>
           <h1 className="font-display text-xl font-semibold text-foreground">{currentTitle}</h1>
         </header>
@@ -261,7 +261,7 @@ export function AppLayout() {
         title="Trocar senha"
       >
         <form className="grid gap-3" onSubmit={form.handleSubmit(handleSubmitChangePassword)}>
-          {passwordVersion === null && <div role="alert" className="rounded border border-amber-300 bg-muted p-3 text-foreground">
+          {passwordVersion === null && <div role="alert" className="rounded-sm border border-amber-300 bg-muted p-3 text-foreground">
             <p>Carregue seus dados atuais antes de digitar a senha.</p>
             <Button type="button" variant="outline" disabled={passwordBusy} onClick={() => void loadPasswordUser()}>{loadingPasswordUser ? "Carregando..." : "Carregar dados atuais"}</Button>
           </div>}

@@ -25,7 +25,7 @@ export function useAvailabilityReview(refresh: () => Promise<unknown>) {
 
 export function AvailabilityReview({ review }: { review: ReturnType<typeof useAvailabilityReview> }) {
   if (!review.message) return null;
-  return <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+  return <div role="alert" className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3">
     <p>{review.message}</p>
     <p>Seu rascunho foi mantido. {review.blocked ? "Atualize os dados antes de revisar e salvar novamente." : "Dados atualizados. Revise o rascunho antes de salvar novamente."}</p>
     <Button type="button" variant="outline" disabled={review.reload.isPending} onClick={() => review.reload.mutate()}>

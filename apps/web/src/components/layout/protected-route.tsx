@@ -62,9 +62,9 @@ export function ProtectedRoute({
 
   if (!resource) return children;
   return <>
-    {review.required !== 0 && <div role="status" className="relative z-50 mb-3 space-y-2 rounded border bg-card p-3 text-card-foreground">
+    {review.required !== 0 && <div role="status" className="relative z-50 mb-3 space-y-2 rounded-sm border bg-card p-3 text-card-foreground">
       <p>Suas permissões de alteração mudaram. As ações estão suspensas; os rascunhos e resultados pendentes foram preservados. Aguarde a revisão do acesso antes de continuar.</p>
-      <button className="rounded border px-3 py-2 disabled:opacity-50" disabled={(mask & review.required) !== review.required}
+      <button className="rounded-sm border px-3 py-2 disabled:opacity-50" disabled={(mask & review.required) !== review.required}
         onClick={() => setReview({ mask, required: 0 })}>Revisar e retomar ações</button>
     </div>}
     <fieldset className="min-w-0" disabled={review.required !== 0}

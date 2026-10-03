@@ -142,7 +142,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           disabled={disabled}
           name={name}
           className={cn(
-            "h-10 w-full rounded-md border border-input bg-card px-3 text-sm text-foreground outline-none ring-offset-2 transition focus:ring-2 focus:ring-ring",
+            "h-10 w-full rounded-md border border-input bg-card px-3 text-sm text-foreground outline-hidden ring-offset-2 transition focus:ring-2 focus:ring-ring",
             className,
           )}
           {...props}
@@ -173,7 +173,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           disabled={disabled}
           placeholder={placeholder}
           className={cn(
-            "h-10 w-full rounded-md border border-input bg-card px-3 pr-10 text-sm text-foreground outline-none ring-offset-2 transition focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60 placeholder:text-muted-foreground",
+            "h-10 w-full rounded-md border border-input bg-card px-3 pr-10 text-sm text-foreground outline-hidden ring-offset-2 transition focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60 placeholder:text-muted-foreground",
             className,
           )}
         />
@@ -213,7 +213,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                       handleOptionSelect(optionValue);
                     }}
                     className={cn(
-                      "block w-full rounded px-2 py-1 text-left text-sm",
+                      "block w-full rounded-sm px-2 py-1 text-left text-sm",
                       optionDisabled && "cursor-not-allowed text-muted-foreground/50",
                       !optionDisabled && !selected && "text-foreground hover:bg-muted",
                       selected && "bg-primary/15 text-primary",

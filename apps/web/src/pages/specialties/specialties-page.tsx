@@ -136,7 +136,7 @@ export function SpecialtiesPage() {
 
   return (
     <div className="space-y-4">
-      {deletion.review && <div role="alert" className="rounded border border-amber-300 p-3 space-y-2">
+      {deletion.review && <div role="alert" className="rounded-sm border border-amber-300 p-3 space-y-2">
         <p>{deletion.review}</p>
         <p>Confira os dados atualizados e confirme novamente se ainda quiser excluir.</p>
         <Button disabled={deletion.reload.isPending} onClick={() => deletion.reload.mutate()}>Recarregar lista para conferir</Button>
@@ -225,7 +225,7 @@ export function SpecialtiesPage() {
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
           {editConflict && editingSpecialty && (
-            <div role="alert" className="md:col-span-2 rounded border border-amber-300 bg-amber-50 p-3">
+            <div role="alert" className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3">
               <p>Esta especialidade foi alterada por outra operação. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá o nome e a ativação deste formulário.</p>
               <Button type="button" variant="outline" disabled={isSubmitting}
                 onClick={() => reloadSpecialtyMutation.mutate(editingSpecialty.id)}>
