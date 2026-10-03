@@ -84,3 +84,9 @@ Preparação concluída por inspeção e validação documental. Nenhum rebuild/
 **3A.3.1.1 concluída como fundação sem ativação**, implementação `9068759`; [evidências](./homologacao-etapa-3A-3-1-1.md). CI `37055537228` aprovado (302 backend/169 frontend, HTTP, builds e seis imagens sem achados). Provider/estados/cancelamento testados, sem alterar runtime da homologação. Não é prova de revalidação universal ou de preservação de formulários nos guards reais.
 
 **Próximo: 3A.3.1.2**, conforme ajuste de integração acima: montar fonte única, migrar consumidores e leitores locais de forma coordenada, implementar barreiras/limpeza/revisão de ações e revalidar perfil divergente. Testar integração e Chrome/HTTP reais antes de ativar na homologação. Não adicionar o provider isoladamente ao App nem repetir testes aprovados sem mudança/falha.
+
+### Retomada após integração — 03/10/2026
+
+Implementação `5f68df1` publicada: fonte única ativada, guards/menu/ações integrados, rascunhos preservados sob barreira transitória, suspensão de escrita com retomada explícita e tentativa financeira preservada. 178 frontend, builds, Chrome e capturas aprovados; dados preservados. [Relatório](./homologacao-etapa-3A-3-1-2.md).
+
+**3A.3.1.2 ainda não concluída:** CI `37132642265` parou na auditoria npm por vulnerabilidade de `braces`, dependência da cadeia Tailwind 3 sem versão corrigida disponível. Homologação principal não atualizada. Próximo recorte é manutenção da cadeia Tailwind com revisão de compatibilidade/estilos e testes, depois novo CI completo e atualização/preservação. Não iniciar 3A.3.2.1 nem suprimir a auditoria para declarar aceite.
