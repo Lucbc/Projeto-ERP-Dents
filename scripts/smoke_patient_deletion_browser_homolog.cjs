@@ -60,8 +60,12 @@ process.on('unhandledRejection',()=>{console.error('Patient deletion browser fai
    const result=await response;assert.equal(result.status(),201);return result.json();
   }
   stage='upload after empty confirmation';const original=await upload();
+  await second.waitForTimeout(17000); // Patient polling must not renew the captured exam fingerprint.
+  await second.getByText('0 exame(s) serão removidos.',{exact:false}).waitFor();
   await confirm(second,409,'stale_exams');await reload(second);await open(second,1);
   stage='same count replacement';assert.equal((await api('DELETE','/api/exams/'+original.id)).status,204);await upload();
+  await second.waitForTimeout(17000);
+  await second.getByText('1 exame(s) serão removidos.',{exact:false}).waitFor();
   await confirm(second,409,'stale_exams');
   await second.screenshot({path:path.join(__dirname,'../.data/homolog/patient-deletion-stale-exams.png'),fullPage:true});
   stage='restricted account';

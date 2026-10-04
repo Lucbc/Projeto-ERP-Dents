@@ -1,0 +1,95 @@
+// Fictitious private schema only; never print credentials or record bodies.
+const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+let stage = 'start';
+process.on('unhandledRejection', () => { console.error('Patient refresh browser failed at stage: ' + stage); process.exit(1); });
+(async () => {
+ const credentials = JSON.parse(fs.readFileSync(0, 'utf8'));
+ const browser = await chromium.launch({ channel: 'chrome', headless: true });
+ const origin = 'https://localhost:18444';
+ try {
+  const context = () => browser.newContext({ timezoneId: 'America/Sao_Paulo', viewport: { width: 1440, height: 1100 } });
+  const writer = await (await context()).newPage(), reader = await (await context()).newPage();
+  const login = async (page, email) => {
+   await page.goto(origin + '/login'); await page.locator('[name=email]').fill(email); await page.locator('[name=password]').fill(credentials.password);
+   const response = page.waitForResponse(r => r.url().endsWith('/api/auth/login') && r.request().method() === 'POST');
+   await page.getByRole('button', { name: 'Entrar', exact: true }).click(); const identity = await (await response).json();
+   await page.getByRole('region', { name: 'Pacientes cadastrados', exact: true }).waitFor(); return identity;
+  };
+  stage = 'author login'; const author = await login(writer, credentials.email);
+  const api = async (method, url, data) => {
+   const result = await writer.evaluate(async ({ method, url, data, author }) => {
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Session-ID': author.session_id, 'X-CSRF-Token': author.csrf_token }, body: data ? JSON.stringify(data) : undefined });
+    return { status: r.status, body: r.status === 204 ? null : await r.json() };
+   }, { method, url, data, author });
+   assert.ok([200, 201, 204].includes(result.status), 'Fixture request rejected'); return result.body;
+  };
+  stage = 'fixtures';
+  const account = await api('POST', '/api/users', { name: 'Fictitious Patient Reader', email: 'patient-live@example.com', password: credentials.password, role: 'reception' });
+  let matrix = (await api('GET', '/api/permissions')).items.find(p => p.role === 'reception');
+  matrix.permissions.patients = { view: true, create: true, update: true, delete: true };
+  const saveMatrix = async () => { matrix = await api('PUT', '/api/permissions/reception', { version: matrix.version, permissions: matrix.permissions }); }; await saveMatrix();
+  let patient = await api('POST', '/api/patients', { full_name: 'Fictitious Live Patient' }); const endpoint = '/api/patients/' + patient.id;
+  stage = 'reader login'; const receiver = await login(reader, account.email); assert.notEqual(receiver.session_id, author.session_id); await reader.goto(origin + '/patients');
+  const row = name => reader.getByRole('row').filter({ hasText: name });
+  const search = reader.getByPlaceholder(/Buscar por nome/), refresh = () => reader.getByRole('button', { name: 'Atualizar pacientes', exact: true });
+  await row(patient.full_name).waitFor(); await search.fill('Fictitious Live'); await reader.waitForLoadState('networkidle');
+  let reads = 0, writes = 0;
+  reader.on('request', r => { const url = new URL(r.url()); if (r.method() === 'GET' && url.pathname === '/api/patients') reads++;
+   if (['POST', 'PUT', 'DELETE'].includes(r.method()) && url.pathname.startsWith('/api/')) writes++; });
+  stage = 'remote edit with draft'; await row(patient.full_name).getByRole('button', { name: 'Editar', exact: true }).click();
+  await reader.locator('[name=notes]').fill('Fictitious draft'); const oldVersion = patient.version, observedAt = Date.now();
+  patient = await api('PUT', endpoint, { version: patient.version, full_name: 'Fictitious Live Remote' });
+  await row(patient.full_name).waitFor({ timeout: 25000 }); const latency = Date.now() - observedAt;
+  assert.equal(await reader.locator('[name=notes]').inputValue(), 'Fictitious draft'); assert.equal(await reader.locator('[name=full_name]').inputValue(), 'Fictitious Live Patient');
+  assert.equal(await search.inputValue(), 'Fictitious Live'); assert.equal(writes, 0);
+  stage = 'stale edit and explicit review'; let response = reader.waitForResponse(r => r.url().endsWith(endpoint) && r.request().method() === 'PUT');
+  await reader.getByRole('button', { name: 'Salvar', exact: true }).click(); let rejected = await response;
+  assert.equal(rejected.status(), 409); assert.equal(rejected.request().postDataJSON().version, oldVersion);
+  await reader.getByRole('button', { name: 'Descartar rascunho e carregar atual' }).waitFor();
+  assert.equal(await reader.getByRole('button', { name: 'Salvar', exact: true }).isDisabled(), true);
+  await reader.getByRole('button', { name: 'Descartar rascunho e carregar atual' }).click();
+  await reader.getByRole('button', { name: 'Descartar rascunho e carregar atual' }).waitFor({ state: 'hidden' });
+  assert.equal(await reader.locator('[name=full_name]').inputValue(), patient.full_name);
+  await reader.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  stage = 'stale deletion preview'; await row(patient.full_name).getByRole('button', { name: 'Excluir', exact: true }).click();
+  await reader.getByRole('button', { name: 'Confirmar exclusão', exact: true }).waitFor(); const deletionVersion = patient.version;
+  patient = await api('PUT', endpoint, { version: patient.version, full_name: 'Fictitious Live Newer' });
+  await row(patient.full_name).waitFor({ timeout: 25000 });
+  await reader.getByText('Fictitious Live Remote', { exact: true }).waitFor(); assert.equal(writes, 1);
+  response = reader.waitForResponse(r => r.url().includes(endpoint + '?') && r.request().method() === 'DELETE');
+  await reader.getByRole('button', { name: 'Confirmar exclusão', exact: true }).click(); rejected = await response;
+  assert.equal(rejected.status(), 409); assert.equal(new URL(rejected.url()).searchParams.get('version'), String(deletionVersion));
+  await reader.getByRole('button', { name: 'Recarregar lista para conferir' }).waitFor(); await refresh().click();
+  assert.equal(await row(patient.full_name).getByRole('button', { name: 'Excluir', exact: true }).isDisabled(), true);
+  await reader.getByRole('button', { name: 'Recarregar lista para conferir' }).click(); await reader.getByRole('button', { name: 'Recarregar lista para conferir' }).waitFor({ state: 'hidden' });
+  stage = 'transient failure'; const pattern = /\/api\/patients(?:\?.*)?$/;
+  await reader.route(pattern, route => route.fulfill({ status: 503, contentType: 'application/json', body: '{"detail":"Fictitious unavailable"}' }));
+  await refresh().click(); await reader.getByText(/Os dados exibidos podem estar desatualizados/).waitFor(); await row(patient.full_name).waitFor();
+  for (const dark of [false, true]) { await reader.evaluate(dark => document.documentElement.classList.toggle('dark', dark), dark);
+   await reader.screenshot({ path: path.resolve(__dirname, '../.data/homolog/patient-refresh-' + (dark ? 'dark' : 'light') + '.png'), fullPage: true, animations: 'disabled' }); }
+  await search.fill('Fictitious unmatched'); await reader.getByText('Não foi possível carregar pacientes.', { exact: true }).waitFor();
+  assert.equal(await row(patient.full_name).count(), 0); assert.equal(await reader.getByText('Nenhum paciente encontrado.', { exact: true }).count(), 0);
+  await reader.unroute(pattern); await refresh().click(); await reader.getByText('Nenhum paciente encontrado.', { exact: true }).waitFor();
+  await search.fill('Fictitious Live'); await row(patient.full_name).waitFor();
+  stage = 'remote create'; const created = await api('POST', '/api/patients', { full_name: 'Fictitious Live Created' });
+  await row(created.full_name).waitFor({ timeout: 25000 });
+  stage = 'remote deletion with editor'; await row(created.full_name).getByRole('button', { name: 'Editar', exact: true }).click(); await reader.locator('[name=notes]').fill('Fictitious deleted draft');
+  const deletion = await api('GET', '/api/patients/' + created.id + '/deletion-preview?version=' + created.version);
+  await api('DELETE', '/api/patients/' + created.id + '?version=' + created.version + '&exams_fingerprint=' + deletion.exams_fingerprint);
+  await row(created.full_name).waitFor({ state: 'hidden', timeout: 25000 }); assert.equal(await reader.locator('[name=notes]').inputValue(), 'Fictitious deleted draft');
+  response = reader.waitForResponse(r => r.url().endsWith('/api/patients/' + created.id) && r.request().method() === 'PUT');
+  await reader.getByRole('button', { name: 'Salvar', exact: true }).click(); assert.equal((await response).status(), 404);
+  await reader.getByRole('button', { name: 'Descartar rascunho e carregar atual' }).waitFor(); assert.equal(await reader.getByRole('button', { name: 'Salvar', exact: true }).isDisabled(), true);
+  await reader.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  stage = 'hidden pause'; await reader.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); });
+  await reader.waitForLoadState('networkidle'); const before = reads; await reader.waitForTimeout(17000); assert.equal(reads, before);
+  await reader.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')); window.dispatchEvent(new Event('focus')); });
+  stage = 'revocation with draft'; await row(patient.full_name).getByRole('button', { name: 'Editar', exact: true }).click();
+  matrix.permissions.patients.view = false; await saveMatrix();
+  await reader.getByText(/Sem permissão para acessar esta página\.|Seu acesso aos pacientes foi encerrado\./).waitFor({ timeout: 25000 });
+  assert.equal(await reader.locator('[name=notes]').count(), 0);
+  assert.equal(await reader.evaluate(async id => (await fetch('/api/patients', { headers: { 'X-Session-ID': id } })).status, receiver.session_id), 403); assert.equal(writes, 3);
+  console.log('PASS: independent sessions; remote edit in ' + latency + 'ms; search/draft/version/preview preserved; stale edit/delete 409 and deleted edit 404; create/delete reflected; stale data/manual recovery; hidden pause; revocation/403; three explicit writes only.');
+ } finally { await browser.close(); }
+})().catch(() => { console.error('Patient refresh browser failed at stage: ' + stage); process.exitCode = 1; });

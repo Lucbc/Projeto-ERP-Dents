@@ -1,6 +1,6 @@
 ﻿import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -15,6 +15,8 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLiveQuery } from "@/hooks/use-live-query";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { getApiErrorMessage } from "@/lib/api";
 import { formatDate } from "@/lib/datetime";
 import { patientService } from "@/lib/services";
@@ -76,6 +78,21 @@ function normalizeRg(value: string): string {
 }
 
 export function PatientsPage() {
+  const client = useQueryClient();
+  const [denied, setDenied] = useState(false);
+  const onDenied = useCallback(() => setDenied(true), []);
+  useEffect(() => {
+    if (!denied) return;
+    for (const queryKey of [["patients"], ["patient"], ["exams"]]) {
+      void client.cancelQueries({ queryKey });
+      client.removeQueries({ queryKey });
+    }
+  }, [denied, client]);
+  if (denied) return <ErrorState message="Seu acesso aos pacientes foi encerrado. Entre novamente nesta página após revisar o acesso." />;
+  return <PatientsContent onDenied={onDenied} />;
+}
+
+function PatientsContent({ onDenied }: { onDenied: () => void }) {
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
@@ -109,9 +126,12 @@ export function PatientsPage() {
     },
   });
 
-  const patientsQuery = useQuery({
-    queryKey: ["patients", search],
-    queryFn: () => patientService.list({ search, limit: 100, offset: 0 }),
+  const patientsQuery = useLiveQuery(["patients", search], async signal => {
+    try { return await patientService.list({ search, limit: 100, offset: 0 }, signal); }
+    catch (error) {
+      if (isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) onDenied();
+      throw error;
+    }
   });
 
   const createMutation = useMutation({
@@ -176,7 +196,7 @@ export function PatientsPage() {
       void queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
     onError: (error) => {
-      if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
+      if (isAxiosError(error) && [404, 409].includes(error.response?.status ?? 0)) setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
     },
   });
@@ -295,6 +315,7 @@ export function PatientsPage() {
   };
 
   const onSubmit = (values: PatientForm) => {
+    if (isSubmitting || editConflict) return;
     if (editingPatient) {
       updateMutation.mutate({ id: editingPatient.id, version: editingPatient.version, payload: values });
       return;
@@ -328,10 +349,12 @@ export function PatientsPage() {
       </Card>
 
       {patientsQuery.isLoading && <LoadingState message="Carregando pacientes..." />}
-      {patientsQuery.isError && <ErrorState message="Erro ao carregar pacientes." />}
+      <LiveQueryStatus query={patientsQuery} subject="pacientes" />
 
-      {!patientsQuery.isLoading && !patientsQuery.isError && (
+      {patientsQuery.data && (
         <Card>
+          <p className="mb-3 text-sm text-muted-foreground">Exibindo {items.length} de {patientsQuery.data.total} pacientes. Limite desta lista: 100.
+            {patientsQuery.data.total > items.length && " Refine a busca para localizar outros pacientes."}</p>
           {items.length === 0 ? (
             <EmptyState message="Nenhum paciente encontrado." />
           ) : (
@@ -556,7 +579,7 @@ export function PatientsPage() {
             <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || editConflict}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
