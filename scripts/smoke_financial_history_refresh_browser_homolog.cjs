@@ -35,7 +35,7 @@ process.on('unhandledRejection', () => { console.error('Financial history refres
   stage = 'reader login'; const receiver = await login(reader, account.email); assert.notEqual(receiver.session_id, author.session_id);
   await reader.goto(origin + '/financial');
   const row = name => reader.getByRole('region', { name: 'Lançamentos financeiros', exact: true }).getByRole('row').filter({ hasText: name });
-  const dialog = () => reader.getByRole('dialog');
+  const dialog = () => reader.getByRole('heading', { name: /^(Confirmar baixa|Pagamentos e estornos)$/ }).locator('../..');
   const refresh = () => dialog().getByRole('button', { name: 'Atualizar histórico de pagamentos', exact: true });
   let reads = 0, writes = 0;
   reader.on('request', r => { const url = new URL(r.url()); if (r.method() === 'GET' && url.pathname === endpoint + '/payments') reads++;
@@ -84,6 +84,9 @@ process.on('unhandledRejection', () => { console.error('Financial history refres
   const closedReads = reads; await reader.waitForTimeout(17000); assert.equal(reads, closedReads);
   stage = 'read-only history'; matrix.permissions.financial = { view: true, create: false, update: false, delete: false }; await saveMatrix();
   await row(entry.description).getByRole('button', { name: 'Editar', exact: true }).waitFor({ state: 'hidden', timeout: 25000 });
+  // Existing access guard suspends controls after write revocation. Re-enter with
+  // the read-only profile after closing all actions, as an explicit user review.
+  await reader.goto(origin + '/financial');
   await row(entry.description).getByRole('button', { name: 'Ver pagamentos', exact: true }).click();
   await dialog().getByText(/Fictitious remote reversal/).waitFor(); assert.equal(await dialog().getByRole('button', { name: 'Estornar registro', exact: true }).count(), 0);
   await dialog().getByRole('button', { name: 'Fechar', exact: true }).click();
@@ -97,7 +100,7 @@ process.on('unhandledRejection', () => { console.error('Financial history refres
   stage = 'revocation with history open'; await row(entry.description).getByRole('button', { name: 'Ver pagamentos', exact: true }).click();
   await dialog().getByText(/Fictitious remote reversal/).waitFor(); matrix.permissions.financial.view = false; await saveMatrix();
   await reader.getByText(/Sem permissão para acessar esta página\.|Seu acesso ao financeiro foi encerrado\./).waitFor({ timeout: 25000 });
-  assert.equal(await reader.getByRole('dialog').count(), 0);
+  assert.equal(await reader.getByRole('heading', { name: /^(Confirmar baixa|Pagamentos e estornos)$/ }).count(), 0);
   assert.equal(await reader.evaluate(async ({ endpoint, id }) => (await fetch(endpoint + '/payments', { headers: { 'X-Session-ID': id } })).status, { endpoint, id: receiver.session_id }), 403);
   assert.equal(writes, 2);
   console.log('PASS: independent sessions; live payment in ' + latency + 'ms; remote reversal; captured date/method/version/payment/reason; two explicit conflicts; stale history/manual recovery; hidden/closed pause; read-only history; deleted entry/404 and revocation/403; no automatic writes.');

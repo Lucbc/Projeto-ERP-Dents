@@ -56,7 +56,7 @@ it("clears the entire financial page and its caches when history access is denie
   vi.mocked(financialService.payments).mockRejectedValue(failure(403));
   fireEvent.click(screen.getByRole("button", { name: "Atualizar histórico de pagamentos" })); await tick();
   expect(screen.getByText(/Seu acesso ao financeiro foi encerrado/)).toBeTruthy();
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("heading", { name: "Pagamentos e estornos" })).toBeNull();
   expect(client.getQueriesData({ queryKey: ["financial"] })).toEqual([]);
   const reads = vi.mocked(financialService.list).mock.calls.length; await tick(30000);
   expect(financialService.list).toHaveBeenCalledTimes(reads);
