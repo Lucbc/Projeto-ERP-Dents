@@ -108,3 +108,9 @@ Implementação `5f68df1` publicada: fonte única ativada, guards/menu/ações i
 **3A.3.2.2 e 3A.3.2 concluídas**, implementação `ab3ac8b`, seletores finais `ffd7f0f`. Histórico atualiza sem trocar snapshot/tentativa da ação; leitura, falhas, cancelamento, 404/403 tratados. [Evidências](./homologacao-etapa-3A-3-2-2.md): CI `37177193633` aprovado (302 backend/208 frontend, HTTP/builds/auditorias), Chrome/regressão de respostas perdidas aprovados; somente web atualizada, HTTPS/dez verificações e preservação aprovados, revisão 0024/zero schemas privados.
 
 **Próximo: 3A.3.3, pacientes**, conforme critérios acima. Atualizar lista/busca sem substituir edição ou renovar confirmação/fingerprint de exclusão e exames; exigir revisão explícita. Referências gerais/exames têm recortes próprios; R19 parcial. Não repetir testes aprovados sem mudança/falha.
+
+### Retomada atual — pacientes concluídos em 04/10/2026
+
+**3A.3.3 concluída**, implementação `1d4160d`. Lista/busca atualizadas preservando rascunho/versão/prévia/fingerprint; falhas/cancelamento/revogação e revisão de 404/409 tratados. [Evidências](./homologacao-etapa-3A-3-3.md): CI `37207143061` aprovado (302 backend/218 frontend, HTTP/builds/auditorias), Chrome e regressão de exclusão/exames aprovados; somente web atualizada, HTTPS/dez verificações e preservação aprovados, revisão 0024/zero schemas privados.
+
+**Próximo: 3A.3.4.1, procedimentos e especialidades**, conforme critérios acima. Preservar versões/edição e referências que determinam duração/fim na agenda; examinar exclusão/inativação, limites e falha/retorno. R19 parcial; não repetir revisão geral ou validações aprovadas sem mudança/falha.

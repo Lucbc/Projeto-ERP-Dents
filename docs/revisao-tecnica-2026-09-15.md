@@ -281,6 +281,8 @@ Formulários enviam o registro inteiro; casos de uso também mesclam e regravam 
 
 ### R19 — P1 — Uma estação não acompanha automaticamente as mudanças das outras
 
+**Entrega parcial 3A.3.3 — 04/10/2026:** pacientes acompanham alterações remotas preservando busca/edição/versão e prévia/fingerprint de exclusão; 404/409 exigem revisão explícita. Falhas/cancelamento/revogação tratados. [Evidências](./homologacao-etapa-3A-3-3.md): CI `37207143061` aprovado (302 backend/218 frontend), Chrome/regressão de exclusão/exames, atualização web/HTTPS e preservação aprovados. **Próximo: 3A.3.4.1, procedimentos e especialidades**. Demais recursos/referências continuam pendentes; R19 não está encerrado.
+
 **Entrega parcial 3A.3.2 concluída — 04/10/2026:** histórico financeiro acompanha baixas/estornos remotos sem substituir versão, pagamento ou tentativa capturados; leitura sem escrita corrigida, falhas/cancelamento/404/403 tratados. [Evidências](./homologacao-etapa-3A-3-2-2.md): CI `37177193633` aprovado (302 backend/208 frontend), Chrome/regressão histórica, atualização web/HTTPS e preservação aprovados. **Próximo: 3A.3.3, pacientes**; demais recursos/referências continuam pendentes, R19 não está encerrado.
 
 **Entrega parcial 3A.3.2.1 — 04/10/2026:** lista/resumo financeiro atualizados independentemente, filtros/rascunhos/identidade de tentativa preservados, falhas sem zeros falsos e cancelamento/revogação tratados. [Evidências](./homologacao-etapa-3A-3-2-1.md): CI `37167240927` aprovado (302 backend/194 frontend), Chrome/regressão histórica, atualização somente web, HTTPS e preservação aprovados. **Próximo: 3A.3.2.2, histórico financeiro e ações abertas**. Demais telas/referências continuam pendentes; R19 não está encerrado.
