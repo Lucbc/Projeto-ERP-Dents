@@ -3,7 +3,7 @@ import { uncertainFinancialEntry } from "@/lib/financial-attempt";
 import { isAxiosError } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -16,6 +16,8 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useLiveQuery } from "@/hooks/use-live-query";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { getApiErrorMessage } from "@/lib/api";
 import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
 import {
@@ -96,7 +98,28 @@ function resolveStatusLabel(entry: FinancialEntry): string {
   return financialEntryStatusLabels[entry.status];
 }
 
+type FinancialRead = <T>(read: () => Promise<T>) => Promise<T>;
+
 export function FinancialPage() {
+  const client = useQueryClient();
+  const [denied, setDenied] = useState(false);
+  const guard: FinancialRead = useCallback(async read => {
+    try { return await read(); }
+    catch (error) {
+      if (isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) setDenied(true);
+      throw error;
+    }
+  }, []);
+  useEffect(() => {
+    if (!denied) return;
+    void client.cancelQueries({ queryKey: ["financial"] });
+    client.removeQueries({ queryKey: ["financial"] });
+  }, [denied, client]);
+  if (denied) return <ErrorState message="Seu acesso ao financeiro foi encerrado. Entre novamente nesta página após revisar o acesso." />;
+  return <FinancialContent guard={guard} />;
+}
+
+function FinancialContent({ guard }: { guard: FinancialRead }) {
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
@@ -178,9 +201,10 @@ export function FinancialPage() {
     },
   });
 
-  const financialEntriesQuery = useQuery({
-    queryKey: [
+  const financialEntriesQuery = useLiveQuery(
+    [
       "financial",
+      "list",
       search,
       entryTypeFilter,
       statusFilter,
@@ -189,8 +213,7 @@ export function FinancialPage() {
       patientFilter,
       dentistFilter,
     ],
-    queryFn: () =>
-      financialService.list({
+    (signal) => guard(() => financialService.list({
         search: search || undefined,
         entry_type: (entryTypeFilter || undefined) as "income" | "expense" | undefined,
         status: (statusFilter || undefined) as "pending" | "paid" | "cancelled" | undefined,
@@ -200,17 +223,16 @@ export function FinancialPage() {
         dentist_id: dentistFilter || undefined,
         limit: 200,
         offset: 0,
-      }),
-  });
+      }, signal)),
+  );
 
-  const summaryQuery = useQuery({
-    queryKey: ["financial", "summary", fromDate, toDate],
-    queryFn: () =>
-      financialService.summary({
+  const summaryQuery = useLiveQuery(
+    ["financial", "summary", fromDate, toDate],
+    (signal) => guard(() => financialService.summary({
         from: fromDate || undefined,
         to: toDate || undefined,
-      }),
-  });
+      }, signal)),
+  );
 
   const createMutation = useMutation({
     mutationFn: (payload: FinancialForm) =>
@@ -466,46 +488,52 @@ export function FinancialPage() {
         </div>
       </Card>
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section aria-label="Resumo financeiro" className="space-y-3">
+      <h3 className="font-semibold">Resumo financeiro por vencimento</h3>
+      <p className="text-sm text-muted-foreground">Considera apenas as datas de vencimento inicial e final. Busca, tipo, status, paciente e dentista filtram somente a lista. Sem datas, o resumo considera todo o período.</p>
+      <LiveQueryStatus query={summaryQuery} subject="resumo financeiro" />
+      {!summaryQuery.data && !summaryQuery.isError && <LoadingState message="Carregando resumo financeiro..." />}
+      {summaryQuery.data && <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <Card>
           <p className="text-xs uppercase tracking-wide text-slate-500">Receitas (periodo)</p>
           <p className="mt-1 text-2xl font-semibold text-emerald-700">
-            {formatCurrency(summaryQuery.data?.income_total_cents ?? 0)}
+            {formatCurrency(summaryQuery.data.income_total_cents)}
           </p>
           <p className="text-xs text-slate-500">
-            Recebido: {formatCurrency(summaryQuery.data?.received_cents ?? 0)}
+            Recebido: {formatCurrency(summaryQuery.data.received_cents)}
           </p>
         </Card>
         <Card>
           <p className="text-xs uppercase tracking-wide text-slate-500">Despesas (periodo)</p>
           <p className="mt-1 text-2xl font-semibold text-rose-700">
-            {formatCurrency(summaryQuery.data?.expense_total_cents ?? 0)}
+            {formatCurrency(summaryQuery.data.expense_total_cents)}
           </p>
           <p className="text-xs text-slate-500">
-            Pagas: {formatCurrency(summaryQuery.data?.paid_expense_cents ?? 0)}
+            Pagas: {formatCurrency(summaryQuery.data.paid_expense_cents)}
           </p>
         </Card>
         <Card>
           <p className="text-xs uppercase tracking-wide text-slate-500">Pendencias</p>
           <p className="mt-1 text-2xl font-semibold text-amber-700">
             {formatCurrency(
-              (summaryQuery.data?.pending_income_cents ?? 0) +
-                (summaryQuery.data?.pending_expense_cents ?? 0),
+                summaryQuery.data.pending_income_cents + summaryQuery.data.pending_expense_cents,
             )}
           </p>
           <p className="text-xs text-slate-500">
-            Vencidos: {formatCurrency(summaryQuery.data?.overdue_income_cents ?? 0)}
+            Vencidos: {formatCurrency(summaryQuery.data.overdue_income_cents)}
           </p>
         </Card>
         <Card>
           <p className="text-xs uppercase tracking-wide text-slate-500">Saldo realizado</p>
           <p className="mt-1 text-2xl font-semibold text-cyan-700">
-            {formatCurrency(summaryQuery.data?.balance_cents ?? 0)}
+            {formatCurrency(summaryQuery.data.balance_cents)}
           </p>
-          <p className="text-xs text-slate-500">Lancamentos: {summaryQuery.data?.entries_count ?? 0}</p>
+          <p className="text-xs text-slate-500">Lancamentos: {summaryQuery.data.entries_count}</p>
         </Card>
-      </div>
+      </div>}
+      </section>
 
+      <section aria-label="Lançamentos financeiros" className="space-y-3">
       <Card>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Input
@@ -513,7 +541,7 @@ export function FinancialPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
-          <Select value={entryTypeFilter} onChange={(event) => setEntryTypeFilter(event.target.value)}>
+          <Select aria-label="Filtrar por tipo" value={entryTypeFilter} onChange={(event) => setEntryTypeFilter(event.target.value)}>
             <option value="">Todos tipos</option>
             {financialEntryTypeOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -521,19 +549,19 @@ export function FinancialPage() {
               </option>
             ))}
           </Select>
-          <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <Select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="">Todos status</option>
-            {financialEntryStatusOptions.filter(option => option.value !== "paid" || (!editingEntry && canUpdate)).map((option) => (
+            {financialEntryStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
           </Select>
           <div className="grid grid-cols-2 gap-2">
-            <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-            <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+            <Input aria-label="Vencimento inicial" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+            <Input aria-label="Vencimento final" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
           </div>
-          <Select value={patientFilter} onChange={(event) => setPatientFilter(event.target.value)}>
+          <Select aria-label="Filtrar por paciente" value={patientFilter} onChange={(event) => setPatientFilter(event.target.value)}>
             <option value="">Todos pacientes</option>
             {patients.map((patient) => (
               <option key={patient.id} value={patient.id}>
@@ -541,7 +569,7 @@ export function FinancialPage() {
               </option>
             ))}
           </Select>
-          <Select value={dentistFilter} onChange={(event) => setDentistFilter(event.target.value)}>
+          <Select aria-label="Filtrar por dentista" value={dentistFilter} onChange={(event) => setDentistFilter(event.target.value)}>
             <option value="">Todos dentistas</option>
             {dentists.map((dentist) => (
               <option key={dentist.id} value={dentist.id}>
@@ -557,10 +585,14 @@ export function FinancialPage() {
         </div>
       </Card>
 
-      {financialEntriesQuery.isLoading && <LoadingState message="Carregando lancamentos financeiros..." />}
-      {financialEntriesQuery.isError && <ErrorState message="Erro ao carregar lancamentos financeiros." />}
+      <LiveQueryStatus query={financialEntriesQuery} subject="lançamentos financeiros" />
+      {!financialEntriesQuery.data && !financialEntriesQuery.isError && <LoadingState message="Carregando lancamentos financeiros..." />}
+      {financialEntriesQuery.data && <p className="text-sm text-muted-foreground">
+        Exibindo {entries.length} de {financialEntriesQuery.data.total} lançamentos. Limite desta lista: 200.
+        {financialEntriesQuery.data.total > entries.length && " Refine os filtros para localizar os demais lançamentos."}
+      </p>}
 
-      {!financialEntriesQuery.isLoading && !financialEntriesQuery.isError && (
+      {financialEntriesQuery.data && (
         <Card>
           {entries.length === 0 ? (
             <EmptyState message="Nenhum lancamento financeiro encontrado para os filtros informados." />
@@ -658,6 +690,7 @@ export function FinancialPage() {
         </Card>
       )}
 
+      </section>
       <Modal
         open={openEntryModal}
         onClose={() => {

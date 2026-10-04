@@ -419,12 +419,12 @@ export const examService = {
 };
 
 export const financialService = {
-  async list(params: FinancialFilters) {
-    const response = await api.get<ListResponse<FinancialEntry>>("/api/financial", { params });
+  async list(params: FinancialFilters, signal?: AbortSignal) {
+    const response = await api.get<ListResponse<FinancialEntry>>("/api/financial", { params, signal });
     return response.data;
   },
-  async summary(params: { from?: string; to?: string } = {}) {
-    const response = await api.get<FinancialSummary>("/api/financial/summary", { params });
+  async summary(params: { from?: string; to?: string } = {}, signal?: AbortSignal) {
+    const response = await api.get<FinancialSummary>("/api/financial/summary", { params, signal });
     return response.data;
   },
   async get(id: string) {
