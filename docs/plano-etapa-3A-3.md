@@ -96,3 +96,9 @@ Implementação `5f68df1` publicada: fonte única ativada, guards/menu/ações i
 **3A.3.1.2 e 3A.3.1 concluídas**, commits `5f68df1`/`8424963`. Migração Tailwind removeu cadeia vulnerável; CI `37140978695` aprovado, 302 backend/178 frontend, HTTP, builds e auditorias/seis imagens sem achados. Chrome e revisão visual aprovados; somente web principal atualizada, dez verificações integradas/HTTPS e preservação confirmados, revisão 0024/zero schemas. [Evidências](./homologacao-etapa-3A-3-1-2.md).
 
 **Próximo: 3A.3.2.1, lista/resumo financeiro.** Inspecionar consultas/chaves/filtros e estado das ações; atualizar leituras sem substituir formulário, versão ou identidade de tentativa. Histórico/detalhe fica em 3A.3.2.2. R19 permanece parcial; não reabrir diagnóstico geral nem repetir validações sem mudança/falha. Requisitos de navegador atualizados em `sessao-e-https.md`.
+
+### Retomada atual — financeiro parcial concluído em 04/10/2026
+
+**3A.3.2.1 concluída**, implementação `22a29ff`. Lista/resumo independentes, filtros/rascunhos/tentativas preservados, erros sem saldo zero falso, cancelamento e revogação tratados. [Evidências](./homologacao-etapa-3A-3-2-1.md): CI `37167240927` aprovado (302 backend/194 frontend), Chrome e regressão histórica, auditorias, atualização somente web, dez verificações integradas/HTTPS e preservação aprovados. Revisão 0024/zero schemas privados.
+
+**Próximo: 3A.3.2.2, histórico financeiro e ações abertas**, segundo os critérios do contrato acima. Preservar identidade da tentativa e exigir revisão explícita, tratar 404/403/troca de seleção e verificar acesso ao histórico com permissão de leitura. R19 permanece parcial; não repetir testes aprovados sem mudança/falha.
