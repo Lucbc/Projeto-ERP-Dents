@@ -15,13 +15,14 @@ Início em 04/10/2026, base `a0cc938`. [Contrato](./plano-etapa-3A-3.md). Em and
 | --- | --- |
 | Componentes | 10 testes novos: atualização/busca/limite, rascunho/versão/404/409/revisão, prévia/fingerprint imutáveis e revisão não liberada por polling, falha/60s/manual, busca cancelada/resposta tardia, pausa/retorno/sem sobreposição, 401/403 sem dados/ações/caches |
 | Frontend | Foco 18 testes aprovado; suíte **218 testes/29 arquivos em 37,00s** aprovada. TypeScript/Vite aprovados em 20,36s; aviso de bundle existente |
-| Segurança | npm/Python aprovados; imagem/auditoria de imagens pendentes |
-| Chrome | Pendente novo harness de sessões independentes; regressão de exclusão cobre upload e troca de exame com mesma contagem, agora aguardando intervalo de polling antes de confirmar |
+| Segurança | npm/Python e seis imagens sem achados; imagem web construída |
+| Chrome | Novo harness aprovado: sessões independentes, edição remota em **14734ms**, busca/rascunho/versão/prévia preservados, edição/exclusão antigas 409 e edição de excluído 404 reais; criação/exclusão refletidas, falha/recuperação, pausa oculta, revogação/403. Três escritas explícitas, nenhuma automática; capturas claro/escuro inspecionadas |
+| Regressão de exclusão | Aprovada: edição concorrente, upload após prévia vazia e troca de exame com mesma contagem rejeitados; aguarda 17s após mudanças de exames para provar que polling não renova fingerprint. Permissão insuficiente não abre confirmação; concessão/nova revisão permite exclusão |
 | API/banco/CI | Pendente CI completo e smoke após atualização; código de API/banco não alterado |
-| Preservação | Cópias públicas/exames/fingerprints/dump integral `pre-3A-3-3*` salvos; helper `.data/upgrade_3a33.py` |
+| Preservação | Cópias públicas/exames/fingerprints/dump integral `pre-3A-3-3*` salvos; helper `.data/upgrade_3a33.py`. Após limpeza privada, linhas/referências/bytes preservados, revisão 0024/zero schemas; falta atualização principal |
 
 ## Retomada
 
-Concluir imagem/Chrome/auditorias, publicar/aguardar CI. Depois atualizar somente web principal, verificar HTTPS/build servido, smoke e preservação (`after` do helper; não repetir `before/full` nem sobrescrever backups). Fictícios apenas em `erp-dents-homolog`; logs/capturas ignorados, nenhum volume removido.
+Implementação `1d4160d` publicada; **CI `37207143061` em execução**, frontend/auditoria inicial aprovados, backend/HTTP em andamento. Validações locais concluídas, sem processo privado pendente. Aguardar CI; depois atualizar somente web principal, verificar HTTPS/build servido, smoke e preservação (`after` do helper; não repetir `before/full` nem sobrescrever backups). Fictícios apenas em `erp-dents-homolog`; logs/capturas ignorados, nenhum volume removido.
 
 Somente após aceite iniciar 3A.3.4.1, procedimentos/especialidades, conforme contrato. Exames/referências gerais têm recortes próprios; R19 parcial. Navegador no mesmo PC não demonstra capacidade/estações físicas.
