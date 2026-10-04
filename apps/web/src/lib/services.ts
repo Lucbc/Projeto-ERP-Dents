@@ -450,8 +450,8 @@ export const financialService = {
     const response = await api.post<FinancialOperation>(`/api/financial/${id}/mark-paid`, payload);
     return response.data;
   },
-  async payments(id: string) {
-    return (await api.get<FinancialPayment[]>(`/api/financial/${id}/payments`)).data;
+  async payments(id: string, signal?: AbortSignal) {
+    return (await api.get<FinancialPayment[]>(`/api/financial/${id}/payments`, { signal })).data;
   },
   async reversePayment(id: string, payload: { version: number; idempotency_key: string; payment_id: string; reason: string }) {
     return (await api.post<FinancialOperation>(`/api/financial/${id}/reverse-payment`, payload)).data;

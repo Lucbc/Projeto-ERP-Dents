@@ -43,6 +43,25 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); sessionStorage.clear(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
+it("allows read-only users to open history without exposing payment or reversal actions", async () => {
+  canWrite = false; show(); await tick();
+  fireEvent.click(list().getByRole("button", { name: "Ver histórico" })); await tick();
+  expect(screen.getByRole("heading", { name: "Histórico de pagamentos" })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: "Confirmar baixa integral" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Estornar registro" })).toBeNull();
+});
+
+it("clears the entire financial page and its caches when history access is denied", async () => {
+  show(); await tick(); fireEvent.click(list().getByRole("button", { name: "Ver histórico" })); await tick();
+  vi.mocked(financialService.payments).mockRejectedValue(failure(403));
+  fireEvent.click(screen.getByRole("button", { name: "Atualizar histórico de pagamentos" })); await tick();
+  expect(screen.getByText(/Seu acesso ao financeiro foi encerrado/)).toBeTruthy();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(client.getQueriesData({ queryKey: ["financial"] })).toEqual([]);
+  const reads = vi.mocked(financialService.list).mock.calls.length; await tick(30000);
+  expect(financialService.list).toHaveBeenCalledTimes(reads);
+});
+
 it("refreshes list and totals without writes or polling form references, and shows the list limit", async () => {
   const create = vi.spyOn(financialService, "create"), update = vi.spyOn(financialService, "update"), pay = vi.spyOn(financialService, "markAsPaid");
   show(); await tick();

@@ -460,7 +460,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   return (
     <div className="space-y-4">
       {reviewCreation && <div role="alert" className="rounded-sm border border-amber-300 p-3"><p>Uma criação anterior ficou sem confirmação. Confira os lançamentos e pagamentos antes de criar outro.</p><Button disabled={!financialEntriesQuery.isSuccess || financialEntriesQuery.isFetching} onClick={() => { uncertainFinancialEntry("creation", false); setReviewCreation(false); }}>Conferi os lançamentos</Button></div>}
-      {paymentDialog && <PaymentDialog key={paymentDialog.entry.id + paymentDialog.mode} entry={paymentDialog.entry} mode={paymentDialog.mode}
+      {paymentDialog && <PaymentDialog key={paymentDialog.entry.id + paymentDialog.mode} entry={paymentDialog.entry} mode={paymentDialog.mode} guard={guard}
         onClose={() => setPaymentDialog(null)} onChanged={() => void queryClient.invalidateQueries({ queryKey: ["financial"] })} />}
       {actionConflict && (
         <div role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-3">
@@ -646,9 +646,6 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
                         {entry.paid_at ? new Date(entry.paid_at).toLocaleString("pt-BR") : "-"}
                       </td>
                       <td className="p-2">
-                        {!canUpdate && !canDelete ? (
-                          <span className="text-slate-400">-</span>
-                        ) : (
                           <div className="flex gap-2">
                             {canUpdate && entry.status !== "paid" && (
                               <Button variant="outline" onClick={() => onEditEntry(entry)}>
@@ -679,7 +676,6 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
                               </Button>
                             )}
                           </div>
-                        )}
                       </td>
                     </tr>
                   ))}

@@ -78,7 +78,7 @@ process.on('unhandledRejection', () => { console.error('Financial refresh browse
   await api('POST', '/api/financial/' + entry.id + '/mark-paid', { version: entry.version, idempotency_key: randomUUID(), paid_at: null, payment_method: 'pix' });
   await row(entry.description).waitFor({ state: 'hidden', timeout: 25000 });
   await totals.getByText(/Recebido:.*234,56/).waitFor({ timeout: 25000 });
-  assert.equal(writes, 1); await reader.getByText('Estado atual: Pendente.', { exact: true }).waitFor();
+  assert.equal(writes, 1); await reader.getByText('Estado de referência da ação: Pendente.', { exact: true }).waitFor();
   const settlement = reader.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/mark-paid'));
   await reader.getByRole('button', { name: 'Confirmar baixa integral', exact: true }).click(); const conflict = await settlement;
   assert.equal(conflict.status(), 409); assert.equal(conflict.request().postDataJSON().version, paymentVersion);

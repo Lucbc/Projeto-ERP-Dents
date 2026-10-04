@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
+import { useLiveQuery } from "@/hooks/use-live-query";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
 import { fromInputDateTime } from "@/lib/datetime";
@@ -18,8 +20,9 @@ type Attempt = { kind: "settle"; payload: { version: number; idempotency_key: st
   | { kind: "reverse"; payload: { version: number; idempotency_key: string; payment_id: string; reason: string } };
 const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value / 100);
 
-export function PaymentDialog({ entry, mode, onClose, onChanged }: {
+export function PaymentDialog({ entry, mode, onClose, onChanged, guard }: {
   entry: FinancialEntry; mode: "pay" | "history"; onClose: () => void; onChanged: () => void;
+  guard?: <T>(read: () => Promise<T>) => Promise<T>;
 }) {
   const { can } = usePermissions();
   const [current, setCurrent] = useState(entry);
@@ -30,7 +33,10 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
   const [uncertain, setUncertain] = useState(uncertainFinancialEntry(entry.id));
   const [blocked, setBlocked] = useState(false);
   const attempt = useRef<Attempt | null>(null);
-  const history = useQuery({ queryKey: ["financial", "payments", entry.id], queryFn: () => financialService.payments(entry.id) });
+  const history = useLiveQuery(["financial", "payments", entry.id], signal => {
+    const read = () => financialService.payments(entry.id, signal);
+    return guard ? guard(read) : read();
+  }, { exactOnDenied: true, stopOnNotFound: true, gcTime: 0 });
   const mutation = useMutation({
     mutationFn: (operation: Attempt) => operation.kind === "settle"
       ? financialService.markAsPaid(entry.id, operation.payload)
@@ -50,16 +56,20 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
     },
   });
   function submit(kind: "settle" | "reverse") {
-    if (mutation.isPending || blocked || uncertain) return;
+    if (mutation.isPending || blocked || uncertain || history.accessDenied || history.notFound) return;
     const operation: Attempt = kind === "settle"
       ? { kind, payload: { version: current.version, idempotency_key: crypto.randomUUID(), paid_at: date ? fromInputDateTime(date) : null, payment_method: method || null } }
       : { kind, payload: { version: current.version, idempotency_key: crypto.randomUUID(), payment_id: current.active_payment_id!, reason: reason.trim() } };
     attempt.current = operation; mutation.mutate(operation);
   }
   return <Modal open title={mode === "pay" ? "Confirmar baixa" : "Pagamentos e estornos"} onClose={() => { if (!mutation.isPending) onClose(); }}>
-    <div className="space-y-4">
+    {history.accessDenied || history.notFound ? <div className="space-y-4">
+      <p role="alert">{history.accessDenied ? "Seu acesso ao histórico financeiro foi encerrado." : "Este lançamento não está mais disponível. Feche a janela e atualize a lista."}</p>
+      <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>Fechar</Button>
+    </div> : <div className="space-y-4">
       <p>{current.entry_type === "income" ? "Recebimento" : "Pagamento de despesa"}: <strong>{money(current.total_cents)}</strong></p>
-      <p>Estado atual: {current.status === "paid" ? "Pago" : current.status === "pending" ? "Pendente" : "Cancelado"}.</p>
+      <p>Estado de referência da ação: {current.status === "paid" ? "Pago" : current.status === "pending" ? "Pendente" : "Cancelado"}.</p>
+      <p className="text-sm text-muted-foreground">Valores e estado de referência desta ação, capturados ao abrir ou confirmar uma operação. O histórico abaixo se atualiza separadamente. Para escolher outra ação, feche a janela e confira a lista atualizada.</p>
       {message && <p role="alert">{message}</p>}
       {uncertain && <div role="alert" className="rounded-sm border border-amber-300 p-3">
         <p>Há uma operação com resultado incerto. Confira o histórico antes de iniciar outra.</p>
@@ -78,8 +88,8 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
       </fieldset>}
       <h3 className="font-semibold">Histórico de pagamentos</h3>
       <ReferenceSnapshot snapshot={current.reference_snapshot} title="Origem do lançamento" />
+      <LiveQueryStatus query={history} subject="histórico de pagamentos" />
       {history.isPending && <p>Carregando...</p>}
-      {history.isError && <Button onClick={() => void history.refetch()}>Tentar carregar histórico</Button>}
       {history.data?.length === 0 && <p>Nenhum pagamento registrado.</p>}
       {history.data?.map(payment => <article key={payment.id} className="rounded-sm border p-3 space-y-1">
         <p>{money(payment.total_cents)} — {new Date(payment.paid_at).toLocaleString("pt-BR")} — {paymentMethodOptions.find(p => p.value === payment.payment_method)?.label || "Forma não informada"}</p>
@@ -89,6 +99,6 @@ export function PaymentDialog({ entry, mode, onClose, onChanged }: {
         {payment.reversal ? <p>Estornado em {new Date(payment.reversal.recorded_at).toLocaleString("pt-BR")} por {payment.reversal.actor_name}: {payment.reversal.reason}</p> : <p>Pagamento ativo</p>}
       </article>)}
       <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>Fechar</Button>
-    </div>
+    </div>}
   </Modal>;
 }
