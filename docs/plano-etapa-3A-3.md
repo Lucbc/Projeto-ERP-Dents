@@ -102,3 +102,9 @@ Implementação `5f68df1` publicada: fonte única ativada, guards/menu/ações i
 **3A.3.2.1 concluída**, implementação `22a29ff`. Lista/resumo independentes, filtros/rascunhos/tentativas preservados, erros sem saldo zero falso, cancelamento e revogação tratados. [Evidências](./homologacao-etapa-3A-3-2-1.md): CI `37167240927` aprovado (302 backend/194 frontend), Chrome e regressão histórica, auditorias, atualização somente web, dez verificações integradas/HTTPS e preservação aprovados. Revisão 0024/zero schemas privados.
 
 **Próximo: 3A.3.2.2, histórico financeiro e ações abertas**, segundo os critérios do contrato acima. Preservar identidade da tentativa e exigir revisão explícita, tratar 404/403/troca de seleção e verificar acesso ao histórico com permissão de leitura. R19 permanece parcial; não repetir testes aprovados sem mudança/falha.
+
+### Retomada atual — financeiro concluído em 04/10/2026
+
+**3A.3.2.2 e 3A.3.2 concluídas**, implementação `ab3ac8b`, seletores finais `ffd7f0f`. Histórico atualiza sem trocar snapshot/tentativa da ação; leitura, falhas, cancelamento, 404/403 tratados. [Evidências](./homologacao-etapa-3A-3-2-2.md): CI `37177193633` aprovado (302 backend/208 frontend, HTTP/builds/auditorias), Chrome/regressão de respostas perdidas aprovados; somente web atualizada, HTTPS/dez verificações e preservação aprovados, revisão 0024/zero schemas privados.
+
+**Próximo: 3A.3.3, pacientes**, conforme critérios acima. Atualizar lista/busca sem substituir edição ou renovar confirmação/fingerprint de exclusão e exames; exigir revisão explícita. Referências gerais/exames têm recortes próprios; R19 parcial. Não repetir testes aprovados sem mudança/falha.

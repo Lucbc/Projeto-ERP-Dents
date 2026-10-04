@@ -1,6 +1,6 @@
 # Homologação 3A.3.2.2 — histórico financeiro e ações abertas
 
-Início em 04/10/2026, base `9b5aee8`. [Contrato](./plano-etapa-3A-3.md). Em andamento; sem mudança de API, transação ou migração.
+Início e conclusão em 04/10/2026, base `9b5aee8`; implementação `ab3ac8b`, seletores finais `ffd7f0f`. [Contrato](./plano-etapa-3A-3.md). Sem mudança de API, transação ou migração.
 
 ## Implementação
 
@@ -18,8 +18,8 @@ Início em 04/10/2026, base `9b5aee8`. [Contrato](./plano-etapa-3A-3.md). Em and
 | Segurança local | npm/Python e seis imagens aprovados, sem achados; imagem web construída |
 | Chrome | Aprovado: sessões independentes, pagamento remoto em **15287ms**, estorno remoto com motivo preservado, versões/pagamento/data/forma capturados e dois conflitos 409 reais; falha/recuperação, pausa oculto/fechado, leitura sem escrita, exclusão/404 e revogação/403 reais. Duas escritas explícitas, nenhuma automática. Capturas claro/escuro inspecionadas |
 | Regressão Chrome histórica | Aprovada: respostas perdidas de baixa/estorno recuperam um evento; rascunho antigo rejeitado; estorno/correção/nova baixa mantêm histórico e tentativas atrasadas |
-| API/banco/CI | Pendentes CI completo e smoke após atualização; não atribuir testes backend anteriores a este recorte |
-| Preservação | Cópias públicas/exames/fingerprints/dump integral `pre-3A-3-2-2*` salvos; revisão final pendente |
+| API/banco/CI | CI `37177193633` aprovado, job em 14min40s: **302 backend em 492,310s/208 frontend**, HTTP/builds/auditorias. Após atualização, dez verificações integradas aprovadas; revisão `0024_user_version`, zero schemas privados |
+| Preservação/atualização | Somente web principal atualizada; HTTPS confiável 200, JS/CSS iguais ao build validado. Linhas de negócio, referências históricas e bytes de exames preservados após smoke. Cópias públicas/exames/fingerprints/dump integral `pre-3A-3-2-2*` intactos |
 
 Primeiro foco: 31/32 passaram. Seletor do novo teste atingia botão visual em vez do select nativo da forma de pagamento; fixture corrigida, suíte completa aprovada. Não contar a tentativa inicial como aceite. Erro esperado do teste que exige provider continua capturado pela suíte existente.
 
@@ -27,6 +27,6 @@ Ensaios intermediários do novo harness Chrome foram corrigidos: janela existent
 
 ## Retomada
 
-Implementação `ab3ac8b` publicada, **CI `37177193633` em andamento**. Validações locais encerradas; aguardar CI, depois atualizar somente web principal, verificar HTTPS/build servido, smoke e preservação com `.data/upgrade_3a322.py after`. Não repetir `before/full` nem sobrescrever backups. Todos os dados de teste são fictícios em `erp-dents-homolog`; logs/capturas ignorados em `.data`. Não remover volumes. Ajustes posteriores exclusivos de seletores dos testes/harness foram validados localmente e publicados com `[skip ci]`; código da aplicação do CI permanece idêntico.
+**Aceite concluído**, [CI aprovado](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/37177193633). Logs `.data/ci-final-3a322.log`, `.data/browser-3a322.log`, `.data/browser-history-3a322.log` e `.data/smoke-main-3a322.log`; helper de preservação `.data/upgrade_3a322.py`. Nenhum teste pendente. Todos os dados de teste são fictícios em `erp-dents-homolog`; logs/capturas ignorados em `.data`. Nenhum volume removido. Ajustes posteriores exclusivos de seletores dos testes/harness foram validados localmente e publicados com `[skip ci]`; código da aplicação do CI permanece idêntico. HTTPS verifica o build servido, enquanto a interface foi ensaiada no Chrome em schema privado antes da atualização principal.
 
-Somente após aceite fechar 3A.3.2.2/3A.3.2. Próximo recorte: 3A.3.3, pacientes, conforme contrato; R19 continua parcial. Chrome no mesmo PC não prova capacidade ou estações físicas.
+**3A.3.2.2 e 3A.3.2 concluídas.** Próximo recorte: 3A.3.3, pacientes, conforme contrato; preservar edição/fingerprint e revisão explícita da exclusão. R19 continua parcial. Chrome no mesmo PC não prova capacidade, estações físicas ou outros navegadores. Instalação assistida continua na etapa 5.

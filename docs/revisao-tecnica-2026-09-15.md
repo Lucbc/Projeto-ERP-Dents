@@ -281,6 +281,8 @@ Formulários enviam o registro inteiro; casos de uso também mesclam e regravam 
 
 ### R19 — P1 — Uma estação não acompanha automaticamente as mudanças das outras
 
+**Entrega parcial 3A.3.2 concluída — 04/10/2026:** histórico financeiro acompanha baixas/estornos remotos sem substituir versão, pagamento ou tentativa capturados; leitura sem escrita corrigida, falhas/cancelamento/404/403 tratados. [Evidências](./homologacao-etapa-3A-3-2-2.md): CI `37177193633` aprovado (302 backend/208 frontend), Chrome/regressão histórica, atualização web/HTTPS e preservação aprovados. **Próximo: 3A.3.3, pacientes**; demais recursos/referências continuam pendentes, R19 não está encerrado.
+
 **Entrega parcial 3A.3.2.1 — 04/10/2026:** lista/resumo financeiro atualizados independentemente, filtros/rascunhos/identidade de tentativa preservados, falhas sem zeros falsos e cancelamento/revogação tratados. [Evidências](./homologacao-etapa-3A-3-2-1.md): CI `37167240927` aprovado (302 backend/194 frontend), Chrome/regressão histórica, atualização somente web, HTTPS e preservação aprovados. **Próximo: 3A.3.2.2, histórico financeiro e ações abertas**. Demais telas/referências continuam pendentes; R19 não está encerrado.
 
 **Entrega parcial 3A.3.1 — 03/10/2026:** permissões efetivas compartilhadas entre menu/rotas/ações, barreira transitória preservando rascunhos, limpeza na revogação e retomada explícita de escrita. [Evidências](./homologacao-etapa-3A-3-1-2.md): CI `37140978695` aprovado (302 backend/178 frontend), Chrome, atualização web e preservação aprovados. Migração Tailwind removeu cadeia vulnerável e foi revisada visualmente. **Próximo: lista/resumo financeiro 3A.3.2.1**; demais recursos/referências ainda pendentes, R19 não está encerrado.
