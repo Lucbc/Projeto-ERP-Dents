@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -10,7 +10,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { EmptyState, LoadingState } from "@/components/ui/states";
+import { CatalogReadBoundary } from "@/components/catalog-read-boundary";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
+import { useLiveQuery } from "@/hooks/use-live-query";
 import { useToast } from "@/components/ui/toast";
 import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -26,6 +29,10 @@ const specialtySchema = z.object({
 type SpecialtyForm = z.infer<typeof specialtySchema>;
 
 export function SpecialtiesPage() {
+  return <CatalogReadBoundary resource="specialties">{onDenied => <SpecialtiesContent onDenied={onDenied} />}</CatalogReadBoundary>;
+}
+
+function SpecialtiesContent({ onDenied }: { onDenied: () => void }) {
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
@@ -43,10 +50,13 @@ export function SpecialtiesPage() {
     },
   });
 
-  const specialtiesQuery = useQuery({
-    queryKey: ["specialties", search],
-    queryFn: () => specialtyService.list({ search, limit: 100, offset: 0 }),
-  });
+  const specialtiesQuery = useLiveQuery(["specialties", "list", search], async signal => {
+    try { return await specialtyService.list({ search, limit: 100, offset: 0 }, signal); }
+    catch (error) {
+      if (isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) onDenied();
+      throw error;
+    }
+  }, { exactOnDenied: true });
 
   const createMutation = useMutation({
     mutationFn: (payload: SpecialtyForm) =>
@@ -78,8 +88,8 @@ export function SpecialtiesPage() {
       void queryClient.invalidateQueries({ queryKey: ["specialties"] });
     },
     onError: (error) => {
-      if (isAxiosError(error) && error.response?.status === 409
-        && error.response.data?.code === "stale_version") setEditConflict(true);
+      if (isAxiosError(error) && (error.response?.status === 404 || (error.response?.status === 409
+        && error.response.data?.code === "stale_version"))) setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
     },
   });
@@ -127,6 +137,7 @@ export function SpecialtiesPage() {
   };
 
   const onSubmit = (values: SpecialtyForm) => {
+    if (isSubmitting || editConflict) return;
     if (editingSpecialty) {
       updateMutation.mutate({ id: editingSpecialty.id, version: editingSpecialty.version, payload: values });
       return;
@@ -161,10 +172,12 @@ export function SpecialtiesPage() {
       </Card>
 
       {specialtiesQuery.isLoading && <LoadingState message="Carregando especialidades..." />}
-      {specialtiesQuery.isError && <ErrorState message="Erro ao carregar especialidades." />}
+      <LiveQueryStatus query={specialtiesQuery} subject="especialidades" />
 
-      {!specialtiesQuery.isLoading && !specialtiesQuery.isError && (
+      {specialtiesQuery.data && (
         <Card>
+          <p className="mb-3 text-sm text-muted-foreground">Exibindo {items.length} de {specialtiesQuery.data.total} especialidades. Limite desta lista: 100.
+            {specialtiesQuery.data.total > items.length && " Refine a busca para localizar outras especialidades."}</p>
           {items.length === 0 ? (
             <EmptyState message="Nenhuma especialidade encontrada." />
           ) : (
@@ -253,7 +266,7 @@ export function SpecialtiesPage() {
             <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || editConflict}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>

@@ -25,6 +25,7 @@ process.on('unhandledRejection',()=>{console.error('Catalog deletion browser fai
    const item=created.body,endpoint='/api/'+resource+'/'+item.id;
    for(const tab of [first,second]) {await tab.goto('https://localhost:18444/'+resource);await tab.getByText(item.name,{exact:true}).waitFor();}
    stage=resource+' edit';
+   await second.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
    await first.getByRole('row').filter({hasText:item.name}).getByRole('button',{name:'Editar',exact:true}).click();
    await first.locator('[name=name]').fill('Fictitious revised '+resource);
    const saved=first.waitForResponse(r=>r.url().endsWith(endpoint)&&r.request().method()==='PUT');
@@ -35,6 +36,9 @@ process.on('unhandledRejection',()=>{console.error('Catalog deletion browser fai
    await second.getByRole('row').filter({hasText:item.name}).getByRole('button',{name:'Excluir',exact:true}).click();
    const response=await rejected;assert.equal(response.status(),409);assert.ok(response.url().endsWith('?version=1'));
    await second.getByRole('button',{name:'Recarregar lista para conferir'}).waitFor();
+   await second.evaluate(()=>{delete document.visibilityState;document.dispatchEvent(new Event('visibilitychange'));});
+   await second.waitForTimeout(17000);
+   assert.equal(await second.getByRole('button',{name:'Excluir',exact:true}).isDisabled(),true);
    assert.equal((await api('GET',endpoint)).body.version,2);
    await second.screenshot({path:path.resolve(__dirname,'../.data/homolog/catalog-deletion-'+resource+'.png'),fullPage:true});
    await second.getByRole('button',{name:'Recarregar lista para conferir'}).click();

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -10,7 +10,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { EmptyState, LoadingState } from "@/components/ui/states";
+import { CatalogReadBoundary } from "@/components/catalog-read-boundary";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
+import { useLiveQuery } from "@/hooks/use-live-query";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
@@ -67,6 +70,10 @@ function toPriceInput(cents: number | null): string {
 }
 
 export function ProceduresPage() {
+  return <CatalogReadBoundary resource="procedures">{onDenied => <ProceduresContent onDenied={onDenied} />}</CatalogReadBoundary>;
+}
+
+function ProceduresContent({ onDenied }: { onDenied: () => void }) {
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
@@ -87,10 +94,13 @@ export function ProceduresPage() {
     },
   });
 
-  const proceduresQuery = useQuery({
-    queryKey: ["procedures", search],
-    queryFn: () => procedureService.list({ search, limit: 100, offset: 0 }),
-  });
+  const proceduresQuery = useLiveQuery(["procedures", "list", search], async signal => {
+    try { return await procedureService.list({ search, limit: 100, offset: 0 }, signal); }
+    catch (error) {
+      if (isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) onDenied();
+      throw error;
+    }
+  }, { exactOnDenied: true });
 
   const createMutation = useMutation({
     mutationFn: (payload: ProcedureForm) =>
@@ -128,7 +138,7 @@ export function ProceduresPage() {
       void queryClient.invalidateQueries({ queryKey: ["procedures"] });
     },
     onError: (error) => {
-      if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
+      if (isAxiosError(error) && [404, 409].includes(error.response?.status ?? 0)) setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
     },
   });
@@ -185,6 +195,7 @@ export function ProceduresPage() {
   };
 
   const onSubmit = (values: ProcedureForm) => {
+    if (isSubmitting || editConflict) return;
     if (editingProcedure) {
       updateMutation.mutate({ id: editingProcedure.id, version: editingProcedure.version, payload: values });
       return;
@@ -219,10 +230,12 @@ export function ProceduresPage() {
       </Card>
 
       {proceduresQuery.isLoading && <LoadingState message="Carregando procedimentos..." />}
-      {proceduresQuery.isError && <ErrorState message="Erro ao carregar procedimentos." />}
+      <LiveQueryStatus query={proceduresQuery} subject="procedimentos" />
 
-      {!proceduresQuery.isLoading && !proceduresQuery.isError && (
+      {proceduresQuery.data && (
         <Card>
+          <p className="mb-3 text-sm text-muted-foreground">Exibindo {items.length} de {proceduresQuery.data.total} procedimentos. Limite desta lista: 100.
+            {proceduresQuery.data.total > items.length && " Refine a busca para localizar outros procedimentos."}</p>
           {items.length === 0 ? (
             <EmptyState message="Nenhum procedimento encontrado." />
           ) : (
@@ -340,7 +353,7 @@ export function ProceduresPage() {
             <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || editConflict}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>

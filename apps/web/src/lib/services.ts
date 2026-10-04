@@ -223,8 +223,8 @@ export const dentistService = {
 };
 
 export const procedureService = {
-  async list(params: PaginationParams) {
-    const response = await api.get<ListResponse<Procedure>>("/api/procedures", { params });
+  async list(params: PaginationParams, signal?: AbortSignal) {
+    const response = await api.get<ListResponse<Procedure>>("/api/procedures", { params, signal });
     return response.data;
   },
   async listAll(params: ListAllParams = {}) {
@@ -248,8 +248,8 @@ export const procedureService = {
 };
 
 export const specialtyService = {
-  async list(params: PaginationParams) {
-    const response = await api.get<ListResponse<Specialty>>("/api/specialties", { params });
+  async list(params: PaginationParams, signal?: AbortSignal) {
+    const response = await api.get<ListResponse<Specialty>>("/api/specialties", { params, signal });
     return response.data;
   },
   async listAll(params: ListAllParams = {}) {
