@@ -29,6 +29,7 @@ process.on('unhandledRejection',()=>{console.error('Dentist deletion browser fai
   stage='account fixture HTTP '+createdUser.status;assert.equal(createdUser.status,201);const user=createdUser.body;
   for(const tab of [first,second]) {await tab.goto('https://localhost:18444/dentists');await tab.getByRole('row').filter({hasText:dentist.full_name}).waitFor();}
   stage='edit schedule';
+  await second.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
   await first.getByRole('row').filter({hasText:dentist.full_name}).getByRole('button',{name:'Editar',exact:true}).click();
   await first.locator('[name="availability.0.start_time"]').fill('09:00');
   const saved=first.waitForResponse(r=>r.url().endsWith(endpoint)&&r.request().method()==='PUT');
@@ -47,7 +48,11 @@ process.on('unhandledRejection',()=>{console.error('Dentist deletion browser fai
   }
   stage='stale deletion';assert.equal((await remove(409,1)).code,'stale_version');
   const reload=second.getByRole('button',{name:'Recarregar lista para conferir',exact:true});
-  await reload.waitFor();await second.screenshot({path:path.resolve(__dirname,'../.data/homolog/dentist-deletion-stale.png'),fullPage:true});
+  await reload.waitFor();
+  await second.evaluate(()=>{delete document.visibilityState;document.dispatchEvent(new Event('visibilitychange'));});
+  await second.waitForTimeout(17000);
+  assert.equal(await second.getByRole('row').filter({hasText:dentist.full_name}).getByRole('button',{name:'Excluir',exact:true}).isDisabled(),true);
+  await second.screenshot({path:path.resolve(__dirname,'../.data/homolog/dentist-deletion-stale.png'),fullPage:true});
   await reload.click();await reload.waitFor({state:'hidden'});
   stage='linked account blocks';assert.equal((await remove(409,2)).code,'linked_record');
   stage='linked account banner';

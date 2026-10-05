@@ -11,7 +11,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { EmptyState, LoadingState } from "@/components/ui/states";
+import { CatalogReadBoundary } from "@/components/catalog-read-boundary";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
+import { useLiveQuery } from "@/hooks/use-live-query";
 import { useToast } from "@/components/ui/toast";
 import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -133,6 +136,10 @@ function createEmptyAvailabilitySlot(): DentistAvailabilitySlot {
 }
 
 export function DentistsPage() {
+  return <CatalogReadBoundary resource="dentists">{onDenied => <DentistsContent onDenied={onDenied} />}</CatalogReadBoundary>;
+}
+
+function DentistsContent({ onDenied }: { onDenied: () => void }) {
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
@@ -161,10 +168,13 @@ export function DentistsPage() {
     name: "availability",
   });
 
-  const dentistsQuery = useQuery({
-    queryKey: ["dentists", search],
-    queryFn: () => dentistService.list({ search, limit: 100, offset: 0 }),
-  });
+  const dentistsQuery = useLiveQuery(["dentists", "list", search], async signal => {
+    try { return await dentistService.list({ search, limit: 100, offset: 0 }, signal); }
+    catch (error) {
+      if (isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) onDenied();
+      throw error;
+    }
+  }, { exactOnDenied: true });
 
   const specialtiesQuery = useQuery({
     queryKey: ["specialties", "dentists-form"],
@@ -220,7 +230,7 @@ export function DentistsPage() {
     },
     onError: (error) => {
       if (availabilityReview.handle(error)) return;
-      if (isAxiosError(error) && error.response?.status === 409) setEditConflict(true);
+      if (isAxiosError(error) && [404, 409].includes(error.response?.status ?? 0)) setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
     },
   });
@@ -292,7 +302,7 @@ export function DentistsPage() {
   };
 
   const onSubmit = (values: DentistForm) => {
-    if (availabilityReview.blocked || availabilityReview.reload.isPending) return;
+    if (availabilityReview.blocked || isSubmitting || editConflict) return;
     if (editingDentist) {
       updateMutation.mutate({ id: editingDentist.id, version: editingDentist.version, payload: values });
       return;
@@ -327,10 +337,12 @@ export function DentistsPage() {
       </Card>
 
       {dentistsQuery.isLoading && <LoadingState message="Carregando dentistas..." />}
-      {dentistsQuery.isError && <ErrorState message="Erro ao carregar dentistas." />}
+      <LiveQueryStatus query={dentistsQuery} subject="dentistas" />
 
-      {!dentistsQuery.isLoading && !dentistsQuery.isError && (
+      {dentistsQuery.data && (
         <Card>
+          <p className="mb-3 text-sm text-muted-foreground">Exibindo {items.length} de {dentistsQuery.data.total} dentistas. Limite desta lista: 100.
+            {dentistsQuery.data.total > items.length && " Refine a busca para localizar outros dentistas."}</p>
           {items.length === 0 ? (
             <EmptyState message="Nenhum dentista encontrado." />
           ) : (
@@ -577,7 +589,7 @@ export function DentistsPage() {
             <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting}>
+            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting || editConflict}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
