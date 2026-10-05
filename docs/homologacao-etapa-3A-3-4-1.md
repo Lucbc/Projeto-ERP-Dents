@@ -1,6 +1,6 @@
 # Homologação 3A.3.4.1 — procedimentos e especialidades
 
-Início em 04/10/2026, base `27c3901`. [Contrato](./plano-etapa-3A-3.md). Em andamento; sem mudança de API, transação ou migração.
+Início em 04/10/2026, base `27c3901`; concluída em 05/10/2026. [Contrato](./plano-etapa-3A-3.md). Sem mudança de API, transação ou migração.
 
 ## Implementação
 
@@ -18,13 +18,14 @@ Início em 04/10/2026, base `27c3901`. [Contrato](./plano-etapa-3A-3.md). Em and
 | Segurança/build local | npm/Python, imagem web e seis imagens sem achados aprovados |
 | Chrome | Novo harness aprovado: sessões independentes, alterações de procedimento/especialidade em **14517/14701ms**, ativação/busca/rascunhos/versões preservados, 409/404 reais, criação/exclusão, falha/recuperação, pausa/revogação/403. Consulta aberta mantém seleção/fim/referências; quatro escritas explícitas, nenhuma automática. Capturas das duas telas em claro/escuro inspecionadas |
 | Regressão Chrome de exclusão | Aprovada: ambos rejeitam versão antiga; retorno/polling após 17s não libera revisão, recarga/nova confirmação exclui versão revista; procedimento vinculado preservado |
-| API/banco/CI | Pendente CI completo e smoke após atualização; código API/banco não alterado |
-| Preservação | Cópias públicas/exames/fingerprints/dump integral `pre-3A-3-4-1*` salvos; helper `.data/upgrade_3a341.py`. Após limpeza privada, linhas/referências/bytes preservados, revisão 0024/zero schemas; falta atualização principal |
+| API/banco/CI | [CI 37230923350](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/37230923350) aprovado: 302 testes backend em 453,343s, 239 frontend, HTTP/builds/auditorias e seis imagens sem achados; job em 13min54s. Após atualização, dez verificações integradas aprovadas |
+| Preservação | Cópias públicas/exames/fingerprints/dump integral `pre-3A-3-4-1*` preservados; helper `.data/upgrade_3a341.py after` confirmou linhas/referências/bytes antes e após atualização. Revisão `0024_user_version`, zero schemas `test_%`; nenhum volume removido |
+| Publicação na homologação | Somente web de `erp-dents-homolog` recriada; HTTPS confiável retorna 200, JS/CSS servidos idênticos ao build validado |
 
 Primeiro foco: 31/34 passaram. Três novos testes buscavam placeholder exato de especialidades na tela de procedimentos, cujo texto também menciona descrição. Seletores corrigidos; suíte completa aprovada. Não contar primeira tentativa como aceite.
 
 ## Retomada
 
-Implementação `902444e` publicada; **CI `37230923350` em execução**, frontend/auditoria inicial aprovados, backend/HTTP em andamento. Validações locais encerradas, sem processo privado pendente. Após CI, atualizar somente web principal, verificar HTTPS/build servido/smoke e preservação (`after` do helper; não repetir `before/full`). Fictícios somente em `erp-dents-homolog`; logs/capturas ignorados e backups preservados, nenhum volume removido.
+Implementação `902444e` publicada, CI e homologação encerrados com aceite verificado. Logs locais ignorados `.data/ci-final-3a341.log`, `.data/smoke-main-3a341.log`, `.data/browser-3a341.log` e `.data/browser-deletion-3a341.log`; capturas em `.data/homolog/catalog-refresh-*.png`. Fictícios somente em `erp-dents-homolog`; sem processo privado pendente, backups preservados. Não repetir `before/full` do helper.
 
 Próximo após fechamento: 3A.3.4.2, dentistas. Referências gerais permanecem em 3A.3.7; R19 parcial. Chrome no mesmo PC não demonstra capacidade/estações físicas/outros navegadores.

@@ -34,7 +34,7 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 ## Entrega atual
 
-**3A.3.4.1 em andamento em 04/10/2026**, implementação `902444e` publicada: procedimentos/especialidades com listas atualizadas e referências/edições preservadas. **239 frontend/30 arquivos**, builds, auditorias/seis imagens, Chrome novo/agenda/regressão de exclusão aprovados. CI `37230923350` em execução; principal ainda não atualizada. [Relatório](./homologacao-etapa-3A-3-4-1.md). Retomada atual no fim do arquivo.
+**3A.3.4.1 concluída em 05/10/2026**, implementação `902444e` publicada: procedimentos/especialidades com listas atualizadas e referências/edições preservadas. CI `37230923350` aprovado: **302 backend/239 frontend**, HTTP/builds/auditorias e seis imagens sem achados. Chrome/agenda/regressão de exclusão aprovados; somente web da homologação atualizada, HTTPS/dez verificações e preservação aprovados, revisão 0024/zero schemas privados. **Próximo: 3A.3.4.2, dentistas.** [Relatório](./homologacao-etapa-3A-3-4-1.md). Retomada atual no fim do arquivo.
 
 **3A.3.3 concluída em 04/10/2026**, implementação `1d4160d` publicada: pacientes com atualização/busca preservando edição e prévia de exclusão; 404/409 exigem revisão. CI `37207143061` aprovado: **302 backend/218 frontend**, HTTP/builds/auditorias/seis imagens sem achados. Chrome/regressão de exclusão/exames, atualização somente web, HTTPS/dez verificações integradas e preservação aprovados; revisão 0024/zero schemas privados. [Relatório](./homologacao-etapa-3A-3-3.md). Registros anteriores são históricos.
 
@@ -1100,3 +1100,9 @@ Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. F
 
 - Regressão Chrome de exclusão aprovada: ambos rejeitam versão antiga, polling após retorno não libera revisão, recarga/nova confirmação exclui versão revista, procedimento vinculado preservado. Limpeza privada concluída; linhas/referências/bytes preservados, revisão 0024/zero schemas. Nenhum teste privado pendente.
 - **Retomar CI `37230923350`**, ainda no backend/HTTP. Todas as validações locais aprovadas; sem mudança funcional após `902444e`. Após CI: somente web principal/HTTPS/build servido/smoke/preservação com `.data/upgrade_3a341.py after`, fechamento/publicação. Não iniciar 3A.3.4.2 antes do aceite. Publicar checkpoint documental com `[skip ci]`, conferir árvore limpa/HEAD remoto; não repetir testes aprovados.
+
+### Retomada atual — procedimentos e especialidades concluídos em 05/10/2026
+
+**3A.3.4.1 concluída em 05/10/2026**, implementação `902444e`. Procedimentos/especialidades acompanham alterações remotas sem substituir edição/versão/revisão de exclusão ou referências da agenda. [Evidências](./homologacao-etapa-3A-3-4-1.md): CI `37230923350` aprovado (302 backend/239 frontend, HTTP/builds/auditorias e seis imagens sem achados), Chrome novo/agenda e regressão de exclusão aprovados. Somente web da homologação atualizada; HTTPS/build servido, dez verificações integradas e preservação de linhas/referências/exames aprovados. Revisão `0024_user_version`, zero schemas privados, backups e volumes preservados.
+
+**Próximo: implementar 3A.3.4.2, dentistas**, conforme `docs/plano-etapa-3A-3.md`: lista e vínculos de especialidades atualizados, preservando horário/rascunho/versão/revisão; manter bloqueio de alterações que afetem consultas futuras até reagendamento/cancelamento. Inspecionar chaves/serviços/formulário e registrar início/aceite antes de alterar. Referências gerais continuam em 3A.3.7; R19 permanece parcial. Não repetir revisão geral ou testes aprovados sem mudança/falha. Chrome no mesmo PC não comprova capacidade/estações físicas/outros navegadores; instalação assistida permanece na etapa 5.
