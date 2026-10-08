@@ -276,8 +276,8 @@ export const userService = {
   async get(id: string) {
     return (await api.get<User>(`/api/users/${id}`)).data;
   },
-  async list(params: PaginationParams) {
-    const response = await api.get<ListResponse<User>>("/api/users", { params });
+  async list(params: PaginationParams, signal?: AbortSignal) {
+    const response = await api.get<ListResponse<User>>("/api/users", { params, signal });
     return response.data;
   },
   async create(payload: {

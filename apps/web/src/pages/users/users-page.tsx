@@ -10,7 +10,10 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Select } from "@/components/ui/select";
-import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
+import { EmptyState, LoadingState } from "@/components/ui/states";
+import { CatalogReadBoundary } from "@/components/catalog-read-boundary";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
+import { useLiveQuery } from "@/hooks/use-live-query";
 import { useToast } from "@/components/ui/toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useAuth } from "@/hooks/use-auth";
@@ -52,6 +55,10 @@ type UserForm = z.infer<typeof userSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 
 export function UsersPage() {
+  return <CatalogReadBoundary resource="users">{onDenied => <UsersContent onDenied={onDenied} />}</CatalogReadBoundary>;
+}
+
+function UsersContent({ onDenied }: { onDenied: () => void }) {
   const { user: currentUser, logout } = useAuth();
   const isAdmin = currentUser?.role === "admin";
   const { toast } = useToast();
@@ -88,11 +95,13 @@ export function UsersPage() {
     },
   });
 
-  const usersQuery = useQuery({
-    queryKey: ["users", search],
-    enabled: !accessLost,
-    queryFn: () => userService.list({ search, limit: 100, offset: 0 }),
-  });
+  const usersQuery = useLiveQuery(["users", "list", search], async signal => {
+    try { return await userService.list({ search, limit: 100, offset: 0 }, signal); }
+    catch (error) {
+      if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) onDenied();
+      throw error;
+    }
+  }, { enabled: !accessLost, exactOnDenied: true });
 
   const dentistsQuery = useQuery({
     queryKey: ["dentists", "users-form"],
@@ -177,7 +186,7 @@ export function UsersPage() {
     passwordForm.reset(); form.setValue("password", "");
     const response = axios.isAxiosError(error) ? error.response : undefined;
     if ([401, 403].includes(response?.status ?? 0)) {
-      clearFlows(); setAccessLost(true); queryClient.removeQueries({ queryKey: ["users"] });
+      clearFlows(); setAccessLost(true); onDenied();
     } else if (response?.status === 404) {
       clearFlows(); void queryClient.invalidateQueries({ queryKey: ["users"] });
     } else if (!response || response.status >= 500 || response.data?.code === "stale_version") {
@@ -187,14 +196,9 @@ export function UsersPage() {
     toast(getApiErrorMessage(error), "error");
   };
   useEffect(() => {
-    if (axios.isAxiosError(usersQuery.error) && [401, 403].includes(usersQuery.error.response?.status ?? 0)) {
-      clearFlows(); setAccessLost(true); queryClient.removeQueries({ queryKey: ["users"] });
-    }
-  }, [usersQuery.error]);
-  useEffect(() => {
     if (!createMutation.isPending && createMutation.variables) createMutation.reset();
     if (!setPasswordMutation.isPending && setPasswordMutation.variables) setPasswordMutation.reset();
-  }, [createMutation.isPending, setPasswordMutation.isPending]);
+  }, [createMutation.isPending, createMutation.variables, setPasswordMutation.isPending, setPasswordMutation.variables]);
   const reloadTarget = async () => {
     const target = editingUser ?? selectedUser ?? deletingUser;
     if (!target || busy) return;
@@ -270,8 +274,6 @@ export function UsersPage() {
     createMutation.mutate(values);
   };
 
-  if (accessLost) return <ErrorState message="Seu acesso à administração de usuários foi encerrado. Entre novamente." />;
-
   return (
     <div className="space-y-4">
       <Card>
@@ -299,10 +301,12 @@ export function UsersPage() {
       </Card>
 
       {usersQuery.isLoading && <LoadingState message="Carregando usuários..." />}
-      {usersQuery.isError && <ErrorState message="Erro ao carregar usuários." />}
+      <LiveQueryStatus query={usersQuery} subject="usuários" />
 
-      {!usersQuery.isLoading && !usersQuery.isError && (
+      {usersQuery.data && (
         <Card>
+          <p className="mb-3 text-sm text-muted-foreground">Exibindo {users.length} de {usersQuery.data.total} usuários. Limite desta lista: 100.
+            {usersQuery.data.total > users.length && " Refine a busca para localizar outros usuários."}</p>
           {users.length === 0 ? (
             <EmptyState message="Nenhum usuário encontrado." />
           ) : (

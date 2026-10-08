@@ -33,7 +33,7 @@ it("keeps captured version and draft through conflict/refetch/failed reload, the
   setup(); const update = vi.spyOn(userService, "update").mockRejectedValueOnce(failure(409)).mockResolvedValue(user(4));
   const get = vi.spyOn(userService, "get").mockRejectedValueOnce(failure(503)).mockResolvedValue(user(3, "Fictitious Current"));
   fireEvent.click(await screen.findByRole("button", { name: "Editar" })); fill("name", "Fictitious Draft");
-  client.setQueryData(["users", ""], { items: [user(9)], total: 1 });
+  client.setQueryData(["users", "list", ""], { items: [user(9)], total: 1 });
   fireEvent.click(button("Salvar")); await screen.findByRole("button", { name: "Descartar e carregar atual" });
   expect(update.mock.calls[0][1].version).toBe(1); expect(field("name").value).toBe("Fictitious Draft");
   fireEvent.click(button("Descartar e carregar atual")); await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
