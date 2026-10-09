@@ -1,4 +1,4 @@
-﻿import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
@@ -28,6 +28,11 @@ type UploadForm = z.infer<typeof uploadSchema>;
 
 export function PatientExamsPage() {
   const { patientId } = useParams<{ patientId: string }>();
+  if (!patientId) return <ErrorState message="Paciente não informado." />;
+  return <PatientExamsContent key={patientId} patientId={patientId} />;
+}
+
+function PatientExamsContent({ patientId }: { patientId: string }) {
   const { toast } = useToast();
   const { can } = usePermissions();
   const queryClient = useQueryClient();
@@ -40,13 +45,21 @@ export function PatientExamsPage() {
   const deleteBusy = useRef(false);
   const pageGeneration = useRef(0);
   const previewRequest = useRef(0);
-  useEffect(() => () => { uploadController.current?.abort(); previewRequest.current++; }, []);
-  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
+  const active = useRef(true);
+  const fileControllers = useRef(new Set<AbortController>());
   useEffect(() => {
-    setPreview(null); setDeletion(null); setReviewRequired(false); setReloading(false);
-    return () => { pageGeneration.current++; previewRequest.current++; };
-  }, [patientId]);
-  const policyQuery = useQuery({ queryKey: ["exams", "upload-policy"], queryFn: examService.uploadPolicy });
+    active.current = true;
+    return () => {
+      active.current = false;
+      uploadController.current?.abort();
+      for (const controller of fileControllers.current) controller.abort();
+      fileControllers.current.clear();
+      pageGeneration.current++; previewRequest.current++;
+    };
+  }, []);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
+  const policyQuery = useQuery({ queryKey: ["exams", "upload-policy"],
+    queryFn: ({ signal }) => examService.uploadPolicy(signal) });
 
   const form = useForm<UploadForm>({
     resolver: zodResolver(uploadSchema),
@@ -57,18 +70,19 @@ export function PatientExamsPage() {
 
   const patientQuery = useQuery({
     queryKey: ["patient", patientId],
-    queryFn: () => patientService.get(patientId!),
+    queryFn: ({ signal }) => patientService.get(patientId, signal),
     enabled: Boolean(patientId),
   });
 
   const examsQuery = useQuery({
     queryKey: ["exams", patientId],
-    queryFn: () => examService.listByPatient(patientId!),
+    queryFn: ({ signal }) => examService.listByPatient(patientId, signal),
     enabled: Boolean(patientId),
   });
 
   const uploadMutation = useMutation({
     mutationFn: (values: UploadForm) => {
+      if (!active.current) throw new axios.CanceledError();
       const file = values.file[0] as File;
       const policy = policyQuery.data;
       if (!policy || file.size > policy.max_bytes || file.size === 0) {
@@ -79,16 +93,18 @@ export function PatientExamsPage() {
       }
       uploadController.current = new AbortController();
       setProgress(0);
-      return examService.upload(patientId!, file, values.notes, { signal: uploadController.current.signal, onProgress: setProgress });
+      return examService.upload(patientId, file, values.notes, { signal: uploadController.current.signal,
+        onProgress: value => { if (active.current) setProgress(value); } });
     },
     onSuccess: () => {
+      if (!active.current) return;
       toast("Exame enviado com sucesso.");
       form.reset({ notes: "" });
       void queryClient.invalidateQueries({ queryKey: ["exams", patientId] });
     },
-    onError: (error) => toast(axios.isCancel(error) ? "Envio interrompido. Confira a lista de exames."
-      : error instanceof Error && !axios.isAxiosError(error) ? error.message : getApiErrorMessage(error), "error"),
-    onSettled: () => { void queryClient.invalidateQueries({ queryKey: ["exams", patientId] }); },
+    onError: (error) => { if (!active.current) return; toast(axios.isCancel(error) ? "Envio interrompido. Confira a lista de exames."
+      : error instanceof Error && !axios.isAxiosError(error) ? error.message : getApiErrorMessage(error), "error"); },
+    onSettled: () => { if (active.current) void queryClient.invalidateQueries({ queryKey: ["exams", patientId] }); },
   });
 
   const deleteMutation = useMutation({
@@ -129,9 +145,6 @@ export function PatientExamsPage() {
   const canCreate = can("exams", "create");
   const canDelete = can("exams", "delete");
 
-  if (!patientId) {
-    return <ErrorState message="Paciente não informado." />;
-  }
 
   return (
     <div className="space-y-4">
@@ -232,8 +245,11 @@ export function PatientExamsPage() {
                             <Button
                               variant="outline"
                               onClick={() => {
-                                void examService.download(exam.id, exam.original_filename)
-                                  .catch(() => toast("Não foi possível baixar o exame. Tente novamente.", "error"));
+                                const controller = new AbortController();
+                                fileControllers.current.add(controller);
+                                void examService.download(exam.id, exam.original_filename, controller.signal)
+                                  .catch(() => { if (active.current && !controller.signal.aborted) toast("Não foi possível baixar o exame. Tente novamente.", "error"); })
+                                  .finally(() => fileControllers.current.delete(controller));
                               }}
                             >
                               Baixar
@@ -242,9 +258,12 @@ export function PatientExamsPage() {
                               variant="outline"
                               onClick={() => {
                                 const request = ++previewRequest.current;
-                                void examService.previewImage(exam.id, exam.mime_type).then((blob) => {
-                                  if (request === previewRequest.current) setPreview({ id: exam.id, url: URL.createObjectURL(blob), name: exam.original_filename });
-                                }).catch(() => { if (request === previewRequest.current) toast("Não foi possível visualizar a imagem. Tente baixar o arquivo.", "error"); });
+                                const controller = new AbortController();
+                                fileControllers.current.add(controller);
+                                void examService.previewImage(exam.id, exam.mime_type, controller.signal).then((blob) => {
+                                  if (active.current && !controller.signal.aborted && request === previewRequest.current) setPreview({ id: exam.id, url: URL.createObjectURL(blob), name: exam.original_filename });
+                                }).catch(() => { if (active.current && !controller.signal.aborted && request === previewRequest.current) toast("Não foi possível visualizar a imagem. Tente baixar o arquivo.", "error"); })
+                                  .finally(() => fileControllers.current.delete(controller));
                               }}
                             >
                               Visualizar imagem

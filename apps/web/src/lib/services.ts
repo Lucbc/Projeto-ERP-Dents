@@ -176,8 +176,8 @@ export const patientService = {
   async listAll(params: ListAllParams = {}) {
     return fetchAllPages<Patient>((nextParams) => patientService.list(nextParams), params);
   },
-  async get(id: string) {
-    const response = await api.get<Patient>(`/api/patients/${id}`);
+  async get(id: string, signal?: AbortSignal) {
+    const response = await api.get<Patient>(`/api/patients/${id}`, { signal });
     return response.data;
   },
   async create(payload: Partial<Patient>) {
@@ -373,17 +373,17 @@ export const consultationService = {
   },
 };
 
-async function fetchExamBlob(examId: string): Promise<Blob> {
-  const response = await api.get(`/api/exams/${examId}/download`, { responseType: "blob" });
+async function fetchExamBlob(examId: string, signal?: AbortSignal): Promise<Blob> {
+  const response = await api.get(`/api/exams/${examId}/download`, { responseType: "blob", signal });
   return response.data as Blob;
 }
 
 export const examService = {
-  async uploadPolicy() {
-    return (await api.get<{ max_bytes: number; extensions: string[] }>("/api/exams/upload-policy")).data;
+  async uploadPolicy(signal?: AbortSignal) {
+    return (await api.get<{ max_bytes: number; extensions: string[] }>("/api/exams/upload-policy", { signal })).data;
   },
-  async listByPatient(patientId: string) {
-    const response = await api.get<Exam[]>(`/api/patients/${patientId}/exams`);
+  async listByPatient(patientId: string, signal?: AbortSignal) {
+    const response = await api.get<Exam[]>(`/api/patients/${patientId}/exams`, { signal });
     return response.data;
   },
   async upload(patientId: string, file: File, notes?: string, options?: { signal: AbortSignal; onProgress: (value: number) => void }) {
@@ -399,8 +399,9 @@ export const examService = {
     });
     return response.data;
   },
-  async download(examId: string, filename: string) {
-    const blob = await fetchExamBlob(examId);
+  async download(examId: string, filename: string, signal?: AbortSignal) {
+    const blob = await fetchExamBlob(examId, signal);
+    if (signal?.aborted) return;
     const url = window.URL.createObjectURL(new Blob([blob], { type: "application/octet-stream" }));
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -408,9 +409,9 @@ export const examService = {
     anchor.click();
     window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
   },
-  async previewImage(examId: string, mimeType: string) {
+  async previewImage(examId: string, mimeType: string, signal?: AbortSignal) {
     if (!["image/png", "image/jpeg"].includes(mimeType)) throw new Error("Prévia indisponível para este formato.");
-    const blob = await fetchExamBlob(examId);
+    const blob = await fetchExamBlob(examId, signal);
     return new Blob([blob], { type: mimeType });
   },
   async remove(examId: string) {

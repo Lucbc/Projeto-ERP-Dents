@@ -106,3 +106,18 @@ it("shows upload progress and cancels the pending request", async () => {
   await waitFor(() => expect(captured.signal?.aborted).toBe(true));
   await waitFor(() => expect(toast).toHaveBeenCalledWith("Envio interrompido. Confira a lista de exames.", "error"));
 });
+
+it("passes cancellation to the blob transport and never starts a late download", async () => {
+  let captured: InternalAxiosRequestConfig | undefined;
+  let finish!: () => void;
+  api.defaults.adapter = config => { captured = config; return new Promise(resolve => { finish = () => resolve({
+    config, status: 200, statusText: "OK", headers: {}, data: new Blob(["fictitious"]),
+  }); }); };
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  const controller = new AbortController();
+  const result = examService.download("fictitious", "fictitious.png", controller.signal);
+  const rejected = expect(result).rejects.toBeInstanceOf(CanceledError);
+  await waitFor(() => expect(captured?.signal).toBeDefined());
+  controller.abort(); expect(captured?.signal?.aborted).toBe(true); finish(); await rejected;
+  expect(click).not.toHaveBeenCalled(); expect(blobs).toHaveLength(0);
+});
