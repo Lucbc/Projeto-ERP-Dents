@@ -251,13 +251,13 @@ function PermissionsContent({ onDenied }: { onDenied: () => void }) {
               />
             </button>
 
-            {remoteChanged && <p role="status" className="mb-3 text-sm text-amber-700 dark:text-amber-300">
+            {remoteChanged && <p role="status" className="mb-3 text-sm text-amber-900 dark:text-amber-300">
               {userRoleLabels[role]}: há uma versão mais recente. Seu rascunho foi mantido.
             </p>}
             {isOpen && (
               <>
                 {(state?.review || remoteChanged) && (
-                  <div role="alert" className="mb-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm">
+                  <div role="alert" className="mb-3 rounded-md border border-amber-500 bg-card p-3 text-sm text-foreground">
                     <p>{state?.review ? "Este perfil precisa de revisão. Seu rascunho foi mantido. Carregue as permissões atuais antes de salvar novamente." : "Carregue a versão atual para revisar as alterações deste perfil."}</p>
                     <Button variant="outline" onClick={() => void reloadRole(role)} disabled={state?.reloading || updateMutation.isPending}>
                       {state?.reloading ? "Carregando..." : "Descartar rascunho e carregar atual"}
