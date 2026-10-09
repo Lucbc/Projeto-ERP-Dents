@@ -1,7 +1,7 @@
 FROM python:3.12-alpine@sha256:b64631e04e4920160c50fbe8d8df828f7f35f06f425cb44aa09bca53e708a35a
 
 WORKDIR /app
-RUN apk add --no-cache libuuid=2.42.3-r1
+RUN apk add --no-cache libuuid=2.42.3-r1 zlib=1.3.2-r1
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
