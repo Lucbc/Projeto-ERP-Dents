@@ -19,3 +19,8 @@ Em validação, iniciada em 09/10/2026 após a [preparação](./plano-etapa-3A-3
 ## Retomada
 
 Concluir todos os aceites antes de 3A.3.6.2. Não repetir testes aprovados sem mudança/falha. Usar apenas `erp-dents-homolog`, dados fictícios e schemas privados; manter volumes e não publicar dados/segredos/logs locais.
+
+
+### Complemento de retorno ao paciente
+
+Chrome identificou cache global de 15s impedindo a leitura do upload já gravado quando o usuário voltava rapidamente ao paciente original. Complemento `5d4d2c5`: cabeçalho/lista leem ao montar mesmo com cache recente; teste de isolamento usa o frescor real e verifica A/B/A. 22 testes focados e build final 11,25s aprovados. CI final `37978598105`, anterior cancelado; Chrome final e atualização/preservação ainda pendentes.
