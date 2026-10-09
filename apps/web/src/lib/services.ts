@@ -341,8 +341,8 @@ export const permissionService = {
     const response = await api.get<RolePermission>("/api/permissions/me", { signal });
     return response.data;
   },
-  async list() {
-    const response = await api.get<RolePermissionListResponse>("/api/permissions");
+  async list(signal?: AbortSignal) {
+    const response = await api.get<RolePermissionListResponse>("/api/permissions", { signal });
     return response.data;
   },
   async update(role: UserRole, payload: { version: number; permissions: Record<string, PermissionActions> }) {
