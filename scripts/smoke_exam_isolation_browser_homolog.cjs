@@ -67,13 +67,17 @@ process.on('unhandledRejection',()=>{console.error('Exam deletion browser failed
   await first.locator('input[type=file]').setInputFiles({name:'committed-original.png',mimeType:'image/png',buffer:png});
   await first.locator('input[name=notes]').fill('Fictitious committed original');
   await first.getByRole('button',{name:'Enviar',exact:true}).click();await committed;
+  stage='navigate after committed upload';
   const canceled=first.waitForEvent('requestfailed',{predicate:r=>r.method()==='POST'&&r.url().endsWith('/api/patients/'+patient.id+'/exams')});
-  await navigate(otherPatient.id);await canceled;
+  await navigate(otherPatient.id);stage='observe canceled upload';await canceled;
+  stage='release old response into new patient';
   await first.locator('input[name=notes]').fill('Fictitious B retained');releaseResponse();
-  await first.waitForLoadState('networkidle');assert.equal(await first.locator('input[name=notes]').inputValue(),'Fictitious B retained');
+  stage='wait after released canceled response';await first.waitForLoadState('networkidle');
+  stage='verify new patient draft';assert.equal(await first.locator('input[name=notes]').inputValue(),'Fictitious B retained');
   assert.equal(await first.getByRole('cell',{name:'committed-original.png',exact:true}).count(),0);
-  await first.unroute(uploadPattern);await navigate(patient.id);
-  await row(first,'committed-original.png').waitFor();assert.equal(await first.locator('input[name=notes]').inputValue(),'');
+  stage='return to original patient';await first.unroute(uploadPattern);await navigate(patient.id);
+  stage='observe committed upload on original patient';await row(first,'committed-original.png').waitFor();
+  stage='verify original draft reset';assert.equal(await first.locator('input[name=notes]').inputValue(),'');
   stage='clean committed isolation fixture';
   const cleanupStatus=await first.evaluate(async({headers,id})=>{
    const list=await(await fetch('/api/patients/'+id+'/exams',{headers})).json();

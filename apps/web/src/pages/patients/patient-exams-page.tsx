@@ -71,13 +71,14 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
   const patientQuery = useQuery({
     queryKey: ["patient", patientId],
     queryFn: ({ signal }) => patientService.get(patientId, signal),
-    enabled: Boolean(patientId),
+    refetchOnMount: "always",
   });
 
   const examsQuery = useQuery({
     queryKey: ["exams", patientId],
     queryFn: ({ signal }) => examService.listByPatient(patientId, signal),
-    enabled: Boolean(patientId),
+    // A canceled upload may have committed after this patient's cached read.
+    refetchOnMount: "always",
   });
 
   const uploadMutation = useMutation({
@@ -144,7 +145,6 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
 
   const canCreate = can("exams", "create");
   const canDelete = can("exams", "delete");
-
 
   return (
     <div className="space-y-4">

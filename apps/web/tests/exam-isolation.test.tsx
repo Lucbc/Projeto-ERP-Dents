@@ -17,7 +17,7 @@ function setup(exams: Exam[] = []) {
   vi.spyOn(patientService,'get').mockImplementation(async id=>({id,full_name:id}) as Patient);
   vi.spyOn(examService,'listByPatient').mockResolvedValue(exams);
   vi.spyOn(examService,'uploadPolicy').mockResolvedValue({max_bytes:1024,extensions:['.png']});
-  client=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});
+  client=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:15_000},mutations:{retry:false}}});
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/patients/fictitious-a']}>
     <Navigate/><Routes><Route path='/patients/:patientId' element={<PatientExamsPage/>}/></Routes>
   </MemoryRouter></QueryClientProvider>);
@@ -32,6 +32,8 @@ it('patient change discards prior file and notes',async()=>{
   expect((container.querySelector('input[name=notes]') as HTMLInputElement).value).toBe('');
   expect((container.querySelector('input[type=file]') as HTMLInputElement).files?.length).toBe(0);
   fireEvent.click(screen.getByRole('button',{name:'First fictitious patient'}));await screen.findByText(/fictitious-a/);
+  await waitFor(()=>expect(examService.listByPatient).toHaveBeenCalledTimes(3));
+  expect(patientService.get).toHaveBeenCalledTimes(3);
   expect((container.querySelector('input[name=notes]') as HTMLInputElement).value).toBe('');
   expect((container.querySelector('input[type=file]') as HTMLInputElement).files?.length).toBe(0);
 });
