@@ -148,3 +148,9 @@ Implementação `5f68df1` publicada: fonte única ativada, guards/menu/ações i
 ### Recorte de exames — 09/10/2026
 
 [Preparação 3A.3.6P](./plano-etapa-3A-3-6.md) concluída: dois defeitos de troca de paciente reproduzidos em componente. Implementar primeiro 3A.3.6.1 (isolamento/arquivos/callbacks); depois 3A.3.6.2 (leituras remotas/cabeçalho/revogação). Aceites separados, sem considerar R19 encerrado.
+
+### Retomada atual — isolamento dos exames concluído em 09/10/2026
+
+**3A.3.6.1 concluída em 09/10/2026**, implementação `8803d05`/`5d4d2c5`: exames isolados por paciente, cancelamento de upload/leituras/prévias/downloads e callbacks tardios sem apagar outro rascunho. Retorno ao paciente consulta novamente mesmo com cache recente, sem presumir rollback de upload cancelado. [Evidências](./homologacao-etapa-3A-3-6-1.md): CI `37978598105` aprovado (302 backend/276 frontend, HTTP/builds/auditorias), Chrome com navegação no mesmo documento/upload já gravado e regressões de arquivos/exclusão aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações integradas/preservação aprovados; revisão 0024/zero schemas privados.
+
+**Próximo: implementar 3A.3.6.2 — leituras remotas, cabeçalho e revogação**, conforme [recortes de exames](./plano-etapa-3A-3-6.md). Atualizar lista/cabeçalho sem substituir arquivo/notas/revisão; manter `patients.view` distinto de `exams.view`, negar identidade sem ocultar exames ainda autorizados, tratar paciente ausente e revogar prévias/bytes quando registro/acesso desaparecer. Registrar início/aceite antes de alterar; não repetir diagnóstico/probes/testes aprovados sem mudança/falha. R19 e 3A.3.6 permanecem parciais; referências em 3A.3.7 e instalação assistida na etapa 5.

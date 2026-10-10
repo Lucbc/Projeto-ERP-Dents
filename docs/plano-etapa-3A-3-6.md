@@ -1,6 +1,6 @@
 # Etapa 3A.3.6 — exames e cabeçalho do paciente
 
-Preparação 3A.3.6P concluída em 09/10/2026, base `6cd0030`. **Implementação pendente.** Complementa o [contrato 3A.3](./plano-etapa-3A-3.md). Esta preparação delimita os recortes e reproduz problemas de identidade; não declara exames atualizados entre estações nem encerra R19.
+Preparação 3A.3.6P concluída em 09/10/2026, base `6cd0030`. **3A.3.6.1 concluída; 3A.3.6.2 pendente.** Complementa o [contrato 3A.3](./plano-etapa-3A-3.md). Esta preparação delimita os recortes e reproduz problemas de identidade; não declara exames atualizados entre estações nem encerra R19.
 
 ## Diagnóstico confirmado
 
@@ -61,3 +61,9 @@ Sobre o isolamento validado, aplicar leitores de paciente/lista e estados indepe
 **Próximo: implementar 3A.3.6.1.** Registrar início e critérios no plano principal, escrever regressões permanentes dos dois defeitos reproduzidos e então corrigir o isolamento. Só iniciar 3A.3.6.2 após esse aceite. Nenhuma decisão de negócio exige confirmação neste momento. R19 continua parcial; referências gerais em 3A.3.7 e instalação assistida na etapa 5.
 
 Nesta preparação não houve alteração funcional, rebuild, reinício, migração ou modificação de dados. Última homologação funcional: 3A.3.5.2, CI `37942637860`, 302 backend/269 frontend e seis imagens sem achados. Não repetir essa validação apenas por esta mudança documental.
+
+### Retomada após isolamento — 09/10/2026
+
+**3A.3.6.1 concluída em 09/10/2026**, implementação `8803d05`/`5d4d2c5`: exames isolados por paciente, cancelamento de upload/leituras/prévias/downloads e callbacks tardios sem apagar outro rascunho. Retorno ao paciente consulta novamente mesmo com cache recente, sem presumir rollback de upload cancelado. [Evidências](./homologacao-etapa-3A-3-6-1.md): CI `37978598105` aprovado (302 backend/276 frontend, HTTP/builds/auditorias), Chrome com navegação no mesmo documento/upload já gravado e regressões de arquivos/exclusão aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações integradas/preservação aprovados; revisão 0024/zero schemas privados.
+
+**Próximo: implementar 3A.3.6.2 — leituras remotas, cabeçalho e revogação**, conforme [recortes de exames](./plano-etapa-3A-3-6.md). Atualizar lista/cabeçalho sem substituir arquivo/notas/revisão; manter `patients.view` distinto de `exams.view`, negar identidade sem ocultar exames ainda autorizados, tratar paciente ausente e revogar prévias/bytes quando registro/acesso desaparecer. Registrar início/aceite antes de alterar; não repetir diagnóstico/probes/testes aprovados sem mudança/falha. R19 e 3A.3.6 permanecem parciais; referências em 3A.3.7 e instalação assistida na etapa 5.
