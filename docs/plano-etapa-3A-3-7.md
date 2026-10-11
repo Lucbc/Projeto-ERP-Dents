@@ -1,6 +1,6 @@
 # Etapa 3A.3.7 — referências de formulários e cobertura cruzada
 
-**Preparação 3A.3.7P concluída em 11/10/2026**, base `3c1277e`. Implementações pendentes. Complementa o [contrato 3A.3](./plano-etapa-3A-3.md); R19 continua parcial. Esta preparação não altera a aplicação ou a homologação.
+**Preparação 3A.3.7P concluída em 11/10/2026**, base `3c1277e`. 3A.3.7.1 concluída; demais implementações pendentes. Complementa o [contrato 3A.3](./plano-etapa-3A-3.md); R19 continua parcial. Esta preparação não altera a aplicação ou a homologação.
 
 ## Diagnóstico e evidências
 
@@ -60,3 +60,9 @@ Cada implementação exige regressões de componentes e transporte pertinentes, 
 ### Início 3A.3.7.1 — 11/10/2026
 
 Base `a635a8e`, árvore inicialmente limpa. Implementar opções próprias da ação em usuários, sem cache compartilhado ou polling; leitura ao abrir, atualização explícita, falha/negação/cancelamento e indicação de associado ausente/inativo. Propagar AbortSignal em `dentistService.listAll` e entre páginas; demais `listAll` preservados. Aceite: regressões dos três probes com comportamento corrigido, permissões/barreira, respostas tardias, páginas incompletas, senha/versão; Chrome independente e regressão de usuários, CI/auditorias/backups/somente web/HTTPS/preservação. Sem API/schema. Não concluir antes desse ciclo.
+
+### Retomada após referências de usuários — 11/10/2026
+
+**3A.3.7.1 concluída em 11/10/2026**, implementação `0f528dd`/`d404f90`: formulário de usuários lê dentistas a cada ação e conserva opções/rascunho/senha/versão até atualização explícita; preparação cancelável, referência ausente/negada identificada e paginação com AbortSignal. [Evidências](./homologacao-etapa-3A-3-7-1.md): CI `38139079490` aprovado (302 backend/295 frontend, HTTP/builds/auditorias), Chrome com sessões independentes e regressão de versões/senhas/exclusões aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações integradas/preservação aprovados; revisão 0024/zero schemas privados. R19 permanece parcial.
+
+**Próximo: implementar 3A.3.7.2 — especialidades no formulário de dentistas**, conforme [recortes de referências](./plano-etapa-3A-3-7.md). Aplicar o protocolo validado de leitura por ação/opções estáveis/atualização explícita, propagando sinal na paginação de especialidades; identificar vínculos ausentes sem trocar a seleção. Preservar horários/versão/revisão de disponibilidade e bloqueio de alterações que afetem consultas futuras. Inspecionar integração e registrar início/aceite antes de alterar. Não repetir revisão geral ou testes aprovados sem mudança/falha; agenda/calendário em 3A.3.7.3, financeiro em 3A.3.7.4 e matriz final R19 em 3A.3.7.5. Instalação assistida permanece na etapa 5.

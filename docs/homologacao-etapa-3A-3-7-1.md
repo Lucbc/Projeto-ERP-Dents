@@ -1,6 +1,6 @@
 # Etapa 3A.3.7.1 — referências do formulário de usuários
 
-Em homologação em 11/10/2026, base `a635a8e`. [Contrato e recortes](./plano-etapa-3A-3-7.md). Sem alteração de API/schema.
+Concluída em 11/10/2026, implementação `0f528dd`/`d404f90`, base `a635a8e`. [Contrato e recortes](./plano-etapa-3A-3-7.md). Sem alteração de API/schema.
 
 ## Implementação
 
@@ -17,11 +17,18 @@ Em homologação em 11/10/2026, base `a635a8e`. [Contrato e recortes](./plano-et
 - Backups locais `pre-3A-3-7-1*` preservados; helper `.data/upgrade_3a371.py` somente `after`, não repetir `before/full`.
 - Imagem web construída, seis imagens iniciais sem achados. Implementação `0f528dd` e complemento `d404f90` publicados; CI inicial `38112588826` cancelado/superado pelo final `38139079490`.
 - Chrome novo aprovado com sessões independentes: leitura por ação/nenhum polling, referência remota aparece na próxima ação ou atualização explícita, rascunho/senha estáveis, falha 503 e recuperação, 403 real da referência/concessão, cancelamento e versão capturada rejeitada por 409 real. Uma escrita explícita do leitor. Capturas claro/escuro inspecionadas; fixtures privadas limpas.
+- [CI final 38139079490](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/38139079490) aprovado no código final `d404f90`: 302 testes backend, 295 frontend/36 arquivos, regressões HTTP, builds e auditorias; seis imagens sem achados. Commits posteriores somente documentais.
 
-## Pendências
+## Complemento de cancelamento
 
-Conferência final: teste reforçado detectou que revisão explícita aguardando usuário podia iniciar leitura de referência após desmontagem (duas chamadas, esperada uma). Corrigido com verificação de montagem e escopo atual antes de iniciar o pedido. Chrome de referências final aprovado e seis imagens finais sem achados; somente CI final `38139079490` pendente.
+Conferência final: teste reforçado detectou que revisão explícita aguardando usuário podia iniciar leitura de referência após desmontagem (duas chamadas, esperada uma). Corrigido com verificação de montagem e escopo atual antes de iniciar o pedido. Testes focados, Chrome de referências e CI final aprovados; seis imagens finais sem achados.
 
-Regressão de versões/senhas/exclusões aprovada (`.data/browser-version-3a371.log`). Atualização inicial de somente web/HTTPS/build servido/dez verificações integradas/preservação aprovada. Imagem final também aplicada somente ao web: HTTPS/JS/CSS idênticos ao build final e linhas/referências/bytes preservados; revisão 0024/zero schemas privados. Nenhum volume removido ou demais serviços reiniciados. Concluir CI e publicar fechamento; não repetir testes locais aprovados sem mudança/falha.
+## Atualização e preservação
+
+Regressão de versões/senhas/exclusões aprovada (`.data/browser-version-3a371.log`). Atualização inicial de somente web/HTTPS/build servido/dez verificações integradas/preservação aprovada. Imagem final também aplicada somente ao web: HTTPS/JS/CSS idênticos ao build final e linhas/referências/bytes preservados; revisão 0024/zero schemas privados. Nenhum volume removido ou demais serviços reiniciados. Atualização ocorreu após aceite local enquanto CI executava isolado; conclusão aguardou CI aprovado. Não repetir testes locais aprovados sem mudança/falha.
+
+## Retomada e limites
+
+Evidências locais ignoradas: `.data/tests-3a371-full.log`, `.data/tests-3a371-late-before.log`, `.data/tests-3a371-late-final.log`, `.data/build-3a371-late-final.log`, `.data/browser-3a371-final.log`, `.data/browser-version-3a371.log`, `.data/audit-images-3a371-final.log`, `.data/smoke-main-3a371.log`, `.data/ci-final-3a371.log` e capturas `user-reference-{light,dark}.png`. Nenhuma credencial, log ou dado local publicado.
 
 Próximo após aceite: 3A.3.7.2, especialidades no formulário de dentistas. R19 parcial; Chrome no mesmo computador não comprova capacidade/estações físicas/outros navegadores. Instalação assistida na etapa 5.
