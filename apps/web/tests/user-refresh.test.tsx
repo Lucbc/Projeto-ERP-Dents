@@ -125,7 +125,9 @@ describe("users live list", () => {
     fireEvent.click(screen.getByRole("button", { name: "Salvar", exact: true })); await tick();
     fireEvent.click(screen.getByRole("button", { name: "Descartar e carregar atual" })); await tick();
     vi.mocked(service.list).mockRejectedValue(failure(403)); await tick(15010);
+    const referenceReads = vi.mocked(dentistService.listAll).mock.calls.length;
     await act(async () => resolve({ ...item, version: 8 })); await tick();
+    expect(dentistService.listAll).toHaveBeenCalledTimes(referenceReads);
     expect(view.field("name")).toBeNull(); expect(screen.getByText(/Seu acesso à administração/)).toBeTruthy();
     expect(client.getQueriesData({ queryKey: ["users", "list"] })).toEqual([]);
   });

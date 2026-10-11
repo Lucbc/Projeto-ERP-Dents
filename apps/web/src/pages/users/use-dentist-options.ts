@@ -13,10 +13,14 @@ export function useDentistOptions(action: number | null, allowed: boolean) {
   const [state, setState] = useState<Snapshot>(empty);
   const current = useRef(state);
   const pending = useRef<AbortController>();
+  const mounted = useRef(false);
+  const scope = useRef({ action, allowed, suspended });
+  scope.current = { action, allowed, suspended };
   const publish = useCallback((value: Snapshot) => { current.current = value; setState(value); }, []);
   const cancel = useCallback(() => { pending.current?.abort(); pending.current = undefined; }, []);
   const reload = useCallback(async () => {
-    if (action === null || !allowed || suspended || pending.current) return false;
+    if (!mounted.current || action === null || !allowed || suspended || pending.current
+      || scope.current.action !== action || !scope.current.allowed || scope.current.suspended) return false;
     cancel();
     const controller = new AbortController(); pending.current = controller;
     publish({ action, status: "loading", items: [] });
@@ -32,6 +36,10 @@ export function useDentistOptions(action: number | null, allowed: boolean) {
       return false;
     } finally { if (pending.current === controller) pending.current = undefined; }
   }, [action, allowed, suspended, cancel, publish]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; cancel(); };
+  }, [cancel]);
   useEffect(() => {
     if (action === null) publish(empty);
     else if (!allowed) publish({ action, status: "denied", items: [] });

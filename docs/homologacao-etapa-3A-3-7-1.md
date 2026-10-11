@@ -20,6 +20,8 @@ Em homologação em 11/10/2026, base `a635a8e`. [Contrato e recortes](./plano-et
 
 ## Pendências
 
+Conferência final: teste reforçado detectou que revisão explícita aguardando usuário podia iniciar leitura de referência após desmontagem (duas chamadas, esperada uma). Corrigido com verificação de montagem e escopo atual antes de iniciar o pedido. CI inicial `38112588826` cancelado/superado; complemento e CI final pendentes. Chrome/regressão já aprovados e principal já atualizada com versão inicial; validar build/atualização final sem repetir backups originais.
+
 Regressão de versões de usuários em execução (`.data/browser-version-3a371.log`) e CI. Após aceite local, atualizar somente web de `erp-dents-homolog`, validar HTTPS/build servido, dez verificações integradas e preservação/revisão/zero schemas privados; fechar e publicar. Homologação principal ainda na etapa 3A.3.6.2. Não concluir só pelos testes de componente.
 
 Próximo após aceite: 3A.3.7.2, especialidades no formulário de dentistas. R19 parcial; Chrome no mesmo computador não comprova capacidade/estações físicas/outros navegadores. Instalação assistida na etapa 5.
