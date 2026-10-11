@@ -1,6 +1,6 @@
 # Etapa 3A.3.6 — exames e cabeçalho do paciente
 
-Preparação 3A.3.6P concluída em 09/10/2026, base `6cd0030`. **3A.3.6.1 concluída; 3A.3.6.2 pendente.** Complementa o [contrato 3A.3](./plano-etapa-3A-3.md). Esta preparação delimita os recortes e reproduz problemas de identidade; não declara exames atualizados entre estações nem encerra R19.
+Preparação 3A.3.6P concluída em 09/10/2026, base `6cd0030`. **3A.3.6.1 e 3A.3.6.2 concluídas.** Complementa o [contrato 3A.3](./plano-etapa-3A-3.md). O diagnóstico e os aceites abaixo preservam o histórico da preparação; a retomada ao final registra as implementações validadas. R19 permanece parcial até referências e cobertura cruzada em 3A.3.7.
 
 ## Diagnóstico confirmado
 
@@ -67,3 +67,9 @@ Nesta preparação não houve alteração funcional, rebuild, reinício, migraç
 **3A.3.6.1 concluída em 09/10/2026**, implementação `8803d05`/`5d4d2c5`: exames isolados por paciente, cancelamento de upload/leituras/prévias/downloads e callbacks tardios sem apagar outro rascunho. Retorno ao paciente consulta novamente mesmo com cache recente, sem presumir rollback de upload cancelado. [Evidências](./homologacao-etapa-3A-3-6-1.md): CI `37978598105` aprovado (302 backend/276 frontend, HTTP/builds/auditorias), Chrome com navegação no mesmo documento/upload já gravado e regressões de arquivos/exclusão aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações integradas/preservação aprovados; revisão 0024/zero schemas privados.
 
 **Próximo: implementar 3A.3.6.2 — leituras remotas, cabeçalho e revogação**, conforme [recortes de exames](./plano-etapa-3A-3-6.md). Atualizar lista/cabeçalho sem substituir arquivo/notas/revisão; manter `patients.view` distinto de `exams.view`, negar identidade sem ocultar exames ainda autorizados, tratar paciente ausente e revogar prévias/bytes quando registro/acesso desaparecer. Registrar início/aceite antes de alterar; não repetir diagnóstico/probes/testes aprovados sem mudança/falha. R19 e 3A.3.6 permanecem parciais; referências em 3A.3.7 e instalação assistida na etapa 5.
+
+### Retomada após leituras remotas — 11/10/2026
+
+**3A.3.6.2 concluída em 11/10/2026**, implementação `3ca5a2d`: exames e cabeçalho acompanham alterações remotas sem substituir arquivo/notas/confirmação ou liberar revisão de exclusão. Permissões de identidade/exames separadas, concessão recupera somente cabeçalho, remoção revoga prévia/bytes e paciente ausente encerra ações. [Evidências](./homologacao-etapa-3A-3-6-2.md): CI `38109842597` aprovado (302 backend/288 frontend, HTTP/builds/auditorias), Chrome com sessões independentes e regressão de isolamento/arquivos/exclusão aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações integradas/preservação aprovados; revisão 0024/zero schemas privados. 3A.3.6 concluída; R19 permanece parcial.
+
+**Próximo: 3A.3.7 — referências e cobertura cruzada**, conforme `docs/plano-etapa-3A-3.md`. Inspecionar referências usadas em seletores de agenda/calendário/financeiro/dentistas/usuários: nova ação lê referências atuais, rascunho aberto não muda opções/valores. Auditar matriz R19 e requisições, sem ampliar polling de listas completas. Registrar diagnóstico, recortes pequenos e aceite antes de alterar. Não repetir revisão geral ou testes aprovados sem mudança/falha. Instalação assistida permanece na etapa 5; Chrome no mesmo PC não comprova capacidade/estações físicas/outros navegadores.
