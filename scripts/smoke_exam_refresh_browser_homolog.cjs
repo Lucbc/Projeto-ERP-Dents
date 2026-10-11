@@ -1,0 +1,108 @@
+// Private fictitious fixtures only. Never emit credentials, headers or bodies.
+const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+let stage = 'start';
+process.on('unhandledRejection', () => { console.error('Exam deletion browser failed at stage: ' + stage); process.exit(1); });
+(async () => {
+ const credentials = JSON.parse(fs.readFileSync(0, 'utf8'));
+ const browser = await chromium.launch({ channel: 'chrome', headless: true });
+ const origin = 'https://localhost:18444';
+ try {
+  const context = () => browser.newContext({ timezoneId: 'America/Sao_Paulo', viewport: { width: 1440, height: 1100 } });
+  const writer = await (await context()).newPage(), reader = await (await context()).newPage();
+  const login = async (page, email) => {
+   await page.goto(origin + '/login'); await page.locator('[name=email]').fill(email); await page.locator('[name=password]').fill(credentials.password);
+   const response = page.waitForResponse(r => r.url().endsWith('/api/auth/login') && r.request().method() === 'POST');
+   await page.getByRole('button', { name: 'Entrar', exact: true }).click(); const identity = await (await response).json();
+   await page.getByRole('region', { name: 'Pacientes cadastrados', exact: true }).waitFor(); return identity;
+  };
+  stage = 'author login'; const author = await login(writer, credentials.email);
+  const api = async (method, url, data) => {
+   const result = await writer.evaluate(async ({ method, url, data, author }) => {
+    const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'X-Session-ID': author.session_id, 'X-CSRF-Token': author.csrf_token }, body: data ? JSON.stringify(data) : undefined });
+    return { status: r.status, body: r.status === 204 ? null : await r.json() };
+   }, { method, url, data, author });
+   assert.ok([200, 201, 204].includes(result.status), 'Fixture request rejected'); return result.body;
+  };
+  stage='fixtures';
+  const account=await api('POST','/api/users',{name:'Fictitious Exam Reader',email:'exam-live-reader@example.com',password:credentials.password,role:'reception'});
+  let matrix=(await api('GET','/api/permissions')).items.find(x=>x.role==='reception');
+  matrix.permissions.exams={view:true,create:true,update:true,delete:true};matrix.permissions.patients.view=true;
+  const saveMatrix=async()=>{matrix=await api('PUT','/api/permissions/reception',{version:matrix.version,permissions:matrix.permissions});};await saveMatrix();
+  let patient=await api('POST','/api/patients',{full_name:'Fictitious Exam Original'});
+  const endpoint='/api/patients/'+patient.id, listEndpoint=endpoint+'/exams';
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=','base64');
+  await writer.goto(origin+'/patients/'+patient.id);
+  const upload=async name=>{
+   await writer.locator('input[type=file]').setInputFiles({name,mimeType:'image/png',buffer:png});
+   const response=writer.waitForResponse(r=>r.url().endsWith(listEndpoint)&&r.request().method()==='POST');
+   await writer.getByRole('button',{name:'Enviar',exact:true}).click();assert.equal((await response).status(),201);
+   await writer.getByRole('cell',{name,exact:true}).waitFor();
+   return (await api('GET',listEndpoint)).find(x=>x.original_filename===name);
+  };
+  const firstExam=await upload('first-live.png');
+  stage='reader login';const receiver=await login(reader,account.email);assert.notEqual(receiver.session_id,author.session_id);
+  let reads=0,policies=0,writes=0;
+  reader.on('request',r=>{const p=new URL(r.url()).pathname;
+   if(r.method()==='GET'&&p===listEndpoint)reads++;
+   if(r.method()==='GET'&&p==='/api/exams/upload-policy')policies++;
+   if(['POST','DELETE'].includes(r.method())&&(p===listEndpoint||p.startsWith('/api/exams/')))writes++;
+  });
+  const row=name=>reader.getByRole('row').filter({has:reader.getByRole('cell',{name,exact:true})});
+  const button=name=>reader.getByRole('button',{name,exact:true});
+  await reader.goto(origin+'/patients/'+patient.id);await row('first-live.png').waitFor();
+  await reader.locator('input[type=file]').setInputFiles({name:'retained.png',mimeType:'image/png',buffer:png});
+  await reader.locator('input[name=notes]').fill('Fictitious retained exam draft');
+  const assertDraft=async()=>{assert.equal(await reader.locator('input[name=notes]').inputValue(),'Fictitious retained exam draft');
+   assert.equal(await reader.locator('input[type=file]').evaluate(el=>el.files[0].name),'retained.png');};
+  stage='remote header and captured confirmation';await row('first-live.png').getByRole('button',{name:'Excluir',exact:true}).click();
+  patient=await api('PUT',endpoint,{version:patient.version,full_name:'Fictitious Exam Remote'});
+  await reader.getByText('Fictitious Exam Remote (sem CPF)',{exact:true}).waitFor({timeout:25000});
+  await reader.getByText('Fictitious Exam Original',{exact:true}).waitFor();await assertDraft();await button('Cancelar exclusão').click();
+  stage='remote upload while preview open';await row('first-live.png').getByRole('button',{name:'Visualizar imagem'}).click();
+  await reader.getByRole('img',{name:'first-live.png'}).waitFor();const started=Date.now();
+  const secondExam=await upload('second-live.png');await row('second-live.png').waitFor({timeout:25000});const latency=Date.now()-started;await assertDraft();
+  stage='remote deletion revokes current preview';await api('DELETE','/api/exams/'+firstExam.id);
+  await reader.getByRole('img',{name:'first-live.png'}).waitFor({state:'hidden',timeout:25000});await row('first-live.png').waitFor({state:'hidden'});await assertDraft();
+  stage='remote target disappears without renewing review';await row('second-live.png').getByRole('button',{name:'Excluir',exact:true}).click();
+  await api('DELETE','/api/exams/'+secondExam.id);await button('Confirmar exclusão').waitFor({state:'hidden',timeout:25000});
+  await button('Recarregar lista para conferir').waitFor();await reader.waitForTimeout(17000);await button('Recarregar lista para conferir').waitFor();
+  await upload('remaining-live.png');await row('remaining-live.png').waitFor({timeout:25000});
+  assert.equal(await row('remaining-live.png').getByRole('button',{name:'Excluir',exact:true}).isDisabled(),true);
+  await button('Recarregar lista para conferir').click();await button('Recarregar lista para conferir').waitFor({state:'hidden'});await assertDraft();
+  stage='independent stale failures';const listPattern='**'+listEndpoint,headerPattern='**'+endpoint;
+  const fail=route=>route.fulfill({status:503,contentType:'application/json',body:'{"detail":"Fictitious unavailable"}'});
+  await reader.route(listPattern,fail);await reader.route(headerPattern,fail);
+  await button('Atualizar exames').click();await reader.getByText(/Não foi possível atualizar exames/).waitFor();
+  await button('Atualizar dados do paciente').click();await reader.getByText(/Não foi possível atualizar dados do paciente/).waitFor();await row('remaining-live.png').waitFor();await assertDraft();
+  for(const dark of [false,true]){await reader.evaluate(dark=>document.documentElement.classList.toggle('dark',dark),dark);
+   await reader.screenshot({path:path.resolve(__dirname,'../.data/homolog/exam-refresh-'+(dark?'dark':'light')+'.png'),fullPage:true,animations:'disabled'});}
+  await reader.unroute(listPattern);await reader.unroute(headerPattern);await button('Atualizar exames').click();await button('Atualizar dados do paciente').click();
+  await reader.getByText(/Não foi possível atualizar dados do paciente/).waitFor({state:'hidden'});
+  stage='patient identity permission revoked independently';matrix.permissions.patients.view=false;await saveMatrix();
+  await reader.getByText(/Sem acesso aos dados do paciente/).waitFor({timeout:25000});
+  assert.equal(await reader.getByText('Fictitious Exam Remote (sem CPF)',{exact:true}).count(),0);await row('remaining-live.png').waitFor();await assertDraft();
+  assert.equal(await row('remaining-live.png').getByRole('button',{name:'Excluir',exact:true}).isDisabled(),true);
+  assert.equal(await reader.evaluate(async({url,id})=>(await fetch(url,{headers:{'X-Session-ID':id}})).status,{url:endpoint,id:receiver.session_id}),403);
+  matrix.permissions.patients.view=true;await saveMatrix();await reader.getByText('Fictitious Exam Remote (sem CPF)',{exact:true}).waitFor({timeout:25000});await assertDraft();
+  stage='verification barrier and recovery';await reader.route('**/api/permissions/me',fail);
+  await reader.getByText('O conteúdo está oculto até verificar suas permissões. Seus rascunhos desta sessão foram preservados.',{exact:true}).waitFor({timeout:25000});
+  assert.equal(await button('Enviar').count(),0);await assertDraft();await reader.unroute('**/api/permissions/me');
+  await button('Verificar acesso novamente').click();await button('Enviar').waitFor();await assertDraft();
+  stage='hidden pause';await reader.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'hidden'});document.dispatchEvent(new Event('visibilitychange'));});
+  await reader.waitForLoadState('networkidle');const before=reads;await reader.waitForTimeout(17000);assert.equal(reads,before);
+  await reader.evaluate(()=>{Object.defineProperty(document,'visibilityState',{configurable:true,get:()=> 'visible'});document.dispatchEvent(new Event('visibilitychange'));window.dispatchEvent(new Event('focus'));});
+  stage='exam permission revoked';matrix.permissions.exams.view=false;await saveMatrix();
+  await reader.getByText(/Sem permissão para acessar esta página\.|Seu acesso aos exames/).waitFor({timeout:25000});assert.equal(await reader.locator('input[name=notes]').count(),0);
+  assert.equal(await reader.evaluate(async({url,id})=>(await fetch(url,{headers:{'X-Session-ID':id}})).status,{url:listEndpoint,id:receiver.session_id}),403);
+  assert.equal(writes,0);assert.ok(policies<=2);
+  stage='patient absent';matrix.permissions.exams.view=true;await saveMatrix();
+  const missing=await api('POST','/api/patients',{full_name:'Fictitious Removed Patient'});
+  await reader.goto(origin+'/patients/'+missing.id);await reader.getByText('Fictitious Removed Patient (sem CPF)',{exact:true}).waitFor();
+  const preview=await api('GET','/api/patients/'+missing.id+'/deletion-preview?version='+missing.version);
+  await api('DELETE','/api/patients/'+missing.id+'?version='+missing.version+'&exams_fingerprint='+preview.exams_fingerprint);
+  await reader.getByText(/Paciente não encontrado. As ações de exames foram encerradas/).waitFor({timeout:25000});
+  assert.equal(await reader.locator('input[name=notes]').count(),0);assert.equal(await reader.getByText('Nenhum exame enviado ainda.').count(),0);
+  console.log('PASS: independent sessions; remote exam upload in '+latency+'ms; drafts/header snapshot preserved; remote deletion revokes preview and requires review; independent failures; real header and exam 403 with grants; verification barrier/recovery; hidden pause; real patient 404; no reader writes.');
+ } finally {await browser.close();}
+})().catch(()=>{console.error('Exam deletion browser failed at stage: '+stage);process.exitCode=1;});

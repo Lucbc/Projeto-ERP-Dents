@@ -88,6 +88,12 @@ process.on('unhandledRejection',()=>{console.error('Exam deletion browser failed
   await navigate(otherPatient.id);await navigate(patient.id);
   console.log('OK: same-document A/B/A clears file and notes; pending upload aborted after server commit; B draft preserved; original patient exposes the committed result on return.');
   stage='draft and stale confirmation';
+  // Keep an intentional stale-read window to exercise real DELETE/download 404,
+  // even when automatic reads would otherwise remove the target first.
+  const staleExams=await first.evaluate(async({headers,id})=>(await fetch('/api/patients/'+id+'/exams',{headers})).json(),{headers,id:patient.id});
+  const stalePattern='**/api/patients/'+patient.id+'/exams';
+  await first.route(stalePattern,route=>route.request().method()==='GET'
+   ?route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(staleExams)}):route.continue());
   await first.locator('input[type=file]').setInputFiles({name:'draft.png',mimeType:'image/png',buffer:png});
   await first.locator('input[name=notes]').fill('Fictitious upload draft');
   await row(first,'first-fictitious.png').getByRole('button',{name:'Excluir',exact:true}).click();
@@ -104,7 +110,7 @@ process.on('unhandledRejection',()=>{console.error('Exam deletion browser failed
   await first.screenshot({path:path.join(__dirname,'../.data/homolog/exam-deletion-review.png'),fullPage:true});
   stage='missing download feedback';await row(first,'first-fictitious.png').getByRole('button',{name:'Baixar',exact:true}).click();
   await first.getByText('Não foi possível baixar o exame. Tente novamente.',{exact:true}).waitFor();
-  stage='reload and new confirmation';await first.getByRole('button',{name:'Recarregar lista para conferir'}).click();
+  stage='reload and new confirmation';await first.unroute(stalePattern);await first.getByRole('button',{name:'Recarregar lista para conferir'}).click();
   await row(first,'first-fictitious.png').waitFor({state:'hidden'});
   await first.getByRole('button',{name:'Recarregando...',exact:true}).waitFor({state:'hidden'});
   stage='delete reviewed remaining exam';

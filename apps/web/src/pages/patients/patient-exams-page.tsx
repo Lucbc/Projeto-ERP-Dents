@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Link, useParams } from "react-router-dom";
 import { z } from "zod";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Modal } from "@/components/ui/modal";
 
@@ -15,7 +15,11 @@ import { useToast } from "@/components/ui/toast";
 import { formatDateTime } from "@/lib/datetime";
 import { usePermissions } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api";
-import { examService, patientService } from "@/lib/services";
+import { examService } from "@/lib/services";
+import { useLiveQuery } from "@/hooks/use-live-query";
+import { ReadSuspensionContext } from "@/hooks/read-suspension";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
+import { ExamPatientHeader, type ExamPatientIdentity } from "./exam-patient-header";
 
 const uploadSchema = z.object({
   file: z
@@ -29,12 +33,37 @@ type UploadForm = z.infer<typeof uploadSchema>;
 export function PatientExamsPage() {
   const { patientId } = useParams<{ patientId: string }>();
   if (!patientId) return <ErrorState message="Paciente não informado." />;
-  return <PatientExamsContent key={patientId} patientId={patientId} />;
+  return <ExamsBoundary key={patientId} patientId={patientId} />;
 }
 
-function PatientExamsContent({ patientId }: { patientId: string }) {
+type EndReason = "missing" | "denied";
+
+function ExamsBoundary({ patientId }: { patientId: string }) {
+  const client = useQueryClient();
+  const [ended, setEnded] = useState<EndReason | null>(null);
+  const onEnd = useCallback((reason: EndReason) => setEnded(reason), []);
+  useEffect(() => {
+    if (!ended) return;
+    for (const queryKey of [["patient", patientId], ["exams", patientId]]) {
+      void client.cancelQueries({ queryKey, exact: true });
+      client.removeQueries({ queryKey, exact: true });
+    }
+  }, [ended, patientId, client]);
+  if (ended) return <ErrorState message={ended === "missing" ? "Paciente não encontrado. As ações de exames foram encerradas."
+    : "Seu acesso aos exames foi encerrado. Entre novamente após revisar o acesso."} />;
+  return <PatientExamsContent patientId={patientId} onEnd={onEnd} />;
+}
+
+function PatientExamsContent({ patientId, onEnd }: { patientId: string; onEnd: (reason: EndReason) => void }) {
   const { toast } = useToast();
   const { can } = usePermissions();
+  const canReadPatient = can("patients", "view");
+  const canCreate = can("exams", "create");
+  const canDelete = can("exams", "delete");
+  const suspended = useContext(ReadSuspensionContext);
+  const suspendedRef = useRef(suspended);
+  suspendedRef.current = suspended;
+  const [identity, setIdentity] = useState<ExamPatientIdentity | null>(null);
   const queryClient = useQueryClient();
   const [progress, setProgress] = useState(0);
   const uploadController = useRef<AbortController>();
@@ -46,20 +75,28 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
   const pageGeneration = useRef(0);
   const previewRequest = useRef(0);
   const active = useRef(true);
-  const fileControllers = useRef(new Set<AbortController>());
+  const fileControllers = useRef(new Map<AbortController, string>());
+  const endPage = useCallback((reason: EndReason) => {
+    active.current = false;
+    uploadController.current?.abort();
+    for (const controller of fileControllers.current.keys()) controller.abort();
+    fileControllers.current.clear();
+    onEnd(reason);
+  }, [onEnd]);
+  const onMissing = useCallback(() => endPage("missing"), [endPage]);
   useEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
       uploadController.current?.abort();
-      for (const controller of fileControllers.current) controller.abort();
+      for (const controller of fileControllers.current.keys()) controller.abort();
       fileControllers.current.clear();
       pageGeneration.current++; previewRequest.current++;
     };
   }, []);
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview.url); }, [preview]);
   const policyQuery = useQuery({ queryKey: ["exams", "upload-policy"],
-    queryFn: ({ signal }) => examService.uploadPolicy(signal) });
+    queryFn: ({ signal }) => examService.uploadPolicy(signal), enabled: !suspended });
 
   const form = useForm<UploadForm>({
     resolver: zodResolver(uploadSchema),
@@ -67,23 +104,54 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
       notes: "",
     },
   });
+  // Subscribe before the permission branch so a later write revocation retains the form.
+  const hasDraft = form.formState.isDirty;
 
-  const patientQuery = useQuery({
-    queryKey: ["patient", patientId],
-    queryFn: ({ signal }) => patientService.get(patientId, signal),
-    refetchOnMount: "always",
-  });
+  const examsQuery = useLiveQuery(["exams", patientId], signal => examService.listByPatient(patientId, signal),
+    { exactOnDenied: true });
+  const listMissing = axios.isAxiosError(examsQuery.error) && examsQuery.error.response?.status === 404;
+  const policyDenied = axios.isAxiosError(policyQuery.error) && [401, 403].includes(policyQuery.error.response?.status ?? 0);
+  useEffect(() => {
+    if (listMissing) endPage("missing");
+    else if (examsQuery.accessDenied || policyDenied) endPage("denied");
+  }, [listMissing, examsQuery.accessDenied, policyDenied, endPage]);
+  useEffect(() => {
+    if (!suspended) return;
+    for (const controller of fileControllers.current.keys()) controller.abort();
+    fileControllers.current.clear();
+    previewRequest.current++; setPreview(null);
+  }, [suspended]);
+  useEffect(() => {
+    if (!canReadPatient || identity?.denied) setDeletion(null);
+  }, [canReadPatient, identity?.denied]);
+  useEffect(() => {
+    if (!examsQuery.data || examsQuery.isError) return;
+    const ids = new Set(examsQuery.data.map(exam => exam.id));
+    for (const [controller, id] of fileControllers.current) {
+      if (!ids.has(id)) { controller.abort(); fileControllers.current.delete(controller); }
+    }
+    if (preview && !ids.has(preview.id)) { previewRequest.current++; setPreview(null); }
+    if (deletion && !ids.has(deletion.id) && !deleteBusy.current) {
+      setDeletion(null); setReviewRequired(true);
+    }
+  }, [examsQuery.data, examsQuery.isError, preview, deletion]);
 
-  const examsQuery = useQuery({
-    queryKey: ["exams", patientId],
-    queryFn: ({ signal }) => examService.listByPatient(patientId, signal),
-    // A canceled upload may have committed after this patient's cached read.
-    refetchOnMount: "always",
-  });
+  function fileError(error: unknown, examId: string, message: string) {
+    if (!active.current || suspendedRef.current) return;
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    if (status === 401 || status === 403) { endPage("denied"); return; }
+    if (status === 404) {
+      for (const [controller, id] of fileControllers.current) if (id === examId) controller.abort();
+      previewRequest.current++;
+      setPreview(current => current?.id === examId ? null : current);
+      examsQuery.refresh();
+    }
+    toast(message, "error");
+  }
 
   const uploadMutation = useMutation({
     mutationFn: (values: UploadForm) => {
-      if (!active.current) throw new axios.CanceledError();
+      if (!active.current || suspendedRef.current || !canCreate) throw new axios.CanceledError();
       const file = values.file[0] as File;
       const policy = policyQuery.data;
       if (!policy || file.size > policy.max_bytes || file.size === 0) {
@@ -131,9 +199,9 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
     const generation = pageGeneration.current;
     setReloading(true);
     try {
-      const [exams, patient] = await Promise.all([examsQuery.refetch(), patientQuery.refetch()]);
+      const [exams, patientReady] = await Promise.all([examsQuery.refetch({ cancelRefetch: false }), identity?.reload()]);
       if (generation !== pageGeneration.current) return;
-      if (exams.isError || patient.isError) {
+      if (exams.isError || !patientReady) {
         toast("Não foi possível recarregar. Confira novamente antes de excluir.", "error");
         return;
       }
@@ -143,8 +211,7 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
     }
   }
 
-  const canCreate = can("exams", "create");
-  const canDelete = can("exams", "delete");
+  if (examsQuery.accessDenied || policyDenied || listMissing) return <LoadingState message="Encerrando acesso aos exames..." />;
 
   return (
     <div className="space-y-4">
@@ -152,13 +219,8 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="font-display text-xl font-semibold text-slate-800">Exames do Paciente</h2>
-            {patientQuery.isLoading ? (
-              <p className="text-sm text-slate-500">Carregando paciente...</p>
-            ) : (
-              <p className="text-sm text-slate-500">
-                {patientQuery.data?.full_name ?? "Paciente"} ({patientQuery.data?.cpf ?? "sem CPF"})
-              </p>
-            )}
+            <ExamPatientHeader key={canReadPatient ? "allowed" : "denied"} patientId={patientId}
+              enabled={canReadPatient} onIdentity={setIdentity} onMissing={onMissing} />
           </div>
 
           <Link to="/patients">
@@ -167,13 +229,15 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
         </div>
       </Card>
 
-      {canCreate && (
+      {(canCreate || hasDraft || uploadMutation.isPending) && (
         <Card>
           <h3 className="font-semibold text-slate-800">Upload de exame</h3>
           <p className="text-sm text-slate-500">PDF, JPG ou PNG. {policyQuery.data
             ? `Limite por arquivo: ${(policyQuery.data.max_bytes / 1024 / 1024).toFixed(1)} MB.`
             : "Carregando limite de envio..."}</p>
           {policyQuery.isError && <ErrorState message="Não foi possível consultar o limite de envio. Recarregue a página." />}
+          {!canCreate && <p role="status">Sem permissão para enviar exames. Seu rascunho foi mantido.</p>}
+          <fieldset disabled={!canCreate || suspended}>
           <form
             className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_auto]"
             onSubmit={form.handleSubmit((values) => uploadMutation.mutate(values))}
@@ -197,6 +261,7 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
               </Button>
             </div>
           </form>
+          </fieldset>
           {uploadMutation.isPending && <div className="mt-3 space-x-3" role="status">
             <span>{progress}% enviado{progress === 100 ? " — processando no servidor" : ""}</span>
             <Button variant="outline" onClick={() => uploadController.current?.abort()}>Cancelar envio</Button>
@@ -206,6 +271,7 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
 
       <Card>
         <h3 className="mb-3 font-semibold text-slate-800">Arquivos enviados</h3>
+        <LiveQueryStatus query={examsQuery} subject="exames" />
 
         {reviewRequired && <div role="alert" className="mb-3 space-y-2">
           <p>Confira a lista atualizada antes de escolher novamente um exame para excluir.</p>
@@ -215,9 +281,8 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
         </div>}
 
         {examsQuery.isLoading && <LoadingState message="Carregando exames..." />}
-        {examsQuery.isError && <ErrorState message="Erro ao carregar exames." />}
 
-        {!examsQuery.isLoading && !examsQuery.isError && (
+        {examsQuery.data && (
           <>
             {(examsQuery.data?.length ?? 0) === 0 ? (
               <EmptyState message="Nenhum exame enviado ainda." />
@@ -246,9 +311,9 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
                               variant="outline"
                               onClick={() => {
                                 const controller = new AbortController();
-                                fileControllers.current.add(controller);
+                                fileControllers.current.set(controller, exam.id);
                                 void examService.download(exam.id, exam.original_filename, controller.signal)
-                                  .catch(() => { if (active.current && !controller.signal.aborted) toast("Não foi possível baixar o exame. Tente novamente.", "error"); })
+                                  .catch(error => { if (!controller.signal.aborted) fileError(error, exam.id, "Não foi possível baixar o exame. Tente novamente."); })
                                   .finally(() => fileControllers.current.delete(controller));
                               }}
                             >
@@ -259,10 +324,10 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
                               onClick={() => {
                                 const request = ++previewRequest.current;
                                 const controller = new AbortController();
-                                fileControllers.current.add(controller);
+                                fileControllers.current.set(controller, exam.id);
                                 void examService.previewImage(exam.id, exam.mime_type, controller.signal).then((blob) => {
-                                  if (active.current && !controller.signal.aborted && request === previewRequest.current) setPreview({ id: exam.id, url: URL.createObjectURL(blob), name: exam.original_filename });
-                                }).catch(() => { if (active.current && !controller.signal.aborted && request === previewRequest.current) toast("Não foi possível visualizar a imagem. Tente baixar o arquivo.", "error"); })
+                                  if (active.current && !suspendedRef.current && !controller.signal.aborted && request === previewRequest.current) setPreview({ id: exam.id, url: URL.createObjectURL(blob), name: exam.original_filename });
+                                }).catch(error => { if (!controller.signal.aborted && request === previewRequest.current) fileError(error, exam.id, "Não foi possível visualizar a imagem. Tente baixar o arquivo."); })
                                   .finally(() => fileControllers.current.delete(controller));
                               }}
                             >
@@ -271,9 +336,9 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
                             {canDelete && (
                               <Button
                                 variant="danger"
-                                disabled={deleteMutation.isPending || reviewRequired || reloading || !patientQuery.data || patientQuery.isError}
+                                disabled={deleteMutation.isPending || reviewRequired || reloading || !canReadPatient || !identity?.ready}
                                 onClick={() => {
-                                  setDeletion({ id: exam.id, filename: exam.original_filename, patient: patientQuery.data!.full_name });
+                                  setDeletion({ id: exam.id, filename: exam.original_filename, patient: identity!.data!.full_name });
                                 }}
                               >
                                 Excluir
@@ -290,13 +355,13 @@ function PatientExamsContent({ patientId }: { patientId: string }) {
           </>
         )}
       </Card>
-      <Modal open={Boolean(deletion)} title="Excluir exame" onClose={() => { if (!deleteBusy.current) setDeletion(null); }}>
+      <Modal open={Boolean(deletion) && canReadPatient && !identity?.denied} title="Excluir exame" onClose={() => { if (!deleteBusy.current) setDeletion(null); }}>
         {deletion && <div className="space-y-3">
           <p>Excluir o arquivo <strong>{deletion.filename}</strong> do paciente <strong>{deletion.patient}</strong>?</p>
           <p>O exame será removido. A remoção do arquivo pode levar alguns instantes.</p>
           <Button variant="outline" disabled={deleteMutation.isPending} onClick={() => setDeletion(null)}>Cancelar exclusão</Button>
-          <Button variant="danger" disabled={deleteMutation.isPending || reviewRequired || !canDelete} onClick={() => {
-            if (deleteBusy.current || reviewRequired || !canDelete) return;
+          <Button variant="danger" disabled={deleteMutation.isPending || reviewRequired || !canDelete || !canReadPatient || !identity?.ready} onClick={() => {
+            if (deleteBusy.current || reviewRequired || !canDelete || !canReadPatient || !identity?.ready || suspendedRef.current) return;
             deleteBusy.current = true;
             deleteMutation.mutate({ id: deletion.id, patientId, generation: pageGeneration.current });
           }}>{deleteMutation.isPending ? "Excluindo..." : "Confirmar exclusão"}</Button>

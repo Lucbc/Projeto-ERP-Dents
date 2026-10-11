@@ -2,16 +2,17 @@ import React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { focusManager, onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AxiosError } from "axios";
 import { EffectivePermissionsProvider } from "../src/hooks/use-effective-permissions";
 import { EffectiveAccessGate } from "../src/components/layout/effective-access-gate";
 import { ProtectedRoute } from "../src/components/layout/protected-route";
 import { usePermissions } from "../src/hooks/use-permissions";
 import { PatientsPage } from "../src/pages/patients/patients-page";
+import { PatientExamsPage } from "../src/pages/patients/patient-exams-page";
 import { PaymentDialog } from "../src/pages/financial/payment-dialog";
 import { ToastProvider } from "../src/components/ui/toast";
-import { financialService, patientService, permissionService } from "../src/lib/services";
+import { examService, financialService, patientService, permissionService } from "../src/lib/services";
 import type { FinancialEntry, Patient, PermissionResource, RolePermission, User } from "../src/types";
 
 let client: QueryClient; let user: User;
@@ -25,9 +26,9 @@ const failure = (status: number) => new AxiosError("Fictitious", "ERR_BAD_RESPON
   { status, data: {}, headers: {}, statusText: "Error", config: {} as never });
 const tick = async (ms = 10) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); await act(async () => { await vi.advanceTimersByTimeAsync(1); }); };
 function Menu() { const { can } = usePermissions(); return can("patients", "view") ? <nav>Patient menu</nav> : null; }
-function mount(page = <PatientsPage />, resource: PermissionResource = "patients") {
+function mount(page = <PatientsPage />, resource: PermissionResource = "patients", path = "/") {
   return render(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate>
-    <MemoryRouter><ToastProvider><Menu /><ProtectedRoute permission={{ resource, action: "view" }}>
+    <MemoryRouter initialEntries={[path]}><ToastProvider><Menu /><ProtectedRoute permission={{ resource, action: "view" }}>
       {page}
     </ProtectedRoute></ToastProvider></MemoryRouter>
   </EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>);
@@ -40,6 +41,34 @@ beforeEach(() => {
   vi.spyOn(patientService, "list").mockResolvedValue({ items: [patient], total: 1 });
   vi.spyOn(patientService, "update").mockResolvedValue(patient);
   revalidateIdentity.mockClear();
+});
+
+it("keeps exam drafts hidden through verification failure, separates patient access, and clears them on exam revocation", async () => {
+  const access = (patients = true, exams = true): RolePermission => ({ ...matrix(patients), permissions: {
+    ...matrix(patients).permissions, exams: { view: exams, create: true, update: true, delete: true },
+  } });
+  vi.mocked(permissionService.me).mockResolvedValue(access());
+  vi.spyOn(patientService, 'get').mockResolvedValue(patient);
+  vi.spyOn(examService, 'listByPatient').mockResolvedValue([]);
+  vi.spyOn(examService, 'uploadPolicy').mockResolvedValue({ max_bytes: 1024, extensions: ['.png'] });
+  const upload = vi.spyOn(examService, 'upload');
+  const { container } = mount(<Routes><Route path='/patients/:patientId' element={<PatientExamsPage />} /></Routes>, 'exams', '/patients/fictitious');
+  await tick(); const notes = container.querySelector('input[name="notes"]') as HTMLInputElement;
+  const file = container.querySelector('input[type="file"]') as HTMLInputElement;
+  const selected = new File(['fictitious'], 'draft.png');
+  fireEvent.change(notes, { target: { value: 'Fictitious retained' } }); fireEvent.change(file, { target: { files: [selected] } });
+  vi.mocked(permissionService.me).mockRejectedValue(failure(503)); await tick(15_010);
+  expect(notes.closest('[hidden][inert]')).not.toBeNull(); expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull();
+  vi.mocked(permissionService.me).mockResolvedValue(access(false));
+  fireEvent.click(screen.getByRole('button', { name: 'Verificar acesso novamente' })); await tick();
+  expect(screen.getByText(/Sem acesso aos dados do paciente/)).toBeTruthy(); expect(screen.queryByText(new RegExp(patient.full_name))).toBeNull();
+  expect(notes.value).toBe('Fictitious retained'); expect(file.files?.[0]).toBe(selected);
+  vi.mocked(permissionService.me).mockResolvedValue(access()); await tick(15_010);
+  expect(screen.getByText(new RegExp(patient.full_name))).toBeTruthy(); expect(notes.value).toBe('Fictitious retained');
+  vi.mocked(permissionService.me).mockResolvedValue(access(true, false)); await tick(15_010);
+  expect(notes.isConnected).toBe(false); expect(screen.getByText(/Sem permissão para acessar/)).toBeTruthy();
+  vi.mocked(permissionService.me).mockResolvedValue(access()); await tick(15_010);
+  expect((container.querySelector('input[name="notes"]') as HTMLInputElement).value).toBe(''); expect(upload).not.toHaveBeenCalled();
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 async function edit(container: HTMLElement) {
