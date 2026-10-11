@@ -28,6 +28,7 @@ it("keeps specialty and schedule drafts after conflict or failed reload, then sa
   client = new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});
   const {container}=render(<QueryClientProvider client={client}><ToastProvider><DentistsPage /></ToastProvider></QueryClientProvider>);
   fireEvent.click(await screen.findByRole("button",{name:"Editar"}));
+  await waitFor(()=>expect((screen.getByRole("button",{name:"Salvar"}) as HTMLButtonElement).disabled).toBe(false));
   const field=(name: string)=>container.querySelector(`[name="${name}"]`) as HTMLInputElement;
   fireEvent.change(field("specialty"),{target:{value:"Draft"}});
   fireEvent.change(field("availability.0.start_time"),{target:{value:"10:00"}});
@@ -50,6 +51,7 @@ it("keeps specialty and schedule drafts after conflict or failed reload, then sa
   await waitFor(()=>expect(field("specialty").value).toBe("Current"));
   expect(field("availability.0.start_time").value).toBe("09:00");
   expect(field("availability.1.start_time")).toBeNull();
+  await waitFor(()=>expect((screen.getByRole("button",{name:"Salvar"}) as HTMLButtonElement).disabled).toBe(false));
   fireEvent.change(field("full_name"),{target:{value:"Reviewed Fictitious Dentist"}});
   fireEvent.click(screen.getByRole("button",{name:"Salvar"}));
   await waitFor(()=>expect(update).toHaveBeenCalledTimes(2));

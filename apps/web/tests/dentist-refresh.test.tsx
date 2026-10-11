@@ -40,12 +40,12 @@ describe("dentists live list", () => {
     expect((screen.getByPlaceholderText(/Buscar por nome/) as HTMLInputElement).value).toBe("Fictitious");
     expect(screen.getByRole("cell", { name: "Remote", exact: true })).toBeTruthy();
     expect(screen.getByText("Terca 09:00-17:00")).toBeTruthy();
-    expect(specialtyService.listAll).toHaveBeenCalledTimes(1);
+    expect(specialtyService.listAll).not.toHaveBeenCalled();
     for (const spy of [create, update, remove, refs]) expect(spy).not.toHaveBeenCalled();
   });
   it.each([404, 409])("preserves fields/version across remote changes and blocks another submission after %s", async status => {
     const update = vi.spyOn(service, "update").mockRejectedValue(failure(status)); const get = vi.spyOn(service, "get").mockRejectedValue(failure(404));
-    const view = show(); await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true }));
+    const view = show(); await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true })); await tick();
     fireEvent.change(view.field("full_name"), { target: { value: "Fictitious draft" } });
     fireEvent.change(view.field("specialty"), { target: { value: "Draft" } });
     fireEvent.change(view.field("availability.0.start_time"), { target: { value: "10:00" } });
@@ -88,7 +88,7 @@ describe("dentists live list", () => {
   });
   it.each([401, 403])("discards list/form on %s without removing unrelated form reference caches", async status => {
     client.setQueryData([resource, "appointments-form"], { items: [item], total: 1 });
-    const view = show(); await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true }));
+    const view = show(); await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true })); await tick();
     vi.mocked(service.list).mockRejectedValue(failure(status)); await tick(15010);
     expect(screen.getByText(new RegExp(`Seu acesso a ${subject}`))).toBeTruthy(); expect(view.field("full_name")).toBeNull();
     expect(client.getQueriesData({ queryKey: [resource, "list"] })).toEqual([]);
@@ -110,7 +110,7 @@ describe("dentists live list", () => {
   it("keeps availability review blocked through polling and failed explicit refresh, preserving the complete draft", async () => {
     const conflict = failure(409); conflict.response!.data = { detail: "Consultas futuras afetadas.", code: "availability_conflict" };
     const update = vi.spyOn(service, "update").mockRejectedValue(conflict);
-    const view = show(); await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true }));
+    const view = show(); await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true })); await tick();
     fireEvent.change(view.field("specialty"), { target: { value: "Draft" } });
     fireEvent.change(view.field("availability.0.start_time"), { target: { value: "12:00" } });
     fireEvent.change(view.field("active"), { target: { value: "false" } });

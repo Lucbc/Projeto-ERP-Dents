@@ -81,7 +81,7 @@ process.on('unhandledRejection', () => { console.error('Dentist refresh browser 
   stage = 'read revocation'; await row(item.full_name).getByRole('button', { name: 'Editar', exact: true }).click(); matrix.permissions.dentists.view = false; await saveMatrix();
   await reader.getByText(/Sem permissão para acessar esta página\.|Seu acesso a .* foi encerrado\./).waitFor({ timeout: 25000 }); assert.equal(await reader.locator('[name=full_name]').count(), 0);
   assert.equal(await reader.evaluate(async id => (await fetch('/api/dentists', { headers: { 'X-Session-ID': id } })).status, receiver.session_id), 403);
-  stage = 'counts'; assert.equal(refs, refsBefore); assert.equal(writes, 2);
+  stage = 'counts'; assert.equal(refs, refsBefore + 3); assert.equal(writes, 2); // One specialty read for each edit action, none for polling.
   console.log('PASS: independent sessions; dentist remote edit in ' + latency + 'ms; specialty/schedule/activation/search updated; captured draft/version preserved; real 409/404; create/delete; failure/recovery; hidden pause; revocation/403; specialty references unchanged; two explicit writes only.');
  } finally { await browser.close(); }
 })().catch(() => { console.error('Dentist refresh browser failed at stage: ' + stage); process.exitCode = 1; });

@@ -255,8 +255,8 @@ export const specialtyService = {
     const response = await api.get<ListResponse<Specialty>>("/api/specialties", { params, signal });
     return response.data;
   },
-  async listAll(params: ListAllParams = {}) {
-    return fetchAllPages<Specialty>((nextParams) => specialtyService.list(nextParams), params);
+  async listAll(params: ListAllParams = {}, signal?: AbortSignal) {
+    return fetchAllPages<Specialty>((nextParams) => specialtyService.list(nextParams, signal), params, signal);
   },
   async get(id: string) {
     const response = await api.get<Specialty>(`/api/specialties/${id}`);

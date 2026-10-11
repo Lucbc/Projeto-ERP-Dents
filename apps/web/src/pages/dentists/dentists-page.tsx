@@ -1,7 +1,7 @@
 import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,6 +15,7 @@ import { EmptyState, LoadingState } from "@/components/ui/states";
 import { CatalogReadBoundary } from "@/components/catalog-read-boundary";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useLiveQuery } from "@/hooks/use-live-query";
+import { useActionOptions } from "@/hooks/use-action-options";
 import { useToast } from "@/components/ui/toast";
 import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -135,6 +136,8 @@ function createEmptyAvailabilitySlot(): DentistAvailabilitySlot {
   };
 }
 
+const readSpecialties = (signal: AbortSignal) => specialtyService.listAll({}, signal);
+
 export function DentistsPage() {
   return <CatalogReadBoundary resource="dentists">{onDenied => <DentistsContent onDenied={onDenied} />}</CatalogReadBoundary>;
 }
@@ -148,6 +151,8 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
   const [openModal, setOpenModal] = useState(false);
   const [editingDentist, setEditingDentist] = useState<Dentist | null>(null);
   const [editConflict, setEditConflict] = useState(false);
+  const [referenceAction, setReferenceAction] = useState(0);
+  const references = useActionOptions(openModal ? referenceAction : null, can("specialties", "view"), readSpecialties);
 
   const form = useForm<DentistForm>({
     resolver: zodResolver(dentistSchema),
@@ -175,11 +180,6 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
       throw error;
     }
   }, { exactOnDenied: true });
-
-  const specialtiesQuery = useQuery({
-    queryKey: ["specialties", "dentists-form"],
-    queryFn: () => specialtyService.listAll(),
-  });
 
   const availabilityReview = useAvailabilityReview(async () => {
     await dentistsQuery.refetch({ throwOnError: true });
@@ -251,7 +251,7 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
   });
 
   const items = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
-  const specialties = useMemo(() => specialtiesQuery.data?.items ?? [], [specialtiesQuery.data]);
+  const specialties = references.items;
   const selectedSpecialty = form.watch("specialty");
   const specialtyOptions = useMemo(() => {
     const names = specialties.map((item) => item.name);
@@ -266,7 +266,8 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
   const canDelete = can("dentists", "delete");
 
   const onNew = () => {
-    if (!canCreate) return;
+    if (!canCreate || isSubmitting || openModal) return;
+    setReferenceAction(value => value + 1);
     availabilityReview.reset();
     setEditConflict(false);
     setEditingDentist(null);
@@ -287,6 +288,7 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
     availabilityReview.reset();
     setEditConflict(false);
     if (!canUpdate) return;
+    setReferenceAction(value => value + 1);
     setEditingDentist(dentist);
     form.reset({
       full_name: dentist.full_name,
@@ -302,7 +304,7 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
   };
 
   const onSubmit = (values: DentistForm) => {
-    if (availabilityReview.blocked || isSubmitting || editConflict) return;
+    if (availabilityReview.blocked || isSubmitting || editConflict || !references.ready) return;
     if (editingDentist) {
       updateMutation.mutate({ id: editingDentist.id, version: editingDentist.version, payload: values });
       return;
@@ -425,6 +427,15 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
         onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingDentist ? "Editar dentista" : "Novo dentista"}
       >
+        <div className="mb-3 space-y-2" role="status">
+          {references.status === "loading" && <p>Carregando especialidades para este formulário...</p>}
+          {references.status === "error" && <p>Não foi possível carregar as especialidades. Tente novamente antes de salvar.</p>}
+          {references.status === "denied" && <p>Sem acesso às especialidades. Verifique sua permissão antes de salvar.</p>}
+          {references.ready && <p>As opções de especialidades permanecem como estavam ao abrir ou atualizar este formulário.</p>}
+          <Button type="button" variant="outline" disabled={isSubmitting || references.status === "loading" || !can("specialties", "view")}
+            onClick={() => void references.reload()}>Atualizar especialidades do formulário</Button>
+        </div>
+        <fieldset disabled={isSubmitting || !references.ready}>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
           <AvailabilityReview review={availabilityReview} />
           {editConflict && editingDentist && (
@@ -450,11 +461,15 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
               <option value="">Nao informada</option>
               {specialtyOptions.map((name) => (
                 <option key={name} value={name}>
-                  {name}
+                  {specialties.some(item => item.name === name)
+                    ? `${name}${specialties.find(item => item.name === name)?.active === false ? " (inativa)" : ""}`
+                    : `${name} (fora do cadastro atual)`}
                 </option>
               ))}
             </Select>
-            {!specialtiesQuery.isLoading && specialtyOptions.length === 0 && (
+            {references.ready && selectedSpecialty && !specialties.some(item => item.name === selectedSpecialty) &&
+              <p role="status" className="mt-1 text-sm text-muted-foreground">A especialidade registrada não consta no cadastro atual. Você pode mantê-la ou escolher outra opção.</p>}
+            {references.ready && specialtyOptions.length === 0 && (
               <p className="mt-1 text-xs text-slate-500">
                 Cadastre especialidades em Configuracoes para selecionar aqui.
               </p>
@@ -586,14 +601,16 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
+            {references.ready && <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
-            </Button>
-            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting || editConflict}>
+            </Button>}
+            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting || editConflict || !references.ready}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </form>
+        </fieldset>
+        {!references.ready && <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>Cancelar</Button>}
       </Modal>
     </div>
   );
