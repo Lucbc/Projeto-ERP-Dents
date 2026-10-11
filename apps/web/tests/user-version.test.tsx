@@ -33,6 +33,7 @@ it("keeps captured version and draft through conflict/refetch/failed reload, the
   setup(); const update = vi.spyOn(userService, "update").mockRejectedValueOnce(failure(409)).mockResolvedValue(user(4));
   const get = vi.spyOn(userService, "get").mockRejectedValueOnce(failure(503)).mockResolvedValue(user(3, "Fictitious Current"));
   fireEvent.click(await screen.findByRole("button", { name: "Editar" })); fill("name", "Fictitious Draft");
+  await waitFor(() => expect(button("Salvar").disabled).toBe(false));
   client.setQueryData(["users", "list", ""], { items: [user(9)], total: 1 });
   fireEvent.click(button("Salvar")); await screen.findByRole("button", { name: "Descartar e carregar atual" });
   expect(update.mock.calls[0][1].version).toBe(1); expect(field("name").value).toBe("Fictitious Draft");
@@ -66,7 +67,8 @@ it("reviewed deletion requires new identity and explicit confirmation after conf
 
 it.each([401, 403])("hides data after lost authorization (%s)", async status => {
   setup(); vi.spyOn(userService, "update").mockRejectedValue(failure(status));
-  fireEvent.click(await screen.findByRole("button", { name: "Editar" })); fireEvent.click(button("Salvar"));
+  fireEvent.click(await screen.findByRole("button", { name: "Editar" }));
+  await waitFor(() => expect(button("Salvar").disabled).toBe(false)); fireEvent.click(button("Salvar"));
   await screen.findByText(/Seu acesso à administração/); expect(document.querySelector('input[name="name"]')).toBeNull();
 });
 

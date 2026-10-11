@@ -36,7 +36,7 @@ describe("users live list", () => {
     expect(screen.getByText("Fictitious remote")).toBeTruthy(); expect(screen.getByRole("cell", { name: "Não" })).toBeTruthy();
     expect(screen.getByText(/Exibindo 1 de 105/).textContent).toContain("Limite desta lista: 100");
     expect((screen.getByPlaceholderText(/Buscar por nome/) as HTMLInputElement).value).toBe("Fictitious");
-    for (const spy of [create, update, remove]) expect(spy).not.toHaveBeenCalled(); expect(refs).toHaveBeenCalledTimes(1);
+    for (const spy of [create, update, remove]) expect(spy).not.toHaveBeenCalled(); expect(refs).not.toHaveBeenCalled();
   });
   it("keeps stale data/timestamp with 60s backoff; new failed search is not an empty success", async () => {
     show(); await tick(); const stamp = screen.getByText(/Última atualização/).textContent;
@@ -121,6 +121,7 @@ describe("users live list", () => {
     vi.spyOn(service, "update").mockRejectedValue(failure(409)); let resolve!: (value: User) => void;
     vi.spyOn(service, "get").mockImplementation(() => new Promise(done => { resolve = done; }));
     const view = show(); await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true }));
+    await tick(); // A new action prepares current references before allowing submission.
     fireEvent.click(screen.getByRole("button", { name: "Salvar", exact: true })); await tick();
     fireEvent.click(screen.getByRole("button", { name: "Descartar e carregar atual" })); await tick();
     vi.mocked(service.list).mockRejectedValue(failure(403)); await tick(15010);

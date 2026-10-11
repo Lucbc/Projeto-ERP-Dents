@@ -124,13 +124,16 @@ type ListAllParams = Omit<PaginationParams, "limit" | "offset">;
 async function fetchAllPages<T>(
   fetchPage: (params: PaginationParams) => Promise<ListResponse<T>>,
   params: ListAllParams = {},
+  signal?: AbortSignal,
 ): Promise<ListResponse<T>> {
   const items: T[] = [];
   let offset = 0;
   let total = 0;
 
   while (true) {
+    signal?.throwIfAborted();
     const page = await fetchPage({ ...params, limit: PAGE_SIZE, offset });
+    signal?.throwIfAborted();
     items.push(...page.items);
     total = page.total;
 
@@ -202,8 +205,8 @@ export const dentistService = {
     const response = await api.get<ListResponse<Dentist>>("/api/dentists", { params, signal });
     return response.data;
   },
-  async listAll(params: ListAllParams = {}) {
-    return fetchAllPages<Dentist>((nextParams) => dentistService.list(nextParams), params);
+  async listAll(params: ListAllParams = {}, signal?: AbortSignal) {
+    return fetchAllPages<Dentist>((nextParams) => dentistService.list(nextParams, signal), params, signal);
   },
   async get(id: string) {
     const response = await api.get<Dentist>(`/api/dentists/${id}`);

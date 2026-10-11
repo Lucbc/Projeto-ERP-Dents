@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -14,12 +14,13 @@ import { EmptyState, LoadingState } from "@/components/ui/states";
 import { CatalogReadBoundary } from "@/components/catalog-read-boundary";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useLiveQuery } from "@/hooks/use-live-query";
+import { useDentistOptions } from "./use-dentist-options";
 import { useToast } from "@/components/ui/toast";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useAuth } from "@/hooks/use-auth";
 import { getApiErrorMessage } from "@/lib/api";
 import { userRoleLabels, userRoleOptions } from "@/lib/labels";
-import { dentistService, userService } from "@/lib/services";
+import { userService } from "@/lib/services";
 import type { User, UserRole } from "@/types";
 
 const userSchema = z
@@ -74,6 +75,8 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
   const [review, setReview] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [accessLost, setAccessLost] = useState(false);
+  const [referenceAction, setReferenceAction] = useState(0);
+  const dentistOptions = useDentistOptions(openModal ? referenceAction : null, can("dentists", "view"));
 
   const form = useForm<UserForm>({
     resolver: zodResolver(userSchema),
@@ -102,11 +105,6 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
       throw error;
     }
   }, { enabled: !accessLost, exactOnDenied: true });
-
-  const dentistsQuery = useQuery({
-    queryKey: ["dentists", "users-form"],
-    queryFn: () => dentistService.listAll(),
-  });
 
   const createMutation = useMutation({
     gcTime: 0,
@@ -178,6 +176,7 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const busy = isSubmitting || deleteMutation.isPending || setPasswordMutation.isPending || reloading;
   const clearFlows = () => {
+    dentistOptions.cancel();
     setOpenModal(false); setOpenPasswordModal(false); setEditingUser(null); setSelectedUser(null);
     setDeletingUser(null); setReview(false); form.reset(); passwordForm.reset();
   };
@@ -207,8 +206,7 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
       const current = await userService.get(target.id);
       if (current.role === "admin" && !isAdmin) { clearFlows(); return; }
       if (editingUser) {
-        const references = await dentistService.listAll();
-        queryClient.setQueryData(["dentists", "users-form"], references);
+        if (!await dentistOptions.reload()) return;
         setEditingUser(current);
         form.reset({ name: current.name, email: current.email, role: current.role,
           dentist_id: current.dentist_id ?? "", is_active: current.is_active ? "true" : "false", password: "" });
@@ -224,13 +222,16 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
   </div>;
 
   const users = useMemo(() => usersQuery.data?.items ?? [], [usersQuery.data]);
-  const dentists = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
+  const dentists = dentistOptions.items;
+  const selectedDentistId = form.watch("dentist_id");
+  const missingDentist = !!selectedDentistId && dentistOptions.ready && !dentists.some(dentist => dentist.id === selectedDentistId);
   const canCreate = can("users", "create");
   const canUpdate = can("users", "update");
   const canDelete = can("users", "delete");
 
   const onNew = () => {
-    if (!canCreate || busy || accessLost) return;
+    if (!canCreate || busy || accessLost || openModal) return;
+    setReferenceAction(value => value + 1);
     setReview(false);
     setEditingUser(null);
     form.reset({
@@ -245,7 +246,8 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
   };
 
   const onEdit = (user: User) => {
-    if (!canUpdate || busy || accessLost || (user.role === "admin" && !isAdmin)) return;
+    if (!canUpdate || busy || accessLost || openModal || (user.role === "admin" && !isAdmin)) return;
+    setReferenceAction(value => value + 1);
     setReview(false);
     setEditingUser(user);
     form.reset({
@@ -260,7 +262,7 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
   };
 
   const onSubmit = (values: UserForm) => {
-    if (busy || review || accessLost) return;
+    if (busy || review || accessLost || !dentistOptions.ready || missingDentist) return;
     if (editingUser) {
       updateMutation.mutate({ id: editingUser.id, payload: values });
       return;
@@ -382,6 +384,15 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
         onClose={closeFlows}
         title={editingUser ? "Editar usuário" : "Novo usuário"}
       >
+        <div className="mb-3 space-y-2" role="status">
+          {dentistOptions.status === "loading" && <p>Carregando dentistas para este formulário...</p>}
+          {dentistOptions.status === "error" && <p>Não foi possível carregar os dentistas. Tente novamente antes de salvar.</p>}
+          {dentistOptions.status === "denied" && <p>Sem acesso aos dentistas. Verifique sua permissão antes de salvar.</p>}
+          {dentistOptions.ready && <p>As opções de dentistas permanecem como estavam ao abrir ou atualizar este formulário.</p>}
+          <Button type="button" variant="outline" disabled={busy || dentistOptions.status === "loading" || !can("dentists", "view")}
+            onClick={() => void dentistOptions.reload()}>Atualizar dentistas do formulário</Button>
+        </div>
+        <fieldset disabled={busy || !dentistOptions.ready}>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="md:col-span-2">{reviewNotice}</div>
           <div>
@@ -415,12 +426,15 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
             <label className="mb-1 block text-sm font-semibold text-slate-700">Dentista associado</label>
             <Select disabled={busy} {...form.register("dentist_id")}>
               <option value="">Nenhum</option>
+              {selectedDentistId && !dentists.some(dentist => dentist.id === selectedDentistId) &&
+                <option value={selectedDentistId} disabled>Dentista associado indisponível — revise a seleção</option>}
               {dentists.map((dentist) => (
                 <option key={dentist.id} value={dentist.id}>
-                  {dentist.full_name}
+                  {`${dentist.full_name}${dentist.active === false ? " (inativo)" : ""}`}
                 </option>
               ))}
             </Select>
+            {missingDentist && <p role="alert">O dentista associado não está disponível. Escolha uma opção antes de salvar.</p>}
           </div>
 
           {!editingUser && (
@@ -442,14 +456,16 @@ function UsersContent({ onDenied }: { onDenied: () => void }) {
           </div>
 
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={closeFlows}>
+            {dentistOptions.ready && <Button type="button" variant="outline" onClick={closeFlows}>
               Cancelar
-            </Button>
-            <Button type="submit" disabled={busy || review}>
+            </Button>}
+            <Button type="submit" disabled={busy || review || !dentistOptions.ready || missingDentist}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </form>
+        </fieldset>
+        {!dentistOptions.ready && <Button type="button" variant="outline" disabled={busy} onClick={closeFlows}>Cancelar</Button>}
       </Modal>
 
       <Modal

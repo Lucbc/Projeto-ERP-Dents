@@ -89,7 +89,7 @@ process.on('unhandledRejection', () => { console.error('User refresh browser fai
   matrix.permissions.users.view = false; await saveMatrix();
   await reader.getByText(/Sem permissão para acessar esta página\.|Seu acesso à administração/).waitFor({ timeout: 25000 }); assert.equal(await reader.locator('[name=new_password]').count(), 0);
   assert.equal(await reader.evaluate(async id => (await fetch('/api/users', { headers: { 'X-Session-ID': id } })).status, receiver.session_id), 403);
-  assert.equal(refs, refsBefore); assert.equal(writes, 4);
+  assert.equal(refs, refsBefore + 2); assert.equal(writes, 4); // One reference read for each edit action; none for polling/password/deletion.
   stage = 'own session revoked'; matrix.permissions.users.view = true; await saveMatrix(); await reader.goto(origin + '/users'); await row(item.name).waitFor();
   await row(item.name).getByRole('button', { name: 'Senha', exact: true }).click(); await reader.locator('[name=new_password]').fill(credentials.password);
   account = await api('PUT', '/api/users/' + account.id, { version: account.version, is_active: false });

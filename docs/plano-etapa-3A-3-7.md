@@ -56,3 +56,7 @@ Cada implementação exige regressões de componentes e transporte pertinentes, 
 **Próximo: implementar 3A.3.7.1.** Começar pelos três cenários acima como regressões do comportamento desejado em usuários, incluindo preparação cancelada/resposta tardia e paginação com sinal. Concluir o ciclo de componente/Chrome/CI/preservação/publicação antes de aplicar a outras telas. Nenhuma decisão do usuário bloqueia o início.
 
 Última versão funcional validada: `3ca5a2d`, documentação `3c1277e`, CI `38109842597` (302 backend/288 frontend, HTTP/builds/auditorias; seis imagens sem achados). Esta preparação não fez rebuild, reinício, migração, escrita em banco ou nova homologação integrada. Instalação assistida permanece na etapa 5. Chrome no mesmo PC não comprova capacidade ou estações físicas.
+
+### Início 3A.3.7.1 — 11/10/2026
+
+Base `a635a8e`, árvore inicialmente limpa. Implementar opções próprias da ação em usuários, sem cache compartilhado ou polling; leitura ao abrir, atualização explícita, falha/negação/cancelamento e indicação de associado ausente/inativo. Propagar AbortSignal em `dentistService.listAll` e entre páginas; demais `listAll` preservados. Aceite: regressões dos três probes com comportamento corrigido, permissões/barreira, respostas tardias, páginas incompletas, senha/versão; Chrome independente e regressão de usuários, CI/auditorias/backups/somente web/HTTPS/preservação. Sem API/schema. Não concluir antes desse ciclo.
