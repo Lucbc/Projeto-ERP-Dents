@@ -15,9 +15,11 @@ Em homologação em 11/10/2026, base `a635a8e`. [Contrato e recortes](./plano-et
 - Regressões antigas foram adaptadas para aguardar preparação antes de salvar; a expectativa antiga de leitura de referência ao montar passou a zero. Primeiro ensaio: cinco falhas nessas expectativas de timing/contagem, corrigidas sem remover provas de conflito/acesso.
 - TypeScript/Vite final aprovado (8,37s); npm/Python aprovados. Aviso preexistente de bundle acima de 500kB permanece.
 - Backups locais `pre-3A-3-7-1*` preservados; helper `.data/upgrade_3a371.py` somente `after`, não repetir `before/full`.
+- Imagem web construída, seis imagens sem achados. Implementação `0f528dd` publicada; CI `38112588826` em execução.
+- Chrome novo aprovado com sessões independentes: leitura por ação/nenhum polling, referência remota aparece na próxima ação ou atualização explícita, rascunho/senha estáveis, falha 503 e recuperação, 403 real da referência/concessão, cancelamento e versão capturada rejeitada por 409 real. Uma escrita explícita do leitor. Capturas claro/escuro inspecionadas; fixtures privadas limpas.
 
 ## Pendências
 
-Construção web, Chrome novo e regressão de versões de usuários, auditoria de imagens e CI. Após aceite local, atualizar somente web de `erp-dents-homolog`, validar HTTPS/build servido, dez verificações integradas e preservação/revisão/zero schemas privados; fechar e publicar. Homologação principal ainda na etapa 3A.3.6.2. Não concluir só pelos testes de componente.
+Regressão de versões de usuários em execução (`.data/browser-version-3a371.log`) e CI. Após aceite local, atualizar somente web de `erp-dents-homolog`, validar HTTPS/build servido, dez verificações integradas e preservação/revisão/zero schemas privados; fechar e publicar. Homologação principal ainda na etapa 3A.3.6.2. Não concluir só pelos testes de componente.
 
 Próximo após aceite: 3A.3.7.2, especialidades no formulário de dentistas. R19 parcial; Chrome no mesmo computador não comprova capacidade/estações físicas/outros navegadores. Instalação assistida na etapa 5.
