@@ -20,8 +20,8 @@ Em homologação em 11/10/2026, base `a635a8e`. [Contrato e recortes](./plano-et
 
 ## Pendências
 
-Conferência final: teste reforçado detectou que revisão explícita aguardando usuário podia iniciar leitura de referência após desmontagem (duas chamadas, esperada uma). Corrigido com verificação de montagem e escopo atual antes de iniciar o pedido. Chrome de referências final e auditoria de imagens em execução; CI final `38139079490` pendente. Principal já atualizada com versão inicial; validar atualização final sem repetir backups originais.
+Conferência final: teste reforçado detectou que revisão explícita aguardando usuário podia iniciar leitura de referência após desmontagem (duas chamadas, esperada uma). Corrigido com verificação de montagem e escopo atual antes de iniciar o pedido. Chrome de referências final aprovado e seis imagens finais sem achados; somente CI final `38139079490` pendente.
 
-Regressão de versões/senhas/exclusões aprovada (`.data/browser-version-3a371.log`). Atualização inicial de somente web/HTTPS/build servido/dez verificações integradas/preservação aprovada; revisão 0024/zero schemas privados. Nenhum volume removido. Após Chrome final, atualizar somente web final/HTTPS/preservação, concluir CI e publicar fechamento. Não concluir só pelos testes de componente.
+Regressão de versões/senhas/exclusões aprovada (`.data/browser-version-3a371.log`). Atualização inicial de somente web/HTTPS/build servido/dez verificações integradas/preservação aprovada. Imagem final também aplicada somente ao web: HTTPS/JS/CSS idênticos ao build final e linhas/referências/bytes preservados; revisão 0024/zero schemas privados. Nenhum volume removido ou demais serviços reiniciados. Concluir CI e publicar fechamento; não repetir testes locais aprovados sem mudança/falha.
 
 Próximo após aceite: 3A.3.7.2, especialidades no formulário de dentistas. R19 parcial; Chrome no mesmo computador não comprova capacidade/estações físicas/outros navegadores. Instalação assistida na etapa 5.
