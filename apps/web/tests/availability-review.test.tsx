@@ -41,6 +41,7 @@ it.each([["lista",AppointmentsPage,"Editar",false],["calendário",CalendarPage,"
     const edit=await screen.findByRole("button",{name:button,exact:true});
     await waitFor(()=>expect((edit as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(edit);
+    await waitFor(()=>expect(container.querySelector('[name="start_at"]')?.matches(":disabled")).toBe(false));
     if (isNew) {
       fireEvent.change(container.querySelector('[name="patient_id"]')!,{target:{value:patientId}});
       fireEvent.change(container.querySelector('[name="dentist_id"]')!,{target:{value:dentistId}});
@@ -57,7 +58,7 @@ it.each([["lista",AppointmentsPage,"Editar",false],["calendário",CalendarPage,"
     expect(save().disabled).toBe(true);
     vi.mocked(dentistService.listAll).mockRejectedValueOnce(failure(503));
     fireEvent.click(reload);
-    await waitFor(()=>expect(vi.mocked(dentistService.listAll)).toHaveBeenCalledTimes(2));
+    await waitFor(()=>expect(vi.mocked(dentistService.listAll)).toHaveBeenCalledTimes(Page === AppointmentsPage ? 3 : 2));
     await waitFor(()=>expect((reload as HTMLButtonElement).disabled).toBe(false));
     expect(save().disabled).toBe(true);
     expect(notes().value).toBe("My draft");

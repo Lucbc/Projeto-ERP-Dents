@@ -119,5 +119,5 @@ it("catalog refresh/denial does not change the real agenda form references, sele
   expect(within(screen.getByTestId("catalog")).getByText("Fictitious remote")).toBeTruthy(); expect(end.value).toBe("2030-01-07T11:15");
   expect((agenda.getByRole("checkbox") as HTMLInputElement).checked).toBe(true); expect(agenda.getByText(item.name)).toBeTruthy();
   vi.mocked(procedureService.list).mockRejectedValue(failure(403)); await tick(15010);
-  expect(end.value).toBe("2030-01-07T11:15"); expect(procedureService.listAll).toHaveBeenCalledTimes(1);
+  expect(end.value).toBe("2030-01-07T11:15"); expect(procedureService.listAll).toHaveBeenCalledTimes(2);
 });

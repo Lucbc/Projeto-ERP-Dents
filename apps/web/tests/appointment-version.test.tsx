@@ -40,6 +40,7 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     const edit=await screen.findByRole("button",{name:button,exact:true});
     await waitFor(()=>expect((edit as HTMLButtonElement).disabled).toBe(false));
     fireEvent.click(edit);
+    await waitFor(()=>expect(container.querySelector('[name="start_at"]')?.matches(":disabled")).toBe(false));
     const notes=()=>container.querySelector('textarea[name="notes"]') as HTMLTextAreaElement;
     const end=()=>container.querySelector('input[name="end_at"]') as HTMLInputElement;
     const originalEnd=end().value;
@@ -50,7 +51,7 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     await waitFor(()=>expect(list).toHaveBeenCalledTimes(2));
     await waitFor(()=>expect((screen.getByRole("button",{name:"Atualizar agenda"}) as HTMLButtonElement).disabled).toBe(false));
     expect(notes().value).toBe("My draft"); expect(end().value).toBe(originalEnd);
-    expect(procedureService.listAll).toHaveBeenCalledTimes(1);
+    expect(procedureService.listAll).toHaveBeenCalledTimes(Page === AppointmentsPage ? 2 : 1);
     list.mockRejectedValueOnce(failure(503));
     fireEvent.click(screen.getByRole("button",{name:"Atualizar agenda",exact:true}));
     await screen.findByText(/Não foi possível atualizar a agenda/);
@@ -67,6 +68,7 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     expect(notes().value).toBe("My draft");
     fireEvent.click(reload);
     await waitFor(()=>expect(notes().value).toBe("Other operator"));
+    await waitFor(()=>expect(container.querySelector('[name="start_at"]')?.matches(":disabled")).toBe(false));
     expect(end().value).not.toBe(originalEnd);
     fireEvent.change(notes(),{target:{value:"Reviewed"}});
     fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));

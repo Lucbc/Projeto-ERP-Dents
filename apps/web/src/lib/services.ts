@@ -176,8 +176,8 @@ export const patientService = {
     const response = await api.get<ListResponse<Patient>>("/api/patients", { params, signal });
     return response.data;
   },
-  async listAll(params: ListAllParams = {}) {
-    return fetchAllPages<Patient>((nextParams) => patientService.list(nextParams), params);
+  async listAll(params: ListAllParams = {}, signal?: AbortSignal) {
+    return fetchAllPages<Patient>((nextParams) => patientService.list(nextParams, signal), params, signal);
   },
   async get(id: string, signal?: AbortSignal) {
     const response = await api.get<Patient>(`/api/patients/${id}`, { signal });
@@ -230,8 +230,8 @@ export const procedureService = {
     const response = await api.get<ListResponse<Procedure>>("/api/procedures", { params, signal });
     return response.data;
   },
-  async listAll(params: ListAllParams = {}) {
-    return fetchAllPages<Procedure>((nextParams) => procedureService.list(nextParams), params);
+  async listAll(params: ListAllParams = {}, signal?: AbortSignal) {
+    return fetchAllPages<Procedure>((nextParams) => procedureService.list(nextParams, signal), params, signal);
   },
   async get(id: string) {
     const response = await api.get<Procedure>(`/api/procedures/${id}`);
@@ -322,8 +322,8 @@ export const appointmentService = {
     const response = await api.get<Appointment[]>("/api/appointments", { params: filters, signal });
     return response.data;
   },
-  async get(id: string) {
-    const response = await api.get<Appointment>(`/api/appointments/${id}`);
+  async get(id: string, signal?: AbortSignal) {
+    const response = await api.get<Appointment>(`/api/appointments/${id}`, { signal });
     return response.data;
   },
   async create(payload: AppointmentPayload) {

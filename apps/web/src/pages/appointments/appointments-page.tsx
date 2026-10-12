@@ -3,8 +3,8 @@ import { useLiveQuery } from "@/hooks/use-live-query";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -22,7 +22,8 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { appointmentDeletionConfirmation } from "@/lib/appointment-deletion";
 import { getApiErrorMessage } from "@/lib/api";
 import { appointmentStatusLabels, appointmentStatusOptions } from "@/lib/labels";
-import { appointmentService, dentistService, patientService, procedureService } from "@/lib/services";
+import { appointmentService } from "@/lib/services";
+import { useAppointmentReferences } from "./use-appointment-references";
 import type { Appointment, Procedure } from "@/types";
 
 const appointmentSchema = z
@@ -86,6 +87,19 @@ export function AppointmentsPage() {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [editConflict, setEditConflict] = useState(false);
   const [manualEndOverride, setManualEndOverride] = useState(false);
+  const [referenceAction, setReferenceAction] = useState(0);
+  const references = useAppointmentReferences(openModal ? referenceAction : null);
+  const pageReferences = useAppointmentReferences(0);
+  const mounted = useRef(false);
+  const pendingReload = useRef<AbortController>();
+  const actionScope = useRef({ openModal, referenceAction });
+  actionScope.current = { openModal, referenceAction };
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => () => { pendingReload.current?.abort(); pendingReload.current = undefined; }, [openModal, referenceAction]);
+  // A denied form read must also remove the page's previously authorized copy.
+  useEffect(() => { if (references.patients.status === "denied") pageReferences.patients.deny(); }, [references.patients.status, pageReferences.patients.deny]);
+  useEffect(() => { if (references.dentists.status === "denied") pageReferences.dentists.deny(); }, [references.dentists.status, pageReferences.dentists.deny]);
+  useEffect(() => { if (references.procedures.status === "denied") pageReferences.procedures.deny(); }, [references.procedures.status, pageReferences.procedures.deny]);
 
   const form = useForm<AppointmentForm>({
     resolver: zodResolver(appointmentSchema),
@@ -98,24 +112,6 @@ export function AppointmentsPage() {
       status: "scheduled",
       notes: "",
     },
-  });
-
-  const patientsQuery = useQuery({
-    queryKey: ["patients", "appointments-form"],
-    refetchOnReconnect: !openModal,
-    queryFn: () => patientService.listAll(),
-  });
-
-  const dentistsQuery = useQuery({
-    queryKey: ["dentists", "appointments-form"],
-    refetchOnReconnect: !openModal,
-    queryFn: () => dentistService.listAll(),
-  });
-
-  const proceduresQuery = useQuery({
-    queryKey: ["procedures", "appointments-form"],
-    refetchOnReconnect: !openModal,
-    queryFn: () => procedureService.listAll(),
   });
 
   const appointmentsQuery = useLiveQuery(
@@ -135,7 +131,7 @@ export function AppointmentsPage() {
   }, [appointmentsQuery.accessDenied, form]);
 
   const availabilityReview = useAvailabilityReview(async () => {
-    await dentistsQuery.refetch({ throwOnError: true });
+    if (!await references.dentists.reload()) throw new Error("Não foi possível atualizar a disponibilidade. Tente novamente.");
   });
 
   const createMutation = useMutation({
@@ -189,12 +185,20 @@ export function AppointmentsPage() {
   });
 
   const reloadAppointmentMutation = useMutation({
-    mutationFn: (id: string) => appointmentService.get(id),
-    onSuccess: (appointment) => {
-      onEdit(appointment);
+    mutationFn: ({ id }: { id: string; action: number }) => {
+      pendingReload.current?.abort();
+      pendingReload.current = new AbortController();
+      return appointmentService.get(id, pendingReload.current.signal);
+    },
+    onSuccess: (appointment, request) => {
+      if (!mounted.current || !actionScope.current.openModal || actionScope.current.referenceAction !== request.action) return;
+      onEdit(appointment, true);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error, request) => {
+      if (mounted.current && actionScope.current.openModal && actionScope.current.referenceAction === request.action)
+        toast(getApiErrorMessage(error), "error");
+    },
   });
 
   const deletion = useCatalogDeletion(appointmentService.remove, () => appointmentsQuery.refetch(), () => {
@@ -204,15 +208,21 @@ export function AppointmentsPage() {
   });
 
   const items = useMemo(() => appointmentsQuery.data ?? [], [appointmentsQuery.data]);
-  const patients = useMemo(() => patientsQuery.data?.items ?? [], [patientsQuery.data]);
-  const dentists = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
-  const procedures = useMemo(() => proceduresQuery.data?.items ?? [], [proceduresQuery.data]);
+  const patients = references.patients.items;
+  const dentists = references.dentists.items;
+  const procedures = references.procedures.items;
+  const pageProcedureById = new Map(pageReferences.procedures.items.map(procedure => [procedure.id, procedure]));
   const procedureById = useMemo(
     () => new Map(procedures.map((procedure) => [procedure.id, procedure])),
     [procedures],
   );
   const selectedProcedureIds = form.watch("procedure_ids") ?? [];
-  const startAtValue = form.watch("start_at");
+  const selectedPatient = form.watch("patient_id");
+  const selectedDentist = form.watch("dentist_id");
+  const missingPatient = !!selectedPatient && !patients.some(item => item.id === selectedPatient);
+  const missingDentist = !!selectedDentist && !dentists.some(item => item.id === selectedDentist);
+  const missingProcedures = selectedProcedureIds.filter(id => !procedureById.has(id));
+  const missingReference = missingPatient || missingDentist || missingProcedures.length > 0;
   const suggestedDurationMinutes = useMemo(
     () => calculateSuggestedDuration(selectedProcedureIds, procedureById),
     [procedureById, selectedProcedureIds],
@@ -223,14 +233,11 @@ export function AppointmentsPage() {
 
   const isSubmitting = availabilityReview.reload.isPending || createMutation.isPending || updateMutation.isPending || reloadAppointmentMutation.isPending || deletion.mutation.isPending;
 
-  useEffect(() => {
-    if (manualEndOverride) return;
-
-    const suggestedEndAt = toSuggestedEndAt(startAtValue, suggestedDurationMinutes);
-    if (!suggestedEndAt) return;
-
-    form.setValue("end_at", suggestedEndAt, { shouldDirty: true, shouldValidate: true });
-  }, [form, manualEndOverride, startAtValue, suggestedDurationMinutes]);
+  const updateAutomaticEnd = (start: string, ids: string[]) => {
+    if (manualEndOverride || !references.ready) return;
+    const end = toSuggestedEndAt(start, calculateSuggestedDuration(ids, procedureById));
+    if (end) form.setValue("end_at", end, { shouldDirty: true, shouldValidate: true });
+  };
 
   const toggleProcedure = (procedureId: string) => {
     const current = form.getValues("procedure_ids") ?? [];
@@ -239,6 +246,7 @@ export function AppointmentsPage() {
       : [...current, procedureId];
 
     form.setValue("procedure_ids", next, { shouldDirty: true, shouldValidate: false });
+    updateAutomaticEnd(form.getValues("start_at"), next);
   };
 
   const applySuggestedDuration = () => {
@@ -250,7 +258,9 @@ export function AppointmentsPage() {
   };
 
   const onNew = () => {
-    if (!canCreate) return;
+    if (!canCreate || isSubmitting || openModal) return;
+    setReferenceAction(value => value + 1);
+    setEditConflict(false);
     const start = new Date();
     const end = new Date(start.getTime() + 30 * 60 * 1000);
 
@@ -269,7 +279,9 @@ export function AppointmentsPage() {
     setOpenModal(true);
   };
 
-  const onEdit = (appointment: Appointment) => {
+  const onEdit = (appointment: Appointment, reviewing = false) => {
+    if (!canUpdate || (!reviewing && (isSubmitting || openModal))) return;
+    setReferenceAction(value => value + 1);
     availabilityReview.reset();
     setEditConflict(false);
     if (!canUpdate) return;
@@ -288,7 +300,8 @@ export function AppointmentsPage() {
   };
 
   const onSubmit = (values: AppointmentForm) => {
-    if (availabilityReview.blocked || availabilityReview.reload.isPending) return;
+    if (availabilityReview.blocked || isSubmitting || editConflict || !references.ready || missingReference) return;
+    if (editingAppointment ? !canUpdate : !canCreate) return;
     if (editingAppointment) {
       updateMutation.mutate({ id: editingAppointment.id, version: editingAppointment.version, payload: values });
       return;
@@ -312,7 +325,8 @@ export function AppointmentsPage() {
 
           <Select value={dentistFilter} onChange={(event) => setDentistFilter(event.target.value)}>
             <option value="">Todos dentistas</option>
-            {dentists.map((dentist) => (
+            {dentistFilter && !pageReferences.dentists.items.some(item => item.id === dentistFilter) && <option value={dentistFilter}>Dentista selecionado indisponível</option>}
+            {pageReferences.dentists.items.map((dentist) => (
               <option key={dentist.id} value={dentist.id}>
                 {dentist.full_name}
               </option>
@@ -321,7 +335,8 @@ export function AppointmentsPage() {
 
           <Select value={patientFilter} onChange={(event) => setPatientFilter(event.target.value)}>
             <option value="">Todos pacientes</option>
-            {patients.map((patient) => (
+            {patientFilter && !pageReferences.patients.items.some(item => item.id === patientFilter) && <option value={patientFilter}>Paciente selecionado indisponível</option>}
+            {pageReferences.patients.items.map((patient) => (
               <option key={patient.id} value={patient.id}>
                 {patient.full_name}
               </option>
@@ -332,6 +347,10 @@ export function AppointmentsPage() {
         </div>
       </Card>
 
+      <div role="status" className="space-y-2">
+        {!pageReferences.ready && <p>Alguns cadastros dos filtros e da tabela estão carregando ou indisponíveis.</p>}
+        <Button variant="outline" disabled={openModal || pageReferences.loading} onClick={() => void pageReferences.reload()}>Atualizar cadastros dos filtros</Button>
+      </div>
       <LiveQueryStatus query={appointmentsQuery} />
 
       {appointmentsQuery.data !== undefined && (
@@ -357,7 +376,7 @@ export function AppointmentsPage() {
                     <tr key={appointment.id} className="border-b last:border-b-0">
                       <td className="p-2 font-medium text-slate-800">{appointment.patient_name ?? "-"}</td>
                       <td className="p-2">{appointment.dentist_name ?? "-"}</td>
-                      <td className="p-2">{formatProcedureList(appointment.procedure_ids, procedureById)}</td>
+                      <td className="p-2">{formatProcedureList(appointment.procedure_ids, pageProcedureById)}</td>
                       <td className="p-2">{new Date(appointment.start_at).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{new Date(appointment.end_at).toLocaleString("pt-BR")}</td>
                       <td className="p-2">{appointmentStatusLabels[appointment.status]}</td>
@@ -402,13 +421,20 @@ export function AppointmentsPage() {
         onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingAppointment ? "Editar consulta" : "Nova consulta"}
       >
+        <div role="status" className="mb-3 space-y-2">
+          {references.ready && <p>Cadastros preparados para esta consulta. Atualizar as opções mantém os horários preenchidos.</p>}
+          {([["Pacientes", references.patients], ["Dentistas", references.dentists], ["Procedimentos", references.procedures]] as const).map(([label, source]) =>
+            source.status !== "ready" && <p key={label}>{label}: {source.status === "denied" ? "sem acesso ao cadastro." : source.status === "error" ? "não foi possível carregar. Tente novamente." : "carregando..."}</p>)}
+          <Button variant="outline" disabled={isSubmitting || references.loading} onClick={() => void references.reload()}>Atualizar cadastros do formulário</Button>
+        </div>
+        <AvailabilityReview review={availabilityReview} />
+        <fieldset disabled={isSubmitting || !references.ready}>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
-          <AvailabilityReview review={availabilityReview} />
           {editConflict && editingAppointment && (
             <div role="alert" className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3">
               <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar a consulta atual substituirá os campos deste formulário.</p>
               <Button type="button" variant="outline" disabled={isSubmitting}
-                onClick={() => reloadAppointmentMutation.mutate(editingAppointment.id)}>
+                onClick={() => reloadAppointmentMutation.mutate({ id: editingAppointment.id, action: referenceAction })}>
                 Descartar rascunho e carregar atual
               </Button>
             </div>
@@ -417,9 +443,10 @@ export function AppointmentsPage() {
             <label className="mb-1 block text-sm font-semibold text-slate-700">Paciente *</label>
             <Select {...form.register("patient_id")}>
               <option value="">Selecione</option>
+              {missingPatient && <option value={selectedPatient}>Paciente selecionado indisponível</option>}
               {patients.map((patient) => (
                 <option key={patient.id} value={patient.id}>
-                  {patient.full_name}
+                  {`${patient.full_name}${patient.active === false ? " (inativo)" : ""}`}
                 </option>
               ))}
             </Select>
@@ -432,9 +459,10 @@ export function AppointmentsPage() {
             <label className="mb-1 block text-sm font-semibold text-slate-700">Dentista *</label>
             <Select {...form.register("dentist_id")}>
               <option value="">Selecione</option>
+              {missingDentist && <option value={selectedDentist}>Dentista selecionado indisponível</option>}
               {dentists.map((dentist) => (
                 <option key={dentist.id} value={dentist.id}>
-                  {dentist.full_name}
+                  {`${dentist.full_name}${dentist.active === false ? " (inativo)" : ""}`}
                 </option>
               ))}
             </Select>
@@ -446,7 +474,8 @@ export function AppointmentsPage() {
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Procedimentos</label>
             <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-slate-200 p-2">
-              {procedures.length === 0 ? (
+              {missingProcedures.map(id => <label key={id} className="block"><input type="checkbox" checked onChange={() => toggleProcedure(id)} /> Procedimento selecionado indisponível ({id})</label>)}
+              {procedures.length === 0 && references.procedures.ready ? (
                 <p className="text-sm text-slate-500">Nenhum procedimento cadastrado.</p>
               ) : (
                 procedures.map((procedure) => {
@@ -463,7 +492,7 @@ export function AppointmentsPage() {
                         className="mt-1 h-4 w-4"
                       />
                       <span className="flex-1 text-sm text-slate-700">
-                        {procedure.name}
+                        {procedure.name}{procedure.active === false ? " (inativo)" : ""}
                         {procedure.duration_minutes ? (
                           <span className="ml-2 text-xs text-slate-500">
                             ({procedure.duration_minutes} min)
@@ -482,7 +511,7 @@ export function AppointmentsPage() {
                 ? `Duração sugerida: ${suggestedDurationMinutes} min`
                 : "Selecione procedimentos para sugerir a duração."}
             </p>
-            {manualEndOverride && suggestedDurationMinutes > 0 && (
+            {suggestedDurationMinutes > 0 && (
               <Button
                 type="button"
                 variant="outline"
@@ -496,7 +525,7 @@ export function AppointmentsPage() {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Início *</label>
-            <Input type="datetime-local" {...form.register("start_at")} />
+            <Input type="datetime-local" {...form.register("start_at", { onChange: event => updateAutomaticEnd(event.target.value, form.getValues("procedure_ids") ?? []) })} />
             {form.formState.errors.start_at && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.start_at.message}</p>
             )}
@@ -531,15 +560,18 @@ export function AppointmentsPage() {
             <Textarea {...form.register("notes")} />
           </div>
 
+          {references.ready && missingReference && <p role="alert" className="md:col-span-2">Há cadastros selecionados indisponíveis. Escolha paciente/dentista disponíveis ou remova os procedimentos ausentes antes de salvar.</p>}
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-              <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
+              {references.ready && <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
-            </Button>
-            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting}>
+            </Button>}
+            <Button type="submit" disabled={availabilityReview.blocked || isSubmitting || editConflict || !references.ready || missingReference}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </form>
+        </fieldset>
+        {!references.ready && <Button variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>Cancelar</Button>}
       </Modal>
     </div>
   );

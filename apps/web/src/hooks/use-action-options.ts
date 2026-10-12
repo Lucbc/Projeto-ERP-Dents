@@ -17,6 +17,10 @@ export function useActionOptions<T>(action: number | null, allowed: boolean, rea
   scope.current = { action, allowed, suspended };
   const publish = useCallback((value: Snapshot<T>) => { current.current = value; setState(value); }, []);
   const cancel = useCallback(() => { pending.current?.abort(); pending.current = undefined; }, []);
+  const deny = useCallback(() => {
+    cancel();
+    publish({ action, status: "denied", items: [] });
+  }, [action, cancel, publish]);
   const reload = useCallback(async () => {
     if (!mounted.current || action === null || !allowed || suspended || pending.current
       || scope.current.action !== action || !scope.current.allowed || scope.current.suspended) return false;
@@ -50,6 +54,6 @@ export function useActionOptions<T>(action: number | null, allowed: boolean, rea
     items: same && allowed ? state.items : [],
     status: !allowed ? "denied" : same ? state.status : "loading",
     ready: same && state.status === "ready" && allowed && !suspended,
-    reload, cancel,
+    reload, cancel, deny,
   };
 }

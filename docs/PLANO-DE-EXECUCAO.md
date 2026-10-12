@@ -20,6 +20,10 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 **Próximo: implementar 3A.3.7.3A — lista de consultas e preparação compartilhada**, conforme plano específico. Separar referências de filtros/tabela das opções da ação; propagação de sinal em pacientes/procedimentos, falha parcial/permissões independentes, fim automático/manual e versão preservados. Revisão de disponibilidade deve rejeitar falha/cancelamento, nunca desbloquear por Promise resolvida com `false`. Registrar início/aceite antes de alterar; não repetir os probes. Calendário fica em 3A.3.7.3B, incluindo três entradas/grade/exclusão; financeiro em 3A.3.7.4, matriz R19 em 3A.3.7.5 e instalação assistida na etapa 5.
 
+### Início 3A.3.7.3A — lista de consultas, 11/10/2026
+
+Base `25695f3`, árvore limpa. Implementar o contrato já diagnosticado, sem repetir probes: referências por ação, filtros/tabela separados, permissões independentes, ausência explícita, cancelamento/paginação, duração apenas por ação do usuário e revisão de disponibilidade sem falso sucesso. Aceite: componentes/transporte, Chrome independente e regressões pertinentes, CI/auditorias/backups/HTTPS/preservação/publicação. Calendário permanece no recorte seguinte; sem API/schema.
+
 ## Etapas e critérios de conclusão
 
 | Etapa | Escopo | Estado | Critério |
