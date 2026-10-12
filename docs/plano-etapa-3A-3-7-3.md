@@ -1,6 +1,6 @@
 # 3A.3.7.3 — referências em consultas e calendário
 
-Preparação **3A.3.7.3P concluída em 11/10/2026**, base `28ba515`. Implementações pendentes. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Sem alteração da aplicação nesta preparação.
+Preparação **3A.3.7.3P concluída em 11/10/2026**, base `28ba515`. 3A.3.7.3A concluída; implementação do calendário pendente. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Sem alteração da aplicação nesta preparação.
 
 ## Diagnóstico específico
 
@@ -50,3 +50,9 @@ Aceite: componentes, Chrome real com botão/evento/intervalo e sessões independ
 ## Retomada e limites
 
 **Próximo: implementar 3A.3.7.3A.** Não repetir diagnóstico/probes desta preparação. A última aplicação validada permanece `dbaaa00`, fechamento `28ba515`, CI `38179819243` aprovado (302 backend/302 frontend). Nenhum rebuild, reinício, migração ou teste integrado novo nesta preparação; backups e volumes intactos. Depois de 3A.3.7.3B, seguir financeiro 3A.3.7.4 e matriz R19 3A.3.7.5. Instalação assistida na etapa 5; R19 parcial.
+
+### Retomada atual — referências da lista de consultas, 12/10/2026
+
+**3A.3.7.3A concluída em 12/10/2026**, implementação `657407c`, complemento de testes `4b02691`: lista de consultas prepara referências por ação, separadas de filtros/tabela; preserva fim automático/manual, notas e versão, trata falha parcial/negação/ausência e cancela respostas tardias. Revisão de disponibilidade só desbloqueia após leitura bem-sucedida. [Evidências](./homologacao-etapa-3A-3-7-3A.md): CI `38198388765` aprovado (302 backend/313 frontend, HTTP/builds/auditorias), Chrome independente e regressões de disponibilidade/lista/calendário aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações/preservação aprovados, revisão 0024/zero schemas temporários. R19 parcial.
+
+**Próximo: implementar 3A.3.7.3B — calendário**, conforme [recortes](./plano-etapa-3A-3-7-3.md). Reutilizar preparação compartilhada e cobrir botão, evento e intervalo selecionado; separar cores/grade das referências da ação, preservar duração/fim manual/versão/exclusão e revisão de disponibilidade. Registrar início/aceite e testar grade real no Chrome. Não repetir diagnóstico/probes ou testes aprovados sem mudança/falha. Financeiro em 3A.3.7.4, matriz R19 em 3A.3.7.5, instalação assistida na etapa 5.
