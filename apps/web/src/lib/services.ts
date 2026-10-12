@@ -431,8 +431,8 @@ export const financialService = {
     const response = await api.get<FinancialSummary>("/api/financial/summary", { params, signal });
     return response.data;
   },
-  async get(id: string) {
-    const response = await api.get<FinancialEntry>(`/api/financial/${id}`);
+  async get(id: string, signal?: AbortSignal) {
+    const response = await api.get<FinancialEntry>(`/api/financial/${id}`, { signal });
     return response.data;
   },
   async create(payload: FinancialPayload) {

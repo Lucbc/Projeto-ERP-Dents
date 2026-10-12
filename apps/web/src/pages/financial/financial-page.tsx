@@ -1,3 +1,4 @@
+import { useFinancialReferences } from "./use-financial-references";
 import { PaymentDialog } from "./payment-dialog";
 import { uncertainFinancialEntry } from "@/lib/financial-attempt";
 import { isAxiosError } from "axios";
@@ -29,9 +30,7 @@ import {
 } from "@/lib/labels";
 import {
   appointmentService,
-  dentistService,
   financialService,
-  patientService,
 } from "@/lib/services";
 import type { Appointment, FinancialEntry, PaymentMethod } from "@/types";
 
@@ -174,15 +173,24 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
     },
   });
 
-  const patientsQuery = useQuery({
-    queryKey: ["patients", "financial-form"],
-    queryFn: () => patientService.listAll(),
-  });
-
-  const dentistsQuery = useQuery({
-    queryKey: ["dentists", "financial-form"],
-    queryFn: () => dentistService.listAll(),
-  });
+  const [entryAction, setEntryAction] = useState(0);
+  const pageReferences = useFinancialReferences(0, false);
+  const references = useFinancialReferences(openEntryModal ? entryAction : null);
+  const mounted = useRef(false);
+  const reloadController = useRef<AbortController>();
+  const entryScope = useRef({ open: openEntryModal, action: entryAction });
+  entryScope.current = { open: openEntryModal, action: entryAction };
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; reloadController.current?.abort(); };
+  }, []);
+  useEffect(() => () => { reloadController.current?.abort(); }, [openEntryModal, entryAction]);
+  useEffect(() => {
+    if (openEntryModal && references.patients.status === "denied") pageReferences.patients.deny();
+  }, [openEntryModal, references.patients.status, pageReferences.patients.deny]);
+  useEffect(() => {
+    if (openEntryModal && references.dentists.status === "denied") pageReferences.dentists.deny();
+  }, [openEntryModal, references.dentists.status, pageReferences.dentists.deny]);
 
   const canViewAppointments = can("appointments", "view");
   const appointmentsForGenerateQuery = useQuery({
@@ -313,12 +321,20 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   });
 
   const reloadEntryMutation = useMutation({
-    mutationFn: (id: string) => financialService.get(id),
-    onSuccess: (entry) => {
-      onEditEntry(entry);
+    mutationFn: async (id: string) => {
+      const action = entryScope.current.action;
+      const controller = new AbortController();
+      reloadController.current?.abort();
+      reloadController.current = controller;
+      const entry = await financialService.get(id, controller.signal);
+      return { entry, action, controller };
+    },
+    onSuccess: ({ entry, action, controller }) => {
+      if (!mounted.current || controller.signal.aborted || !entryScope.current.open || entryScope.current.action !== action) return;
+      onEditEntry(entry, true);
       void queryClient.invalidateQueries({ queryKey: ["financial"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => { if (mounted.current && !reloadController.current?.signal.aborted) toast(getApiErrorMessage(error), "error"); },
   });
 
   const onActionError = (error: unknown) => {
@@ -376,8 +392,8 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
     },
   });
 
-  const patients = useMemo(() => patientsQuery.data?.items ?? [], [patientsQuery.data]);
-  const dentists = useMemo(() => dentistsQuery.data?.items ?? [], [dentistsQuery.data]);
+  const patients = pageReferences.patients.items;
+  const dentists = pageReferences.dentists.items;
   const entries = useMemo(() => financialEntriesQuery.data?.items ?? [], [financialEntriesQuery.data]);
   const appointmentsForGenerate = useMemo(
     () =>
@@ -392,7 +408,8 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   const isGeneratingEntry = generateFromAppointmentMutation.isPending;
 
   const onNewEntry = () => {
-    if (!canCreate) return;
+    if (!canCreate || openEntryModal || openGenerateModal || isSubmittingEntry || createUncertain || generateUncertain) return;
+    setEntryAction(action => action + 1);
     setEditConflict(false);
     setEditingEntry(null);
     entryForm.reset({
@@ -413,8 +430,9 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
     setOpenEntryModal(true);
   };
 
-  const onEditEntry = (entry: FinancialEntry) => {
-    if (!canUpdate) return;
+  const onEditEntry = (entry: FinancialEntry, reviewing = false) => {
+    if (!canUpdate || (!reviewing && (openEntryModal || openGenerateModal || isSubmittingEntry || createUncertain || generateUncertain))) return;
+    setEntryAction(action => action + 1);
     setEditConflict(false);
     setEditingEntry(entry);
     entryForm.reset({
@@ -435,7 +453,18 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
     setOpenEntryModal(true);
   };
 
+  const selectedPatient = entryForm.watch("patient_id");
+  const selectedDentist = entryForm.watch("dentist_id");
+  const selectedAppointment = entryForm.watch("appointment_id");
+  const missingPatient = !!selectedPatient && !references.patients.items.some(item => item.id === selectedPatient);
+  const missingDentist = !!selectedDentist && !references.dentists.items.some(item => item.id === selectedDentist);
+  const missingAppointment = !!selectedAppointment && !references.appointments.items.some(item => item.id === selectedAppointment);
+  const invalidReference = (missingPatient && selectedPatient !== editingEntry?.patient_id)
+    || (missingDentist && selectedDentist !== editingEntry?.dentist_id)
+    || (missingAppointment && selectedAppointment !== editingEntry?.appointment_id);
   const submitEntry = (values: FinancialForm) => {
+    if (!openEntryModal || !references.ready || isSubmittingEntry || createUncertain || editConflict || invalidReference
+      || editingEntry?.status === "paid" || (editingEntry ? !canUpdate : !canCreate)) return;
     if (editingEntry) {
       updateMutation.mutate({ id: editingEntry.id, version: editingEntry.version, payload: values });
       return;
@@ -479,7 +508,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
           </div>
           {canCreate && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setOpenGenerateModal(true)}>
+              <Button variant="outline" onClick={() => { if (!openEntryModal && !createUncertain && !generateUncertain) setOpenGenerateModal(true); }}>
                 Gerar da consulta
               </Button>
               <Button onClick={onNewEntry}>Novo lancamento</Button>
@@ -534,6 +563,11 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
       </section>
 
       <section aria-label="Lançamentos financeiros" className="space-y-3">
+      <div role="status" className="text-sm text-muted-foreground">
+        {pageReferences.loading ? "Carregando opções dos filtros..." : pageReferences.ready ? "Opções dos filtros preparadas; cadastros sem acesso ficam indisponíveis." : "Não foi possível preparar todos os filtros."}
+        <Button variant="outline" disabled={pageReferences.loading || openEntryModal || openGenerateModal || createUncertain || generateUncertain}
+          onClick={() => void pageReferences.reload()}>Atualizar opções dos filtros</Button>
+      </div>
       <Card>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <Input
@@ -561,16 +595,18 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
             <Input aria-label="Vencimento inicial" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
             <Input aria-label="Vencimento final" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
           </div>
-          <Select aria-label="Filtrar por paciente" value={patientFilter} onChange={(event) => setPatientFilter(event.target.value)}>
+          <Select disabled={!pageReferences.patients.ready} aria-label="Filtrar por paciente" value={patientFilter} onChange={(event) => setPatientFilter(event.target.value)}>
             <option value="">Todos pacientes</option>
+            {patientFilter && !patients.some(item => item.id === patientFilter) && <option value={patientFilter}>Paciente indisponível — filtro mantido</option>}
             {patients.map((patient) => (
               <option key={patient.id} value={patient.id}>
                 {patient.full_name}
               </option>
             ))}
           </Select>
-          <Select aria-label="Filtrar por dentista" value={dentistFilter} onChange={(event) => setDentistFilter(event.target.value)}>
+          <Select disabled={!pageReferences.dentists.ready} aria-label="Filtrar por dentista" value={dentistFilter} onChange={(event) => setDentistFilter(event.target.value)}>
             <option value="">Todos dentistas</option>
+            {dentistFilter && !dentists.some(item => item.id === dentistFilter) && <option value={dentistFilter}>Dentista indisponível — filtro mantido</option>}
             {dentists.map((dentist) => (
               <option key={dentist.id} value={dentist.id}>
                 {dentist.full_name}
@@ -702,8 +738,17 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
             : <Button onClick={() => { setOpenEntryModal(false); setCreateUncertain(false); setReviewCreation(true); createAttempt.current = null; void queryClient.invalidateQueries({ queryKey: ["financial"] }); }}>Fechar e conferir lançamentos</Button>}
         </div>}
         {editingEntry?.status === "paid" && <div role="alert"><p>Pagamento confirmado. Consulte os pagamentos para estornar antes de corrigir.</p><Button onClick={() => { setOpenEntryModal(false); setEditingEntry(null); }}>Fechar formulário</Button></div>}
+        <div role="status" className="mb-3 space-y-2 text-sm">
+          <p>{references.loading ? "Preparando referências do lançamento..." : references.ready ? "Referências do lançamento preparadas." : "Falha ao preparar referências do lançamento. Tente atualizar."}</p>
+          {([ ["Pacientes", references.patients], ["Dentistas", references.dentists], ["Consultas", references.appointments] ] as const).map(([label, source]) =>
+            source.status === "denied" ? <p key={label}>{label}: sem acesso ao catálogo; vínculos existentes são mantidos.</p> : null)}
+          <p>Consultas disponíveis: seis meses antes e depois da leitura, sem canceladas. Vínculos anteriores fora da lista são mantidos.</p>
+          <Button variant="outline" disabled={references.loading || isSubmittingEntry || createUncertain || editingEntry?.status === "paid"}
+            onClick={() => void references.reload()}>Atualizar referências do lançamento</Button>
+          {invalidReference && <p role="alert">Uma nova associação não está disponível. Atualize as referências ou remova o vínculo antes de salvar.</p>}
+        </div>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={entryForm.handleSubmit(submitEntry)}>
-          <fieldset disabled={createUncertain || editingEntry?.status === "paid"} className="contents">
+          <fieldset disabled={!references.ready || isSubmittingEntry || createUncertain || editingEntry?.status === "paid"} className="contents">
           {editConflict && editingEntry && (
             <div role="alert" className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3">
               <p>Este lançamento mudou. Seu rascunho foi mantido. Carregar o atual substituirá valores, datas, status e vínculos deste formulário.</p>
@@ -775,38 +820,44 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Paciente</label>
-            <Select {...entryForm.register("patient_id")}>
+            <Select {...entryForm.register("patient_id")} disabled={references.patients.status === "denied"}>
               <option value="">Nao vincular</option>
-              {patients.map((patient) => (
+              {missingPatient && <option value={selectedPatient}>Paciente fora da lista — vínculo mantido</option>}
+              {references.patients.items.map((patient) => (
                 <option key={patient.id} value={patient.id}>
                   {patient.full_name}
                 </option>
               ))}
             </Select>
+            {entryForm.watch("patient_id") && <Button type="button" variant="outline" onClick={() => entryForm.setValue("patient_id", "", { shouldDirty: true })}>Remover vínculo de paciente</Button>}
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Dentista</label>
-            <Select {...entryForm.register("dentist_id")}>
+            <Select {...entryForm.register("dentist_id")} disabled={references.dentists.status === "denied"}>
               <option value="">Nao vincular</option>
-              {dentists.map((dentist) => (
+              {missingDentist && <option value={selectedDentist}>Dentista fora da lista — vínculo mantido</option>}
+              {references.dentists.items.map((dentist) => (
                 <option key={dentist.id} value={dentist.id}>
                   {dentist.full_name}
                 </option>
               ))}
             </Select>
+            {entryForm.watch("dentist_id") && <Button type="button" variant="outline" onClick={() => entryForm.setValue("dentist_id", "", { shouldDirty: true })}>Remover vínculo de dentista</Button>}
           </div>
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Consulta vinculada</label>
-            <Select {...entryForm.register("appointment_id")} disabled={!canViewAppointments}>
+            <Select {...entryForm.register("appointment_id")} disabled={references.appointments.status === "denied"}>
               <option value="">Nao vincular</option>
-              {appointmentsForGenerate.map((appointment) => (
+              {missingAppointment && <option value={selectedAppointment}>Consulta fora da lista — vínculo mantido</option>}
+              {references.appointments.items.map((appointment) => (
                 <option key={appointment.id} value={appointment.id}>
                   {formatAppointmentLabel(appointment)}
                 </option>
               ))}
             </Select>
+            {entryForm.watch("appointment_id") && <Button type="button" variant="outline" onClick={() => entryForm.setValue("appointment_id", "", { shouldDirty: true })}>Remover vínculo de consulta</Button>}
           </div>
 
           <div>
@@ -846,11 +897,13 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmittingEntry || createUncertain}>
+            <Button type="submit" disabled={isSubmittingEntry || createUncertain || editConflict || invalidReference || (editingEntry ? !canUpdate : !canCreate)}>
               {isSubmittingEntry ? "Salvando..." : "Salvar"}
             </Button>
           </div>
           </fieldset>
+          {!references.ready && <Button type="button" variant="outline" disabled={isSubmittingEntry || createUncertain}
+            onClick={() => { setOpenEntryModal(false); setEditingEntry(null); }}>Cancelar preparação</Button>}
         </form>
       </Modal>
 

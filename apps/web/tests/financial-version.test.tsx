@@ -33,6 +33,7 @@ it("keeps financial draft after conflict/failed reload and makes a loaded paid e
   const get=vi.spyOn(financialService,"get").mockRejectedValueOnce(failure(503)).mockResolvedValue(current);
   const {field}=setup();
   fireEvent.click(await screen.findByRole("button",{name:"Editar",exact:true}));
+  await screen.findByText("Referências do lançamento preparadas.");
   fireEvent.change(field("amount"),{target:{value:"321.09"}});
   fireEvent.change(field("notes"),{target:{value:"Draft"}});
   fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
@@ -73,11 +74,13 @@ it("locks a paid creation after network uncertainty and reuses its original key 
   const create=vi.spyOn(financialService,"create").mockRejectedValueOnce(new AxiosError("network")).mockResolvedValue({...entry,status:"paid",has_payments:true});
   const {field}=setup();
   fireEvent.click(await screen.findByRole("button",{name:"Novo lancamento",exact:true}));
+  await screen.findByText("Referências do lançamento preparadas.");
   fireEvent.change(field("description"),{target:{value:"Fictitious paid creation"}});
   fireEvent.change(field("amount"),{target:{value:"120.00"}});
   fireEvent.change(field("status"),{target:{value:"paid"}});
   fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
   const retry=await screen.findByRole("button",{name:"Consultar/repetir criação"});
+  expect((screen.getByRole("button",{name:"Atualizar referências do lançamento"}) as HTMLButtonElement).disabled).toBe(true);
   expect(field("amount").closest("fieldset")?.disabled).toBe(true);
   fireEvent.click(retry);
   await waitFor(()=>expect(create).toHaveBeenCalledTimes(2));
@@ -89,6 +92,7 @@ it("does not replay an unpaid manual creation because that endpoint has no recei
   const create=vi.spyOn(financialService,"create").mockRejectedValue(new AxiosError("network"));
   const {field}=setup();
   fireEvent.click(await screen.findByRole("button",{name:"Novo lancamento",exact:true}));
+  await screen.findByText("Referências do lançamento preparadas.");
   fireEvent.change(field("description"),{target:{value:"Fictitious pending creation"}});
   fireEvent.change(field("amount"),{target:{value:"120"}});
   fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
