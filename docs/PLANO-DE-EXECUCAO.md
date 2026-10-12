@@ -24,6 +24,11 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 Base `25695f3`, árvore limpa. Implementar o contrato já diagnosticado, sem repetir probes: referências por ação, filtros/tabela separados, permissões independentes, ausência explícita, cancelamento/paginação, duração apenas por ação do usuário e revisão de disponibilidade sem falso sucesso. Aceite: componentes/transporte, Chrome independente e regressões pertinentes, CI/auditorias/backups/HTTPS/preservação/publicação. Calendário permanece no recorte seguinte; sem API/schema.
 
+- Implementação `657407c` e complemento de testes `4b02691` publicados, remoto conferido. 313 frontend/38 arquivos (42,52s), TypeScript/Vite (13,25s), 11 testes finais reforçados (4,20s), npm/Python e seis imagens sem achados. Ensaio antigo de disponibilidade atualizado para a mensagem específica da referência; mantém prova de 503/bloqueio/rascunho/recuperação.
+- Chrome de referências aprovado: sessões independentes, nova leitura por ação, duração remota não altera fim automático/manual, aplicação explícita, falha parcial/recuperação, 403 real independente/concessão, 409 real com versão capturada e cancelamento tardio. Capturas claro/escuro inspecionadas. Regressão de disponibilidade aprovada; regressão de lista/calendário aprovada (criação remota em 15032/14979ms, oito leituras por cenário, pausa sem leituras, rascunho/versão preservados, sem escritas automáticas).
+- Somente web da homologação atualizada; HTTPS/assets idênticos ao build, dez verificações integradas e linhas/referências/bytes de exames preservados. Revisão `0024_user_version`, zero schemas temporários. Backups `pre-3A-3-7-3A*` preservados; helper `.data/upgrade_3a373a.py` somente `after`. Não repetir backups/atualização/testes aprovados sem mudança/falha.
+- **Retomar somente CI final `38198388765` e fechamento/publicação documental**. CI inicial `38198259916` cancelado/superado após complemento dos testes. Watch `.data/ci-watch-3a373a.log`; evidências `.data/browser-3a373a.log`, `.data/browser-availability-3a373a.log`, `.data/browser-agenda-3a373a.log`, `.data/preservation-3a373a.log`. [Relatório](./homologacao-etapa-3A-3-7-3A.md). Próximo após aceite: 3A.3.7.3B; R19 parcial.
+
 ## Etapas e critérios de conclusão
 
 | Etapa | Escopo | Estado | Critério |
