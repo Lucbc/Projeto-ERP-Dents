@@ -1,6 +1,6 @@
 # 3A.3.7.3 — referências em consultas e calendário
 
-Preparação **3A.3.7.3P concluída em 11/10/2026**, base `28ba515`. 3A.3.7.3A concluída; implementação do calendário pendente. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Sem alteração da aplicação nesta preparação.
+Preparação **3A.3.7.3P concluída em 11/10/2026**, base `28ba515`. 3A.3.7.3A e 3A.3.7.3B concluídas. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Sem alteração da aplicação nesta preparação.
 
 ## Diagnóstico específico
 
@@ -56,3 +56,9 @@ Aceite: componentes, Chrome real com botão/evento/intervalo e sessões independ
 **3A.3.7.3A concluída em 12/10/2026**, implementação `657407c`, complemento de testes `4b02691`: lista de consultas prepara referências por ação, separadas de filtros/tabela; preserva fim automático/manual, notas e versão, trata falha parcial/negação/ausência e cancela respostas tardias. Revisão de disponibilidade só desbloqueia após leitura bem-sucedida. [Evidências](./homologacao-etapa-3A-3-7-3A.md): CI `38198388765` aprovado (302 backend/313 frontend, HTTP/builds/auditorias), Chrome independente e regressões de disponibilidade/lista/calendário aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações/preservação aprovados, revisão 0024/zero schemas temporários. R19 parcial.
 
 **Próximo: implementar 3A.3.7.3B — calendário**, conforme [recortes](./plano-etapa-3A-3-7-3.md). Reutilizar preparação compartilhada e cobrir botão, evento e intervalo selecionado; separar cores/grade das referências da ação, preservar duração/fim manual/versão/exclusão e revisão de disponibilidade. Registrar início/aceite e testar grade real no Chrome. Não repetir diagnóstico/probes ou testes aprovados sem mudança/falha. Financeiro em 3A.3.7.4, matriz R19 em 3A.3.7.5, instalação assistida na etapa 5.
+
+### Retomada atual — referências do calendário, 12/10/2026
+
+**3A.3.7.3B concluída em 12/10/2026**, implementação `bae3fb2`: calendário prepara referências por ação via botão/evento/intervalo, separa cores da grade e conserva duração, horários, rascunho e versão. Cancelamento, permissões, revisão de disponibilidade e exclusão preservados. [Evidências](./homologacao-etapa-3A-3-7-3B.md): CI `38273565070` aprovado (302 backend/324 frontend, HTTP/builds/auditorias), Chrome com grade real/sessões independentes/conflito de disponibilidade e regressão de exclusão aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações/preservação aprovados, revisão 0024/zero schemas temporários. 3A.3.7.3 concluída; R19 parcial.
+
+**Próximo: 3A.3.7.4 — referências do financeiro**, conforme [recortes](./plano-etapa-3A-3-7.md). Inspecionar lançamento/geração, filtros e janela de consultas; delimitar subetapas antes de alterar, preservando idempotência, tentativas incertas, pagamentos e histórico. Reutilizar protocolo validado de leitura por ação/opções estáveis/atualização explícita/cancelamento/permissões independentes. Não repetir revisão geral ou testes aprovados sem mudança/falha. Matriz final R19 em 3A.3.7.5 e instalação assistida na etapa 5.

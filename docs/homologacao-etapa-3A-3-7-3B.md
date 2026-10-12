@@ -1,6 +1,6 @@
 # 3A.3.7.3B — referências do calendário
 
-Em validação em 12/10/2026, base `d4f9c66`. [Contrato](./plano-etapa-3A-3-7-3.md). Sem alteração de API/schema.
+Concluída em 12/10/2026, implementação `bae3fb2`, base `d4f9c66`. [Contrato](./plano-etapa-3A-3-7-3.md). Sem alteração de API/schema.
 
 ## Implementação
 
@@ -13,8 +13,14 @@ Em validação em 12/10/2026, base `d4f9c66`. [Contrato](./plano-etapa-3A-3-7-3.
 
 - 11 testes novos do calendário, cobrindo as três entradas, repetição, intervalo, duração, navegação/cores, versão, ausência, falha parcial, permissões, suspensão, cancelamento e revisão de disponibilidade. Grade simulada nesses testes; não equivale a Chrome real.
 - Suíte completa: 324 testes/39 arquivos (47,76s); TypeScript/Vite aprovado (8,73s), npm/Python e seis imagens sem achados. Ensaios antigos passaram a aguardar preparação e distinguir mensagens da grade/referências; preservam conflitos/exclusão. Primeiro ensaio novo corrigiu apenas expectativa de hexadecimal normalizado em maiúsculas. Aviso preexistente de bundle acima de 500kB permanece.
-- Chrome inicial aprovado: sessões independentes, duração remota sem mudar horários, 503/recuperação, 403 real/concessão, 409 real com versão antiga, cancelamento, cores independentes e seleção real por mouse de 10h–11h preservada após atualização. Ensaio final ampliado com conflito real de disponibilidade e revisão falha/bem-sucedida em execução; regressão de exclusão e CI pendentes.
-- Backups `pre-3A-3-7-3B*` preservados; helper `.data/upgrade_3a373b.py` somente `after`. Principal ainda na versão anterior. Pendentes: aceites finais Chrome/CI, atualização somente web/HTTPS/dez verificações/preservação/revisão/limpeza e fechamento/publicação.
+- Chrome inicial aprovado: sessões independentes, duração remota sem mudar horários, 503/recuperação, 403 real/concessão, 409 real com versão antiga, cancelamento, cores independentes e seleção real por mouse de 10h–11h preservada após atualização. Ensaio final ampliado aprovado: conflito real de disponibilidade, atualização comum não libera bloqueio, 503 na revisão mantém rascunho, leitura bem-sucedida e correção explícita permitem criar. Três escritas explícitas; capturas claro/escuro/intervalo inspecionadas.
+- Backups `pre-3A-3-7-3B*` preservados; helper `.data/upgrade_3a373b.py` somente `after`. Somente web da homologação atualizada após aceites locais enquanto CI rodava isolado; HTTPS/assets idênticos ao build, dez verificações integradas e comparação de linhas/referências/bytes aprovados. Revisão `0024_user_version`, zero schemas temporários, nenhum volume removido. Fechamento aguardou CI aprovado.
 - Fixtures exclusivamente fictícias em schemas privados de `erp-dents-homolog`; logs/capturas em `.data` ignorada. Nenhuma credencial publicada.
 
 Próximo após aceite: 3A.3.7.4, referências do financeiro. R19 parcial; instalação assistida na etapa 5. Chrome no mesmo PC não comprova capacidade/estações físicas/outros navegadores.
+
+## Aceite final
+
+- Regressão Chrome de exclusão aprovada: lista/calendário rejeitam versão antiga após reagendamento, preservam rascunho, exigem revisão explícita e nova confirmação, tratam ausência e conservam cobranças/histórico. Captura do calendário inspecionada; fixtures privadas limpas.
+- [CI 38273565070](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/38273565070) aprovado: 302 backend/324 frontend, regressões HTTP, builds e auditorias; seis imagens sem achados. Commits posteriores somente documentais.
+- Evidências ignoradas: `.data/tests-3a373b-full.log`, `.data/build-3a373b-final.log`, `.data/browser-3a373b-final.log`, `.data/browser-deletion-3a373b.log`, `.data/audit-images-3a373b.log`, `.data/smoke-main-3a373b.log`, `.data/preservation-3a373b.log`, `.data/ci-final-3a373b.log`. Componentes com grade simulada são distintos de interação Chrome real e provas API/banco.
