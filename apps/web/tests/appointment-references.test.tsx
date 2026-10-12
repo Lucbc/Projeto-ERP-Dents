@@ -106,8 +106,9 @@ it("does not unlock availability through ordinary refresh or failed review",asyn
 
 it("ignores explicit version reload completing after unmount",async()=>{
   vi.spyOn(appointmentService,"update").mockRejectedValue(failure(409));let finish!:(v:Appointment)=>void;
-  vi.spyOn(appointmentService,"get").mockImplementation(()=>new Promise(done=>finish=done));const view=render(tree());await tick();await open("Editar");
+  const get=vi.spyOn(appointmentService,"get").mockImplementation(()=>new Promise(done=>finish=done));const view=render(tree());await tick();await open("Editar");
   fireEvent.click(button("Salvar"));await tick();fireEvent.click(button("Descartar rascunho e carregar atual"));await tick();view.unmount();
+  expect(get.mock.calls[0][1]?.aborted).toBe(true);
   await act(async()=>finish({...visit,version:9}));await tick();expect(patientService.listAll).toHaveBeenCalledTimes(2);
 });
 

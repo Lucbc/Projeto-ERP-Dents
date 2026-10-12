@@ -44,7 +44,7 @@ let stage='start';
   await booking.route('**/api/dentists?**',route=>route.fulfill({status:503,contentType:'application/json',body:'{"detail":"Fictitious unavailable"}'}));
   stage='failed reference refresh';const failed=booking.waitForResponse(r=>r.url().includes('/api/dentists?')&&r.status()===503);
   await reload.click();await failed;
-  await booking.getByText('O serviço está temporariamente indisponível. Confira o resultado da operação antes de tentar novamente.',{exact:true}).waitFor();
+  await booking.getByText('Dentistas: não foi possível carregar. Tente novamente.',{exact:true}).waitFor();
   assert.equal(await booking.getByRole('button',{name:'Salvar',exact:true}).isDisabled(),true);
   assert.equal(await booking.locator('[name=notes]').inputValue(),'Fictitious retained draft');
   await booking.unroute('**/api/dentists?**');
