@@ -1,0 +1,76 @@
+// Disposable fictitious fixtures only. Never print credentials or response bodies.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+let stage='start';
+process.on('unhandledRejection',()=>{console.error('Agenda refresh browser failed at stage: '+stage);process.exit(1);});
+(async()=>{
+ const credentials=JSON.parse(fs.readFileSync(0,'utf8')),origin='https://localhost:18444';
+ const browser=await chromium.launch({channel:'chrome',headless:true});
+ try{
+  const contexts=await Promise.all([0,1].map(()=>browser.newContext({timezoneId:'America/Sao_Paulo',viewport:{width:1440,height:1100}})));
+  const [writer,reader]=await Promise.all(contexts.map(c=>c.newPage()));
+  const login=async(page,email)=>{await page.goto(origin+'/login');await page.locator('[name=email]').fill(email);await page.locator('[name=password]').fill(credentials.password);
+   const response=page.waitForResponse(r=>r.url().endsWith('/api/auth/login')&&r.request().method()==='POST');await page.getByRole('button',{name:'Entrar',exact:true}).click();const identity=await(await response).json();await page.getByText('Pacientes cadastrados',{exact:true}).waitFor();return identity;};
+  stage='author login';const author=await login(writer,credentials.email);
+  const api=async(method,url,data)=>{const result=await writer.evaluate(async({method,url,data,author})=>{
+   const response=await fetch(url,{method,headers:{'Content-Type':'application/json','X-Session-ID':author.session_id,'X-CSRF-Token':author.csrf_token},body:data?JSON.stringify(data):undefined});return {status:response.status,body:response.status===204?null:await response.json()};
+  },{method,url,data,author});assert.ok([200,201,204].includes(result.status),'Fixture request rejected');return result.body;};
+  stage='fixtures';const account=await api('POST','/api/users',{name:'Fictitious Reference Operator',email:'appointment-reference@example.com',password:credentials.password,role:'reception'});
+  let matrix=(await api('GET','/api/permissions')).items.find(x=>x.role==='reception');
+  matrix.permissions.appointments={view:true,create:true,update:true,delete:true};for(const key of ['patients','dentists','procedures'])matrix.permissions[key].view=true;
+  const saveMatrix=async()=>{matrix=await api('PUT','/api/permissions/reception',{version:matrix.version,permissions:matrix.permissions});};await saveMatrix();
+  const patient=await api('POST','/api/patients',{full_name:'Fictitious Reference Patient'});
+  let dentist=await api('POST','/api/dentists',{full_name:'Fictitious Reference Dentist',color:'#123456',availability:['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(day_of_week=>({day_of_week,start_time:'08:00',end_time:'18:00'}))});
+  let procedure=await api('POST','/api/procedures',{name:'Fictitious Reference Procedure',duration_minutes:15,price_cents:10000});
+  const visitStart=new Date();visitStart.setHours(13,0,0,0);
+  let visit=await api('POST','/api/appointments',{patient_id:patient.id,dentist_id:dentist.id,procedure_ids:[procedure.id],start_at:visitStart.toISOString(),end_at:new Date(+visitStart+3600000).toISOString()});
+  stage='reader login';const receiver=await login(reader,account.email);assert.notEqual(receiver.session_id,author.session_id);
+  let reads=0,writes=0;reader.on('request',r=>{const p=new URL(r.url()).pathname;if(r.method()==='GET'&&p==='/api/procedures')reads++;if(['POST','PUT','DELETE'].includes(r.method())&&p.startsWith('/api/appointments'))writes++;});
+  const button=name=>reader.getByRole('button',{name,exact:true}),field=name=>reader.locator('[name="'+name+'"]');
+  const ready=()=>reader.getByText('Cadastros preparados para esta consulta. Atualizar as opções mantém os horários preenchidos.',{exact:true}).waitFor();
+  const refresh=async()=>{await button('Atualizar cadastros do formulário').click();await ready();};
+  await reader.goto(origin+'/calendar');await reader.locator('.rbc-event').filter({hasText:patient.full_name}).waitFor();
+  await button('Atualizar cores dos dentistas').waitFor();await reader.waitForFunction(()=>!Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Atualizar cores dos dentistas')?.disabled);assert.equal(reads,0);
+  const event=()=>reader.locator('.rbc-event').filter({hasText:patient.full_name});
+  const initialColor=await event().evaluate(e=>getComputedStyle(e).backgroundColor);
+  stage='automatic duration and frozen options';await button('Nova consulta').click();await ready();assert.equal(reads,1);
+  await field('start_at').fill('2030-01-07T10:00');await reader.getByRole('checkbox').check();assert.equal(await field('end_at').inputValue(),'2030-01-07T10:15');await field('notes').fill('Fictitious retained draft');
+  procedure=await api('PUT','/api/procedures/'+procedure.id,{version:procedure.version,name:'Fictitious Remote Procedure',duration_minutes:60});
+  await reader.waitForTimeout(17000);await reader.evaluate(()=>{window.dispatchEvent(new Event('offline'));window.dispatchEvent(new Event('online'));window.dispatchEvent(new Event('focus'));});await reader.waitForTimeout(500);
+  assert.equal(reads,1);assert.equal(await field('end_at').inputValue(),'2030-01-07T10:15');assert.equal(await reader.getByText(procedure.name,{exact:true}).count(),0);
+  stage='explicit refresh preserves automatic and manual end';dentist=await api('PUT','/api/dentists/'+dentist.id,{version:dentist.version,color:'#ABCDEF'});await refresh();assert.equal(await event().evaluate(e=>getComputedStyle(e).backgroundColor),initialColor);assert.equal(await field('end_at').inputValue(),'2030-01-07T10:15');await reader.getByText('Duração sugerida: 60 min',{exact:true}).waitFor();
+  await button('Aplicar duração sugerida').click();assert.equal(await field('end_at').inputValue(),'2030-01-07T11:00');await field('end_at').fill('2030-01-07T12:00');
+  procedure=await api('PUT','/api/procedures/'+procedure.id,{version:procedure.version,duration_minutes:90});await refresh();assert.equal(await field('end_at').inputValue(),'2030-01-07T12:00');assert.equal(await field('notes').inputValue(),'Fictitious retained draft');
+  for(const dark of [false,true]){await reader.evaluate(d=>document.documentElement.classList.toggle('dark',d),dark);await reader.screenshot({path:path.resolve(__dirname,'../.data/homolog/calendar-reference-'+(dark?'dark':'light')+'.png'),fullPage:true,animations:'disabled'});}
+  stage='partial failure and recovery';const pattern=/\/api\/procedures(?:\?.*)?$/;await reader.route(pattern,r=>r.fulfill({status:503,contentType:'application/json',body:'{"detail":"Fictitious unavailable"}'}));
+  await button('Atualizar cadastros do formulário').click();await reader.getByText('Procedimentos: não foi possível carregar. Tente novamente.',{exact:true}).waitFor();assert.equal(await button('Salvar').isDisabled(),true);await reader.unroute(pattern);await refresh();assert.equal(await field('end_at').inputValue(),'2030-01-07T12:00');
+  stage='independent permission revoke grant';matrix.permissions.procedures.view=false;await saveMatrix();await reader.getByText('Procedimentos: sem acesso ao cadastro.',{exact:true}).waitFor({timeout:25000});assert.equal(await button('Salvar').isDisabled(),true);
+  assert.equal(await reader.evaluate(async id=>(await fetch('/api/procedures',{headers:{'X-Session-ID':id}})).status,receiver.session_id),403);
+  assert.equal(await reader.getByText(procedure.name,{exact:true}).count(),0);matrix.permissions.procedures.view=true;await saveMatrix();await ready();assert.equal(await field('notes').inputValue(),'Fictitious retained draft');await button('Cancelar').click();
+  stage='fresh reopening';await button('Nova consulta').click();await ready();await reader.getByRole('checkbox').check();await reader.getByText('Duração sugerida: 90 min',{exact:true}).waitFor();await button('Cancelar').click();
+  stage='captured version real conflict';await event().click();await ready();const end=await field('end_at').inputValue(),oldVersion=visit.version;
+  visit=await api('PUT','/api/appointments/'+visit.id,{version:visit.version,notes:'Fictitious remote change'});await refresh();assert.equal(await field('end_at').inputValue(),end);
+  const conflict=reader.waitForResponse(r=>r.url().endsWith('/api/appointments/'+visit.id)&&r.request().method()==='PUT');await button('Salvar').click();const response=await conflict;assert.equal(response.status(),409);assert.equal(response.request().postDataJSON().version,oldVersion);await button('Descartar rascunho e carregar consulta atual').waitFor();await button('Cancelar').click();
+  stage='calendar availability conflict';await button('Nova consulta').click();await ready();await field('patient_id').selectOption(patient.id);await field('dentist_id').selectOption(dentist.id);
+  await field('start_at').fill('2030-01-07T07:00');await field('end_at').fill('2030-01-07T07:30');await field('notes').fill('Fictitious availability draft');
+  const rejected=reader.waitForResponse(r=>new URL(r.url()).pathname==='/api/appointments'&&r.request().method()==='POST');await button('Salvar').click();const invalid=await rejected;assert.equal(invalid.status(),409);assert.equal((await invalid.json()).code,'availability_conflict');
+  await button('Atualizar disponibilidade para revisar').waitFor();await refresh();assert.equal(await button('Salvar').isDisabled(),true);
+  const dentistPattern=/\/api\/dentists(?:\?.*)?$/;await reader.route(dentistPattern,r=>r.fulfill({status:503,contentType:'application/json',body:'{"detail":"Fictitious unavailable"}'}));
+  await button('Atualizar disponibilidade para revisar').click();await reader.getByText('Dentistas: não foi possível carregar. Tente novamente.',{exact:true}).waitFor();assert.equal(await button('Salvar').isDisabled(),true);assert.equal(await field('notes').inputValue(),'Fictitious availability draft');
+  await reader.unroute(dentistPattern);await button('Atualizar disponibilidade para revisar').click();await ready();await reader.getByText(/Dados atualizados. Revise/).waitFor();await field('start_at').fill('2030-01-07T08:00');await field('end_at').fill('2030-01-07T08:30');
+  const accepted=reader.waitForResponse(r=>new URL(r.url()).pathname==='/api/appointments'&&r.request().method()==='POST');await button('Salvar').click();assert.equal((await accepted).status(),201);await field('notes').waitFor({state:'hidden'});
+  stage='independent grid color refresh';await button('Atualizar cores dos dentistas').click();await reader.waitForFunction(()=>!Array.from(document.querySelectorAll('button')).find(b=>b.textContent==='Atualizar cores dos dentistas')?.disabled);
+  assert.notEqual(await event().evaluate(e=>getComputedStyle(e).backgroundColor),initialColor);
+  stage='real grid interval selection';
+  const group=reader.locator('.rbc-day-slot').first().locator('.rbc-timeslot-group').nth(10);
+  await group.scrollIntoViewIfNeeded();const box=await group.boundingBox();assert.ok(box);
+  await reader.mouse.move(box.x+box.width/3,box.y+box.height/4);await reader.mouse.down();await reader.mouse.move(box.x+box.width/3,box.y+box.height*3/4,{steps:6});await reader.mouse.up();await ready();
+  const slotStart=await field('start_at').inputValue(),slotEnd=await field('end_at').inputValue();assert.ok(slotStart.endsWith('T10:00'));assert.ok(slotEnd.endsWith('T11:00'));
+  await field('notes').fill('Fictitious selected interval');await refresh();assert.equal(await field('start_at').inputValue(),slotStart);assert.equal(await field('end_at').inputValue(),slotEnd);
+  await reader.screenshot({path:path.resolve(__dirname,'../.data/homolog/calendar-reference-slot.png'),fullPage:true,animations:'disabled'});await button('Cancelar').click();
+  stage='cancel late preparation';let release,enter;const gate=new Promise(done=>release=done),entered=new Promise(done=>enter=done);
+  await reader.route(pattern,async route=>{const response=await route.fetch();enter();await gate;await route.fulfill({response}).catch(()=>{});});await button('Nova consulta').click();await entered;await button('Cancelar').click();release();await reader.unroute(pattern);
+  assert.equal(await field('notes').count(),0);await button('Nova consulta').click();await ready();assert.equal(await field('notes').inputValue(),'');assert.equal(writes,3);
+  console.log('PASS: independent sessions; fresh options per action; no polling/reconnect replacement; automatic and manual end retained; explicit duration application; partial failure recovery; real independent 403/grant and version 409; canceled preparation; three explicit writes; real availability conflict and failed/successful review; separate grid colors; real mouse interval selection preserved.');
+ }finally{await browser.close();}
+})().catch(()=>{console.error('Agenda refresh browser failed at stage: '+stage);process.exitCode=1;});

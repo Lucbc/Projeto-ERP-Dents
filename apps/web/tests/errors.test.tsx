@@ -61,7 +61,7 @@ it("calendar distinguishes loading/failure from an empty schedule and recovers",
   vi.spyOn(procedureService, "listAll").mockRejectedValueOnce(failure(503, {})).mockResolvedValue({ items: [], total: 0 });
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(<QueryClientProvider client={client}><ToastProvider><CalendarPage /></ToastProvider></QueryClientProvider>);
-  expect(screen.getByRole("status").textContent).toContain("Carregando agenda");
+  expect(screen.getByText(/Carregando agenda/)).toBeTruthy();
   await act(async () => reject(failure(503, {})));
   expect((await screen.findByRole("alert")).textContent).toContain("não puderam ser verificadas");
   expect((screen.getByRole("button", { name: "Nova consulta" }) as HTMLButtonElement).disabled).toBe(true);
@@ -69,8 +69,8 @@ it("calendar distinguishes loading/failure from an empty schedule and recovers",
   await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
   expect((screen.getByRole("button", { name: "Nova consulta" }) as HTMLButtonElement).disabled).toBe(false);
   fireEvent.click(screen.getByRole("button", { name: "Nova consulta" }));
-  expect(screen.getByText("Procedimentos indisponíveis. Recarregue os cadastros.")).toBeTruthy();
+  expect(await screen.findByText("Procedimentos: não foi possível carregar. Tente novamente.")).toBeTruthy();
   expect(screen.queryByText("Nenhum procedimento cadastrado.")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Recarregar cadastros" }));
+  fireEvent.click(screen.getByRole("button", { name: "Atualizar cadastros do formulário" }));
   expect(await screen.findByText("Nenhum procedimento cadastrado.")).toBeTruthy();
 });

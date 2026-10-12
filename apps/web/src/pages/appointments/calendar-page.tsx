@@ -1,7 +1,7 @@
 import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   addDays,
   addMonths,
@@ -15,7 +15,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useForm } from "react-hook-form";
@@ -34,7 +34,9 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { appointmentDeletionConfirmation, appointmentDeletionError } from "@/lib/appointment-deletion";
 import { getApiErrorMessage } from "@/lib/api";
 import { appointmentStatusOptions } from "@/lib/labels";
-import { appointmentService, dentistService, patientService, procedureService } from "@/lib/services";
+import { appointmentService, dentistService } from "@/lib/services";
+import { useAppointmentReferences } from "./use-appointment-references";
+import { useActionOptions } from "@/hooks/use-action-options";
 import type { Appointment, Procedure } from "@/types";
 
 const locales = { "pt-BR": ptBR };
@@ -218,6 +220,8 @@ function getStatusBorderColor(status: Appointment["status"]): string {
   return "#0F766E";
 }
 
+const readGridDentists = (signal: AbortSignal) => dentistService.listAll({}, signal);
+
 export function CalendarPage() {
   const { toast } = useToast();
   const { can } = usePermissions();
@@ -231,6 +235,19 @@ export function CalendarPage() {
   const [deleteReviews, setDeleteReviews] = useState<Record<string, string>>({});
   const deleteReview = editingAppointment ? deleteReviews[editingAppointment.id] ?? null : null;
   const [manualEndOverride, setManualEndOverride] = useState(false);
+  const [referenceAction, setReferenceAction] = useState(0);
+  const references = useAppointmentReferences(openModal ? referenceAction : null);
+  const gridDentists = useActionOptions(0, can("dentists", "view"), readGridDentists);
+  const mounted = useRef(false);
+  const pendingReload = useRef<AbortController>();
+  const actionScope = useRef({ openModal, referenceAction });
+  actionScope.current = { openModal, referenceAction };
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => () => { pendingReload.current?.abort(); pendingReload.current = undefined; }, [openModal, referenceAction]);
+  // A denied form read must also remove the page's previously authorized copy.
+  useEffect(() => { if (references.dentists.status === "denied") gridDentists.deny(); }, [references.dentists.status, gridDentists.deny]);
+
+
 
   const rangeFrom = startOfDay(addMonths(currentDate, -2)).toISOString();
   const rangeTo = endOfDay(addMonths(currentDate, 2)).toISOString();
@@ -248,24 +265,6 @@ export function CalendarPage() {
     },
   });
 
-  const patientsQuery = useQuery({
-    queryKey: ["patients", "calendar-form"],
-    refetchOnReconnect: !openModal,
-    queryFn: () => patientService.listAll(),
-  });
-
-  const dentistsQuery = useQuery({
-    queryKey: ["dentists", "calendar-form"],
-    refetchOnReconnect: !openModal,
-    queryFn: () => dentistService.listAll(),
-  });
-
-  const proceduresQuery = useQuery({
-    queryKey: ["procedures", "calendar-form"],
-    refetchOnReconnect: !openModal,
-    queryFn: () => procedureService.listAll(),
-  });
-
   const appointmentsQuery = useLiveQuery(
     ["appointments", "calendar", rangeFrom, rangeTo],
     (signal) => appointmentService.list({ from: rangeFrom, to: rangeTo }, signal),
@@ -277,7 +276,7 @@ export function CalendarPage() {
   }, [appointmentsQuery.accessDenied, form]);
 
   const availabilityReview = useAvailabilityReview(async () => {
-    await dentistsQuery.refetch({ throwOnError: true });
+    if (!await references.dentists.reload()) throw new Error("Não foi possível atualizar a disponibilidade. Tente novamente.");
   });
 
   const createMutation = useMutation({
@@ -331,19 +330,24 @@ export function CalendarPage() {
   });
 
   const reloadAppointmentMutation = useMutation({
-    mutationFn: (id: string) => appointmentService.get(id),
-    onSuccess: (appointment) => {
+    mutationFn: ({ id }: { id: string; action: number }) => {
+      pendingReload.current?.abort(); pendingReload.current = new AbortController();
+      return appointmentService.get(id, pendingReload.current.signal);
+    },
+    onSuccess: (appointment, request) => {
+      if (!mounted.current || !actionScope.current.openModal || actionScope.current.referenceAction !== request.action) return;
       setDeleteReviews((reviews) => {
         const next = { ...reviews };
         delete next[appointment.id];
         return next;
       });
-      openEditModal(appointment);
+      openEditModal(appointment, true);
       void queryClient.invalidateQueries({ queryKey: ["appointments"] });
     },
-    onError: (error, id) => {
+    onError: (error, request) => {
+      if (!mounted.current || !actionScope.current.openModal || actionScope.current.referenceAction !== request.action) return;
       toast(getApiErrorMessage(error), "error");
-      if (deleteReview) setDeleteReviews((reviews) => ({ ...reviews, [id]: appointmentDeletionError(error) }));
+      if (deleteReview) setDeleteReviews((reviews) => ({ ...reviews, [request.id]: appointmentDeletionError(error) }));
     },
   });
 
@@ -362,26 +366,32 @@ export function CalendarPage() {
     onError: (error, target) => setDeleteReviews((reviews) => ({ ...reviews, [target.id]: appointmentDeletionError(error) })),
   });
 
-  const patients = patientsQuery.data?.items ?? [];
-  const dentists = dentistsQuery.data?.items ?? [];
-  const procedures = proceduresQuery.data?.items ?? [];
+  const patients = references.patients.items;
+  const dentists = references.dentists.items;
+  const procedures = references.procedures.items;
   const procedureById = useMemo(
     () => new Map(procedures.map((procedure) => [procedure.id, procedure])),
     [procedures],
   );
   const dentistColorById = useMemo(() => {
     const result = new Map<string, string>();
-    for (const dentist of dentists) {
+    for (const dentist of gridDentists.items) {
       result.set(
         dentist.id,
         normalizeHexColor(dentist.color) ?? fallbackDentistColor(dentist.id),
       );
     }
     return result;
-  }, [dentists]);
+  }, [gridDentists.items]);
   const selectedProcedureIds = form.watch("procedure_ids") ?? [];
   const hasDraft = form.formState.isDirty;
-  const startAtValue = form.watch("start_at");
+  const selectedPatient = form.watch("patient_id");
+  const selectedDentist = form.watch("dentist_id");
+  const missingPatient = !!selectedPatient && !patients.some(item => item.id === selectedPatient);
+  const missingDentist = !!selectedDentist && !dentists.some(item => item.id === selectedDentist);
+  const missingProcedures = selectedProcedureIds.filter(id => !procedureById.has(id));
+  const missingReference = missingPatient || missingDentist || missingProcedures.length > 0;
+
   const suggestedDurationMinutes = useMemo(
     () => calculateSuggestedDuration(selectedProcedureIds, procedureById),
     [procedureById, selectedProcedureIds],
@@ -423,14 +433,11 @@ export function CalendarPage() {
     [currentDate, currentView],
   );
 
-  useEffect(() => {
-    if (manualEndOverride) return;
-
-    const suggestedEndAt = toSuggestedEndAt(startAtValue, suggestedDurationMinutes);
-    if (!suggestedEndAt) return;
-
-    form.setValue("end_at", suggestedEndAt, { shouldDirty: true, shouldValidate: true });
-  }, [form, manualEndOverride, startAtValue, suggestedDurationMinutes]);
+  const updateAutomaticEnd = (start: string, ids: string[]) => {
+    if (manualEndOverride || !references.ready) return;
+    const end = toSuggestedEndAt(start, calculateSuggestedDuration(ids, procedureById));
+    if (end) form.setValue("end_at", end, { shouldDirty: true, shouldValidate: true });
+  };
 
   const toggleProcedure = (procedureId: string) => {
     const current = form.getValues("procedure_ids") ?? [];
@@ -439,6 +446,7 @@ export function CalendarPage() {
       : [...current, procedureId];
 
     form.setValue("procedure_ids", next, { shouldDirty: true, shouldValidate: false });
+    updateAutomaticEnd(form.getValues("start_at"), next);
   };
 
   const applySuggestedDuration = () => {
@@ -449,10 +457,11 @@ export function CalendarPage() {
     form.setValue("end_at", suggestedEndAt, { shouldDirty: true, shouldValidate: true });
   };
 
-  const openCreateModal = () => {
-    if (isSubmitting) return;
-    const start = new Date();
-    const end = new Date(start.getTime() + 30 * 60 * 1000);
+  const openCreateModal = (interval?: { start: Date; end: Date }) => {
+    if (!canCreate || isSubmitting || openModal) return;
+    setReferenceAction(value => value + 1); setEditConflict(false);
+    const start = interval?.start ?? new Date();
+    const end = interval?.end ?? new Date(start.getTime() + 30 * 60 * 1000);
 
     availabilityReview.reset();
     setEditingAppointment(null);
@@ -469,7 +478,9 @@ export function CalendarPage() {
     setOpenModal(true);
   };
 
-  const openEditModal = (appointment: Appointment) => {
+  const openEditModal = (appointment: Appointment, reviewing = false) => {
+    if (!canUpdate || (!reviewing && (isSubmitting || openModal))) return;
+    setReferenceAction(value => value + 1);
     availabilityReview.reset();
     setEditConflict(false);
     setEditingAppointment(appointment);
@@ -488,7 +499,8 @@ export function CalendarPage() {
 
   const onSubmit = (values: AppointmentForm) => {
     if (availabilityReview.blocked || availabilityReview.reload.isPending) return;
-    if (isSubmitting || deleteReview) return;
+    if (isSubmitting || deleteReview || editConflict || !references.ready || missingReference) return;
+    if (editingAppointment ? !canUpdate : !canCreate) return;
     if (editingAppointment) {
       updateMutation.mutate({ id: editingAppointment.id, version: editingAppointment.version, payload: values });
       return;
@@ -533,11 +545,16 @@ export function CalendarPage() {
               <option value={Views.WEEK}>Semana</option>
               <option value={Views.MONTH}>Mes</option>
             </Select>
-            {canCreate && <Button disabled={appointmentsQuery.isPending || appointmentsQuery.isError} onClick={openCreateModal}>Nova consulta</Button>}
+            {canCreate && <Button disabled={appointmentsQuery.isPending || appointmentsQuery.isError} onClick={() => openCreateModal()}>Nova consulta</Button>}
           </div>
         </div>
       </Card>
 
+      <div role="status" className="space-y-2">
+        {!gridDentists.ready && <p>As cores dos dentistas estão carregando ou indisponíveis. A agenda usa cores alternativas.</p>}
+        <Button variant="outline" disabled={openModal || gridDentists.status === "loading" || !can("dentists", "view")}
+          onClick={() => void gridDentists.reload()}>Atualizar cores dos dentistas</Button>
+      </div>
       <LiveQueryStatus query={appointmentsQuery} />
       {appointmentsQuery.data !== undefined && <Card>
         <div className="h-[720px]">
@@ -559,22 +576,7 @@ export function CalendarPage() {
               openEditModal((event as CalendarEvent).resource);
             }}
             selectable={canCreate}
-            onSelectSlot={(slot) => {
-              if (!canCreate || isSubmitting) return;
-              availabilityReview.reset();
-              setEditingAppointment(null);
-              setManualEndOverride(false);
-              form.reset({
-                patient_id: "",
-                dentist_id: "",
-                procedure_ids: [],
-                start_at: toInputDateTime(slot.start.toISOString()),
-                end_at: toInputDateTime(slot.end.toISOString()),
-                status: "scheduled",
-                notes: "",
-              });
-              setOpenModal(true);
-            }}
+            onSelectSlot={(slot) => openCreateModal({ start: slot.start, end: slot.end })}
             eventPropGetter={(event) => {
               const currentEvent = event as CalendarEvent;
               const status = currentEvent.resource.status;
@@ -600,34 +602,34 @@ export function CalendarPage() {
         onClose={() => { if (!isSubmitting) setOpenModal(false); }}
         title={editingAppointment ? "Editar consulta" : "Nova consulta"}
       >
+        <div role="status" className="mb-3 space-y-2">
+          {references.ready && <p>Cadastros preparados para esta consulta. Atualizar as opções mantém os horários preenchidos.</p>}
+          {([["Pacientes", references.patients], ["Dentistas", references.dentists], ["Procedimentos", references.procedures]] as const).map(([label, source]) =>
+            source.status !== "ready" && <p key={label}>{label}: {source.status === "denied" ? "sem acesso ao cadastro." : source.status === "error" ? "não foi possível carregar. Tente novamente." : "carregando..."}</p>)}
+          <Button variant="outline" disabled={isSubmitting || references.loading} onClick={() => void references.reload()}>Atualizar cadastros do formulário</Button>
+        </div>
+        <AvailabilityReview review={availabilityReview} />
+        <fieldset disabled={isSubmitting || !references.ready}>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
-          <AvailabilityReview review={availabilityReview} />
           {(editConflict || deleteReview) && editingAppointment && (
             <div role="alert" className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3">
               <p>{deleteReview ?? "Não foi possível salvar."} Seu rascunho permanece abaixo. Carregar a consulta atual substituirá os campos deste formulário.</p>
               <Button type="button" variant="outline" disabled={isSubmitting}
-                onClick={() => reloadAppointmentMutation.mutate(editingAppointment.id)}>
+                onClick={() => reloadAppointmentMutation.mutate({ id: editingAppointment.id, action: referenceAction })}>
                 Descartar rascunho e carregar consulta atual
               </Button>
               {deleteReview && <Button type="button" variant="outline" disabled={isSubmitting || appointmentsQuery.isFetching}
                 onClick={() => void appointmentsQuery.refetch()}>Atualizar agenda sem descartar rascunho</Button>}
             </div>
           )}
-          {[patientsQuery, dentistsQuery, proceduresQuery].some((query) => query.isError) && (
-            <div role="alert" className="md:col-span-2">
-              <p>Não foi possível carregar todos os cadastros da consulta. Os campos preenchidos foram preservados.</p>
-              <Button type="button" onClick={() => {
-                for (const query of [patientsQuery, dentistsQuery, proceduresQuery]) if (query.isError) void query.refetch();
-              }}>Recarregar cadastros</Button>
-            </div>
-          )}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Paciente *</label>
             <Select {...form.register("patient_id")}>
               <option value="">Selecione</option>
+              {missingPatient && <option value={selectedPatient}>Paciente selecionado indisponível</option>}
               {patients.map((patient) => (
                 <option key={patient.id} value={patient.id}>
-                  {patient.full_name}
+                  {`${patient.full_name}${patient.active === false ? " (inativo)" : ""}`}
                 </option>
               ))}
             </Select>
@@ -640,9 +642,10 @@ export function CalendarPage() {
             <label className="mb-1 block text-sm font-semibold text-slate-700">Dentista *</label>
             <Select {...form.register("dentist_id")}>
               <option value="">Selecione</option>
+              {missingDentist && <option value={selectedDentist}>Dentista selecionado indisponível</option>}
               {dentists.map((dentist) => (
                 <option key={dentist.id} value={dentist.id}>
-                  {dentist.full_name}
+                  {`${dentist.full_name}${dentist.active === false ? " (inativo)" : ""}`}
                 </option>
               ))}
             </Select>
@@ -654,9 +657,8 @@ export function CalendarPage() {
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Procedimentos</label>
             <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-slate-200 p-2">
-              {proceduresQuery.isPending ? <p className="text-sm text-slate-500">Carregando procedimentos...</p>
-                : proceduresQuery.isError ? <p className="text-sm text-slate-500">Procedimentos indisponíveis. Recarregue os cadastros.</p>
-                : procedures.length === 0 ? (
+              {missingProcedures.map(id => <label key={id} className="block"><input type="checkbox" checked onChange={() => toggleProcedure(id)} /> Procedimento selecionado indisponível ({id})</label>)}
+              {procedures.length === 0 && references.procedures.ready ? (
                 <p className="text-sm text-slate-500">Nenhum procedimento cadastrado.</p>
               ) : (
                 procedures.map((procedure) => {
@@ -673,13 +675,13 @@ export function CalendarPage() {
                         className="mt-1 h-4 w-4"
                       />
                       <span className="flex-1 text-sm text-slate-700">
-                        {procedure.name}
+                        {procedure.name}{procedure.active === false ? " (inativo)" : ""}
                         {procedure.duration_minutes ? (
                           <span className="ml-2 text-xs text-slate-500">
                             ({procedure.duration_minutes} min)
                           </span>
                         ) : (
-                          <span className="ml-2 text-xs text-slate-500">(sem duracao)</span>
+                          <span className="ml-2 text-xs text-slate-500">(sem duração)</span>
                         )}
                       </span>
                     </label>
@@ -689,24 +691,24 @@ export function CalendarPage() {
             </div>
             <p className="mt-1 text-xs text-slate-500">
               {suggestedDurationMinutes > 0
-                ? `Duracao sugerida: ${suggestedDurationMinutes} min`
-                : "Selecione procedimentos para sugerir a duracao."}
+                ? `Duração sugerida: ${suggestedDurationMinutes} min`
+                : "Selecione procedimentos para sugerir a duração."}
             </p>
-            {manualEndOverride && suggestedDurationMinutes > 0 && (
+            {suggestedDurationMinutes > 0 && (
               <Button
                 type="button"
                 variant="outline"
                 className="mt-2 px-3 py-1 text-xs"
                 onClick={applySuggestedDuration}
               >
-                Aplicar duracao sugerida
+                Aplicar duração sugerida
               </Button>
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-semibold text-slate-700">Inicio *</label>
-            <Input type="datetime-local" {...form.register("start_at")} />
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Início *</label>
+            <Input type="datetime-local" {...form.register("start_at", { onChange: event => updateAutomaticEnd(event.target.value, form.getValues("procedure_ids") ?? []) })} />
             {form.formState.errors.start_at && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.start_at.message}</p>
             )}
@@ -741,6 +743,7 @@ export function CalendarPage() {
             <Textarea {...form.register("notes")} />
           </div>
 
+          {references.ready && missingReference && <p role="alert" className="md:col-span-2">Há cadastros selecionados indisponíveis. Escolha paciente/dentista disponíveis ou remova os procedimentos ausentes antes de salvar.</p>}
           <div className="md:col-span-2 mt-2 flex justify-between gap-2">
             <div>
               {editingAppointment && canDelete && (
@@ -749,6 +752,7 @@ export function CalendarPage() {
                   variant="danger"
                   disabled={isSubmitting || deleteReview !== null}
                   onClick={() => {
+                    if (isSubmitting || deleteReview !== null || !references.ready) return;
                     const target = { id: editingAppointment.id, version: editingAppointment.version };
                     if (window.confirm(appointmentDeletionConfirmation(editingAppointment, hasDraft))) {
                       deleteMutation.mutate(target);
@@ -760,15 +764,17 @@ export function CalendarPage() {
               )}
             </div>
             <div className="flex gap-2">
-              <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
+              {references.ready && <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
                 Cancelar
-              </Button>
-              <Button type="submit" disabled={availabilityReview.blocked || isSubmitting || deleteReview !== null}>
+              </Button>}
+              <Button type="submit" disabled={availabilityReview.blocked || isSubmitting || deleteReview !== null || editConflict || !references.ready || missingReference}>
                 {isSubmitting ? "Salvando..." : "Salvar"}
               </Button>
             </div>
           </div>
         </form>
+        </fieldset>
+        {!references.ready && <Button variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>Cancelar</Button>}
       </Modal>
     </div>
   );

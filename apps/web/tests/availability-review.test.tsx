@@ -58,7 +58,7 @@ it.each([["lista",AppointmentsPage,"Editar",false],["calendário",CalendarPage,"
     expect(save().disabled).toBe(true);
     vi.mocked(dentistService.listAll).mockRejectedValueOnce(failure(503));
     fireEvent.click(reload);
-    await waitFor(()=>expect(vi.mocked(dentistService.listAll)).toHaveBeenCalledTimes(Page === AppointmentsPage ? 3 : 2));
+    await waitFor(()=>expect(vi.mocked(dentistService.listAll)).toHaveBeenCalledTimes(3));
     await waitFor(()=>expect((reload as HTMLButtonElement).disabled).toBe(false));
     expect(save().disabled).toBe(true);
     expect(notes().value).toBe("My draft");

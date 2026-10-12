@@ -64,6 +64,7 @@ it.each([409,404,503,"network"] as const)("calendar preserves dirty draft after 
   const {container,confirm,invalidation}=setup(CalendarPage);
   const edit=await screen.findByRole("button",{name:"Editar evento"});
   await waitFor(()=>expect((edit as HTMLButtonElement).disabled).toBe(false));fireEvent.click(edit);
+  await waitFor(()=>expect(document.querySelector('[name="notes"]')?.matches(":disabled")).toBe(false));
   const notes=()=>container.querySelector('[name="notes"]') as HTMLTextAreaElement;
   const start=()=>container.querySelector('[name="start_at"]') as HTMLInputElement;
   fireEvent.change(notes(),{target:{value:"Fictitious dirty draft"}});
@@ -86,6 +87,7 @@ it.each([409,404,503,"network"] as const)("calendar preserves dirty draft after 
   expect(notes().value).toBe("Fictitious dirty draft");
   fireEvent.click(reload);
   await waitFor(()=>expect(notes().value).toBe(revised.notes));
+  await waitFor(()=>expect(notes().matches(":disabled")).toBe(false));
   fireEvent.click(screen.getByRole("button",{name:"Excluir",exact:true}));
   await waitFor(()=>expect(remove).toHaveBeenLastCalledWith(appointment.id,2));
   expect(confirm).toHaveBeenCalledTimes(2);
@@ -99,10 +101,12 @@ it("closing and reopening the same cached calendar record does not bypass requir
   setup(CalendarPage);
   const edit=await screen.findByRole("button",{name:"Editar evento"});
   await waitFor(()=>expect((edit as HTMLButtonElement).disabled).toBe(false));fireEvent.click(edit);
+  await waitFor(()=>expect(document.querySelector('[name="notes"]')?.matches(":disabled")).toBe(false));
   fireEvent.click(screen.getByRole("button",{name:"Excluir",exact:true}));
   await screen.findByRole("button",{name:"Descartar rascunho e carregar consulta atual"});
   fireEvent.click(screen.getByRole("button",{name:"Cancelar",exact:true}));
   fireEvent.click(edit);
+  await waitFor(()=>expect(document.querySelector('[name="notes"]')?.matches(":disabled")).toBe(false));
   expect((screen.getByRole("button",{name:"Excluir",exact:true}) as HTMLButtonElement).disabled).toBe(true);
   expect(screen.getByRole("button",{name:"Descartar rascunho e carregar consulta atual"})).toBeTruthy();
 });
@@ -113,6 +117,7 @@ it("calendar prevents switching appointment context during deletion and canceled
   const {container,confirm}=setup(CalendarPage);
   const edit=await screen.findByRole("button",{name:"Editar evento"});
   await waitFor(()=>expect((edit as HTMLButtonElement).disabled).toBe(false));fireEvent.click(edit);
+  await waitFor(()=>expect(document.querySelector('[name="notes"]')?.matches(":disabled")).toBe(false));
   confirm.mockReturnValueOnce(false);
   fireEvent.click(screen.getByRole("button",{name:"Excluir",exact:true}));
   expect(remove).not.toHaveBeenCalled();
