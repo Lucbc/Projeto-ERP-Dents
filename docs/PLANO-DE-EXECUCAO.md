@@ -20,6 +20,14 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 **Próximo: 3A.3.7.5 — matriz final R19 e requisições**, conforme [recortes](./plano-etapa-3A-3-7.md). Inventariar leitores operacionais/referências, permissões e limites, identificar lacunas remanescentes, medir deduplicação/pausa/retorno sem polling de catálogos completos e validar navegação entre módulos/sessão revogada. Primeiro delimitar subetapas e critérios antes de alterar; reutilizar evidências existentes e não repetir revisão geral, backups ou testes aprovados sem mudança/falha. Não encerrar R19 antes da matriz e suas limitações verificadas. Instalação assistida permanece na etapa 5.
 
+### Início e fechamento 3A.3.7.5P — matriz de cobertura, 13/10/2026
+
+Base `d95b465`, árvore inicialmente limpa. Preparação por inspeção estática: inventário de leitores operacionais, referências, permissões, sessão e testes existentes. Aceite documental: mapa rastreável, lacunas de evidência separadas de defeitos confirmados, recortes e critérios mensuráveis. Sem mudança funcional.
+
+**Preparação concluída.** [Matriz e recortes A/B](./plano-etapa-3A-3-7-5.md) consolidam cobertura por módulo, limites de listas/janela e leituras sem polling. Há provas individuais de deduplicação, pausa, permissões e sessão; falta medir o percurso entre módulos na versão final das referências. Nenhum novo defeito funcional reproduzido nesta inspeção. Validação desta subetapa: revisão dos caminhos e referências documentais, consistência do diff; nenhum novo teste de componente/API/banco/Chrome, rebuild, reinício, migração ou backup. Última homologação funcional continua 3A.3.7.4B, CI `38400536916` aprovado (302 backend/339 frontend).
+
+**Próximo: 3A.3.7.5A — medição de requisições e navegação.** Registrar início e implementar ensaio privado no `erp-dents-homolog`: painel → pacientes → consultas → calendário → financeiro → painel pelo menu, contagens por fase/endpoint, pausa/retorno e ausência de polling de referências/leitores desmontados. Seguir critérios do novo plano; não repetir revisão geral ou provas individuais aprovadas sem mudança/falha. Sessão no percurso e fechamento ficam em 3A.3.7.5B; R19 permanece parcial. Instalação assistida na etapa 5.
+
 ## Etapas e critérios de conclusão
 
 | Etapa | Escopo | Estado | Critério |
