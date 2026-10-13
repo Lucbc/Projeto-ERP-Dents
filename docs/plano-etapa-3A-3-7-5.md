@@ -65,3 +65,9 @@ Os quatro `listAll` (pacientes, dentistas, procedimentos, especialidades) percor
 ## Retomada
 
 **Preparação concluída; próximo: 3A.3.7.5A.** Registrar início antes de implementar o ensaio. Nesta preparação houve somente inspeção estática e revisão documental: nenhum teste novo de componente, API, banco ou Chrome; nenhum rebuild, reinício, migração ou backup. A última validação funcional continua sendo [3A.3.7.4B](./homologacao-etapa-3A-3-7-4B.md), CI `38400536916` aprovado, 302 backend/339 frontend. Não repetir a revisão geral nem testes já aprovados sem mudança/falha.
+
+### Retomada após medição — 13/10/2026
+
+**3A.3.7.5A concluída em 13/10/2026:** ensaio Chrome com sessões independentes e navegação no mesmo documento aprovado; contagens por módulo, pausa/retorno, retorno rápido com dado remoto, referências sem polling e requisição lenta sem duplicação. Nenhuma escrita do leitor ou mudança funcional. [Evidências e limites](./homologacao-etapa-3A-3-7-5A.md). Schema/API temporários removidos, revisão principal `0024_user_version`, zero schemas privados. R19 permanece parcial.
+
+**Próximo: 3A.3.7.5B — sessão no percurso e fechamento da matriz.** Reutilizar o novo ensaio e as provas existentes; acrescentar revogação real, retorno ao login, isolamento de nova identidade e descarte de resposta antiga. Registrar início/aceite conforme [matriz](./plano-etapa-3A-3-7-5.md). Não repetir medições aprovadas sem mudança/falha, nem atualizar aplicação inalterada. Instalação assistida permanece na etapa 5.
