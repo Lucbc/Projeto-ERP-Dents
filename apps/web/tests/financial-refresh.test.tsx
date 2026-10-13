@@ -72,7 +72,7 @@ it("refreshes list and totals without writes or polling form references, and sho
   expect(list().getByText(/Exibindo 1 de 205/).textContent).toContain("Limite desta lista: 200");
   expect(totals().getByText(/Lancamentos: 205/)).toBeTruthy();
   expect(financialService.list).toHaveBeenCalledTimes(2); expect(financialService.summary).toHaveBeenCalledTimes(2);
-  expect(patientService.listAll).toHaveBeenCalledTimes(1); expect(appointmentService.list).toHaveBeenCalledTimes(1);
+  expect(patientService.listAll).toHaveBeenCalledTimes(1); expect(appointmentService.list).not.toHaveBeenCalled();
   expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled(); expect(pay).not.toHaveBeenCalled();
 });
 
@@ -163,6 +163,7 @@ it("keeps a payment attempt's captured version and key through polling and uncer
 it("keeps generation inputs and uncertain attempt while list and summary refresh", async () => {
   const generate = vi.spyOn(financialService, "generateFromAppointment").mockRejectedValue(failure(503)); const field = show(); await tick();
   fireEvent.click(screen.getByRole("button", { name: "Gerar da consulta" }));
+  await tick();
   fireEvent.change(field("appointment_id"), { target: { value: visit.id } });
   fireEvent.change(field("notes"), { target: { value: "Generation draft" } });
   fireEvent.click(screen.getByRole("button", { name: "Gerar", exact: true })); await tick();

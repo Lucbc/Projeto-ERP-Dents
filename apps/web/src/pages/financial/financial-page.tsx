@@ -1,9 +1,10 @@
-import { useFinancialReferences } from "./use-financial-references";
+import { useActionOptions } from "@/hooks/use-action-options";
+import { readFinancialAppointments, useFinancialReferences } from "./use-financial-references";
 import { PaymentDialog } from "./payment-dialog";
 import { uncertainFinancialEntry } from "@/lib/financial-attempt";
 import { isAxiosError } from "axios";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -29,7 +30,6 @@ import {
   paymentMethodOptions,
 } from "@/lib/labels";
 import {
-  appointmentService,
   financialService,
 } from "@/lib/services";
 import type { Appointment, FinancialEntry, PaymentMethod } from "@/types";
@@ -193,21 +193,8 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   }, [openEntryModal, references.dentists.status, pageReferences.dentists.deny]);
 
   const canViewAppointments = can("appointments", "view");
-  const appointmentsForGenerateQuery = useQuery({
-    queryKey: ["appointments", "financial-generate"],
-    enabled: canViewAppointments,
-    queryFn: async () => {
-      const now = new Date();
-      const from = new Date(now);
-      const to = new Date(now);
-      from.setMonth(from.getMonth() - 6);
-      to.setMonth(to.getMonth() + 6);
-      return appointmentService.list({
-        from: from.toISOString(),
-        to: to.toISOString(),
-      });
-    },
-  });
+  const [generateAction, setGenerateAction] = useState(0);
+  const generationReferences = useActionOptions(openGenerateModal ? generateAction : null, canViewAppointments, readFinancialAppointments);
 
   const financialEntriesQuery = useLiveQuery(
     [
@@ -395,11 +382,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   const patients = pageReferences.patients.items;
   const dentists = pageReferences.dentists.items;
   const entries = useMemo(() => financialEntriesQuery.data?.items ?? [], [financialEntriesQuery.data]);
-  const appointmentsForGenerate = useMemo(
-    () =>
-      (appointmentsForGenerateQuery.data ?? []).filter((appointment) => appointment.status !== "cancelled"),
-    [appointmentsForGenerateQuery.data],
-  );
+  const appointmentsForGenerate = generationReferences.items;
 
   const canCreate = can("financial", "create") && !reviewCreation;
   const canUpdate = can("financial", "update");
@@ -472,7 +455,17 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
     createMutation.mutate(values);
   };
 
+  const selectedGenerationAppointment = generateForm.watch("appointment_id");
+  const missingGenerationAppointment = !!selectedGenerationAppointment && !appointmentsForGenerate.some(item => item.id === selectedGenerationAppointment);
+  const openGeneration = () => {
+    if (!canCreate || openEntryModal || openGenerateModal || createUncertain || generateUncertain || isGeneratingEntry) return;
+    generateForm.reset();
+    generationAttempt.current = null;
+    setGenerateAction(action => action + 1);
+    setOpenGenerateModal(true);
+  };
   const submitGenerate = (values: GenerateFromAppointmentForm) => {
+    if (!openGenerateModal || !canCreate || !generationReferences.ready || isGeneratingEntry || generateUncertain || missingGenerationAppointment) return;
     generateFromAppointmentMutation.mutate(values);
   };
 
@@ -508,7 +501,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
           </div>
           {canCreate && (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { if (!openEntryModal && !createUncertain && !generateUncertain) setOpenGenerateModal(true); }}>
+              <Button variant="outline" onClick={openGeneration}>
                 Gerar da consulta
               </Button>
               <Button onClick={onNewEntry}>Novo lancamento</Button>
@@ -913,24 +906,21 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
         title="Gerar lancamento financeiro da consulta"
       >
         {generateUncertain && <div role="alert"><p>Resultado incerto. Repita os mesmos dados para recuperar a geração.</p><Button disabled={isGeneratingEntry} onClick={() => generateFromAppointmentMutation.mutate(generateFromAppointmentMutation.variables!)}>Consultar/repetir geração</Button></div>}
-        {!canViewAppointments ? (
-          <div className="space-y-2 text-sm text-slate-600">
-            <p>Seu perfil nao possui permissao para listar consultas.</p>
-            <p>Cadastre o lancamento manualmente no botao Novo lancamento.</p>
-          </div>
-        ) : appointmentsForGenerateQuery.isLoading ? (
-          <LoadingState message="Carregando consultas para geracao..." />
-        ) : appointmentsForGenerateQuery.isError ? (
-          <ErrorState message="Erro ao carregar consultas para geracao." />
-        ) : appointmentsForGenerate.length === 0 ? (
-          <EmptyState message="Nenhuma consulta disponivel para gerar lancamento." />
-        ) : (
+        <div role="status" className="mb-3 space-y-2 text-sm">
+          <p>{generationReferences.status === "denied" ? "Sem acesso às consultas para geração." : generationReferences.ready ? "Consultas preparadas para geração." : generationReferences.status === "error" ? "Erro ao preparar consultas para geração. Tente atualizar." : "Preparando consultas para geração..."}</p>
+          <p>Consultas disponíveis: seis meses antes e depois da leitura, sem canceladas. Atualizar mantém os dados preenchidos.</p>
+          <Button variant="outline" disabled={generationReferences.status === "loading" || isGeneratingEntry || generateUncertain}
+            onClick={() => void generationReferences.reload()}>Atualizar consultas para geração</Button>
+          {generationReferences.ready && appointmentsForGenerate.length === 0 && <p>Nenhuma consulta disponível nesta janela.</p>}
+          {missingGenerationAppointment && <p>Consulta selecionada fora da lista. Revise a seleção antes de uma nova geração.</p>}
+        </div>
           <form className="grid gap-3 md:grid-cols-2" onSubmit={generateForm.handleSubmit(submitGenerate)}>
-            <fieldset disabled={isGeneratingEntry || generateUncertain} className="contents">
+            <fieldset disabled={!generationReferences.ready || !canCreate || isGeneratingEntry || generateUncertain} className="contents">
             <div className="md:col-span-2">
               <label className="mb-1 block text-sm font-semibold text-slate-700">Consulta *</label>
               <Select {...generateForm.register("appointment_id")}>
                 <option value="">Selecione</option>
+                {missingGenerationAppointment && <option value={selectedGenerationAppointment}>Consulta fora da lista — seleção mantida</option>}
                 {appointmentsForGenerate.map((appointment) => (
                   <option key={appointment.id} value={appointment.id}>
                     {formatAppointmentLabel(appointment)}
@@ -986,13 +976,14 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
               <Button type="button" variant="outline" onClick={() => setOpenGenerateModal(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isGeneratingEntry}>
+              <Button type="submit" disabled={isGeneratingEntry || missingGenerationAppointment}>
                 {isGeneratingEntry ? "Gerando..." : "Gerar"}
               </Button>
             </div>
             </fieldset>
           </form>
-        )}
+          {(!generationReferences.ready || !canCreate) && <Button variant="outline" disabled={isGeneratingEntry || generateUncertain}
+            onClick={() => setOpenGenerateModal(false)}>Cancelar preparação da geração</Button>}
       </Modal>
     </div>
   );
