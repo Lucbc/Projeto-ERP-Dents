@@ -1,6 +1,6 @@
 # 3A.3.7.4 — referências do financeiro
 
-Preparação **3A.3.7.4P concluída em 12/10/2026**, base `5541aa6`. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Implementações A/B pendentes; esta preparação não altera a aplicação.
+Preparação **3A.3.7.4P concluída em 12/10/2026**, base `5541aa6`. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Implementação 3A.3.7.4A concluída; geração 3A.3.7.4B pendente. A preparação original não alterou a aplicação.
 
 ## Inspeção e diagnóstico
 
@@ -53,3 +53,9 @@ Cada implementação exige CI/auditorias e atualização somente da web de `erp-
 **Próximo: implementar 3A.3.7.4A.** Reutilizar `useActionOptions`, separar filtros da ação e incluir consultas no lançamento manual; não esquecer que a geração ainda consome o leitor antigo até B. Nomear os novos testes de opções de formulário sem confundir com `financial-references.test.tsx`, que testa snapshots históricos. Regressões existentes: `financial-version`, `financial-refresh`, `financial-history`, `financial-history-refresh`; selecionar scripts Chrome financeiros correspondentes às mudanças.
 
 Aplicação/homologação permanecem na implementação `bae3fb2`, CI `38273565070` aprovado (302 backend/324 frontend). Nenhum rebuild, reinício, migração ou escrita em banco nesta preparação. R19 permanece parcial; matriz final em 3A.3.7.5 e instalação assistida na etapa 5.
+
+### Retomada atual — lançamento manual do financeiro, 13/10/2026
+
+**3A.3.7.4A concluída em 13/10/2026**, implementação `190592d`: filtros e lançamento manual têm referências independentes, preparação por ação/cancelamento e atualização explícita; vínculos fora da janela, rascunho e versão preservados. Referências opcionais respeitam permissões e tentativas incertas mantêm chave/payload. [Evidências](./homologacao-etapa-3A-3-7-4A.md): CI `38317724002` aprovado (302 backend/333 frontend, HTTP/builds/auditorias), Chrome independente com recuperação de criação paga sem duplicação e regressões de histórico/estorno/atualização aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações/preservação aprovados, revisão 0024/zero schemas temporários. R19 permanece parcial.
+
+**Próximo: implementar 3A.3.7.4B — geração por consulta**, conforme [contrato e recortes](./plano-etapa-3A-3-7-4.md). Migrar leitor antigo `appointments/financial-generate` para preparação própria por ação, reutilizando `readFinancialAppointments`, sem leitura ociosa exclusiva da geração. Renovar janela por abertura/atualização explícita, preservar seleção/rascunho, cancelar respostas tardias e tratar ausência/negação. Recuperação de tentativa incerta deve usar variáveis/chave originais mesmo se consulta sair da janela; leituras nunca repetem escrita. Registrar início/aceite; não repetir revisão, backups ou testes aprovados sem mudança/falha. Matriz final R19 em 3A.3.7.5 e instalação assistida na etapa 5.

@@ -1,6 +1,6 @@
 # Homologação 3A.3.7.4A — referências do lançamento manual
 
-Em validação em 12/10/2026, base `38ab51a`. [Contrato e recortes](./plano-etapa-3A-3-7-4.md). Sem alteração de API/schema; geração permanece em 3A.3.7.4B.
+Concluída em 13/10/2026, implementação `190592d`, base `38ab51a`. [Contrato e recortes](./plano-etapa-3A-3-7-4.md). Sem alteração de API/schema; geração permanece em 3A.3.7.4B.
 
 ## Implementação
 
@@ -15,10 +15,20 @@ Em validação em 12/10/2026, base `38ab51a`. [Contrato e recortes](./plano-etap
 - Nove testes novos de componentes/transporte e quatro de versão aprovados (13 testes, 11,76s). Incluem janela/sinal, ausência de acesso, IDs no payload, filtros independentes, falha parcial/concessão, cancelamento/desmontagem, conflito persistente e barreira global. Testes antigos agora aguardam preparação antes do envio; não removem provas de conflitos ou tentativas incertas.
 - Chrome de referências aprovado: sessões independentes, opções por ação, estabilidade após mudança remota/polling/reconexão, atualização explícita, 503/recuperação, 403 real/concessão, consulta fora da janela preservada, 409 real com versão antiga e cancelamento tardio. Criação paga com resposta perdida recupera mesma chave/payload: uma cobrança e um pagamento, três requisições explícitas no ensaio. Capturas claro/escuro inspecionadas.
 - npm/Python aprovados; seis imagens sem achados na primeira imagem. Backups públicos/completo/exames `pre-3A-3-7-4A*` e comparação original preservados; helper `.data/upgrade_3a374a.py` agora somente `after`.
-- Suíte completa, build final, regressão Chrome de histórico/estorno, CI e atualização da homologação ainda em andamento. Ensaios locais de suíte sem progresso foram interrompidos; não contam como aprovação. Resultado final deve ser registrado antes do fechamento.
+- Suíte completa aprovada: 333 testes/40 arquivos, 88,22s; TypeScript/Vite 13,99s. Ensaios anteriores sem progresso foram interrompidos e não contam como aprovação. Chrome de referências repetido com sucesso na imagem final após limpeza de imports/tipagem; seis imagens finais sem achados. Histórico/estorno e atualização financeira aprovados, conforme aceite abaixo.
 
 ## Retomada de validação
 
 Logs ignorados: `.data/tests-3a374a-complete.log`, `.data/tests-3a374a-new-final.log`, `.data/build-3a374a-final.log`, `.data/browser-3a374a.log`, `.data/browser-history-3a374a.log`, `.data/audit-dependencies-3a374a.log`, `.data/audit-images-3a374a.log`.
 
-Concluir imagem final/regressões pertinentes/CI, depois somente web/HTTPS/dez verificações/preservação/revisão e zero schemas privados. Nenhum volume removido; fixtures exclusivamente fictícias em `erp-dents-homolog`. Não repetir backups. Esta etapa só será concluída após os aceites; R19 permanece parcial.
+Imagem final/regressões/CI aprovados. Somente web atualizada; HTTPS/assets idênticos ao build, dez verificações integradas e comparação de todas as linhas/referências/bytes de exames aprovados. Revisão `0024_user_version`, zero schemas privados após limpeza. Nenhum volume removido; fixtures exclusivamente fictícias em `erp-dents-homolog`. Backups originais preservados; R19 permanece parcial.
+
+## Aceite final
+
+- [CI 38317724002](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/38317724002) aprovado: 302 backend/333 frontend, regressões HTTP, builds e auditorias. Log local `.data/ci-final-3a374a.log`.
+- Chrome final de referências: `.data/browser-3a374a-final.log`; claro/escuro inspecionados. Testes de componente usam serviços simulados; Chrome confirma interface e respostas reais de API, com fixtures descartáveis.
+- Regressão de pagamentos/estornos/histórico: respostas perdidas recuperam um único evento, rascunho antigo bloqueado, estorno/correção/novo pagamento mantêm histórico e repetição atrasada.
+- Regressão de atualização financeira: sessões independentes, filtros/rascunho/versões preservados, mudanças remotas, conflitos, falha/recuperação/pausa e revogação. Log `.data/browser-refresh-3a374a.log`.
+- Preservação: `.data/preservation-3a374a.log`; HTTPS `.data/https-3a374a.log`; dez verificações `.data/smoke-main-3a374a.log`; imagens `.data/audit-images-3a374a-final.log`. Nenhuma prova local de Chrome substitui teste em estações físicas.
+
+Próximo: 3A.3.7.4B, geração por consulta. O leitor antigo da geração e sua janela/cache ainda não foram migrados; não considerar todo o financeiro encerrado.
