@@ -1,6 +1,6 @@
 # 3A.3.7.4 — referências do financeiro
 
-Preparação **3A.3.7.4P concluída em 12/10/2026**, base `5541aa6`. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Implementação 3A.3.7.4A concluída; geração 3A.3.7.4B pendente. A preparação original não alterou a aplicação.
+Preparação **3A.3.7.4P concluída em 12/10/2026**, base `5541aa6`. Complementa o [contrato de referências](./plano-etapa-3A-3-7.md). Implementações 3A.3.7.4A e 3A.3.7.4B concluídas. A preparação original não alterou a aplicação.
 
 ## Inspeção e diagnóstico
 
@@ -59,3 +59,9 @@ Aplicação/homologação permanecem na implementação `bae3fb2`, CI `382735650
 **3A.3.7.4A concluída em 13/10/2026**, implementação `190592d`: filtros e lançamento manual têm referências independentes, preparação por ação/cancelamento e atualização explícita; vínculos fora da janela, rascunho e versão preservados. Referências opcionais respeitam permissões e tentativas incertas mantêm chave/payload. [Evidências](./homologacao-etapa-3A-3-7-4A.md): CI `38317724002` aprovado (302 backend/333 frontend, HTTP/builds/auditorias), Chrome independente com recuperação de criação paga sem duplicação e regressões de histórico/estorno/atualização aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações/preservação aprovados, revisão 0024/zero schemas temporários. R19 permanece parcial.
 
 **Próximo: implementar 3A.3.7.4B — geração por consulta**, conforme [contrato e recortes](./plano-etapa-3A-3-7-4.md). Migrar leitor antigo `appointments/financial-generate` para preparação própria por ação, reutilizando `readFinancialAppointments`, sem leitura ociosa exclusiva da geração. Renovar janela por abertura/atualização explícita, preservar seleção/rascunho, cancelar respostas tardias e tratar ausência/negação. Recuperação de tentativa incerta deve usar variáveis/chave originais mesmo se consulta sair da janela; leituras nunca repetem escrita. Registrar início/aceite; não repetir revisão, backups ou testes aprovados sem mudança/falha. Matriz final R19 em 3A.3.7.5 e instalação assistida na etapa 5.
+
+### Retomada atual — geração por consulta, 13/10/2026
+
+**3A.3.7.4B concluída em 13/10/2026**, implementação `682e4e9`, fixture corrigida em `a49fc83`: geração por consulta prepara opções por ação, sem leitura ociosa, conserva seleção/rascunho e oferece atualização explícita/cancelamento. Tentativa incerta recupera a mesma cobrança com chave/payload originais mesmo após exclusão da consulta e perda do acesso à referência. [Evidências](./homologacao-etapa-3A-3-7-4B.md): CI `38400536916` aprovado (302 backend/339 frontend, HTTP/builds/auditorias), Chrome independente e regressão de pagamentos/estornos/histórico aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações/preservação aprovados, revisão 0024/zero schemas temporários. Referências do financeiro 3A.3.7.4 concluídas; R19 permanece parcial.
+
+**Próximo: 3A.3.7.5 — matriz final R19 e requisições**, conforme [recortes](./plano-etapa-3A-3-7.md). Inventariar leitores operacionais/referências, permissões e limites, identificar lacunas remanescentes, medir deduplicação/pausa/retorno sem polling de catálogos completos e validar navegação entre módulos/sessão revogada. Primeiro delimitar subetapas e critérios antes de alterar; reutilizar evidências existentes e não repetir revisão geral, backups ou testes aprovados sem mudança/falha. Não encerrar R19 antes da matriz e suas limitações verificadas. Instalação assistida permanece na etapa 5.
