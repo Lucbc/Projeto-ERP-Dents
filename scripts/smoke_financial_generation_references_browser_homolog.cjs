@@ -21,7 +21,7 @@ process.on('unhandledRejection',()=>{console.error('Financial refresh browser fa
   const saveMatrix=async()=>{matrix=await api('PUT','/api/permissions/reception',{version:matrix.version,permissions:matrix.permissions});};await saveMatrix();
   const patient=await api('POST','/api/patients',{full_name:'Fictitious Generation Patient'});
   const dentist=await api('POST','/api/dentists',{full_name:'Fictitious Generation Dentist',availability:[{day_of_week:'monday',start_time:'08:00',end_time:'18:00'}]});
-  const procedure=await api('POST','/api/procedures',{name:'Fictitious Generation Procedure',duration_minutes:15,price:100});
+  const procedure=await api('POST','/api/procedures',{name:'Fictitious Generation Procedure',duration_minutes:15,price_cents:10000});
   const date=new Date();date.setUTCDate(date.getUTCDate()+((8-date.getUTCDay())%7||7));date.setUTCHours(13,0,0,0);const end=new Date(date);end.setUTCHours(14);
   let visit=await api('POST','/api/appointments',{patient_id:patient.id,dentist_id:dentist.id,procedure_ids:[procedure.id],start_at:date.toISOString(),end_at:end.toISOString()});
   stage='reader login';const receiver=await login(reader,account.email);assert.notEqual(receiver.session_id,author.session_id);
