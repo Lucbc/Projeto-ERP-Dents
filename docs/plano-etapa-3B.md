@@ -1,5 +1,7 @@
 # Etapa 3B — datas civis e fuso da clínica
 
+**Status atual: 3B.1 concluída em 14/10/2026; preparar 3B.2.** As seções de preparação abaixo são históricas; retomada ao final.
+
 ## Preparação 3B.P — 14/10/2026
 
 Base `f9450df`, árvore inicialmente limpa. Início: inspecionar consumidores de datas, reproduzir divergências locais e delimitar correções de R20. **Preparação concluída; R20 continua aberto.** Nenhuma alteração funcional, migração ou atualização Docker nesta subetapa.
@@ -53,3 +55,9 @@ Em cada mudança funcional: testes focados reproduzindo o defeito, checks pertin
 Inspeção estática e reprodução Node concluídas. Documentação e links locais revisados. Nenhum teste novo de API, banco ou Chrome, nenhuma alteração de aplicação, backup, rebuild ou reinício. A homologação funcional vigente continua a [3A.3.7.5B](./homologacao-etapa-3A-3-7-5B.md).
 
 **Próximo: iniciar 3B.1**, registrando início no plano geral. Criar teste que falhe com nascimento atual em São Paulo antes de corrigir; delimitar utilitário civil sem alterar `formatDateTime`, `toInputDateTime` ou `fromInputDateTime`. Preparar prova de Pacientes/Consulta/Financeiro em fusos diferentes e preservar dados. R20 permanece aberto; instalação assistida permanece na etapa 5.
+
+## Fechamento 3B.1 — 14/10/2026
+
+**3B.1 concluída em 14/10/2026**, implementação `53f1e44`: nascimento e vencimento exibidos como datas civis, sem deslocamento por fuso. 366 testes frontend/302 backend e CI `38602968878` aprovados; Chrome em São Paulo/UTC/Tóquio, editores e datas/versões via API aprovados, nenhuma escrita dos leitores. Somente web atualizada; HTTPS/dez verificações/preservação aprovados, banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-1.md). R20 permanece aberto para dia clínico e instantes.
+
+**Próximo: preparar 3B.2 — dia clínico no financeiro.** Delimitar vencimento manual, geração por consulta/descrição e cálculo de atraso, conforme [plano 3B](./plano-etapa-3B.md). Reproduzir antes/depois da meia-noite clínica, mesmo instante em offsets diferentes e vencimento explícito preservado; não alterar datas históricas. Não repetir a validação de 3B.1 sem mudança/falha. Instantes/calendário e contrato de offset continuam nos recortes seguintes; instalação assistida na etapa 5.
