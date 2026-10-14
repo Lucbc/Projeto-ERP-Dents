@@ -25,3 +25,9 @@ Tentativas intermediárias anteriores à correção: `.data/browser-3a375b.log`,
 - Backups originais `pre-3A-3-7-5B*` já criados e preservados. Helper `.data/upgrade_3a375b.py`: **somente `after`**; não repetir `before/full`.
 - Docker Desktop estava desligado na retomada e foi iniciado; serviços existentes de homologação retomados com `up -d --no-build`, sem remover volumes. Isso foi recuperação do ambiente, não atualização da aplicação. Atualização somente web/HTTPS/preservação ainda pendente.
 - Após todos os aceites, consolidar matriz R19 e seu escopo: polling de 15s/60s, referências estáveis por ação, listas limitadas e janela financeira. Não comprova capacidade, estações físicas ou outros navegadores. Datas/fusos e paginação continuam na etapa 3; instalação assistida na etapa 5.
+
+## Checkpoint de validação — 13/10/2026
+
+**3A.3.7.5B/3A.3.7.5B.1 implementadas em `44d58be`, aguardando somente CI `38498942069`.** 341 testes frontend/41 arquivos, 35 focados, TypeScript/Vite, npm/Python e seis imagens aprovados. Chrome de sessão e regressão de permissões aprovados; capturas inspecionadas. Somente web atualizada; HTTPS/assets/dez verificações/preservação aprovados, revisão `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3A-3-7-5B.md). R19 ainda aberto até o resultado do CI.
+
+**Retomar somente CI e fechamento documental/publicação.** Watch `.data/ci-watch-3a375b.log`; execução `38498942069` corresponde ao código `44d58be`. Backups `pre-3A-3-7-5B*` preservados, helper `.data/upgrade_3a375b.py` somente `after`. Helper local `.data/close_3a375b.py` preparado, exige CI aprovado, relatórios Chrome e preservação; executar uma vez após conferir o CI e salvar seu log. Não repetir testes, auditorias, backups ou atualização aprovados sem mudança/falha. Após aceite, consolidar matriz R19, fechar 3A e registrar próximo recorte: preparação 3B de datas civis/fuso (R20). Instalação assistida permanece na etapa 5.
