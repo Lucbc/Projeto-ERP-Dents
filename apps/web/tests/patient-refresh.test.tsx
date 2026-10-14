@@ -27,6 +27,14 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
+it("displays birth date without shifting it and retains the civil value in the editor", async () => {
+  vi.mocked(patientService.list).mockResolvedValue({ items: [{ ...patient, birth_date: "2000-02-29" }], total: 1 });
+  const view = show(); await tick();
+  expect(screen.getByText("29/02/2000")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true }));
+  expect((view.container.querySelector('[name="birth_date"]') as HTMLInputElement).value).toBe("2000-02-29");
+});
+
 it("updates records and count without writes, preserving search and showing truncation", async () => {
   const create = vi.spyOn(patientService, "create"), remove = vi.spyOn(patientService, "remove"); show(); await tick();
   fireEvent.change(screen.getByPlaceholderText(/Buscar por nome/), { target: { value: "Fictitious" } }); await tick();

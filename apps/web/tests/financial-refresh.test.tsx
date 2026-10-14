@@ -43,6 +43,14 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); sessionStorage.clear(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
+it("displays civil due dates consistently and retains the stored date in the editor", async () => {
+  vi.mocked(financialService.list).mockResolvedValue({ items: [{ ...entry, due_date: "2032-02-29" }], total: 1 });
+  const field = show(); await tick();
+  expect(list().getByText("29/02/2032")).toBeTruthy();
+  fireEvent.click(list().getByRole("button", { name: "Editar", exact: true })); await tick();
+  expect(field("due_date").value).toBe("2032-02-29");
+});
+
 it("allows read-only users to open history without exposing payment or reversal actions", async () => {
   canWrite = false; show(); await tick();
   fireEvent.click(list().getByRole("button", { name: "Ver histórico" })); await tick();

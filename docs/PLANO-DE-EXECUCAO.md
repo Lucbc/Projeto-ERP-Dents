@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 14/10/2026
 
+**3B.1 em andamento**, base `453c79a`: corrigir somente apresentação de datas civis em Pacientes, Consulta e Financeiro. Aceite: reprodução antes da correção, testes de datas válidas/inválidas e consumidores, Chrome em São Paulo/UTC/Tóquio, checks e publicação. Instantes e vencimento padrão ficam nas próximas subetapas; R20 aberto.
+
 **3B.P concluída: preparação de datas civis/fuso.** Inspeção do código e reprodução Node confirmaram nascimento deslocado, padrão de vencimento UTC e conversores dependentes do fuso do computador. [Diagnóstico, contrato e recortes](./plano-etapa-3B.md). Sem alteração funcional ou atualização Docker; R20 permanece aberto. **Próximo: 3B.1 — datas civis na interface**, conforme retomada ao final deste plano. O fechamento 3A abaixo permanece como última homologação funcional.
 
 **3A.3.7.5B e correção 3A.3.7.5B.1 concluídas em 14/10/2026**, implementação `44d58be`: revisão de ações isolada por recurso, sem bloqueio herdado ao sair do financeiro; revogação real, nova identidade e resposta antiga validadas no percurso. [Evidências](./homologacao-etapa-3A-3-7-5B.md): 341 frontend/302 backend, CI `38498942069` aprovado, Chrome de sessão e regressão de permissões aprovados, dependências/seis imagens sem achados. Somente web atualizada, HTTPS/dez verificações/preservação aprovados; revisão `0024_user_version`, zero schemas privados. **3A e R19 encerrados no escopo de atualização periódica acordado**, com limites da [matriz final](./plano-etapa-3A-3-7-5.md).

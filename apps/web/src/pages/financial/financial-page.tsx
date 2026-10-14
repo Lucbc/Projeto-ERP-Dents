@@ -21,7 +21,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { getApiErrorMessage } from "@/lib/api";
-import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
+import { formatDate, fromInputDateTime, toInputDateTime } from "@/lib/datetime";
 import {
   financialEntryStatusLabels,
   financialEntryStatusOptions,
@@ -658,7 +658,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
                       <td className="p-2 font-medium text-slate-800">{entry.description}</td>
                       <td className="p-2">{entry.patient_name ?? "-"}</td>
                       <td className="p-2">{entry.dentist_name ?? "-"}</td>
-                      <td className="p-2">{new Date(`${entry.due_date}T00:00:00`).toLocaleDateString("pt-BR")}</td>
+                      <td className="p-2">{formatDate(entry.due_date)}</td>
                       <td className="p-2">
                         <span
                           className={

@@ -38,6 +38,12 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
+it("displays the patient's civil birth date in clinical detail", async () => {
+  vi.mocked(consultationService.getPatientDetail).mockResolvedValue(detail({ ...patient, birth_date: "2000-02-29" }));
+  show(); await tick(); open(); await tick();
+  expect(section("Dados do paciente").getByText("Nascimento: 29/02/2000")).toBeTruthy();
+});
+
 it("loads detail only on selection and preserves search/selection while all reads refresh", async () => {
   const write = vi.spyOn(patientService, "update"); show(); await tick();
   expect(consultationService.getPatientDetail).not.toHaveBeenCalled();
