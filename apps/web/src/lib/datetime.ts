@@ -23,3 +23,17 @@ export function toInputDateTime(isoValue: string): string {
 export function fromInputDateTime(input: string): string {
   return new Date(input).toISOString();
 }
+
+export const CLINIC_TIME_ZONE = "America/Sao_Paulo";
+
+const clinicDateFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: CLINIC_TIME_ZONE, calendar: "gregory", numberingSystem: "latn",
+  year: "numeric", month: "2-digit", day: "2-digit",
+});
+
+/** The clinic's civil day at this instant, independent of the workstation zone. */
+export function clinicDate(now: Date = new Date()): string {
+  const parts = clinicDateFormatter.formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)!.value;
+  return `${value("year").padStart(4, "0")}-${value("month")}-${value("day")}`;
+}

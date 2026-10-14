@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 14/10/2026
 
+**3B.2A iniciada**, base `0529f52`: dia clínico como vencimento inicial de novos lançamentos. Aceite: teste de componente antes da correção, fronteiras de calendário/fuso, rascunho e edição preservados, Chrome em três fusos com gravação explícita/API, CI e atualização/preservação. Sem mudança de gerador, atraso ou instantes. [Contrato](./plano-etapa-3B-2.md).
+
 **3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.
 
 **3B.1 concluída em 14/10/2026**, implementação `53f1e44`: nascimento e vencimento exibidos como datas civis, sem deslocamento por fuso. 366 testes frontend/302 backend e CI `38602968878` aprovados; Chrome em São Paulo/UTC/Tóquio, editores e datas/versões via API aprovados, nenhuma escrita dos leitores. Somente web atualizada; HTTPS/dez verificações/preservação aprovados, banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-1.md). R20 permanece aberto para dia clínico e instantes.

@@ -43,6 +43,22 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); sessionStorage.clear(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
+it("suggests the clinic day only when opening a new action and preserves chosen dates", async () => {
+  vi.setSystemTime(new Date("2030-01-08T02:59:59Z"));
+  const create = vi.spyOn(financialService, "create"), update = vi.spyOn(financialService, "update");
+  const field = show(); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Novo lancamento", exact: true })); await tick();
+  expect(field("due_date").value).toBe("2030-01-07");
+  fireEvent.change(field("due_date"), { target: { value: "2030-02-10" } });
+  vi.setSystemTime(new Date("2030-01-08T03:00:01Z")); await tick(15010);
+  fireEvent.click(screen.getByRole("button", { name: "Atualizar referências do lançamento", exact: true })); await tick();
+  expect(field("due_date").value).toBe("2030-02-10");
+  fireEvent.click(screen.getByRole("button", { name: "Cancelar", exact: true })); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Novo lancamento", exact: true })); await tick();
+  expect(field("due_date").value).toBe("2030-01-08");
+  expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled();
+});
+
 it("displays civil due dates consistently and retains the stored date in the editor", async () => {
   vi.mocked(financialService.list).mockResolvedValue({ items: [{ ...entry, due_date: "2032-02-29" }], total: 1 });
   const field = show(); await tick();

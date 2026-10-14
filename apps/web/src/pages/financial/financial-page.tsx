@@ -21,7 +21,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { getApiErrorMessage } from "@/lib/api";
-import { formatDate, fromInputDateTime, toInputDateTime } from "@/lib/datetime";
+import { clinicDate, formatDate, fromInputDateTime, toInputDateTime } from "@/lib/datetime";
 import {
   financialEntryStatusLabels,
   financialEntryStatusOptions,
@@ -401,7 +401,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
       amount: 0,
       discount: 0,
       tax: 0,
-      due_date: new Date().toISOString().slice(0, 10),
+      due_date: clinicDate(),
       status: "pending",
       paid_at: "",
       payment_method: "",
