@@ -16,7 +16,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 14/10/2026
 
-**3B.1 em andamento**, base `453c79a`: corrigir somente apresentação de datas civis em Pacientes, Consulta e Financeiro. Aceite: reprodução antes da correção, testes de datas válidas/inválidas e consumidores, Chrome em São Paulo/UTC/Tóquio, checks e publicação. Instantes e vencimento padrão ficam nas próximas subetapas; R20 aberto.
+**3B.1 implementada em `53f1e44`, aguardando CI `38602968878`.** Datas civis corrigidas em Pacientes/Consulta/Financeiro; 366 testes frontend, build, Chrome em São Paulo/UTC/Tóquio, auditorias e atualização somente web/HTTPS/dez verificações/preservação aprovados. Banco `0024_user_version`, zero schemas temporários. [Relatório](./homologacao-etapa-3B-1.md). Instantes e vencimento padrão ficam nas próximas subetapas; R20 aberto. Retomar somente CI e fechamento; backups `pre-3B-1*` preservados, helper `.data/upgrade_3b1.py` somente `after`. Não repetir testes ou atualização aprovados sem mudança/falha.
 
 **3B.P concluída: preparação de datas civis/fuso.** Inspeção do código e reprodução Node confirmaram nascimento deslocado, padrão de vencimento UTC e conversores dependentes do fuso do computador. [Diagnóstico, contrato e recortes](./plano-etapa-3B.md). Sem alteração funcional ou atualização Docker; R20 permanece aberto. **Próximo: 3B.1 — datas civis na interface**, conforme retomada ao final deste plano. O fechamento 3A abaixo permanece como última homologação funcional.
 
@@ -1426,3 +1426,7 @@ Recorte corretivo antes do fechamento: reproduzir em componentes com roteador re
 Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergências de datas, sem alteração funcional. **Preparação 3B.P concluída.** [Plano, evidências e critérios](./plano-etapa-3B.md): nascimento deslocado em São Paulo, vencimento padrão UTC e entradas de horário dependentes do computador reproduzidos em Node. Geração por consulta e atraso financeiro mapeados por inspeção; ainda exigem testes de API/banco. Nenhum novo ensaio Chrome, migração, backup ou atualização Docker nesta preparação.
 
 **Próximo: iniciar 3B.1 — datas civis na interface.** Reproduzir com teste que falhe antes de corrigir; separar formatação civil e validar Pacientes, Consulta e vencimento exibido em São Paulo/UTC/Tóquio. Não alterar conversores de instantes nem vencimento padrão nessa subetapa. R20 permanece aberto; 3B.2 a 3B.5 têm recortes próprios no novo plano. Última homologação funcional: 3A.3.7.5B. Os registros anteriores abaixo são históricos.
+
+### 3B.1 - checkpoint 14/10/2026
+
+**3B.1 implementada em `53f1e44`, aguardando CI `38602968878`.** Datas civis corrigidas em Pacientes/Consulta/Financeiro; 366 testes frontend, build, Chrome em São Paulo/UTC/Tóquio, auditorias e atualização somente web/HTTPS/dez verificações/preservação aprovados. Banco `0024_user_version`, zero schemas temporários. [Relatório](./homologacao-etapa-3B-1.md). Instantes e vencimento padrão ficam nas próximas subetapas; R20 aberto. Retomar somente CI e fechamento; backups `pre-3B-1*` preservados, helper `.data/upgrade_3b1.py` somente `after`. Não repetir testes ou atualização aprovados sem mudança/falha.
