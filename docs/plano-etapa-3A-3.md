@@ -1,5 +1,7 @@
 # Etapa 3A.3 — demais telas e permissões efetivas
 
+**Status atual — 14/10/2026: 3A/R19 concluídos no escopo acordado.** [Aceite final e limites](./homologacao-etapa-3A-3-7-5B.md). As seções de preparação e retomadas anteriores são histórico; consulte o fechamento ao final para o próximo passo.
+
 Preparação em 02/10/2026, base `e7a67b5`. Complementa o [plano 3A](./plano-etapa-3A.md) após painel/consulta concluídos. Esta entrega é documental: inspeção de código e contrato de implementação, sem nova prova dinâmica de API, banco ou interface. R19 permanece parcial.
 
 ## Diagnóstico por inspeção
@@ -214,3 +216,9 @@ Implementação `5f68df1` publicada: fonte única ativada, guards/menu/ações i
 **3A.3.7.4B concluída em 13/10/2026**, implementação `682e4e9`, fixture corrigida em `a49fc83`: geração por consulta prepara opções por ação, sem leitura ociosa, conserva seleção/rascunho e oferece atualização explícita/cancelamento. Tentativa incerta recupera a mesma cobrança com chave/payload originais mesmo após exclusão da consulta e perda do acesso à referência. [Evidências](./homologacao-etapa-3A-3-7-4B.md): CI `38400536916` aprovado (302 backend/339 frontend, HTTP/builds/auditorias), Chrome independente e regressão de pagamentos/estornos/histórico aprovados; seis imagens sem achados. Somente web da homologação atualizada, HTTPS/dez verificações/preservação aprovados, revisão 0024/zero schemas temporários. Referências do financeiro 3A.3.7.4 concluídas; R19 permanece parcial.
 
 **Próximo: 3A.3.7.5 — matriz final R19 e requisições**, conforme [recortes](./plano-etapa-3A-3-7.md). Inventariar leitores operacionais/referências, permissões e limites, identificar lacunas remanescentes, medir deduplicação/pausa/retorno sem polling de catálogos completos e validar navegação entre módulos/sessão revogada. Primeiro delimitar subetapas e critérios antes de alterar; reutilizar evidências existentes e não repetir revisão geral, backups ou testes aprovados sem mudança/falha. Não encerrar R19 antes da matriz e suas limitações verificadas. Instalação assistida permanece na etapa 5.
+
+### Fechamento 3A/R19 — 14/10/2026
+
+**3A.3.7.5B e correção 3A.3.7.5B.1 concluídas em 14/10/2026**, implementação `44d58be`: revisão de ações isolada por recurso, sem bloqueio herdado ao sair do financeiro; revogação real, nova identidade e resposta antiga validadas no percurso. [Evidências](./homologacao-etapa-3A-3-7-5B.md): 341 frontend/302 backend, CI `38498942069` aprovado, Chrome de sessão e regressão de permissões aprovados, dependências/seis imagens sem achados. Somente web atualizada, HTTPS/dez verificações/preservação aprovados; revisão `0024_user_version`, zero schemas privados. **3A e R19 encerrados no escopo de atualização periódica acordado**, com limites da [matriz final](./plano-etapa-3A-3-7-5.md).
+
+**Próximo: preparar 3B — datas civis e fuso (R20).** Inspecionar utilitários/consumidores de nascimento, vencimento e agenda; distinguir data sem horário de instante e reproduzir cenários de virada do dia/PCs com fusos diferentes antes de implementar. Delimitar subetapas e critérios, conferir correções já existentes e não repetir a revisão geral. R21/validação de offsets pode exigir recorte próprio; não ampliar escopo sem registrar. Paginação continua pendente na etapa 3, instalação assistida na etapa 5 e capacidade/estações físicas na etapa 6.

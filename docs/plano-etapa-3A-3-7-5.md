@@ -1,5 +1,7 @@
 # 3A.3.7.5 — matriz final R19 e requisições
 
+**Status atual — 14/10/2026: 3A/R19 concluídos no escopo acordado.** [Aceite final e limites](./homologacao-etapa-3A-3-7-5B.md). As seções de preparação e retomadas anteriores são histórico; consulte o fechamento ao final para o próximo passo.
+
 ## Preparação 3A.3.7.5P — 13/10/2026
 
 Base documental `d95b465`, árvore inicialmente limpa. Inspeção estática de leitores, isolamento de sessão, testes e relatórios existentes; nenhuma alteração funcional. Aceite desta preparação: inventário rastreável, distinção entre evidência existente e prova pendente, recortes com critérios mensuráveis e ponto de retomada. **R19 permanece parcial.**
@@ -71,3 +73,16 @@ Os quatro `listAll` (pacientes, dentistas, procedimentos, especialidades) percor
 **3A.3.7.5A concluída em 13/10/2026:** ensaio Chrome com sessões independentes e navegação no mesmo documento aprovado; contagens por módulo, pausa/retorno, retorno rápido com dado remoto, referências sem polling e requisição lenta sem duplicação. Nenhuma escrita do leitor ou mudança funcional. [Evidências e limites](./homologacao-etapa-3A-3-7-5A.md). Schema/API temporários removidos, revisão principal `0024_user_version`, zero schemas privados. R19 permanece parcial.
 
 **Próximo: 3A.3.7.5B — sessão no percurso e fechamento da matriz.** Reutilizar o novo ensaio e as provas existentes; acrescentar revogação real, retorno ao login, isolamento de nova identidade e descarte de resposta antiga. Registrar início/aceite conforme [matriz](./plano-etapa-3A-3-7-5.md). Não repetir medições aprovadas sem mudança/falha, nem atualizar aplicação inalterada. Instalação assistida permanece na etapa 5.
+
+## Fechamento da matriz R19 — 14/10/2026
+
+**Cobertura aprovada no escopo definido:** leitores operacionais, permissões, referências por ação, navegação/requisições (3A.3.7.5A) e sessão/ações entre recursos (3A.3.7.5B). A correção final impede herdar a revisão de permissões do financeiro em outro módulo. Evidências por módulo permanecem nas tabelas acima; não foram substituídas por uma alegação genérica de teste universal.
+
+- **Componentes/transporte:** 341 testes finais, incluindo reprodução e correção admin/recepção, manutenção da barreira na mesma tela, cache/rascunho e respostas antigas de sessão. CI com 302 testes backend e cenários HTTP existentes aprovado.
+- **Chrome/API:** sessões independentes, alterações remotas por módulo nos relatórios referenciados, medições de 32s, pausa/retorno, nenhuma escrita automática; revogação real/401, 32s sem polling privado no login, nova identidade no mesmo documento, referências/menu/rota e 403 real. Resposta antiga no Chrome foi cancelada no transporte; teste de componente cobre resposta tardia que ignora cancelamento.
+- **Banco/atualização:** schemas fictícios removidos, revisão 0024 e zero schemas temporários; linhas, referências históricas e bytes de exames preservados na atualização somente web, com backups anteriores mantidos. HTTPS e dez verificações integradas aprovados.
+- **Limites:** 15s é intervalo nominal, mais rede/servidor; falhas recuam para 60s. Sem prazo em aba suspensa/offline. Referências permanecem estáveis durante a ação até atualização explícita. Listas de 100/200 e janela financeira de ±6 meses continuam; ausência nesses recortes não comprova exclusão. Não houve carga, ensaio de computadores físicos, outros navegadores ou instalação assistida. Esses pontos permanecem nas etapas correspondentes, sem declarar o ERP pronto para produção.
+
+**3A.3.7.5B e correção 3A.3.7.5B.1 concluídas em 14/10/2026**, implementação `44d58be`: revisão de ações isolada por recurso, sem bloqueio herdado ao sair do financeiro; revogação real, nova identidade e resposta antiga validadas no percurso. [Evidências](./homologacao-etapa-3A-3-7-5B.md): 341 frontend/302 backend, CI `38498942069` aprovado, Chrome de sessão e regressão de permissões aprovados, dependências/seis imagens sem achados. Somente web atualizada, HTTPS/dez verificações/preservação aprovados; revisão `0024_user_version`, zero schemas privados. **3A e R19 encerrados no escopo de atualização periódica acordado**, com limites da [matriz final](./plano-etapa-3A-3-7-5.md).
+
+**Próximo: preparar 3B — datas civis e fuso (R20).** Inspecionar utilitários/consumidores de nascimento, vencimento e agenda; distinguir data sem horário de instante e reproduzir cenários de virada do dia/PCs com fusos diferentes antes de implementar. Delimitar subetapas e critérios, conferir correções já existentes e não repetir a revisão geral. R21/validação de offsets pode exigir recorte próprio; não ampliar escopo sem registrar. Paginação continua pendente na etapa 3, instalação assistida na etapa 5 e capacidade/estações físicas na etapa 6.

@@ -1,5 +1,7 @@
 # Etapa 3A.3.7 — referências de formulários e cobertura cruzada
 
+**Status atual — 14/10/2026: 3A/R19 concluídos no escopo acordado.** [Aceite final e limites](./homologacao-etapa-3A-3-7-5B.md). As seções de preparação e retomadas anteriores são histórico; consulte o fechamento ao final para o próximo passo.
+
 **Preparação 3A.3.7P concluída em 11/10/2026**, base `3c1277e`. Referências 3A.3.7.1 a 3A.3.7.4 concluídas; matriz final 3A.3.7.5 pendente. Complementa o [contrato 3A.3](./plano-etapa-3A-3.md); R19 continua parcial. Esta preparação não altera a aplicação ou a homologação.
 
 ## Diagnóstico e evidências
@@ -114,3 +116,9 @@ Base `a635a8e`, árvore inicialmente limpa. Implementar opções próprias da a�
 **3A.3.7.5A concluída em 13/10/2026:** ensaio Chrome com sessões independentes e navegação no mesmo documento aprovado; contagens por módulo, pausa/retorno, retorno rápido com dado remoto, referências sem polling e requisição lenta sem duplicação. Nenhuma escrita do leitor ou mudança funcional. [Evidências e limites](./homologacao-etapa-3A-3-7-5A.md). Schema/API temporários removidos, revisão principal `0024_user_version`, zero schemas privados. R19 permanece parcial.
 
 **Próximo: 3A.3.7.5B — sessão no percurso e fechamento da matriz.** Reutilizar o novo ensaio e as provas existentes; acrescentar revogação real, retorno ao login, isolamento de nova identidade e descarte de resposta antiga. Registrar início/aceite conforme [matriz](./plano-etapa-3A-3-7-5.md). Não repetir medições aprovadas sem mudança/falha, nem atualizar aplicação inalterada. Instalação assistida permanece na etapa 5.
+
+### Fechamento 3A/R19 — 14/10/2026
+
+**3A.3.7.5B e correção 3A.3.7.5B.1 concluídas em 14/10/2026**, implementação `44d58be`: revisão de ações isolada por recurso, sem bloqueio herdado ao sair do financeiro; revogação real, nova identidade e resposta antiga validadas no percurso. [Evidências](./homologacao-etapa-3A-3-7-5B.md): 341 frontend/302 backend, CI `38498942069` aprovado, Chrome de sessão e regressão de permissões aprovados, dependências/seis imagens sem achados. Somente web atualizada, HTTPS/dez verificações/preservação aprovados; revisão `0024_user_version`, zero schemas privados. **3A e R19 encerrados no escopo de atualização periódica acordado**, com limites da [matriz final](./plano-etapa-3A-3-7-5.md).
+
+**Próximo: preparar 3B — datas civis e fuso (R20).** Inspecionar utilitários/consumidores de nascimento, vencimento e agenda; distinguir data sem horário de instante e reproduzir cenários de virada do dia/PCs com fusos diferentes antes de implementar. Delimitar subetapas e critérios, conferir correções já existentes e não repetir a revisão geral. R21/validação de offsets pode exigir recorte próprio; não ampliar escopo sem registrar. Paginação continua pendente na etapa 3, instalação assistida na etapa 5 e capacidade/estações físicas na etapa 6.
