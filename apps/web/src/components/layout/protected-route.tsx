@@ -26,8 +26,11 @@ export function ProtectedRoute({
   const mask = resource ? ["create", "update", "delete"].reduce((bits, action, index) =>
     bits | (permissions.can(resource, action as PermissionAction) ? 1 << index : 0), 0)
     | (resource === "financial" && permissions.can("financial_reversals", "create") ? 8 : 0) : 0;
-  const [review, setReview] = useState({ mask, required: 0 });
-  if (mask !== review.mask) setReview({ mask,
+  const [review, setReview] = useState({ resource, mask, required: 0 });
+  // The router can reuse this guard for another page. Its action mask belongs
+  // to that resource, not to the module the user has just left.
+  if (resource !== review.resource) setReview({ resource, mask, required: 0 });
+  else if (mask !== review.mask) setReview({ resource, mask,
     required: review.required | ((review.mask & mask) !== review.mask ? review.mask : 0) });
 
   if (isLoading) {
@@ -65,7 +68,7 @@ export function ProtectedRoute({
     {review.required !== 0 && <div role="status" className="relative z-50 mb-3 space-y-2 rounded-sm border bg-card p-3 text-card-foreground">
       <p>Suas permissões de alteração mudaram. As ações estão suspensas; os rascunhos e resultados pendentes foram preservados. Aguarde a revisão do acesso antes de continuar.</p>
       <button className="rounded-sm border px-3 py-2 disabled:opacity-50" disabled={(mask & review.required) !== review.required}
-        onClick={() => setReview({ mask, required: 0 })}>Revisar e retomar ações</button>
+        onClick={() => setReview({ resource, mask, required: 0 })}>Revisar e retomar ações</button>
     </div>}
     <fieldset className="min-w-0" disabled={review.required !== 0}
       onSubmitCapture={event => { if (review.required !== 0) { event.preventDefault(); event.stopPropagation(); } }}>{children}</fieldset>

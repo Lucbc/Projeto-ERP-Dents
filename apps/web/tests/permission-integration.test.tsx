@@ -2,7 +2,7 @@ import React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { focusManager, onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import { AxiosError } from "axios";
 import { EffectivePermissionsProvider } from "../src/hooks/use-effective-permissions";
 import { EffectiveAccessGate } from "../src/components/layout/effective-access-gate";
@@ -71,6 +71,31 @@ it("keeps exam drafts hidden through verification failure, separates patient acc
   expect((container.querySelector('input[name="notes"]') as HTMLInputElement).value).toBe(''); expect(upload).not.toHaveBeenCalled();
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
+
+it.each(['admin', 'reception'] as const)('does not carry financial action review into another resource for %s', async role => {
+  user = { ...user, role };
+  vi.mocked(permissionService.me).mockResolvedValue({ ...matrix(), permissions: {
+    ...matrix().permissions, financial_reversals: { view: true, create: true, update: false, delete: false },
+    dashboard: { view: true, create: false, update: false, delete: false },
+  } });
+  render(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate>
+    <MemoryRouter initialEntries={['/financial']}><nav><Link to='/patients'>Patients</Link><Link to='/financial'>Financial</Link><Link to='/'>Dashboard</Link></nav>
+      <Routes>
+        <Route path='/financial' element={<ProtectedRoute permission={{ resource: 'financial', action: 'view' }}><input aria-label='Financial draft' /></ProtectedRoute>} />
+        <Route path='/patients' element={<ProtectedRoute permission={{ resource: 'patients', action: 'view' }}><input aria-label='Patient draft' /></ProtectedRoute>} />
+        <Route path='/' element={<ProtectedRoute permission={{ resource: 'dashboard', action: 'view' }}><button>Refresh panel</button></ProtectedRoute>} />
+      </Routes>
+    </MemoryRouter>
+  </EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>);
+  await tick();
+  fireEvent.click(screen.getByText('Patients')); await tick();
+  expect(screen.getByLabelText('Patient draft').matches(':disabled')).toBe(false);
+  expect(screen.queryByText(/ações estão suspensas/)).toBeNull();
+  fireEvent.click(screen.getByText('Financial')); await tick();
+  fireEvent.click(screen.getByText('Dashboard')); await tick();
+  expect(screen.getByRole('button', { name: 'Refresh panel' }).matches(':disabled')).toBe(false);
+  expect(screen.queryByText(/ações estão suspensas/)).toBeNull();
+});
 async function edit(container: HTMLElement) {
   await tick(); fireEvent.click(screen.getByRole("button", { name: "Editar" }));
   const notes = container.querySelector('textarea[name="notes"]') as HTMLTextAreaElement;

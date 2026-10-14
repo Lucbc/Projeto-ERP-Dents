@@ -1388,3 +1388,13 @@ Base `1dd5478`, árvore inicialmente limpa. Implementar ensaio Chrome privado co
 **3A.3.7.5A concluída em 13/10/2026:** ensaio Chrome com sessões independentes e navegação no mesmo documento aprovado; contagens por módulo, pausa/retorno, retorno rápido com dado remoto, referências sem polling e requisição lenta sem duplicação. Nenhuma escrita do leitor ou mudança funcional. [Evidências e limites](./homologacao-etapa-3A-3-7-5A.md). Schema/API temporários removidos, revisão principal `0024_user_version`, zero schemas privados. R19 permanece parcial.
 
 **Próximo: 3A.3.7.5B — sessão no percurso e fechamento da matriz.** Reutilizar o novo ensaio e as provas existentes; acrescentar revogação real, retorno ao login, isolamento de nova identidade e descarte de resposta antiga. Registrar início/aceite conforme [matriz](./plano-etapa-3A-3-7-5.md). Não repetir medições aprovadas sem mudança/falha, nem atualizar aplicação inalterada. Instalação assistida permanece na etapa 5.
+
+### Início 3A.3.7.5B — sessão no percurso, 13/10/2026
+
+Base `d25e13d`, árvore inicialmente limpa. Acrescentar ensaio privado Chrome/API com revogação real de conta/sessão após navegação, 401 e login, ausência de polling privado por 32s, nova identidade/perfil sem cache/rascunho anterior, referência negada e resposta antiga cancelada. Reutilizar medições 3A.3.7.5A e testes de sessão existentes. Aceite: ensaio aprovado, limpeza do schema privado, matriz e limites consolidados antes de encerrar R19. Sem mudança funcional prevista; se surgir defeito, reproduzir/corrigir em recorte próprio. Não atualizar serviços principais inalterados.
+
+### Correção necessária 3A.3.7.5B.1 — barreira herdada entre recursos, 13/10/2026
+
+Chrome reproduziu bloqueio indevido após Financeiro → Pacientes: o guard conserva `review.required` do recurso anterior. A máscara financeira inclui estorno (bit 8), ausente no próximo recurso; a navegação é confundida com revogação e a revisão fica impossível. Captura fictícia ignorada `.data/homolog/session-draft-preparation.png`, falha específica `.data/browser-3a375b-draft.log`. Explica também a falha do clique manual em 3A.3.7.5A; as contagens de leitura aprovadas continuam válidas, mas não provaram ações habilitadas. Não encerrar R19.
+
+Recorte corretivo antes do fechamento: reproduzir em componentes com roteador real para admin/recepção; delimitar revisão ao recurso sem liberar revogação na mesma tela; manter regressões de rascunho/versão/tentativa financeira. Aceite: componentes, Chrome de sessão/navegação, CI/auditorias e atualização web com backup/preservação/HTTPS. API/schema inalterados. Docker estava desligado na retomada; Docker Desktop iniciado e serviços existentes de homologação retomados sem rebuild/remoção de volumes.
