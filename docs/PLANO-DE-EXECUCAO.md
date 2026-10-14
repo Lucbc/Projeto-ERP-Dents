@@ -16,7 +16,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 14/10/2026
 
-**3B.2A iniciada**, base `0529f52`: dia clínico como vencimento inicial de novos lançamentos. Aceite: teste de componente antes da correção, fronteiras de calendário/fuso, rascunho e edição preservados, Chrome em três fusos com gravação explícita/API, CI e atualização/preservação. Sem mudança de gerador, atraso ou instantes. [Contrato](./plano-etapa-3B-2.md).
+**3B.2A implementada em `14392a3`, aguardando CI `38614003801`.** 379 testes frontend, build, Chrome São Paulo/UTC/Tóquio com seis criações explícitas e releitura API, auditorias e atualização somente web/HTTPS/dez verificações/preservação aprovados. Banco `0024_user_version`, zero schemas temporários. [Relatório](./homologacao-etapa-3B-2A.md). Retomar somente CI e fechamento; backups `pre-3B-2A*` preservados, `.data/upgrade_3b2a.py` somente `after`. Não repetir testes ou atualização aprovados sem mudança/falha. Próximo após aceite: 3B.2B, geração por consulta; R20 aberto.
 
 **3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.
 
@@ -1448,3 +1448,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 ### 3B.2P - checkpoint 14/10/2026
 
 **3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.
+
+### 3B.2A - checkpoint 14/10/2026
+
+**3B.2A implementada em `14392a3`, aguardando CI `38614003801`.** 379 testes frontend, build, Chrome São Paulo/UTC/Tóquio com seis criações explícitas e releitura API, auditorias e atualização somente web/HTTPS/dez verificações/preservação aprovados. Banco `0024_user_version`, zero schemas temporários. [Relatório](./homologacao-etapa-3B-2A.md). Retomar somente CI e fechamento; backups `pre-3B-2A*` preservados, `.data/upgrade_3b2a.py` somente `after`. Não repetir testes ou atualização aprovados sem mudança/falha. Próximo após aceite: 3B.2B, geração por consulta; R20 aberto.
