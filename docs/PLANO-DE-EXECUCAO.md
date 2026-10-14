@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 14/10/2026
 
+**3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.
+
 **3B.1 concluída em 14/10/2026**, implementação `53f1e44`: nascimento e vencimento exibidos como datas civis, sem deslocamento por fuso. 366 testes frontend/302 backend e CI `38602968878` aprovados; Chrome em São Paulo/UTC/Tóquio, editores e datas/versões via API aprovados, nenhuma escrita dos leitores. Somente web atualizada; HTTPS/dez verificações/preservação aprovados, banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-1.md). R20 permanece aberto para dia clínico e instantes.
 
 **Próximo: preparar 3B.2 — dia clínico no financeiro.** Delimitar vencimento manual, geração por consulta/descrição e cálculo de atraso, conforme [plano 3B](./plano-etapa-3B.md). Reproduzir antes/depois da meia-noite clínica, mesmo instante em offsets diferentes e vencimento explícito preservado; não alterar datas históricas. Não repetir a validação de 3B.1 sem mudança/falha. Instantes/calendário e contrato de offset continuam nos recortes seguintes; instalação assistida na etapa 5.
@@ -45,7 +47,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Concluída: 2B.1 a 2B.8 | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
-| 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Em andamento: 3A e 3B.1 concluídas; preparar 3B.2 | Cenários por perfil e dados representativos aprovados |
+| 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Em andamento: 3A, 3B.1 e preparação 3B.2P concluídas; iniciar 3B.2A | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
 | 6 | Homologação final, carga, usabilidade e piloto | Pendente | Critérios da revisão atendidos e limitações aceitas explicitamente |
@@ -1440,3 +1442,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 **3B.1 concluída em 14/10/2026**, implementação `53f1e44`: nascimento e vencimento exibidos como datas civis, sem deslocamento por fuso. 366 testes frontend/302 backend e CI `38602968878` aprovados; Chrome em São Paulo/UTC/Tóquio, editores e datas/versões via API aprovados, nenhuma escrita dos leitores. Somente web atualizada; HTTPS/dez verificações/preservação aprovados, banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-1.md). R20 permanece aberto para dia clínico e instantes.
 
 **Próximo: preparar 3B.2 — dia clínico no financeiro.** Delimitar vencimento manual, geração por consulta/descrição e cálculo de atraso, conforme [plano 3B](./plano-etapa-3B.md). Reproduzir antes/depois da meia-noite clínica, mesmo instante em offsets diferentes e vencimento explícito preservado; não alterar datas históricas. Não repetir a validação de 3B.1 sem mudança/falha. Instantes/calendário e contrato de offset continuam nos recortes seguintes; instalação assistida na etapa 5.
+
+### 3B.2P - checkpoint 14/10/2026
+
+**3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.

@@ -1,6 +1,6 @@
 # Etapa 3B — datas civis e fuso da clínica
 
-**Status atual: 3B.1 concluída em 14/10/2026; preparar 3B.2.** As seções de preparação abaixo são históricas; retomada ao final.
+**Status atual: 3B.1 e preparação 3B.2P concluídas em 14/10/2026; iniciar 3B.2A.** [Dia clínico e recortes](./plano-etapa-3B-2.md). As seções de preparação abaixo são históricas; retomada ao final.
 
 ## Preparação 3B.P — 14/10/2026
 
@@ -61,3 +61,7 @@ Inspeção estática e reprodução Node concluídas. Documentação e links loc
 **3B.1 concluída em 14/10/2026**, implementação `53f1e44`: nascimento e vencimento exibidos como datas civis, sem deslocamento por fuso. 366 testes frontend/302 backend e CI `38602968878` aprovados; Chrome em São Paulo/UTC/Tóquio, editores e datas/versões via API aprovados, nenhuma escrita dos leitores. Somente web atualizada; HTTPS/dez verificações/preservação aprovados, banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-1.md). R20 permanece aberto para dia clínico e instantes.
 
 **Próximo: preparar 3B.2 — dia clínico no financeiro.** Delimitar vencimento manual, geração por consulta/descrição e cálculo de atraso, conforme [plano 3B](./plano-etapa-3B.md). Reproduzir antes/depois da meia-noite clínica, mesmo instante em offsets diferentes e vencimento explícito preservado; não alterar datas históricas. Não repetir a validação de 3B.1 sem mudança/falha. Instantes/calendário e contrato de offset continuam nos recortes seguintes; instalação assistida na etapa 5.
+
+## 3B.2P - checkpoint 14/10/2026
+
+**3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.
