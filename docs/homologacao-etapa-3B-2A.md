@@ -1,6 +1,6 @@
 # 3B.2A — vencimento inicial pelo dia clínico
 
-Iniciada em 14/10/2026, base `0529f52`. **Em validação.** [Contrato](./plano-etapa-3B-2.md). R20 permanece aberto.
+Iniciada em 14/10/2026, base `0529f52`. **Concluída em 14/10/2026.** [Contrato](./plano-etapa-3B-2.md). R20 permanece aberto.
 
 ## Alteração
 
@@ -20,6 +20,10 @@ Ensaio `scripts/smoke_clinic_due_date_browser_homolog.py`: schema/API privados e
 - Chrome aprovado nos três fusos (`.data/browser-3b2a.log`): seis criações explícitas; campo/payload/resposta e releitura API coincidem, nenhuma escrita automática. Escolha manual preservada após meia-noite e 17s de atualização; reabertura recalcula e edição mantém data original. Captura fictícia da edição inspecionada (durante preparação de referências); não constitui prova de salvamento de edição.
 - Auditorias npm/Python e seis imagens aprovadas (`.data/audit-dependencies-3b2a.log`, `.data/audit-images-3b2a.log`).
 - Somente web atualizada; HTTPS/assets idênticos ao build, dez verificações integradas e preservação das linhas/referências/bytes dos exames aprovados (`.data/https-3b2a.log`, `.data/smoke-main-3b2a.log`, `.data/preservation-3b2a.log`). Revisão `0024_user_version`, zero schemas temporários; nenhum volume removido.
-- Código `14392a3` publicado e remoto conferido. **CI `38614003801` em execução**, única pendência de aceite; watch `.data/ci-watch-3b2a.log`. Não repetir validações, backups ou atualização aprovados sem mudança/falha.
+- Código `14392a3` publicado e remoto conferido. [CI 38614003801](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/38614003801) aprovado: 379 frontend/302 backend, HTTP/builds/auditorias. Log `.data/ci-final-3b2a.log`. Backups originais preservados; não repetir validações ou atualização aprovadas sem mudança/falha.
 
 O relógio do computador precisa estar correto; conversão de fuso não corrige relógio incorreto. Próximo após aceite: 3B.2B, geração por consulta no fuso clínico, mantendo vencimento explícito e idempotência.
+
+## Retomada
+
+**Próximo: iniciar 3B.2B — geração por consulta no fuso clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir os três offsets equivalentes antes de corrigir data/descrição; preservar vencimento explícito, idempotência e cobranças históricas. Validar API/PostgreSQL com fusos de sessão distintos e recuperação de resposta perdida. Não repetir 3B.2A, backups ou atualização aprovados sem mudança/falha. Atraso permanece em 3B.2C; instantes e instalação assistida nos recortes próprios.

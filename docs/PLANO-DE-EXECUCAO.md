@@ -16,7 +16,9 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 14/10/2026
 
-**3B.2A implementada em `14392a3`, aguardando CI `38614003801`.** 379 testes frontend, build, Chrome São Paulo/UTC/Tóquio com seis criações explícitas e releitura API, auditorias e atualização somente web/HTTPS/dez verificações/preservação aprovados. Banco `0024_user_version`, zero schemas temporários. [Relatório](./homologacao-etapa-3B-2A.md). Retomar somente CI e fechamento; backups `pre-3B-2A*` preservados, `.data/upgrade_3b2a.py` somente `after`. Não repetir testes ou atualização aprovados sem mudança/falha. Próximo após aceite: 3B.2B, geração por consulta; R20 aberto.
+**3B.2A concluída em 14/10/2026**, implementação `14392a3`: novos lançamentos sugerem o dia da clínica em São Paulo; escolha do usuário e edição preservadas. 379 testes frontend/302 backend e CI `38614003801` aprovados; Chrome em três fusos com seis criações explícitas/payload/releitura API e nenhuma escrita automática. Auditorias, atualização somente web/HTTPS/dez verificações/preservação aprovadas; banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2A.md). R20 permanece aberto.
+
+**Próximo: iniciar 3B.2B — geração por consulta no fuso clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir os três offsets equivalentes antes de corrigir data/descrição; preservar vencimento explícito, idempotência e cobranças históricas. Validar API/PostgreSQL com fusos de sessão distintos e recuperação de resposta perdida. Não repetir 3B.2A, backups ou atualização aprovados sem mudança/falha. Atraso permanece em 3B.2C; instantes e instalação assistida nos recortes próprios.
 
 **3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.
 
@@ -49,7 +51,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Concluída: 2B.1 a 2B.8 | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
-| 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Em andamento: 3A, 3B.1 e preparação 3B.2P concluídas; iniciar 3B.2A | Cenários por perfil e dados representativos aprovados |
+| 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Em andamento: 3A, 3B.1 e 3B.2A concluídas; iniciar 3B.2B | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
 | 6 | Homologação final, carga, usabilidade e piloto | Pendente | Critérios da revisão atendidos e limitações aceitas explicitamente |
@@ -1452,3 +1454,9 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 ### 3B.2A - checkpoint 14/10/2026
 
 **3B.2A implementada em `14392a3`, aguardando CI `38614003801`.** 379 testes frontend, build, Chrome São Paulo/UTC/Tóquio com seis criações explícitas e releitura API, auditorias e atualização somente web/HTTPS/dez verificações/preservação aprovados. Banco `0024_user_version`, zero schemas temporários. [Relatório](./homologacao-etapa-3B-2A.md). Retomar somente CI e fechamento; backups `pre-3B-2A*` preservados, `.data/upgrade_3b2a.py` somente `after`. Não repetir testes ou atualização aprovados sem mudança/falha. Próximo após aceite: 3B.2B, geração por consulta; R20 aberto.
+
+### Retomada atual — 3B.2A concluída, 14/10/2026
+
+**3B.2A concluída em 14/10/2026**, implementação `14392a3`: novos lançamentos sugerem o dia da clínica em São Paulo; escolha do usuário e edição preservadas. 379 testes frontend/302 backend e CI `38614003801` aprovados; Chrome em três fusos com seis criações explícitas/payload/releitura API e nenhuma escrita automática. Auditorias, atualização somente web/HTTPS/dez verificações/preservação aprovadas; banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2A.md). R20 permanece aberto.
+
+**Próximo: iniciar 3B.2B — geração por consulta no fuso clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir os três offsets equivalentes antes de corrigir data/descrição; preservar vencimento explícito, idempotência e cobranças históricas. Validar API/PostgreSQL com fusos de sessão distintos e recuperação de resposta perdida. Não repetir 3B.2A, backups ou atualização aprovados sem mudança/falha. Atraso permanece em 3B.2C; instantes e instalação assistida nos recortes próprios.

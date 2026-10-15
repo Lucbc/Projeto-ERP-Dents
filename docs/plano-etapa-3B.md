@@ -1,6 +1,6 @@
 # Etapa 3B — datas civis e fuso da clínica
 
-**Status atual: 3B.1 e preparação 3B.2P concluídas em 14/10/2026; iniciar 3B.2A.** [Dia clínico e recortes](./plano-etapa-3B-2.md). As seções de preparação abaixo são históricas; retomada ao final.
+**Status atual: 3B.1 e 3B.2A concluídas em 14/10/2026; iniciar 3B.2B.** [Dia clínico e recortes](./plano-etapa-3B-2.md). As seções de preparação abaixo são históricas; retomada ao final.
 
 ## Preparação 3B.P — 14/10/2026
 
@@ -65,3 +65,9 @@ Inspeção estática e reprodução Node concluídas. Documentação e links loc
 ## 3B.2P - checkpoint 14/10/2026
 
 **3B.2P concluída**, base `4bc132e`: preparação do dia clínico no financeiro, com reprodução de vencimento manual, geração do mesmo instante em offsets distintos e atraso dependente do dia do processo. [Diagnóstico e recortes A/B/C/D](./plano-etapa-3B-2.md). Métodos Python com dependências simuladas, Node e leitura de configuração SQL; nenhuma mudança funcional. **Próximo: 3B.2A — vencimento sugerido no formulário.** Última homologação funcional continua 3B.1, abaixo; R20 aberto.
+
+## Fechamento 3B.2A — 14/10/2026
+
+**3B.2A concluída em 14/10/2026**, implementação `14392a3`: novos lançamentos sugerem o dia da clínica em São Paulo; escolha do usuário e edição preservadas. 379 testes frontend/302 backend e CI `38614003801` aprovados; Chrome em três fusos com seis criações explícitas/payload/releitura API e nenhuma escrita automática. Auditorias, atualização somente web/HTTPS/dez verificações/preservação aprovadas; banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2A.md). R20 permanece aberto.
+
+**Próximo: iniciar 3B.2B — geração por consulta no fuso clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir os três offsets equivalentes antes de corrigir data/descrição; preservar vencimento explícito, idempotência e cobranças históricas. Validar API/PostgreSQL com fusos de sessão distintos e recuperação de resposta perdida. Não repetir 3B.2A, backups ou atualização aprovados sem mudança/falha. Atraso permanece em 3B.2C; instantes e instalação assistida nos recortes próprios.

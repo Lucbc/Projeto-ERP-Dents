@@ -1,5 +1,7 @@
 # 3B.2 — dia clínico no financeiro
 
+**Status atual: 3B.2A concluída; iniciar 3B.2B.** Preparação abaixo é histórica; fechamento e retomada ao final.
+
 ## Preparação 3B.2P — 14/10/2026
 
 Base `4bc132e`, árvore inicialmente limpa. Início: conferir a implementação atual, reproduzir virada de dia e representações equivalentes de instantes, delimitar vencimento manual, geração e atraso. **Preparação concluída; implementação pendente.** Complementa o [plano 3B](./plano-etapa-3B.md). R20 permanece aberto.
@@ -75,3 +77,9 @@ Consolidar provas por camada e limitações; regressões financeiras e preserva�
 Preparação validada por inspeção, Node, métodos Python reais com dependências simuladas e leitura de configuração SQL. **Não houve teste HTTP novo, teste de persistência ou Chrome nesta preparação.** Nenhuma alteração funcional, migração, backup, rebuild, reinício ou escrita no banco. Última homologação funcional: [3B.1](./homologacao-etapa-3B-1.md), CI `38602968878` aprovado.
 
 **Próximo: registrar início e implementar 3B.2A.** Reutilizar `financial-refresh.test.tsx` para prova de abertura/rascunho e harness Chrome privado; nunca alterar relógio do sistema ou usar dados reais. Atualizar web somente após build e aceite, com preservação conforme rotina. Publicar commit/push e verificar remoto. Não repetir a revisão geral nem testes de 3B.1 já aprovados sem mudança/falha.
+
+## Fechamento 3B.2A — 14/10/2026
+
+**3B.2A concluída em 14/10/2026**, implementação `14392a3`: novos lançamentos sugerem o dia da clínica em São Paulo; escolha do usuário e edição preservadas. 379 testes frontend/302 backend e CI `38614003801` aprovados; Chrome em três fusos com seis criações explícitas/payload/releitura API e nenhuma escrita automática. Auditorias, atualização somente web/HTTPS/dez verificações/preservação aprovadas; banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2A.md). R20 permanece aberto.
+
+**Próximo: iniciar 3B.2B — geração por consulta no fuso clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir os três offsets equivalentes antes de corrigir data/descrição; preservar vencimento explícito, idempotência e cobranças históricas. Validar API/PostgreSQL com fusos de sessão distintos e recuperação de resposta perdida. Não repetir 3B.2A, backups ou atualização aprovados sem mudança/falha. Atraso permanece em 3B.2C; instantes e instalação assistida nos recortes próprios.
