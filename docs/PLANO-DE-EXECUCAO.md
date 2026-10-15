@@ -12,11 +12,17 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Registrar progresso aqui antes de mudanças longas e atualizar ao terminar. Uma interrupção deve permitir retomar a partir deste arquivo e do estado Git.
 - Ao concluir cada entrega com alterações, fazer commit e push, por solicitação do usuário, para permitir continuar em outros computadores. Conferir exclusão de segredos e igualdade do HEAD local/remoto; não usar force push. Os dados Docker e arquivos locais de credenciais não são sincronizados pelo Git.
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
-- Usar dados fictícios na homologação. A autorização atual permite construir/subir Docker, homologar e corrigir em etapas; não inclui implantar em uma clínica com dados reais.
+- Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
 ## Entrega atual — 15/10/2026
 
-**3B.2B implementada em `4a11420`, fixture corrigida em `33acb37`, aguardando CI `38728715724`.** Cinco testes focados (unidade/PostgreSQL), HTTP em três fusos SQL, Chrome de recuperação de geração, auditorias e atualização somente API/HTTPS/dez verificações/preservação aprovados. Revisão `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2B.md). Retomar somente CI e fechamento; watch `.data/ci-watch-3b2b.log`, backups `pre-3B-2B*` preservados e helper `.data/upgrade_3b2b.py` somente `after`. CI inicial `38728548378` cancelado/superado. Não repetir validações aprovadas sem mudança/falha. Próximo após aceite: 3B.2C, atraso pelo dia clínico. R20 aberto.
+**Prioridade alterada pelo usuário: entrada em uso para cadastros.** Dados serão digitados do zero; servidor em outro computador Windows. 3B.2B está concluída. **Próximo: P1 — pacote Windows, instalação e backup/restauração**, conforme [plano do piloto](./PLANO-PILOTO-CADASTROS.md). Busca/paginação e percurso da recepção vêm em seguida. 3B.2C e demais ajustes ficam adiados para a fila semanal, salvo bloqueio de cadastro, perda de dados ou acesso indevido. Não desenvolver importador nesta entrada em uso.
+
+### Última entrega técnica e sequência anterior
+
+**3B.2B concluída em 15/10/2026**, implementação `4a11420`, fixture `33acb37`: geração usa data/descrição no fuso clínico, preserva vencimento explícito e retorno de cobranças históricas. Cinco testes focados, API/PostgreSQL em três fusos e regressão Chrome de resposta perdida aprovados. CI `38728715724` aprovado (307 backend/379 frontend, HTTP/builds/auditorias). Somente API atualizada; HTTPS/dez verificações/preservação aprovados, revisão `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2B.md). R20 permanece aberto.
+
+**Sequência técnica adiada: 3B.2C — atraso pelo dia clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir resumo e indicador com relógio fixo antes/depois da meia-noite em fusos de processo distintos; adotar uma amostra do dia por operação. Preservar status, versões, totais e histórico. Não repetir 3B.2B ou backups/atualização aprovados sem mudança/falha. Instantes/calendário e instalação assistida mantêm recortes próprios.
 
 **3B.2A concluída em 14/10/2026**, implementação `14392a3`: novos lançamentos sugerem o dia da clínica em São Paulo; escolha do usuário e edição preservadas. 379 testes frontend/302 backend e CI `38614003801` aprovados; Chrome em três fusos com seis criações explícitas/payload/releitura API e nenhuma escrita automática. Auditorias, atualização somente web/HTTPS/dez verificações/preservação aprovadas; banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2A.md). R20 permanece aberto.
 
@@ -53,9 +59,9 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 1D | Exames, erros e dependências de segurança | Concluída: 1D.1, 1D.2, 1D.3.1 e 1D.3.2 | Limites/tipos, ciclo de vida, dependências, erros, sessão por cookie/CSRF e transporte HTTPS homologados; instalação assistida permanece na etapa 5 |
 | 2A | Concorrência de agenda e cobrança | Concluída: 2A.1 e 2A.2 | PostgreSQL rejeita conflitos simultâneos; geração idempotente |
 | 2B | Edição concorrente e histórico financeiro | Concluída: 2B.1 a 2B.8 | Alterações não se perdem; baixa idempotente; pagamentos/estornos rastreáveis |
-| 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | Em andamento: 3A, 3B.1 e 3B.2A concluídas; iniciar 3B.2B | Cenários por perfil e dados representativos aprovados |
+| 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | 3A, 3B.1 e 3B.2A/B concluídas; priorizar cadastros no piloto, demais ajustes na fila semanal | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Pendente | Escopo validado com a clínica; histórico e autoria preservados |
-| 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Pendente | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
+| 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Prioridade atual: piloto de cadastros P1 | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
 | 6 | Homologação final, carga, usabilidade e piloto | Pendente | Critérios da revisão atendidos e limitações aceitas explicitamente |
 
 Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. Funcionalidades de prontuário, parcelamento e instalação final terão decisões próprias antes da implementação.
@@ -1466,3 +1472,13 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 ### 3B.2B - checkpoint 15/10/2026
 
 **3B.2B implementada em `4a11420`, fixture corrigida em `33acb37`, aguardando CI `38728715724`.** Cinco testes focados (unidade/PostgreSQL), HTTP em três fusos SQL, Chrome de recuperação de geração, auditorias e atualização somente API/HTTPS/dez verificações/preservação aprovados. Revisão `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2B.md). Retomar somente CI e fechamento; watch `.data/ci-watch-3b2b.log`, backups `pre-3B-2B*` preservados e helper `.data/upgrade_3b2b.py` somente `after`. CI inicial `38728548378` cancelado/superado. Não repetir validações aprovadas sem mudança/falha. Próximo após aceite: 3B.2C, atraso pelo dia clínico. R20 aberto.
+
+### Retomada atual — 3B.2B concluída, 15/10/2026
+
+**3B.2B concluída em 15/10/2026**, implementação `4a11420`, fixture `33acb37`: geração usa data/descrição no fuso clínico, preserva vencimento explícito e retorno de cobranças históricas. Cinco testes focados, API/PostgreSQL em três fusos e regressão Chrome de resposta perdida aprovados. CI `38728715724` aprovado (307 backend/379 frontend, HTTP/builds/auditorias). Somente API atualizada; HTTPS/dez verificações/preservação aprovados, revisão `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2B.md). R20 permanece aberto.
+
+**Sequência técnica adiada: 3B.2C — atraso pelo dia clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir resumo e indicador com relógio fixo antes/depois da meia-noite em fusos de processo distintos; adotar uma amostra do dia por operação. Preservar status, versões, totais e histórico. Não repetir 3B.2B ou backups/atualização aprovados sem mudança/falha. Instantes/calendário e instalação assistida mantêm recortes próprios.
+
+### Retomada do piloto - 15/10/2026
+
+**Prioridade alterada pelo usuário: entrada em uso para cadastros.** Dados serão digitados do zero; servidor em outro computador Windows. 3B.2B está concluída. **Próximo: P1 — pacote Windows, instalação e backup/restauração**, conforme [plano do piloto](./PLANO-PILOTO-CADASTROS.md). Busca/paginação e percurso da recepção vêm em seguida. 3B.2C e demais ajustes ficam adiados para a fila semanal, salvo bloqueio de cadastro, perda de dados ou acesso indevido. Não desenvolver importador nesta entrada em uso.

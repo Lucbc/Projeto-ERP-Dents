@@ -1,6 +1,6 @@
 # 3B.2B — geração por consulta no fuso clínico
 
-Iniciada em 15/10/2026, base `8ac9f3e`. **Em validação.** [Contrato](./plano-etapa-3B-2.md). R20 permanece aberto.
+Iniciada em 15/10/2026, base `8ac9f3e`. **Concluída em 15/10/2026.** [Contrato](./plano-etapa-3B-2.md). R20 permanece aberto.
 
 ## Alteração e escopo
 
@@ -23,6 +23,10 @@ Primeiro ensaio HTTP falhou com 409: a fixture reutilizava o mesmo paciente no m
 - Regressão Chrome aprovada (`.data/browser-generation-3b2b.log`): sessões independentes, referências estáveis/rascunho, recuperação de falha, janela, cancelamento/reabertura e resposta perdida recuperada com chave/payload originais após exclusão real da consulta e referência 403. Uma cobrança, duas requisições explícitas. Capturas claro/escuro inspecionadas. A conversão dos três fusos SQL foi provada pelo ensaio HTTP, não por esta regressão visual.
 - Auditorias npm/Python e seis imagens sem achados (`.data/audit-dependencies-3b2b.log`, `.data/audit-images-3b2b.log`).
 - Somente API atualizada, web reutilizada; HTTPS/assets/dez verificações e preservação de linhas/referências/bytes dos exames aprovados (`.data/api-update-3b2b.log`, `.data/https-3b2b.log`, `.data/smoke-main-3b2b.log`, `.data/preservation-3b2b.log`). Revisão `0024_user_version`, zero schemas temporários; nenhum volume removido.
-- Implementação `4a11420`, fixture `33acb37`, publicados e remoto conferido. **CI final `38728715724` em execução**, único aceite pendente; inicial `38728548378` cancelado/superado. Watch `.data/ci-watch-3b2b.log`. Suíte completa será comprovada pelo CI; localmente foram executados os testes focados e integrados acima.
+- Implementação `4a11420`, fixture `33acb37`, publicados e remoto conferido. [CI final 38728715724](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/38728715724) aprovado: 307 backend/379 frontend, HTTP (incluindo o novo ensaio), builds e auditorias. Inicial `38728548378` cancelado/superado. Log `.data/ci-final-3b2b.log`. A suíte completa foi executada pelo CI; localmente foram executados os testes focados e integrados acima.
 
-Próximo após aceite: 3B.2C, atraso pelo dia clínico; não encerrar R20 nesta entrega. Não repetir validações, backups ou atualização aprovados sem mudança/falha.
+3B.2C (atraso pelo dia clínico) fica adiada para priorizar o [piloto de cadastros](./PLANO-PILOTO-CADASTROS.md); não encerrar R20 nesta entrega. Não repetir validações, backups ou atualização aprovados sem mudança/falha.
+
+## Retomada
+
+**Sequência técnica adiada: 3B.2C — atraso pelo dia clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir resumo e indicador com relógio fixo antes/depois da meia-noite em fusos de processo distintos; adotar uma amostra do dia por operação. Preservar status, versões, totais e histórico. Não repetir 3B.2B ou backups/atualização aprovados sem mudança/falha. Instantes/calendário e instalação assistida mantêm recortes próprios.

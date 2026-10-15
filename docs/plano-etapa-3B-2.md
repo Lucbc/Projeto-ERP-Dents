@@ -1,6 +1,8 @@
 # 3B.2 — dia clínico no financeiro
 
-**Status atual: 3B.2A concluída; iniciar 3B.2B.** Preparação abaixo é histórica; fechamento e retomada ao final.
+**Prioridade de 15/10/2026:** após concluir 3B.2B, seguir o [piloto de cadastros](./PLANO-PILOTO-CADASTROS.md). 3B.2C/D ficam na fila de atualizações semanais; a retomada técnica abaixo não é o próximo trabalho imediato.
+
+**Status atual: 3B.2A/B concluídas; 3B.2C adiada pelo piloto.** Preparação abaixo é histórica; fechamento e retomada ao final.
 
 ## Preparação 3B.2P — 14/10/2026
 
@@ -83,3 +85,9 @@ Preparação validada por inspeção, Node, métodos Python reais com dependênc
 **3B.2A concluída em 14/10/2026**, implementação `14392a3`: novos lançamentos sugerem o dia da clínica em São Paulo; escolha do usuário e edição preservadas. 379 testes frontend/302 backend e CI `38614003801` aprovados; Chrome em três fusos com seis criações explícitas/payload/releitura API e nenhuma escrita automática. Auditorias, atualização somente web/HTTPS/dez verificações/preservação aprovadas; banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2A.md). R20 permanece aberto.
 
 **Próximo: iniciar 3B.2B — geração por consulta no fuso clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir os três offsets equivalentes antes de corrigir data/descrição; preservar vencimento explícito, idempotência e cobranças históricas. Validar API/PostgreSQL com fusos de sessão distintos e recuperação de resposta perdida. Não repetir 3B.2A, backups ou atualização aprovados sem mudança/falha. Atraso permanece em 3B.2C; instantes e instalação assistida nos recortes próprios.
+
+## Fechamento 3B.2B — 15/10/2026
+
+**3B.2B concluída em 15/10/2026**, implementação `4a11420`, fixture `33acb37`: geração usa data/descrição no fuso clínico, preserva vencimento explícito e retorno de cobranças históricas. Cinco testes focados, API/PostgreSQL em três fusos e regressão Chrome de resposta perdida aprovados. CI `38728715724` aprovado (307 backend/379 frontend, HTTP/builds/auditorias). Somente API atualizada; HTTPS/dez verificações/preservação aprovados, revisão `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2B.md). R20 permanece aberto.
+
+**Sequência técnica adiada: 3B.2C — atraso pelo dia clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir resumo e indicador com relógio fixo antes/depois da meia-noite em fusos de processo distintos; adotar uma amostra do dia por operação. Preservar status, versões, totais e histórico. Não repetir 3B.2B ou backups/atualização aprovados sem mudança/falha. Instantes/calendário e instalação assistida mantêm recortes próprios.
