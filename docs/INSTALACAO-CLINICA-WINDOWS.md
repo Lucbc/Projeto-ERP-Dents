@@ -41,20 +41,22 @@ O diagnóstico verifica somente Docker acessível, engine Linux e Compose. Não 
 
 ## 4. Preparar configuração e HTTPS — suporte
 
-1. Criar `.env` a partir de `.env.example` **somente se ainda não existir**; editar localmente, sem publicar seu conteúdo.
-2. Configurar `POSTGRES_DB`, `POSTGRES_USER` e uma senha exclusiva em `POSTGRES_PASSWORD`. Ajustar `DATABASE_URL` para as mesmas credenciais e banco, host Docker `db`, porta `5432`; caracteres especiais da senha precisam de codificação na URL. Não usar valores de exemplo como credenciais reais.
-3. Configurar `PUBLIC_ORIGIN` com a URL HTTPS sem barra final, `CORS_ORIGINS` para essa origem, `HTTPS_PORT` e `TLS_DIRECTORY`. Manter `EXAMS_BASE_PATH` consistente com o volume do Compose e o fuso `TZ` da clínica.
-4. Gerar os segredos locais com os comandos existentes, que preservam valores não vazios:
+Para uma instalação nova, não é mais necessário copiar o arquivo de exemplo nem montar a conexão do banco manualmente. Na pasta do projeto, executar com a conta Windows que administrará o ERP, substituindo o endereço pelo nome/IP definitivo:
 
 ```powershell
-.\scripts\configure-bootstrap.ps1 -EnvFile .env -VariableName JWT_SECRET_KEY
-.\scripts\configure-bootstrap.ps1 -EnvFile .env -VariableName BOOTSTRAP_TOKEN
+.\scripts\configure-server.ps1 -PublicOrigin https://erp.clinica.local
 ```
 
-Se o arquivo de exemplo contiver valores não vazios para essas duas variáveis, esvaziar **somente esses valores de exemplo na instalação nova** antes de gerar. Nunca trocar uma chave de uma instalação existente como parte deste passo.
+O comando cria `.env` na raiz do projeto com senha de banco, chave de sessão e código de ativação independentes, sem mostrá-los. Configura conexão interna com `db`, origem HTTPS, porta (443 por padrão), exames e fuso `America/Sao_Paulo`. Para outra porta, incluí-la na URL, por exemplo `https://erp.clinica.local:8443`. Usar nome DNS ou IPv4; IPv6 não é aceito por este preparador.
 
-5. Provisionar certificado válido para o nome/IP escolhido e sua cadeia de confiança. Colocar `server.crt` e `server.key` em `TLS_DIRECTORY` (padrão `.data/tls/prod`). O responsável técnico deve emitir/renovar o certificado e instalar a confiança nas estações, conforme [HTTPS](./sessao-e-https.md). Não usar certificados/chaves da homologação. A emissão assistida de produção ainda faz parte de P1.
-6. Proteger `.env`, chave privada e backups com acesso restrito. Nas estações distribuir apenas o certificado público da autoridade, quando necessário, nunca `server.key`.
+O arquivo fica acessível à conta Windows que executou o comando, SYSTEM e administradores. Executar o Docker/Compose com essa conta autorizada. O preparador exige um destino que permita aplicar essas permissões; uma falha de proteção interrompe a criação. Não publica o arquivo nem inicia containers.
+
+**Se `.env` já existir, o comando interrompe sem alterar nada.** Isso também vale para arquivo vazio ou parcialmente preparado. O suporte deve inspecioná-lo localmente e ajustar apenas o necessário; não apagar configurações de uma instalação existente nem gerar novas chaves a cada atualização. Não compartilhar seu conteúdo em logs, prints ou Git.
+
+Em seguida:
+
+1. Provisionar certificado válido para o nome/IP escolhido e sua cadeia de confiança. Colocar `server.crt` e `server.key` em `TLS_DIRECTORY` (padrão `.data/tls/prod`). O responsável técnico deve emitir/renovar o certificado e instalar a confiança nas estações, conforme [HTTPS](./sessao-e-https.md). Não usar certificados/chaves da homologação. **A emissão assistida de produção ainda está pendente em P1.2B**; gerar `.env` não resolve essa parte.
+2. Proteger chave privada e backups com acesso restrito. Nas estações distribuir apenas o certificado público da autoridade, quando necessário, nunca `server.key`.
 
 ## 5. Construir e iniciar — suporte, após configurar
 

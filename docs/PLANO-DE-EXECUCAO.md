@@ -16,6 +16,10 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 15/10/2026
 
+**P1.2A concluída — configuração inicial assistida.** `configure-server.ps1` cria `.env` exclusivo, coerente e protegido no Windows; testes locais aprovados, roteiro atualizado. **Próximo P1.2B: certificado HTTPS assistido**, depois backup/restauração e ensaio integrado. P1 permanece em andamento. Nenhum container/volume alterado; não houve nova validação API/banco/interface nem instalação na clínica.
+
+**Início P1.2A — 15/10/2026, base `4af3700`:** automatizar configuração inicial do servidor em PowerShell, com URL HTTPS validada, segredos exclusivos, acesso restrito ao arquivo e recusa de sobrescrita. Ensaiar somente arquivos fictícios isolados em `.data`, sem iniciar produção ou tocar volumes. Atualizar o roteiro nesta entrega. Certificados ficam em P1.2B; backup/restauração seguem após configuração/TLS. Aceite P1.2A: configuração coerente, entradas inválidas recusadas, segredos não exibidos, arquivo existente preservado e testes locais aprovados.
+
 **P1.1 concluída: roteiro Windows e diagnóstico de pré-requisitos.** [Passo a passo](./INSTALACAO-CLINICA-WINDOWS.md), `scripts/check-server.ps1` e cinco cenários simulados aprovados, além de execução real de leitura no Docker local. P1 continua em andamento: próximo **P1.2 — configuração/TLS assistidos**, seguido por backup/restauração e ensaio de instalação. Nenhuma instalação na clínica ou novo teste API/banco/interface nesta subetapa.
 
 **Prioridade alterada pelo usuário: entrada em uso para cadastros.** Dados serão digitados do zero; servidor em outro computador Windows. 3B.2B está concluída. **Próximo: P1 — pacote Windows, instalação e backup/restauração**, conforme [plano do piloto](./PLANO-PILOTO-CADASTROS.md). Busca/paginação e percurso da recepção vêm em seguida. 3B.2C e demais ajustes ficam adiados para a fila semanal, salvo bloqueio de cadastro, perda de dados ou acesso indevido. Não desenvolver importador nesta entrada em uso.
@@ -1482,6 +1486,8 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 **Sequência técnica adiada: 3B.2C — atraso pelo dia clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir resumo e indicador com relógio fixo antes/depois da meia-noite em fusos de processo distintos; adotar uma amostra do dia por operação. Preservar status, versões, totais e histórico. Não repetir 3B.2B ou backups/atualização aprovados sem mudança/falha. Instantes/calendário e instalação assistida mantêm recortes próprios.
 
 ### Retomada do piloto - 15/10/2026
+
+**Retomada mais recente — P1.2A concluída, 15/10/2026.** Base `4af3700`, configuração inicial e roteiro implementados. Testes PowerShell com arquivos fictícios exclusivos em `.data` aprovados: URLs inválidas recusadas, DNS/IPv4/portas, segredos independentes sem saída sensível, ACL restrita e recusa de sobrescrita. Arquivos de teste removidos sem apagar volumes. Próximo **P1.2B — certificado assistido de produção**, sem reutilizar CA da homologação; testar emissão, correspondência nome/chave, validade, preservação e confiança antes de instalação. Depois backup/restauração. Não repetir a revisão geral nem anunciar P1 completo.
 
 Atualização P1.1, base `62b37c3`: iniciada a preparação operacional solicitada pelo usuário; entregues roteiro de instalação Windows e verificação somente de leitura do Docker. Teste inicial revelou escopo incorreto da variável no mock; corrigido apenas o teste, cinco cenários aprovados. Diagnóstico real aprovado. Links locais e diff verificados. Sem mudanças nos containers/dados e sem novos testes de API/banco/interface. **Retomar em P1.2: configuração/TLS assistidos**, preservando configuração existente; depois backup/restauração isolada. P1 não está concluída e a clínica ainda não recebeu instalação. Ver [roteiro](./INSTALACAO-CLINICA-WINDOWS.md).
 
