@@ -55,8 +55,38 @@ O arquivo fica acessível à conta Windows que executou o comando, SYSTEM e admi
 
 Em seguida:
 
-1. Provisionar certificado válido para o nome/IP escolhido e sua cadeia de confiança. Colocar `server.crt` e `server.key` em `TLS_DIRECTORY` (padrão `.data/tls/prod`). O responsável técnico deve emitir/renovar o certificado e instalar a confiança nas estações, conforme [HTTPS](./sessao-e-https.md). Não usar certificados/chaves da homologação. **A emissão assistida de produção ainda está pendente em P1.2B**; gerar `.env` não resolve essa parte.
+1. Preparar o certificado conforme o passo 4A abaixo, usando exatamente o nome/IP configurado. Se a clínica já possui uma autoridade de certificados gerenciada pelo suporte, utilizar certificado emitido por ela, com `server.crt` e `server.key` em `TLS_DIRECTORY`, em vez de criar outra autoridade.
 2. Proteger chave privada e backups com acesso restrito. Nas estações distribuir apenas o certificado público da autoridade, quando necessário, nunca `server.key`.
+
+### 4A. Gerar o HTTPS da rede local — suporte
+
+Para uma clínica sem autoridade de certificados própria, o preparador cria uma autoridade exclusiva desta instalação e um certificado para o servidor. Requer Windows e OpenSSL, incluído no Git para Windows. Executar com a mesma conta usada no passo 4, substituindo a URL pelo endereço definitivo:
+
+```powershell
+.\scripts\configure-server-tls.ps1 -PublicOrigin https://erp.clinica.local
+```
+
+Se OpenSSL estiver em outro local, informar `-OpenSslPath` com o caminho completo. A URL aceita nome DNS ou IPv4, com porta opcional; usar a mesma origem do `.env`. O script não lê nem altera esse arquivo. Não usar a URL de exemplo sem configurar o nome na rede.
+
+O resultado fica em `.data/tls/prod`, com acesso restrito à conta atual, SYSTEM e administradores:
+
+| Arquivo | Uso |
+| --- | --- |
+| `server.crt` | Certificado do servidor, com validade de 365 dias |
+| `server.key` | Chave privada: fica somente no servidor e no backup protegido |
+| `ca.crt` | Certificado público da autoridade: distribuir para confiança nas estações |
+
+O preparador valida cadeia, nome/IP, finalidade de servidor, validade e correspondência da chave. Recusa qualquer pasta de destino existente, inclusive vazia ou incompleta. Não substitui o HTTPS ativo, não inicia Docker e não importa certificados no Windows. A chave privada da autoridade é removida após emitir o certificado; por isso a renovação cria uma nova autoridade e exige atualizar a confiança nas estações.
+
+**Confiança nas estações e no navegador do servidor:** copiar somente `ca.crt` por um meio controlado. Conferir que é o arquivo fornecido pelo suporte (pode comparar `Get-FileHash -Algorithm SHA256` na origem e no destino). Na conta Windows que usará o navegador, executar:
+
+```powershell
+certutil -user -addstore Root C:\caminho\recebido\ca.crt
+```
+
+Substituir o caminho pelo arquivo recebido. Conferir o resultado do comando e, se houver confirmação, verificar o certificado antes de aceitar. Repetir para cada conta Windows que usará o sistema; em máquinas gerenciadas, o suporte pode distribuir a confiança pela política corporativa. Não importar `server.key` nem certificados da homologação. Depois de iniciar o servidor, fechar/reabrir o navegador e testar a URL sem aviso de certificado; o ensaio real nas estações continua obrigatório.
+
+**Renovação:** registrar o vencimento e agendar preparação com pelo menos 30 dias de antecedência. Gerar em outra pasta com `-OutputDirectory .data/tls/prod-renovacao`, distribuir a nova `ca.crt`, manter backup do conjunto anterior e, na janela de manutenção, ajustar `TLS_DIRECTORY` para a pasta nova. Recriar apenas `edge` com o Compose de produção e verificar HTTPS nas estações. Preservar o conjunto anterior até o aceite e remover a confiança antiga apenas depois de confirmar que não é mais utilizada. Não apagar a pasta ativa para contornar a recusa do preparador. Esse procedimento de troca ainda deverá ser ensaiado na instalação integrada; a emissão local isolada não comprova acesso pelo navegador.
 
 ## 5. Construir e iniciar — suporte, após configurar
 

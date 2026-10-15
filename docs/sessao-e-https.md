@@ -18,7 +18,7 @@ O diretório deve conter `server.crt` (certificado/cadeia PEM) e `server.key` (c
 
 O DNS ou resolução local deve apontar o nome escolhido para o servidor. A origem não inclui caminho/barra final; porta não padrão deve aparecer em `PUBLIC_ORIGIN`. A API rejeita origem HTTP na configuração e requisições de escrita vindas de outra origem. Cabeçalhos de proxy não definem essa confiança.
 
-Instalação assistida, emissão/renovação de certificados, firewall da clínica, atalhos e distribuição de confiança seguem na etapa 5. Esta etapa fornece a estrutura de transporte e autenticação; não constitui instalação em produção.
+O [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md) agora inclui configuração inicial e emissão local assistida (`configure-server-tls.ps1`), distribuição de confiança e procedimento de renovação. A emissão foi validada com arquivos fictícios isolados; acesso nas estações, troca do certificado ativo e instalação integrada continuam pendentes em P1/P3. Não constitui instalação em produção.
 
 ## Homologação local
 
