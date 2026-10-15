@@ -13,10 +13,16 @@ Iniciada em 15/10/2026, base `8ac9f3e`. **Em validação.** [Contrato](./plano-e
 - PostgreSQL: sessões UTC/São Paulo/Tóquio verificadas explicitamente; nove cobranças com datas/descrições persistidas e repetição sem duplicação, conflito com payload alterado, histórico simulado preservado com mesma versão. Fixture isolada migrada até head e removida ao final. Isso não é prova de interface.
 - Imagem API construída (`.data/docker-build-3b2b.log`). Backups originais `pre-3B-2B*` preservados; helper `.data/upgrade_3b2b.py` somente `after` daqui em diante.
 
-## Aceites pendentes
+## Aceite integrado
 
 Novo ensaio HTTP `scripts/smoke_financial_clinic_date_homolog.py` inicia API/schema privados em três fusos de sessão via PGTZ, confere `SHOW TimeZone` pela engine da API e verifica datas/descrições, vencimento explícito, persistência, repetição e histórico. Incluído no CI. Logs `.data/http-3b2b.log`; relatórios `.data/homolog/last-financial-clinic-date-*.json`.
 
 Primeiro ensaio HTTP falhou com 409: a fixture reutilizava o mesmo paciente no mesmo instante nos três cenários, violando corretamente a regra de conflito da agenda. Corrigida somente a fixture para pacientes distintos; log final `.data/http-3b2b-final.log`. Implementação inicial `4a11420`; CI inicial substituído após ajuste do ensaio.
 
-Concluir HTTP, regressão Chrome de geração com resposta perdida/referência indisponível, auditorias, CI e atualização somente API/HTTPS/preservação/zero schemas antes do fechamento. Reutilizar build web inalterado. Próximo após aceite: 3B.2C, atraso pelo dia clínico; não encerrar R20 nesta entrega.
+- HTTP final aprovado em UTC/São Paulo/Tóquio (`.data/http-3b2b-final.log`); três schemas privados removidos. São nove criações HTTP no total, com conferência via API e SQL.
+- Regressão Chrome aprovada (`.data/browser-generation-3b2b.log`): sessões independentes, referências estáveis/rascunho, recuperação de falha, janela, cancelamento/reabertura e resposta perdida recuperada com chave/payload originais após exclusão real da consulta e referência 403. Uma cobrança, duas requisições explícitas. Capturas claro/escuro inspecionadas. A conversão dos três fusos SQL foi provada pelo ensaio HTTP, não por esta regressão visual.
+- Auditorias npm/Python e seis imagens sem achados (`.data/audit-dependencies-3b2b.log`, `.data/audit-images-3b2b.log`).
+- Somente API atualizada, web reutilizada; HTTPS/assets/dez verificações e preservação de linhas/referências/bytes dos exames aprovados (`.data/api-update-3b2b.log`, `.data/https-3b2b.log`, `.data/smoke-main-3b2b.log`, `.data/preservation-3b2b.log`). Revisão `0024_user_version`, zero schemas temporários; nenhum volume removido.
+- Implementação `4a11420`, fixture `33acb37`, publicados e remoto conferido. **CI final `38728715724` em execução**, único aceite pendente; inicial `38728548378` cancelado/superado. Watch `.data/ci-watch-3b2b.log`. Suíte completa será comprovada pelo CI; localmente foram executados os testes focados e integrados acima.
+
+Próximo após aceite: 3B.2C, atraso pelo dia clínico; não encerrar R20 nesta entrega. Não repetir validações, backups ou atualização aprovados sem mudança/falha.
