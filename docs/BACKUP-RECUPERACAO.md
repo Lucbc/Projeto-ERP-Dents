@@ -2,7 +2,7 @@
 
 ## Estado em 15/10/2026
 
-Backup assistido implementado; restauração de banco e bytes de exames comprovada com dados fictícios em `erp-dents-homolog`. A aplicação ainda não foi conectada ao conjunto recuperado. Configuração/TLS foram copiados, mas não ativados em outra máquina. **A recuperação completa do serviço e a liberação clínica permanecem pendentes.**
+Backup assistido implementado; restauração de banco/exames e funcionamento da aplicação recuperada comprovados com dados fictícios em `erp-dents-homolog`. API/frontend privados usaram banco/volume restaurados, configuração de autenticação e certificados do backup, com endereço/porta de teste. Login, cadastro/edição, exames e reinício passaram. **Isso ainda não é uma instalação em outro computador nem um roteiro de troca de produção aprovado.**
 
 ## Fazer uma cópia — suporte
 
@@ -44,15 +44,19 @@ Na raiz do projeto, com Docker de homologação aberto:
 python scripts/smoke_backup_restore_homolog.py '.data\backup-ensaio-novo'
 ```
 
+Para incluir recuperação da aplicação, HTTPS e Chrome, usar `--application` no segundo comando. Requer Node/Playwright, Chrome e a autoridade de homologação já confiável no Windows; configurar `PLAYWRIGHT_MODULE` se necessário. Reserva `127.0.0.1:18444` temporariamente: não executar junto com outros ensaios de navegador. Lê somente as credenciais fictícias locais de `.data/homolog/admin.json`, que devem corresponder ao banco copiado. Os valores nunca são impressos. Não cria confiança automaticamente nem ignora erros TLS.
+
+O modo de aplicação prepara as permissões do **novo** volume para o usuário 10001, usando o inicializador já existente. Isso é necessário porque a extração segura do tar descarta proprietários. Em seguida, inicia API e frontend privados com o certificado recuperado; comprova login original, cadastro/edição de paciente sem CPF, download do exame anterior, upload/download novo, busca/reabertura em Chrome e persistência após reiniciar a API. Esses dados adicionais são fictícios e gravados somente na cópia; nenhuma API é apontada ao banco original.
+
 Python aqui é dependência do ensaio do desenvolvedor, não dos usuários da clínica. O verificador aceita somente backups de homologação em `.data`, valida hashes antes de restaurar, cria banco com nome aleatório no PostgreSQL de homologação e volume exclusivo para exames. Compara todas as linhas das tabelas públicas com a origem e os arquivos recuperados com o arquivo de backup; por isso deve ser executado logo após a cópia, sem alterações concorrentes na origem.
 
-O banco temporário e container auxiliar são removidos ao final. O volume recuperado é preservado para inspeção, identificado como `erp-dents-homolog-restore-<id>`; não é conectado à API existente. Nenhum volume anterior é removido. O ensaio não restaura sobre o banco original e não é ferramenta de restauração em produção.
+O banco temporário e containers auxiliares são removidos ao final. O volume recuperado é preservado para inspeção, identificado como `erp-dents-homolog-restore-<id>`; não é conectado à API existente. Nenhum volume anterior é removido. O ensaio não restaura sobre o banco original e não é ferramenta de restauração em produção.
 
 `test-backup-failure-homolog.ps1` simula falha ao identificar a versão Git, depois das cópias, e verifica `INCOMPLETE`, ausência de manifesto completo, proteção da configuração e reinício da API. Mantém a cópia incompleta local para inspeção.
 
 ## Recuperação na clínica — próxima subetapa
 
-Ainda será entregue e ensaiado o roteiro completo para um destino vazio: conferir versão e backup, preparar banco/volume exclusivos, recuperar configuração/HTTPS com permissões, iniciar aplicação e validar login, pacientes e download de exame. Só após esse aceite haverá procedimento de troca do ambiente ativo.
+O percurso de recuperação já foi comprovado no ambiente isolado. Falta consolidar a operação para o servidor de destino: conferir versão e backup, preparar banco/volume exclusivos, recuperar configuração/HTTPS com permissões e endereço correto, iniciar aplicação e validar login, pacientes e download de exame. Não copiar valores `HOMOLOG_*` para produção. A troca do ambiente ativo continua sendo intervenção assistida e não é automatizada pelo ensaio.
 
 Até lá, não executar restauração manual sobre produção nem apontar a aplicação para os recursos de teste. Recuperar uma cópia antiga pode perder todos os cadastros feitos depois dela; qualquer troca precisa preservar o estado atual e considerar essa diferença.
 
@@ -62,4 +66,4 @@ Até lá, não executar restauração manual sobre produção nem apontar a apli
 - Duas restaurações isoladas aprovadas: linhas de todas as tabelas públicas e um arquivo de exame comparados, origem preservada.
 - Falha injetada aprovada: cópia incompleta identificada e API reiniciada.
 - Destino existente recusado sem sobrescrita; manifesto com hash incorreto recusado antes de criar recursos de restauração.
-- HTTPS confiável `/health` retornou 200 após os ensaios. Não foi feito novo teste de interface ou login da aplicação restaurada.
+- P1.3B: HTTPS recuperado confiável, login original, cadastro/edição, download do exame restaurado, upload/download novo e persistência após reinício aprovados via API. Chrome sem desabilitar TLS comprovou login, busca e reabertura do paciente. Banco de origem preservado; certificados, sessão e registros não publicados.

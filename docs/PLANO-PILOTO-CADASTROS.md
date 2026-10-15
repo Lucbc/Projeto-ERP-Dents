@@ -31,6 +31,8 @@ Inspeção em 15/10: [Compose](../docker-compose.yml), [bootstrap](../scripts/co
 
 ### P1 — pacote Windows para instalar e recuperar
 
+**P1.3B concluída em 15/10/2026:** recuperação da aplicação com cópia de configuração/TLS, API/frontend privados, login original, cadastro/edição, exames anteriores/novos, Chrome e reinício aprovados; origem preservada. **Próximo: consolidar aceite da instalação nova e percurso essencial P2.** Avisar explicitamente quando liberado para instalação e cadastros, sem condicionar às melhorias gerais adiadas. Outra máquina/segunda estação continuam no aceite físico P3.
+
 **P1.3A concluída em 15/10/2026:** [backup e recuperação](./BACKUP-RECUPERACAO.md), rotina Windows e ensaio de restauração de dados. Duas restaurações isoladas com tabelas públicas/exame iguais, API reiniciada inclusive após falha injetada, HTTPS `/health` 200. **Próximo P1.3B: recuperação da aplicação completa isolada**, login/cadastro/download e configuração/TLS. Não confundir integridade do banco/arquivos com aceite do serviço restaurado. Nenhuma instalação na clínica.
 
 **P1.2B concluída no escopo local em 15/10/2026:** emissão TLS assistida Windows/OpenSSL, DNS/IPv4, proteção de chave, validação criptográfica e preservação de destino; testes aprovados em arquivos fictícios. Roteiro atualizado para confiança e renovação (nova autoridade a cada emissão, certificado de servidor 365 dias). Sem importação de confiança nem alteração do HTTPS ativo. **Próximo P1.3: backup/restauração isolada**; ensaio do pacote integrado deverá incluir acesso HTTPS e renovação, além de instalação/reinício. Não houve novo teste API/banco/interface; estações físicas continuam em P3.

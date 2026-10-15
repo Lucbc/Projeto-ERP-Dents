@@ -128,7 +128,7 @@ Preservar sempre o nome `erp-dents-prod` e seus volumes. Não executar `down -v`
 
 O [backup assistido e o ensaio de recuperação](./BACKUP-RECUPERACAO.md) já permitem copiar banco, exames, configuração e HTTPS. Use `scripts/backup-server.ps1 -Destination 'E:\Backups-ERP\pasta-nova'` na janela de manutenção, ajustando o destino. A rotina para a API durante a cópia e tenta reiniciá-la ao final; não rodar durante o atendimento. O diretório pai deve existir e cada backup exige pasta nova.
 
-A restauração de dados foi comprovada em recursos isolados de homologação; recuperação da aplicação completa e ensaio de instalação ainda estão pendentes em P1, busca/fluxo em P2. Por isso não há comando de restauração sobre produção neste roteiro. Após esses aceites e a instalação física (P3), iniciar os cadastros reais.
+A restauração dos dados e o funcionamento da aplicação recuperada foram comprovados em recursos isolados de homologação, incluindo HTTPS, login, cadastro/edição, exames, Chrome e reinício. Falta o aceite final da instalação nova e do percurso de recepção (P2), além da instalação física (P3). Não há comando de restauração sobre produção neste roteiro; a troca do ambiente ativo permanece assistida. Após esses aceites, será indicada explicitamente a liberação para começar os cadastros reais.
 
 ## 9. Rotina e atualizações semanais
 

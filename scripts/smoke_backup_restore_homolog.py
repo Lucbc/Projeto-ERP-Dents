@@ -1,7 +1,8 @@
 """Restore a homolog-only backup into a private database and a NEW retained volume.
 
-Never connects the application to the restored database, prints records/secrets,
-or overwrites existing databases/volumes. Python is a developer test dependency.
+With --application, connects private API/web containers to the restored data.
+Never prints records/secrets or overwrites existing databases/volumes.
+Python is a developer test dependency.
 """
 import argparse
 import hashlib
@@ -16,8 +17,8 @@ PROJECT = 'erp-dents-homolog'
 DB_CONTAINER = 'erp-dents-homolog-db-1'
 
 
-def run(*args, input=None):
-    result = subprocess.run(args, input=input, capture_output=True)
+def run(*args, input=None, env=None):
+    result = subprocess.run(args, input=input, capture_output=True, env=env)
     if result.returncode:
         raise RuntimeError('Restore check command failed; output withheld to protect data.')
     return result.stdout
@@ -42,6 +43,7 @@ def fingerprint(database):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('backup', type=Path)
+    parser.add_argument('--application', action='store_true', help='Also test restored API/HTTPS/browser in isolation')
     args = parser.parse_args()
     backup = args.backup.resolve()
     if not backup.is_relative_to((ROOT / '.data').resolve()):
@@ -104,11 +106,15 @@ print(json.dumps({p.relative_to(base).as_posix():hashlib.sha256(p.read_bytes()).
                               for m in archive.getmembers() if m.isfile()}
         if restored_files != expected_files:
             raise RuntimeError('Restored exam bytes differ from archive.')
+        if args.application:
+            from restore_application_homolog import verify_application
+            verify_application(backup, database, volume, image)
         if fingerprint('erp_dents_homolog') != before:
             raise RuntimeError('Source changed during restore check.')
         print('PASS: manifest integrity, all public table rows, exam archive bytes and source preservation.')
         print('Private restored volume retained for inspection: ' + volume)
-        print('No application/browser recovery validated; configuration/TLS copied but not activated.')
+        if not args.application:
+            print('No application/browser recovery validated; configuration/TLS copied but not activated.')
     finally:
         if created_helper:
             run('docker', 'rm', helper)
