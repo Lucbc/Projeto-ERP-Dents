@@ -1,5 +1,9 @@
 # Entrada em uso — cadastros na clínica
 
+## Situação atual — 15/10/2026
+
+**Liberado para instalação assistida: `piloto-cadastros-v0.1.0`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Paginação e busca sem pontuação ficam na primeira atualização semanal, conforme redução de escopo para atender à prioridade de início imediato. Não declarar os demais módulos liberados.
+
 ## Decisão de prioridade — 15/10/2026
 
 Solicitação do usuário: concluir 3B.2B, disponibilizar o ERP para começar os cadastros e corrigir os demais pontos em atualizações semanais. Confirmado: **digitação do zero; servidor em outro computador Windows**. Não há importação de clientes nesta entrada em uso. O ambiente deste desenvolvimento continua sendo homologação, não o servidor da clínica.
@@ -53,7 +57,7 @@ Homologar somente em `erp-dents-homolog` ou schemas/recursos privados desse proj
 
 Configurar contas individuais/permissões e validar cadastro → busca → edição → reabertura em duas sessões. Provar nascimento sem mudança de dia, paciente sem CPF, nomes semelhantes e conflito de edição. Priorizar busca/paginação que evite considerar paciente existente como ausente; preservar os identificadores existentes. Escopo inicial não exige implementar todo R23, prontuário ou financeiro.
 
-Aceite em homologação com massa fictícia acima de 100 pacientes e registros com/sem pontuação; nenhuma exposição de dados reais nos testes. Documentar limites remanescentes compreensíveis para quem cadastra.
+Aceite essencial aprovado com 105 pacientes prévios, busca por nome/CPF formatado, cadastro sem CPF e edição concorrente. A revisão ampliada de busca com/sem pontuação e paginação permanece na fila semanal; orientar consulta pelo nome completo ou CPF exatamente formatado, sem interpretar os primeiros 100 como todos os pacientes. Essa restrição está explícita no roteiro de liberação. Nenhuma exposição de dados reais nos testes.
 
 ### P3 — instalação no servidor e início supervisionado
 
@@ -79,4 +83,4 @@ Correção de perda de dados, acesso indevido, indisponibilidade ou bloqueio de 
 
 ## Retomada
 
-**Próximo: P1 — pacote Windows e backup/restauração para cadastros.** Não continuar automaticamente em 3B.2C. Origem dos dados e sistema operacional já respondidos: digitação do zero, outro Windows. Não pedir novamente. Preparar e testar o pacote em homologação antes de depender do acesso ao servidor da clínica. Ao alterar, registrar evidências, commit/push e conferir remoto como nas etapas anteriores.
+**Próximo: P3 — instalar a versão liberada no outro Windows e concluir checklist local.** Aceites essenciais P1/P2 aprovados; detalhes e limites no documento de liberação. Origem dos dados e sistema operacional já respondidos: digitação do zero, outro Windows. Edição/recursos e destino de backup aguardam informações para a implantação. Não continuar automaticamente em 3B.2C. Ao alterar, atualizar o roteiro, registrar evidências, commit/push e conferir remoto. Paginação/busca são prioridade da primeira atualização semanal.

@@ -6,7 +6,7 @@ Atualizado em 15/10/2026. Dados serão cadastrados do zero, em outro computador 
 
 O servidor fica ligado e concentra o programa, banco e exames. Cada estação abre o mesmo endereço HTTPS pelo navegador, com login individual. Somente o servidor precisa de Docker. As estações não precisam de Git, Python, Node ou banco de dados.
 
-**Situação atual:** roteiro de implantação assistida; o instalador completo e a restauração ainda estão em desenvolvimento no [piloto P1](./PLANO-PILOTO-CADASTROS.md). Os comandos abaixo correspondem à estrutura existente. Não iniciar cadastros reais antes dos critérios do passo 8. A instalação na clínica ainda não foi executada.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.0`. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
@@ -30,12 +30,13 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
+git checkout piloto-cadastros-v0.1.0
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1
 ```
 
-Autenticar no GitHub se solicitado, sem inserir tokens no comando. O suporte deve selecionar e registrar o commit aprovado para implantação antes de construir; o último commit de `main` não é automaticamente uma versão liberada. Se a pasta já existe, não clonar por cima nem sobrescrever configurações.
+Autenticar no GitHub se solicitado, sem inserir tokens no comando. A tag acima fixa a versão aprovada para este piloto; registrar também o commit exibido. O estado Git sem branch ativa ao selecionar a tag é esperado. Se a pasta já existe, não clonar por cima nem sobrescrever configurações; o suporte deve preparar a mudança de versão com backup. Não usar automaticamente o último commit de `main` durante o atendimento.
 
 O diagnóstico verifica somente Docker acessível, engine Linux e Compose. Não cria containers, não lê `.env` e não confirma que o ERP está pronto. Se a política corporativa impedir scripts PowerShell, solicitar ao suporte a execução conforme essa política.
 
@@ -106,7 +107,7 @@ Preservar sempre o nome `erp-dents-prod` e seus volumes. Não executar `down -v`
 
 1. Abrir a URL no navegador sem aviso de certificado.
 2. Na configuração inicial, usar localmente o código `BOOTSTRAP_TOKEN` e criar o administrador com senha exclusiva. Não existe login de produção compartilhado a transportar deste desenvolvimento.
-3. Criar uma conta por pessoa e atribuir apenas as permissões necessárias aos cadastros. Conferir o acesso com uma conta da recepção.
+3. Criar uma conta por pessoa. Para digitação: **Painel: visualizar; Pacientes: visualizar/criar/editar**. Desabilitar exclusão e os demais módulos para esse perfil inicial. Conferir o acesso com uma conta da recepção; não distribuir a conta administradora.
 4. Guardar os acessos fora do repositório. Não enviar prints que mostrem o código de ativação ou senhas.
 
 ## 7. Preparar cada estação
@@ -116,19 +117,19 @@ Preservar sempre o nome `erp-dents-prod` e seus volumes. Não executar `down -v`
 3. Abrir a mesma URL HTTPS, entrar com a conta individual e criar um atalho para essa URL na área de trabalho.
 4. Testar cadastro fictício, busca, edição e reabertura em duas sessões. Não usar `localhost` nas estações: apontaria para a própria estação.
 
-## 8. Liberar os cadastros reais — critérios pendentes
+## 8. Liberar os cadastros reais — aceite no local
 
-- [ ] Pacote de instalação ensaiado em homologação isolada, com dados fictícios.
+- [x] Preparadores e instalação nova ensaiados em homologação isolada, com dados fictícios.
 - [ ] Backup coerente de banco, exames e configuração necessária; cópia guardada fora do disco do servidor.
-- [ ] Restauração desse backup comprovada em ambiente isolado. Copiar só a pasta do código não salva os dados dos volumes.
-- [ ] Fluxo de pacientes aprovado, incluindo busca acima de 100 registros, cadastro sem CPF e edição simultânea.
+- [x] Recuperação de banco, exames e aplicação comprovada em ambiente isolado. No local, confirmar o backup produzido e o responsável pela recuperação; copiar só a pasta do código não salva os volumes.
+- [x] Fluxo essencial de pacientes aprovado: busca acima de 100 registros, cadastro sem CPF e edição simultânea; observar os [limites de busca](./LIBERACAO-PILOTO-CADASTROS.md).
 - [ ] Segundo computador acessa HTTPS, login individual e cadastro sem avisos/erros.
 - [ ] Reinício completo do Windows testado, dados preservados e rotina de abertura do Docker definida.
 - [ ] Responsável por backups, certificado e atualizações definido.
 
 O [backup assistido e o ensaio de recuperação](./BACKUP-RECUPERACAO.md) já permitem copiar banco, exames, configuração e HTTPS. Use `scripts/backup-server.ps1 -Destination 'E:\Backups-ERP\pasta-nova'` na janela de manutenção, ajustando o destino. A rotina para a API durante a cópia e tenta reiniciá-la ao final; não rodar durante o atendimento. O diretório pai deve existir e cada backup exige pasta nova.
 
-A restauração dos dados e o funcionamento da aplicação recuperada foram comprovados em recursos isolados de homologação, incluindo HTTPS, login, cadastro/edição, exames, Chrome e reinício. Falta o aceite final da instalação nova e do percurso de recepção (P2), além da instalação física (P3). Não há comando de restauração sobre produção neste roteiro; a troca do ambiente ativo permanece assistida. Após esses aceites, será indicada explicitamente a liberação para começar os cadastros reais.
+A instalação nova, a recuperação e o percurso essencial de recepção passaram. **Pode instalar esta versão na clínica e começar os cadastros após concluir os itens locais ainda desmarcados acima.** Não há comando de restauração sobre produção neste roteiro; a troca do ambiente ativo permanece assistida. Agenda, financeiro e prontuário não fazem parte desta liberação.
 
 ## 9. Rotina e atualizações semanais
 

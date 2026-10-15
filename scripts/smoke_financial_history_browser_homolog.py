@@ -51,6 +51,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema, *, br
             stages += [line for line in result.stderr.splitlines() if line.startswith('Navigation session browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Civil dates browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Clinic due date browser failed at stage: ')]
+            stages += [line for line in result.stderr.splitlines() if line.startswith('Registration pilot failed at stage: ')]
             raise AssertionError(stages[-1] if stages else 'Financial history browser failed; raw diagnostics suppressed')
         passed(result.stdout.strip())
     finally:
