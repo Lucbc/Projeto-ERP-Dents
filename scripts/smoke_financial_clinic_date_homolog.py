@@ -15,13 +15,13 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         assert code == status, f'{method}: expected {status}, got {code}'
         return body
 
-    patient = expect('POST', '/api/patients', {'full_name': 'Fictitious Clinic Date Patient'}, 201)
     procedure = expect('POST', '/api/procedures', {'name': 'Fictitious Clinic Date Procedure', 'price_cents': 12000}, 201)
     stamps = [('2030-01-08T01:30:00Z', '2030-01-08T02:00:00Z'),
               ('2030-01-07T22:30:00-03:00', '2030-01-07T23:00:00-03:00'),
               ('2030-01-08T10:30:00+09:00', '2030-01-08T11:00:00+09:00')]
     receipts = []
     for (start, end), due in zip(stamps, ({}, {'due_date': None}, {'due_date': '2030-02-10'})):
+        patient = expect('POST', '/api/patients', {'full_name': 'Fictitious Clinic Date Patient'}, 201)
         dentist = expect('POST', '/api/dentists', {'full_name': 'Fictitious Clinic Date Dentist',
             'availability': [{'day_of_week': 'monday', 'start_time': '20:00', 'end_time': '23:59'}]}, 201)
         visit = expect('POST', '/api/appointments', {'patient_id': patient['id'], 'dentist_id': dentist['id'],

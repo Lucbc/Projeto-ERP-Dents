@@ -17,4 +17,6 @@ Iniciada em 15/10/2026, base `8ac9f3e`. **Em validação.** [Contrato](./plano-e
 
 Novo ensaio HTTP `scripts/smoke_financial_clinic_date_homolog.py` inicia API/schema privados em três fusos de sessão via PGTZ, confere `SHOW TimeZone` pela engine da API e verifica datas/descrições, vencimento explícito, persistência, repetição e histórico. Incluído no CI. Logs `.data/http-3b2b.log`; relatórios `.data/homolog/last-financial-clinic-date-*.json`.
 
+Primeiro ensaio HTTP falhou com 409: a fixture reutilizava o mesmo paciente no mesmo instante nos três cenários, violando corretamente a regra de conflito da agenda. Corrigida somente a fixture para pacientes distintos; log final `.data/http-3b2b-final.log`. Implementação inicial `4a11420`; CI inicial substituído após ajuste do ensaio.
+
 Concluir HTTP, regressão Chrome de geração com resposta perdida/referência indisponível, auditorias, CI e atualização somente API/HTTPS/preservação/zero schemas antes do fechamento. Reutilizar build web inalterado. Próximo após aceite: 3B.2C, atraso pelo dia clínico; não encerrar R20 nesta entrega.
