@@ -126,7 +126,9 @@ Preservar sempre o nome `erp-dents-prod` e seus volumes. Não executar `down -v`
 - [ ] Reinício completo do Windows testado, dados preservados e rotina de abertura do Docker definida.
 - [ ] Responsável por backups, certificado e atualizações definido.
 
-Backup/restauração assistidos e o ensaio de instalação ainda serão entregues em P1; busca/fluxo em P2. Por isso este roteiro não fornece um comando de restauração ainda não validado. Após esses aceites e a instalação física (P3), iniciar os cadastros reais.
+O [backup assistido e o ensaio de recuperação](./BACKUP-RECUPERACAO.md) já permitem copiar banco, exames, configuração e HTTPS. Use `scripts/backup-server.ps1 -Destination 'E:\Backups-ERP\pasta-nova'` na janela de manutenção, ajustando o destino. A rotina para a API durante a cópia e tenta reiniciá-la ao final; não rodar durante o atendimento. O diretório pai deve existir e cada backup exige pasta nova.
+
+A restauração de dados foi comprovada em recursos isolados de homologação; recuperação da aplicação completa e ensaio de instalação ainda estão pendentes em P1, busca/fluxo em P2. Por isso não há comando de restauração sobre produção neste roteiro. Após esses aceites e a instalação física (P3), iniciar os cadastros reais.
 
 ## 9. Rotina e atualizações semanais
 
