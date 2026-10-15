@@ -18,4 +18,3 @@ foreach ($case in @('ok', 'offline', 'windows', 'old-compose', 'invalid-compose'
     if ($failed -ne ($case -ne 'ok')) { throw "Resultado inesperado: $case" }
     Write-Host "PASS: $case"
 }
-
