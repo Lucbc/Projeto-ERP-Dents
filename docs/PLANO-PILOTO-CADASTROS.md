@@ -31,6 +31,8 @@ Inspeção em 15/10: [Compose](../docker-compose.yml), [bootstrap](../scripts/co
 
 ### P1 — pacote Windows para instalar e recuperar
 
+**P1.1 concluída em 15/10/2026:** [roteiro de instalação](./INSTALACAO-CLINICA-WINDOWS.md) e diagnóstico somente de leitura `scripts/check-server.ps1`. Cinco cenários simulados aprovados (disponível, engine indisponível, containers Windows, Compose antigo e saída inválida); diagnóstico real aprovado no Docker local. Não houve instalação de produção nem novo ensaio API/banco/interface. P1 permanece em andamento. **Próximo P1.2:** preparar configuração/TLS de produção de forma assistida, preservando arquivos existentes e homologando o preparo em recursos isolados; depois backup/restauração e instalação completa. Não confundir o diagnóstico inicial com aceite de todo P1.
+
 Primeiro trabalho: inventariar as entradas do Compose/HTTPS/bootstrap e entregar um comando/assistente de servidor com ações claras de instalar, status, backup e restauração assistida. Usar PowerShell e Docker; evitar exigir Node/Python nas estações ou conhecimentos de API/CORS. Reutilizar os componentes existentes.
 
 Critérios: instalação vazia isolada, administrador inicial sem credenciais compartilhadas, projeto/volumes identificados e reaproveitados ao executar novamente, URL de acesso, diagnóstico sem segredos, backup de banco/exames/configuração necessária e restauração em ambiente isolado. Nunca usar `down -v` nem apagar volumes para resolver migração. O pacote deve explicar o início do Docker após reinício do Windows; reiniciar containers não comprova reinício do computador.

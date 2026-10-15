@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 15/10/2026
 
+**P1.1 concluída: roteiro Windows e diagnóstico de pré-requisitos.** [Passo a passo](./INSTALACAO-CLINICA-WINDOWS.md), `scripts/check-server.ps1` e cinco cenários simulados aprovados, além de execução real de leitura no Docker local. P1 continua em andamento: próximo **P1.2 — configuração/TLS assistidos**, seguido por backup/restauração e ensaio de instalação. Nenhuma instalação na clínica ou novo teste API/banco/interface nesta subetapa.
+
 **Prioridade alterada pelo usuário: entrada em uso para cadastros.** Dados serão digitados do zero; servidor em outro computador Windows. 3B.2B está concluída. **Próximo: P1 — pacote Windows, instalação e backup/restauração**, conforme [plano do piloto](./PLANO-PILOTO-CADASTROS.md). Busca/paginação e percurso da recepção vêm em seguida. 3B.2C e demais ajustes ficam adiados para a fila semanal, salvo bloqueio de cadastro, perda de dados ou acesso indevido. Não desenvolver importador nesta entrada em uso.
 
 ### Última entrega técnica e sequência anterior
@@ -1480,5 +1482,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 **Sequência técnica adiada: 3B.2C — atraso pelo dia clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir resumo e indicador com relógio fixo antes/depois da meia-noite em fusos de processo distintos; adotar uma amostra do dia por operação. Preservar status, versões, totais e histórico. Não repetir 3B.2B ou backups/atualização aprovados sem mudança/falha. Instantes/calendário e instalação assistida mantêm recortes próprios.
 
 ### Retomada do piloto - 15/10/2026
+
+Atualização P1.1, base `62b37c3`: iniciada a preparação operacional solicitada pelo usuário; entregues roteiro de instalação Windows e verificação somente de leitura do Docker. Teste inicial revelou escopo incorreto da variável no mock; corrigido apenas o teste, cinco cenários aprovados. Diagnóstico real aprovado. Links locais e diff verificados. Sem mudanças nos containers/dados e sem novos testes de API/banco/interface. **Retomar em P1.2: configuração/TLS assistidos**, preservando configuração existente; depois backup/restauração isolada. P1 não está concluída e a clínica ainda não recebeu instalação. Ver [roteiro](./INSTALACAO-CLINICA-WINDOWS.md).
 
 **Prioridade alterada pelo usuário: entrada em uso para cadastros.** Dados serão digitados do zero; servidor em outro computador Windows. 3B.2B está concluída. **Próximo: P1 — pacote Windows, instalação e backup/restauração**, conforme [plano do piloto](./PLANO-PILOTO-CADASTROS.md). Busca/paginação e percurso da recepção vêm em seguida. 3B.2C e demais ajustes ficam adiados para a fila semanal, salvo bloqueio de cadastro, perda de dados ou acesso indevido. Não desenvolver importador nesta entrada em uso.
