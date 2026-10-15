@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 14/10/2026
 
+**3B.2B iniciada em 15/10/2026**, base `8ac9f3e`: geração por consulta deve extrair data/descrição no fuso clínico, preservando vencimento explícito e retorno idempotente anterior ao cálculo. Aceite: unidade antes/depois, PostgreSQL/API em fusos de sessão distintos, regressão Chrome de resposta perdida, CI e atualização API com preservação. Sem migração ou alteração do atraso. [Contrato](./plano-etapa-3B-2.md).
+
 **3B.2A concluída em 14/10/2026**, implementação `14392a3`: novos lançamentos sugerem o dia da clínica em São Paulo; escolha do usuário e edição preservadas. 379 testes frontend/302 backend e CI `38614003801` aprovados; Chrome em três fusos com seis criações explícitas/payload/releitura API e nenhuma escrita automática. Auditorias, atualização somente web/HTTPS/dez verificações/preservação aprovadas; banco `0024_user_version`, zero schemas temporários. [Evidências](./homologacao-etapa-3B-2A.md). R20 permanece aberto.
 
 **Próximo: iniciar 3B.2B — geração por consulta no fuso clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir os três offsets equivalentes antes de corrigir data/descrição; preservar vencimento explícito, idempotência e cobranças históricas. Validar API/PostgreSQL com fusos de sessão distintos e recuperação de resposta perdida. Não repetir 3B.2A, backups ou atualização aprovados sem mudança/falha. Atraso permanece em 3B.2C; instantes e instalação assistida nos recortes próprios.

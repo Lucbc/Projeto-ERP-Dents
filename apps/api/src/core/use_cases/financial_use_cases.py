@@ -13,6 +13,7 @@ from src.core.domain.entities import (
     PaymentMethod,
 )
 from src.core.domain.exceptions import ConflictError, NotFoundError, ValidationError
+from src.core.domain.availability import clinic_time
 from src.core.ports.repositories import (
     AppointmentRepository,
     DentistRepository,
@@ -232,16 +233,17 @@ class FinancialUseCases:
         if amount_cents <= 0:
             raise ValidationError("Os procedimentos da consulta nao possuem preco cadastrado.")
 
+        local_start = clinic_time(appointment.start_at)
         payload = {
             "entry_type": FinancialEntryType.income.value,
             "description": (
                 f"Consulta - {appointment.patient_name or 'Paciente'} - "
-                f"{appointment.start_at.strftime('%d/%m/%Y %H:%M')}"
+                f"{local_start.strftime('%d/%m/%Y %H:%M')}"
             ),
             "amount_cents": amount_cents,
             "discount_cents": 0,
             "tax_cents": 0,
-            "due_date": data.get("due_date") or appointment.start_at.date(),
+            "due_date": data.get("due_date") or local_start.date(),
             "paid_at": data.get("paid_at"),
             "status": data.get("status", FinancialEntryStatus.pending.value),
             "payment_method": data.get("payment_method"),
