@@ -16,7 +16,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 15/10/2026
 
-**U1.2 implementada — 16/10/2026, aguardando CI:** [busca de pacientes](./ATUALIZACAO-U1-2.md), código `a464613`, CI `38902882227` em execução. PostgreSQL privado e Chrome/API com perfil de recepção aprovados para CPF sem pontuação e nome social; dados armazenados preservados. Sem migração ou atualização do ambiente principal/clínica. Próximo: concluir CI e publicar nova versão com roteiro/limites atualizados; até lá instalar `piloto-cadastros-v0.1.1`. Não considerar U1.2 concluída antes desse aceite.
+**U1.2 concluída — 16/10/2026:** [busca de pacientes](./ATUALIZACAO-U1-2.md), código `a464613`, CI `38902882227` aprovado (309 backend, 381 frontend, HTTP/build/auditorias). PostgreSQL privado e Chrome/API com perfil de recepção aprovados para CPF sem pontuação e nome social; dados armazenados preservados. Liberada `piloto-cadastros-v0.1.2`, com roteiro/limites atualizados. Sem migração ou atualização do ambiente principal/clínica. **Próximo: apoiar P3 quando os dados do outro Windows chegarem; preparar procedimento P4 de atualização semanal com backup, preservação de configuração/volumes e aceite antes de reabrir.** Não retomar revisão geral ou repetir ensaios aprovados sem motivo.
 
 **Início U1.2 — 16/10/2026, base `08004e5`:** incluir nome social/preferido na busca e permitir CPF com/sem pontuação, preservando valores armazenados, paginação e demais campos pesquisáveis. Normalização numérica somente para termos compostos de dígitos, espaços, ponto e hífen; não transformar texto misto em uma busca ampla por números. Aceite: PostgreSQL privado com contagem/páginas e casos negativos, API/Chrome com perfil de recepção e regressão automatizada. Instalação continua na tag `piloto-cadastros-v0.1.1` até nova liberação; não alterar volumes ou servidor da clínica.
 
@@ -1512,6 +1512,8 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 **Sequência técnica adiada: 3B.2C — atraso pelo dia clínico**, conforme [contrato](./plano-etapa-3B-2.md). Reproduzir resumo e indicador com relógio fixo antes/depois da meia-noite em fusos de processo distintos; adotar uma amostra do dia por operação. Preservar status, versões, totais e histórico. Não repetir 3B.2B ou backups/atualização aprovados sem mudança/falha. Instantes/calendário e instalação assistida mantêm recortes próprios.
 
 ### Retomada do piloto - 15/10/2026
+
+**Retomada atual — U1.2 concluída em 16/10/2026:** código `a464613`, CI `38902882227` aprovado, publicação `piloto-cadastros-v0.1.2`. [Evidências](./ATUALIZACAO-U1-2.md). Roteiro atualizado, tags anteriores preservadas; nenhuma instalação física realizada. Próximo P4: preparar/ensaiar atualização de versão com backup e preservação, enquanto P3 aguarda dados do servidor. Não voltar à busca/paginação já concluídas nem liberar outros módulos.
 
 **Retomada atual — 16/10/2026:** U1.1 concluída, implementação `eb7c4da`, CI `38836719478` aprovado. Ver [evidências e próximo passo](./ATUALIZACAO-U1-1.md). Publicação `piloto-cadastros-v0.1.1` com paginação, sem migração; roteiro atualizado. P3 depende do outro Windows e da rede; não foi executado aqui. Usuário enviará os dados definitivos depois. A próxima subetapa de código é busca, não uma nova revisão geral.
 

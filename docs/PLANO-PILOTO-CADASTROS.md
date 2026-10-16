@@ -1,8 +1,8 @@
 # Entrada em uso — cadastros na clínica
 
-## Situação atual — 15/10/2026
+## Situação atual — 16/10/2026
 
-**Liberado para instalação assistida: `piloto-cadastros-v0.1.0`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Paginação e busca sem pontuação ficam na primeira atualização semanal, conforme redução de escopo para atender à prioridade de início imediato. Não declarar os demais módulos liberados.
+**Liberado para instalação assistida: `piloto-cadastros-v0.1.2`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados; paginação entregue na U1.1. Busca por CPF sem pontuação/nome social aprovada na U1.2, incluindo CI `38902882227`. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Não declarar os demais módulos liberados.
 
 ## Decisão de prioridade — 15/10/2026
 
@@ -57,7 +57,7 @@ Homologar somente em `erp-dents-homolog` ou schemas/recursos privados desse proj
 
 Configurar contas individuais/permissões e validar cadastro → busca → edição → reabertura em duas sessões. Provar nascimento sem mudança de dia, paciente sem CPF, nomes semelhantes e conflito de edição. Priorizar busca/paginação que evite considerar paciente existente como ausente; preservar os identificadores existentes. Escopo inicial não exige implementar todo R23, prontuário ou financeiro.
 
-Aceite essencial aprovado com 105 pacientes prévios, busca por nome/CPF formatado, cadastro sem CPF e edição concorrente. A revisão ampliada de busca com/sem pontuação e paginação permanece na fila semanal; orientar consulta pelo nome completo ou CPF exatamente formatado, sem interpretar os primeiros 100 como todos os pacientes. Essa restrição está explícita no roteiro de liberação. Nenhuma exposição de dados reais nos testes.
+Aceite essencial aprovado com 105 pacientes prévios, busca por nome/CPF, cadastro sem CPF e edição concorrente. Paginação entregue na U1.1; na versão liberada, orientar consulta pelo nome completo/social ou CPF com/sem pontuação e conferir as páginas, sem interpretar os primeiros 100 como todos os pacientes. Busca ampliada aprovada na U1.2. Nenhuma exposição de dados reais nos testes.
 
 ### P3 — instalação no servidor e início supervisionado
 
@@ -83,4 +83,4 @@ Correção de perda de dados, acesso indevido, indisponibilidade ou bloqueio de 
 
 ## Retomada
 
-**Próximo: P3 — instalar a versão liberada no outro Windows e concluir checklist local.** Aceites essenciais P1/P2 aprovados; detalhes e limites no documento de liberação. Origem dos dados e sistema operacional já respondidos: digitação do zero, outro Windows. Edição/recursos e destino de backup aguardam informações para a implantação. Não continuar automaticamente em 3B.2C. Ao alterar, atualizar o roteiro, registrar evidências, commit/push e conferir remoto. Paginação/busca são prioridade da primeira atualização semanal.
+**Próximo: apoiar P3 — instalar a versão liberada no outro Windows e concluir checklist local.** Aceites essenciais P1/P2 e melhorias U1.1/U1.2 aprovados; detalhes e limites no documento de liberação. Origem dos dados e sistema operacional já respondidos: digitação do zero, outro Windows. Windows Home e 16 GB são estimativas; edição/build e recursos aguardam confirmação. Backup externo será manual semanal na nuvem, com provedor/conta/pasta ainda a definir. Não continuar automaticamente em 3B.2C. Ao alterar, atualizar o roteiro, registrar evidências, commit/push e conferir remoto. Preparar o procedimento P4 de atualização semanal, sem condicionar a instalação inicial às melhorias gerais.
