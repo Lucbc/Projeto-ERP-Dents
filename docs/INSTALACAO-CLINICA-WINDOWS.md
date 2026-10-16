@@ -10,6 +10,10 @@ O servidor fica ligado e concentra o programa, banco e exames. Cada estação ab
 
 ## 1. Preparar o computador servidor — suporte
 
+Informação provisória do responsável: Windows 10 Home ou 11 Home, possivelmente 16 GB de RAM; confirmar no computador antes de instalar. Abrir `winver` para conferir edição/versão e **Configurações → Sistema → Sobre** para RAM/processador. A edição Home admite containers Linux, que são os utilizados pelo ERP; não comprar uma atualização para Pro apenas por esse motivo. A versão/build do Windows, WSL e virtualização ainda precisam atender aos requisitos oficiais abaixo. Não considerar qualquer Windows 10 automaticamente compatível ou ainda suportado.
+
+Se os 16 GB forem confirmados, verificar quanto está disponível ao Docker e aos demais programas; a referência de homologação foi aproximadamente 8 GiB disponíveis ao Docker, além das necessidades do Windows. A memória total informada não substitui o teste no servidor real.
+
 1. Conferir edição/versão do Windows e virtualização. Seguir os [requisitos e instalação oficiais do Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/), consultados em 15/10/2026. **Windows Server é outro produto e não é suportado pelo Docker Desktop**; se essa for a edição instalada, definir outra infraestrutura antes de continuar.
 2. Instalar Docker Desktop com suporte a containers Linux e abrir o aplicativo. Conferir os termos de uso aplicáveis à clínica.
 3. Instalar Git para obter as versões do projeto. Não é necessário instalar Python/Node no servidor para construir pelo Docker.
@@ -22,6 +26,8 @@ O servidor fica ligado e concentra o programa, banco e exames. Cada estação ab
 - Escolher uma única URL, por exemplo `https://erp.clinica.local` (exemplo, não endereço já configurado).
 - Permitir a porta HTTPS escolhida no firewall somente para a rede autorizada. Não publicar banco/API nem encaminhar portas no roteador para a internet.
 - Definir responsável, destino separado do disco do servidor e acesso restrito aos backups. Registrar a URL e o responsável; guardar senhas em local próprio, fora deste documento/Git.
+
+O usuário definiu envio manual semanal para um drive na nuvem. Seguir a [rotina de cópia local e envio semanal](./BACKUP-RECUPERACAO.md#rotina-prevista-na-clínica): gerar uma cópia completa antes do envio e confirmar que todos os arquivos chegaram. Provedor, conta responsável e pasta ainda serão definidos no local. Não configurar envio de dados clínicos para uma conta pessoal/pública por suposição.
 
 ## 3. Obter a versão — no servidor
 

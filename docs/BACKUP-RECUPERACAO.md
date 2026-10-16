@@ -35,6 +35,20 @@ O dump não depende de redirecionamento binário do PowerShell. PostgreSQL fica 
 - Hash confirma integridade em relação ao manifesto; não comprova autenticidade de um backup recebido de terceiros. Utilizar somente cópias controladas pelo suporte.
 - Não editar o backup após concluído. Testar recuperação em ambiente separado; a mensagem de cópia concluída não substitui esse teste.
 
+## Rotina prevista na clínica
+
+Informado pelo usuário: **um operador enviará os backups manualmente para um drive na nuvem toda semana**. Provedor, conta/pasta e responsável nominal ainda não foram definidos. Não há envio ou agendamento automático implementado.
+
+Recomendação operacional para a digitação inicial: gerar backup local ao final de cada dia e antes de atualizações; enviar a cópia mais recente à nuvem semanalmente, conforme a rotina informada. O backup diário local é recomendação, ainda não uma rotina confirmada ou agendada.
+
+1. Encerrar as gravações dos usuários e executar `backup-server.ps1` com uma pasta nova, fora da pasta sincronizada da nuvem. Esperar a conclusão e conferir a retomada do sistema.
+2. Confirmar presença de `manifest.json` e ausência de `INCOMPLETE`. Enviar **a pasta completa**, incluindo `database.dump`, `exams.tar`, `server.env`, `tls` e manifesto. Não enviar somente o código do Git ou o dump do banco.
+3. Usar conta controlada pela clínica e pasta com acesso restrito; o backup contém dados clínicos e segredos. As permissões locais do Windows não acompanham automaticamente o upload. Definir proteção do material com o suporte antes do primeiro envio real.
+4. Esperar a conclusão de todos os uploads, conferir os arquivos no drive e registrar data da cópia, data do envio e operador. Manter a cópia anterior até conferir a nova; não enviar uma pasta enquanto o backup ainda estiver sendo escrito.
+5. No primeiro envio, baixar a cópia em área protegida e conferir os hashes do manifesto com o suporte. O ensaio de restauração não deve ser feito sobre o servidor em uso.
+
+**Limite dessa frequência:** se o servidor/disco for perdido, a recuperação pela nuvem alcança somente o último envio concluído. Com envios semanais, podem faltar até cerca de sete dias de novos registros — e mais se o operador esquecer um envio. Backup diário no mesmo computador não elimina esse risco. Durante a digitação intensa, preferir também envio diário à nuvem ou outra cópia externa diária, se a clínica puder ajustar a rotina.
+
 ## Ensaios de desenvolvimento — exclusivamente fictícios
 
 Na raiz do projeto, com Docker de homologação aberto:
