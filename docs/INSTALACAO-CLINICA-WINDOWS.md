@@ -143,6 +143,8 @@ Usuário: ligar estação, abrir atalho e entrar. Se o servidor estiver desligad
 
 Suporte: definir janela sem usuários gravando, fazer backup coerente recuperável, aplicar commit aprovado, manter projeto/volumes/configuração, conferir migrações e testar login/cadastro/busca antes de reabrir. A rotina executável de atualização e recuperação está prevista em P1/P4. Não fazer `git pull` seguido de atualização automática durante o atendimento. Reverter código não reverte migrações; nunca restaurar backup antigo por cima de cadastros novos sem avaliar a perda de dados.
 
+Seguir a [preparação da atualização semanal](./ATUALIZACAO-SERVIDOR-WINDOWS.md): conferência de versão somente de leitura já validada; troca integrada ainda em P4.2. O backup reinicia a API ao terminar, mas os usuários devem permanecer fora até o aceite final da atualização. Isso não altera os passos de instalação inicial acima.
+
 ## Problemas comuns
 
 | Sintoma | Verificação inicial |
