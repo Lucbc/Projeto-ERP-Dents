@@ -35,7 +35,7 @@ class SqlAlchemyPatientRepository(PatientRepository):
 
         total = self.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
         items = self.session.scalars(
-            stmt.order_by(PatientModel.created_at.desc()).limit(limit).offset(offset)
+            stmt.order_by(PatientModel.created_at.desc(), PatientModel.id.desc()).limit(limit).offset(offset)
         ).all()
         return [self._to_entity(item) for item in items], int(total)
 

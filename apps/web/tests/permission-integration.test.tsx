@@ -25,7 +25,7 @@ const matrix = (view = true, update = true) => ({ role: user.role, version: 1,
 const failure = (status: number) => new AxiosError("Fictitious", "ERR_BAD_RESPONSE", undefined, undefined,
   { status, data: {}, headers: {}, statusText: "Error", config: {} as never });
 const tick = async (ms = 10) => { await act(async () => { await vi.advanceTimersByTimeAsync(ms); }); await act(async () => { await vi.advanceTimersByTimeAsync(1); }); };
-function Menu() { const { can } = usePermissions(); return can("patients", "view") ? <nav>Patient menu</nav> : null; }
+function Menu() { const { can } = usePermissions(); return can("patients", "view") ? <nav aria-label="Patient menu">Patient menu</nav> : null; }
 function mount(page = <PatientsPage />, resource: PermissionResource = "patients", path = "/") {
   return render(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate>
     <MemoryRouter initialEntries={[path]}><ToastProvider><Menu /><ProtectedRoute permission={{ resource, action: "view" }}>
@@ -122,10 +122,10 @@ it("revokes reading in menu and route, clears sensitive state/cache, and grants 
   vi.mocked(permissionService.me).mockResolvedValue(matrix(false)); await tick(15_010);
   expect(notes.isConnected).toBe(false); expect(screen.queryByRole("navigation")).toBeNull();
   expect(screen.queryByText(patient.full_name)).toBeNull();
-  expect(client.getQueryData(["patients", ""])).toBeUndefined();
+  expect(client.getQueriesData({ queryKey: ["patients"] })).toEqual([]);
   expect(screen.getByText(/Sem permissão para acessar/)).toBeTruthy();
   vi.mocked(permissionService.me).mockResolvedValue(matrix()); await tick(15_010);
-  expect(screen.getByRole("navigation")).toBeTruthy(); expect(screen.queryByRole("button", { name: "Salvar" })).toBeNull();
+  expect(screen.getByRole("navigation", { name: "Patient menu" })).toBeTruthy(); expect(screen.queryByRole("button", { name: "Salvar" })).toBeNull();
   expect(patientService.update).not.toHaveBeenCalled();
 });
 

@@ -98,6 +98,8 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [offset, setOffset] = useState(0);
+  const pageSize = 100;
   const [openModal, setOpenModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [editConflict, setEditConflict] = useState(false);
@@ -126,13 +128,19 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
     },
   });
 
-  const patientsQuery = useLiveQuery(["patients", search], async signal => {
-    try { return await patientService.list({ search, limit: 100, offset: 0 }, signal); }
+  const patientsQuery = useLiveQuery(["patients", search, offset], async signal => {
+    try { return await patientService.list({ search, limit: pageSize, offset }, signal); }
     catch (error) {
       if (isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) onDenied();
       throw error;
     }
   });
+
+  useEffect(() => {
+    if (!patientsQuery.isSuccess || patientsQuery.isFetching || !patientsQuery.data) return;
+    const lastOffset = Math.max(0, Math.ceil(patientsQuery.data.total / pageSize) - 1) * pageSize;
+    if (offset > lastOffset) setOffset(lastOffset);
+  }, [patientsQuery.isSuccess, patientsQuery.isFetching, patientsQuery.data, offset]);
 
   const createMutation = useMutation({
     mutationFn: (payload: PatientForm) =>
@@ -340,7 +348,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
             <Input
               placeholder="Buscar por nome, CPF, RG, e-mail, telefone ou convenio"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setOffset(0); }}
               className="md:w-80"
             />
             {canCreate && <Button onClick={onNew}>Novo</Button>}
@@ -350,11 +358,19 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
       {patientsQuery.isLoading && <LoadingState message="Carregando pacientes..." />}
       <LiveQueryStatus query={patientsQuery} subject="pacientes" />
+      <nav aria-label="Navegação de pacientes" className="flex flex-wrap items-center gap-3">
+        <Button variant="outline" disabled={offset === 0 || patientsQuery.isFetching || !patientsQuery.online}
+          onClick={() => setOffset(current => Math.max(0, current - pageSize))}>Página anterior</Button>
+        <span aria-live="polite">Página {offset / pageSize + 1}
+          {patientsQuery.data && ` de ${Math.max(1, Math.ceil(patientsQuery.data.total / pageSize))}`}</span>
+        <Button variant="outline" disabled={!patientsQuery.data || patientsQuery.isError || patientsQuery.isFetching || !patientsQuery.online || offset + pageSize >= patientsQuery.data.total}
+          onClick={() => setOffset(current => current + pageSize)}>Próxima página</Button>
+      </nav>
 
       {patientsQuery.data && (
         <Card>
-          <p className="mb-3 text-sm text-muted-foreground">Exibindo {items.length} de {patientsQuery.data.total} pacientes. Limite desta lista: 100.
-            {patientsQuery.data.total > items.length && " Refine a busca para localizar outros pacientes."}</p>
+          <p className="mb-3 text-sm text-muted-foreground">Exibindo {items.length} de {patientsQuery.data.total} pacientes. Até {pageSize} por página.
+            {patientsQuery.data.total > pageSize && " Use as páginas ou refine a busca."}</p>
           {items.length === 0 ? (
             <EmptyState message="Nenhum paciente encontrado." />
           ) : (

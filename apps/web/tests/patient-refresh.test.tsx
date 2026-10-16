@@ -35,11 +35,41 @@ it("displays birth date without shifting it and retains the civil value in the e
   expect((view.container.querySelector('[name="birth_date"]') as HTMLInputElement).value).toBe("2000-02-29");
 });
 
+it("navigates beyond 100 and resets the offset when searching", async () => {
+  vi.mocked(patientService.list).mockImplementation(async params => ({
+    items: [{ ...patient, full_name: params?.offset ? "Fictitious older patient" : "Fictitious newest patient" }], total: 105,
+  }));
+  show(); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Próxima página", exact: true })); await tick();
+  expect(patientService.list).toHaveBeenLastCalledWith({ search: "", limit: 100, offset: 100 }, expect.any(AbortSignal));
+  expect(screen.getByText("Fictitious older patient")).toBeTruthy();
+  expect((screen.getByRole("button", { name: "Próxima página" }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.change(screen.getByPlaceholderText(/Buscar por nome/), { target: { value: "older" } }); await tick();
+  expect(patientService.list).toHaveBeenLastCalledWith({ search: "older", limit: 100, offset: 0 }, expect.any(AbortSignal));
+});
+
+it("returns to the last existing page when records disappear and permits going back after a page error", async () => {
+  vi.mocked(patientService.list).mockResolvedValue({ items: [patient], total: 101 });
+  show(); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Próxima página" })); await tick();
+  vi.mocked(patientService.list).mockResolvedValue({ items: [], total: 100 });
+  await tick(15010);
+  expect(patientService.list).toHaveBeenLastCalledWith({ search: "", limit: 100, offset: 0 }, expect.any(AbortSignal));
+  vi.mocked(patientService.list).mockResolvedValue({ items: [patient], total: 101 });
+  await tick(15010);
+  vi.mocked(patientService.list).mockRejectedValue(failure(503));
+  fireEvent.click(screen.getByRole("button", { name: "Próxima página" })); await tick();
+  expect((screen.getByRole("button", { name: "Página anterior" }) as HTMLButtonElement).disabled).toBe(false);
+  vi.mocked(patientService.list).mockResolvedValue({ items: [patient], total: 101 });
+  fireEvent.click(screen.getByRole("button", { name: "Página anterior" })); await tick();
+  expect(screen.getByText(patient.full_name)).toBeTruthy();
+});
+
 it("updates records and count without writes, preserving search and showing truncation", async () => {
   const create = vi.spyOn(patientService, "create"), remove = vi.spyOn(patientService, "remove"); show(); await tick();
   fireEvent.change(screen.getByPlaceholderText(/Buscar por nome/), { target: { value: "Fictitious" } }); await tick();
   vi.mocked(patientService.list).mockResolvedValue({ items: [{ ...patient, full_name: "Fictitious remote", version: 8 }], total: 105 }); await tick(15010);
-  expect(screen.getByText("Fictitious remote")).toBeTruthy(); expect(screen.getByText(/Exibindo 1 de 105/).textContent).toContain("Limite desta lista: 100");
+  expect(screen.getByText("Fictitious remote")).toBeTruthy(); expect(screen.getByText(/Exibindo 1 de 105/).textContent).toContain("Até 100 por página");
   expect((screen.getByPlaceholderText(/Buscar por nome/) as HTMLInputElement).value).toBe("Fictitious");
   expect(create).not.toHaveBeenCalled(); expect(remove).not.toHaveBeenCalled(); expect(patientService.deletionPreview).not.toHaveBeenCalled();
   vi.mocked(patientService.list).mockResolvedValue({ items: [], total: 0 }); await tick(15010); expect(screen.getByText("Nenhum paciente encontrado.")).toBeTruthy();
