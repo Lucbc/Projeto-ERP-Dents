@@ -125,6 +125,8 @@ Preservar sempre o nome `erp-dents-prod` e seus volumes. Não executar `down -v`
 
 ## 8. Liberar os cadastros reais — aceite no local
 
+Preencher uma cópia do [checklist de início na clínica](./CHECKLIST-INICIO-CLINICA.md) e orientar os operadores pela [rotina da recepção](./ROTINA-RECEPCAO-PILOTO.md). Os documentos complementam este roteiro; não substituem os testes no outro Windows e na segunda estação.
+
 - [x] Preparadores e instalação nova ensaiados em homologação isolada, com dados fictícios.
 - [ ] Backup coerente de banco, exames e configuração necessária; cópia guardada fora do disco do servidor.
 - [x] Recuperação de banco, exames e aplicação comprovada em ambiente isolado. No local, confirmar o backup produzido e o responsável pela recuperação; copiar só a pasta do código não salva os volumes.
