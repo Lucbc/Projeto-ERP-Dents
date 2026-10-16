@@ -84,10 +84,14 @@ let stage = 'start';
     await reception.getByRole('button',{name:'Salvar',exact:true}).click();
     const createdResponse = await saved; assert.equal(createdResponse.status(),201);
     let patient = await createdResponse.json(); assert.equal(patient.cpf,null);
+    patient = await api(admin,author,'PUT','/api/patients/'+patient.id,{version:patient.version,
+      phone:'+55 (11) 98765-4321', emergency_contact_phone:'(11) 3333-4444 ramal 20'});
     stage = 'edit conflict retains draft';
     await search.fill(patient.full_name);
     const row = reception.getByRole('row').filter({hasText:patient.full_name});
     await row.getByRole('button',{name:'Editar',exact:true}).click();
+    assert.equal(await reception.locator('[name=phone]').inputValue(),patient.phone);
+    assert.equal(await reception.locator('[name=emergency_contact_phone]').inputValue(),patient.emergency_contact_phone);
     await reception.locator('[name=notes]').fill('Rascunho ficticio da recepcao');
     await api(admin,author,'PUT','/api/patients/'+patient.id,{version:patient.version,preferred_name:'Mudanca concorrente'});
     saved = reception.waitForResponse(r=>r.url().endsWith('/api/patients/'+patient.id) && r.request().method()==='PUT');
@@ -109,6 +113,8 @@ let stage = 'start';
     assert.equal(await reception.locator('[name=birth_date]').inputValue(),'1985-05-17');
     assert.equal(await reception.locator('[name=notes]').inputValue(),'Cadastro ficticio revisado');
     assert.equal(await reception.locator('[name=cpf]').inputValue(),'');
+    assert.equal(await reception.locator('[name=phone]').inputValue(),patient.phone);
+    assert.equal(await reception.locator('[name=emergency_contact_phone]').inputValue(),patient.emergency_contact_phone);
     console.log('PASS: reception account, denied administration/deletion, search beyond 100, formatted/unformatted CPF and phone, preferred name, no-CPF create, birth date, edit conflict and reopen.');
   } finally { await browser.close(); }
 })().catch(() => { console.error('Registration pilot failed at stage: '+stage); process.exit(1); });

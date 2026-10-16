@@ -31,6 +31,17 @@ describe("dentists live list", () => {
     const view = render(<QueryClientProvider client={client}><ToastProvider><Page /></ToastProvider></QueryClientProvider>);
     return { ...view, field: (name: string) => view.container.querySelector(`[name="${name}"]`) as HTMLInputElement };
   }
+  it("preserves a stored international phone while editing the name", async () => {
+    const stored = { ...item, phone: "+55 (11) 98765-4321" };
+    vi.mocked(service.list).mockResolvedValue({ items: [stored], total: 1 });
+    const update = vi.spyOn(service, "update").mockResolvedValue(stored);
+    const view = show(); await tick();
+    fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true })); await tick();
+    expect(view.field("phone").value).toBe(stored.phone);
+    fireEvent.change(view.field("full_name"), { target: { value: "Fictitious edited name" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar", exact: true })); await tick();
+    expect(update).toHaveBeenCalledWith(item.id, expect.objectContaining({ phone: stored.phone }));
+  });
   it("updates name/activation and limits while retaining search without writes or reference reads", async () => {
     const create = vi.spyOn(service, "create"), update = vi.spyOn(service, "update"), remove = vi.spyOn(service, "remove"), refs = vi.spyOn(service, "listAll");
     show(); await tick(); fireEvent.change(screen.getByPlaceholderText(/Buscar por nome/), { target: { value: "Fictitious" } }); await tick();

@@ -27,6 +27,19 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
+it("preserves international and extension phones when editing another field", async () => {
+  const stored = { ...patient, phone: "+55 (11) 98765-4321", emergency_contact_phone: "(11) 3333-4444 ramal 20" };
+  vi.mocked(patientService.list).mockResolvedValue({ items: [stored], total: 1 });
+  const update = vi.spyOn(patientService, "update").mockResolvedValue(stored);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole("button", { name: "Editar", exact: true })); await tick();
+  expect((view.container.querySelector('[name="phone"]') as HTMLInputElement).value).toBe(stored.phone);
+  expect((view.container.querySelector('[name="emergency_contact_phone"]') as HTMLInputElement).value).toBe(stored.emergency_contact_phone);
+  fireEvent.change(view.notes(), { target: { value: "Only notes changed" } });
+  fireEvent.click(screen.getByRole("button", { name: "Salvar", exact: true })); await tick();
+  expect(update).toHaveBeenCalledWith(patient.id, expect.objectContaining({ phone: stored.phone, emergency_contact_phone: stored.emergency_contact_phone }));
+});
+
 it("displays birth date without shifting it and retains the civil value in the editor", async () => {
   vi.mocked(patientService.list).mockResolvedValue({ items: [{ ...patient, birth_date: "2000-02-29" }], total: 1 });
   const view = show(); await tick();

@@ -1,3 +1,4 @@
+import { formatPhone } from "@/lib/phone";
 import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
@@ -76,21 +77,6 @@ function normalizeColor(value?: string): string | null {
   const normalized = value?.trim().toUpperCase();
   if (!normalized) return null;
   return /^#[0-9A-F]{6}$/.test(normalized) ? normalized : null;
-}
-
-function formatPhone(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (!digits) return "";
-
-  const areaCode = digits.slice(0, 2);
-  const ninthDigit = digits.slice(2, 3);
-  const firstBlock = digits.slice(3, 7);
-  const secondBlock = digits.slice(7, 11);
-
-  if (digits.length <= 2) return `(${areaCode}`;
-  if (digits.length <= 3) return `(${areaCode}) ${ninthDigit}`;
-  if (digits.length <= 7) return `(${areaCode}) ${ninthDigit}-${firstBlock}`;
-  return `(${areaCode}) ${ninthDigit}-${firstBlock}-${secondBlock}`;
 }
 
 function formatCro(value: string): string {
@@ -293,7 +279,7 @@ function DentistsContent({ onDenied }: { onDenied: () => void }) {
     form.reset({
       full_name: dentist.full_name,
       cro: formatCro(dentist.cro ?? ""),
-      phone: formatPhone(dentist.phone ?? ""),
+      phone: dentist.phone ?? "",
       email: dentist.email ?? "",
       specialty: dentist.specialty ?? "",
       color: dentist.color ?? "#0EA5A5",

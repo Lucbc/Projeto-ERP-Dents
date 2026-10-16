@@ -1,4 +1,5 @@
-﻿import { zodResolver } from "@hookform/resolvers/zod";
+import { formatPhone } from "@/lib/phone";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
@@ -48,21 +49,6 @@ type PatientForm = z.infer<typeof patientSchema>;
 function nullable(value?: string) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
-}
-
-function formatPhone(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (!digits) return "";
-
-  const areaCode = digits.slice(0, 2);
-  const ninthDigit = digits.slice(2, 3);
-  const firstBlock = digits.slice(3, 7);
-  const secondBlock = digits.slice(7, 11);
-
-  if (digits.length <= 2) return `(${areaCode}`;
-  if (digits.length <= 3) return `(${areaCode}) ${ninthDigit}`;
-  if (digits.length <= 7) return `(${areaCode}) ${ninthDigit}-${firstBlock}`;
-  return `(${areaCode}) ${ninthDigit}-${firstBlock}-${secondBlock}`;
 }
 
 function formatCpf(value: string): string {
@@ -305,12 +291,12 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
       birth_date: patient.birth_date ?? "",
       cpf: formatCpf(patient.cpf ?? ""),
       rg: patient.rg ?? "",
-      phone: formatPhone(patient.phone ?? ""),
+      phone: patient.phone ?? "",
       email: patient.email ?? "",
       address: patient.address ?? "",
       preferred_contact_method: patient.preferred_contact_method ?? "",
       emergency_contact_name: patient.emergency_contact_name ?? "",
-      emergency_contact_phone: formatPhone(patient.emergency_contact_phone ?? ""),
+      emergency_contact_phone: patient.emergency_contact_phone ?? "",
       insurance_provider: patient.insurance_provider ?? "",
       insurance_plan: patient.insurance_plan ?? "",
       insurance_member_id: patient.insurance_member_id ?? "",
