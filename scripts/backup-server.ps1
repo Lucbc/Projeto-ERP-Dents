@@ -34,10 +34,16 @@ function Invoke-BackupDocker {
         $stderr = $process.StandardError.ReadToEndAsync()
         $process.WaitForExit()
         $result = $stdout.GetAwaiter().GetResult()
-        $null = $stderr.GetAwaiter().GetResult()
+        $diagnostic = $stderr.GetAwaiter().GetResult()
         $code = $process.ExitCode
     } finally { $process.Dispose() }
-    if ($code -ne 0) { throw 'Operacao Docker falhou. Backup nao confirmado; confira servicos e espaco disponivel.' }
+    if ($code -ne 0) {
+        $reason = 'erro nao classificado'
+        foreach ($known in @('invalid reference format', 'invalid mount config', 'No such image', 'Conflict', 'permission denied', 'no space left on device', 'invalid argument')) {
+            if ($diagnostic -match [regex]::Escape($known)) { $reason = $known; break }
+        }
+        throw ('Operacao Docker falhou (' + $Arguments[0] + '): ' + $reason + '. Backup nao confirmado; confira servicos e espaco disponivel.')
+    }
     return ($result -join "`n").Trim()
 }
 $compose = @('compose', '--project-name', $project, '--env-file', $envFile, '-f', $composeFile)
@@ -70,6 +76,16 @@ $tls = @($edgeMounts | Where-Object { $_.Destination -eq '/etc/erp-tls' -and $_.
 if ($tls.Count -ne 1) { throw 'Montagem TLS inesperada.' }
 $image = Invoke-BackupDocker @('inspect', '--format', '{{.Image}}', $api)
 $dbImage = Invoke-BackupDocker @('inspect', '--format', '{{.Image}}', $db)
+# A running container can survive removal of its original local image. The
+# archive helper only uses Python/tarfile against a read-only mount; it does not
+# run the API. Resolve its image before stopping any service and never pull here.
+try {
+    $archiveImage = Invoke-BackupDocker @('image', 'inspect', '--format', '{{.Id}}', $image)
+} catch {
+    $archiveImage = Invoke-BackupDocker @('image', 'inspect', '--format', '{{.Id}}', ($project + '-api'))
+    Write-Host 'Imagem original da API indisponivel; copia de arquivos usara a imagem local da API do mesmo projeto.'
+}
+if ($archiveImage -notmatch '^sha256:[a-f0-9]{64}$') { throw 'Imagem auxiliar local nao identificada. Nenhum servico interrompido.' }
 $operation = [Guid]::NewGuid().ToString('N')
 $helper = $project + '-backup-' + $operation
 $dbDump = '/tmp/erp-backup-' + $operation + '.dump'
@@ -93,7 +109,7 @@ try {
     $null = Invoke-BackupDocker @('exec', $db, 'sh', '-c', 'umask 077; pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$1"', 'sh', $dbDump)
     $null = Invoke-BackupDocker @('cp', ($db + ':' + $dbDump), (Join-Path $target 'database.dump'))
     $archiveCode = 'import tarfile; t=tarfile.open("/tmp/exams.tar","w"); t.add("/source",arcname="exams"); t.close()'
-    $null = Invoke-BackupDocker @('create', '--name', $helper, '--label', ('com.docker.compose.project=' + $project), '--network', 'none', '--user', '0:0', '--mount', ('type=volume,src=' + $examVolume + ',dst=/source,readonly'), $image, 'python', '-c', $archiveCode)
+    $null = Invoke-BackupDocker @('create', '--name', $helper, '--label', ('com.docker.compose.project=' + $project), '--network', 'none', '--user', '0:0', '--mount', ('type=volume,src=' + $examVolume + ',dst=/source,readonly'), $archiveImage, 'python', '-c', $archiveCode)
     $helperCreated = $true
     $null = Invoke-BackupDocker @('start', '-a', $helper)
     if ((Invoke-BackupDocker @('inspect', '--format', '{{.State.ExitCode}}', $helper)) -ne '0') { throw 'Falha ao copiar exames.' }
@@ -116,7 +132,7 @@ try {
         $path = Join-Path $target $relative
         if (Test-Path -LiteralPath $path -PathType Leaf) { $hashes[$relative] = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash }
     }
-    $manifest = [ordered]@{ format = 1; project = $project; createdUtc = [DateTime]::UtcNow.ToString('o'); revision = $revision; apiImage = $image; dbImage = $dbImage; files = $hashes }
+    $manifest = [ordered]@{ format = 1; project = $project; createdUtc = [DateTime]::UtcNow.ToString('o'); revision = $revision; apiImage = $image; archiveImage = $archiveImage; dbImage = $dbImage; files = $hashes }
     [IO.File]::WriteAllText((Join-Path $target 'manifest.json'), ($manifest | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))
     Remove-Item -LiteralPath (Join-Path $target 'INCOMPLETE')
     Write-Host 'Copia concluida. Guarde em destino separado e valide a restauracao antes de considerar o backup recuperavel.'

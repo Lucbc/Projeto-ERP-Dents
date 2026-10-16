@@ -6,7 +6,7 @@ Atualizado em 16/10/2026. Dados serão cadastrados do zero, em outro computador 
 
 O servidor fica ligado e concentra o programa, banco e exames. Cada estação abre o mesmo endereço HTTPS pelo navegador, com login individual. Somente o servidor precisa de Docker. As estações não precisam de Git, Python, Node ou banco de dados.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.2`, incluindo paginação, busca por CPF com/sem pontuação e nome social. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.3`, incluindo paginação, busca por CPF com/sem pontuação, nome social e ferramentas de manutenção atualizadas. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
@@ -36,7 +36,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.2
+git checkout piloto-cadastros-v0.1.3
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1
@@ -141,9 +141,9 @@ A instalação nova, a recuperação e o percurso essencial de recepção passar
 
 Usuário: ligar estação, abrir atalho e entrar. Se o servidor estiver desligado, todos ficam sem acesso. No encerramento, sair da conta.
 
-Suporte: definir janela sem usuários gravando, fazer backup coerente recuperável, aplicar commit aprovado, manter projeto/volumes/configuração, conferir migrações e testar login/cadastro/busca antes de reabrir. A rotina executável de atualização e recuperação está prevista em P1/P4. Não fazer `git pull` seguido de atualização automática durante o atendimento. Reverter código não reverte migrações; nunca restaurar backup antigo por cima de cadastros novos sem avaliar a perda de dados.
+Suporte: definir janela sem usuários gravando, fazer backup coerente recuperável, aplicar commit aprovado, manter projeto/volumes/configuração, conferir migrações e testar login/cadastro/busca antes de reabrir. A manutenção assistida sem nova migração foi ensaiada em P4.2. Não fazer `git pull` seguido de atualização automática durante o atendimento. Reverter código não reverte migrações; nunca restaurar backup antigo por cima de cadastros novos sem avaliar a perda de dados.
 
-Seguir a [preparação da atualização semanal](./ATUALIZACAO-SERVIDOR-WINDOWS.md): conferência de versão somente de leitura já validada; troca integrada ainda em P4.2. O backup reinicia a API ao terminar, mas os usuários devem permanecer fora até o aceite final da atualização. Isso não altera os passos de instalação inicial acima.
+Seguir o [roteiro de atualização semanal](./ATUALIZACAO-SERVIDOR-WINDOWS.md): conferência de versão e troca integrada sem nova migração validadas. O gateway fica parado durante o backup/troca; os usuários permanecem fora até o aceite final. Isso não altera os passos de instalação inicial acima.
 
 ## Problemas comuns
 

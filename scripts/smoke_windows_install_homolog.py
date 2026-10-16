@@ -14,7 +14,7 @@ from cookie_client import CookieClient
 from smoke_backup_restore_homolog import ROOT, PROJECT, run
 
 
-def main():
+def main(upgrade=False):
     identifier = 'install_' + uuid4().hex[:12]
     folder = ROOT / '.data' / identifier
     folder.mkdir()
@@ -25,6 +25,10 @@ def main():
     compose = ['docker', 'compose', '--project-directory', str(ROOT), '--project-name', PROJECT, '-f', '-']
     private_config = None
     try:
+        release_images = None
+        if upgrade:
+            from smoke_windows_update_homolog import prepare_images
+            release_images = prepare_images(folder)
         run('powershell', '-NoProfile', '-File', str(ROOT / 'scripts/configure-server.ps1'),
             '-PublicOrigin', origin, '-EnvFile', str(environment))
         run('powershell', '-NoProfile', '-File', str(ROOT / 'scripts/configure-server-tls.ps1'),
@@ -49,6 +53,8 @@ def main():
             if info['Config']['Labels'].get('com.docker.compose.project') != PROJECT:
                 raise RuntimeError('Unexpected source image project.')
             service['image'] = info['Image']
+            if release_images and source_service in release_images['old']:
+                service['image'] = release_images['old'][source_service]
             service.pop('build', None)
             service['pull_policy'] = 'never'
             service['container_name'] = PROJECT + '-' + names[name]
@@ -100,6 +106,11 @@ def main():
         token = request('POST','/api/auth/login',credentials)['session']
         patient = request('POST','/api/patients',{'full_name':'Fictitious Fresh Install Patient','birth_date':'1980-04-21'},201)
         patient = request('PUT','/api/patients/'+patient['id'],{'version':patient['version'],'notes':'Fictitious persisted update'})
+        if upgrade:
+            from smoke_windows_update_homolog import verify_update
+            verify_update(folder, environment, tls, config, names, physical_volumes,
+                          compose, release_images, client, request, ready, patient, settings, credentials)
+            return
         # Repeating up must reuse the same database and preserve activation state.
         run(*compose, 'up', '-d', '--no-build', input=private_config)
         run(*compose, 'restart', names['api'], names['edge'], input=private_config)

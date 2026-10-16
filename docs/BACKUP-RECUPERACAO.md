@@ -22,10 +22,14 @@ A rotina:
 2. Marca a cópia como `INCOMPLETE` e para a API, aguardando sua saída.
 3. Copia PostgreSQL em formato próprio de restauração (`database.dump`) e todos os exames, inclusive quarentena (`exams.tar`).
 4. Copia configuração local (`server.env`), certificado/chave usados pelo HTTPS (`tls`) e, quando presente, o certificado público da autoridade.
-5. Registra versão Git, imagens e hashes SHA-256 em `manifest.json`; remove `INCOMPLETE` somente após finalizar a cópia.
+5. Registra versão Git, imagens e hashes SHA-256 em `manifest.json`; remove `INCOMPLETE` somente após finalizar a cópia. Desde `v0.1.3`, registra também `archiveImage`, imagem auxiliar usada para copiar arquivos.
 6. Tenta reiniciar a API, inclusive quando a cópia falha. Conferir `/health`, login e acesso aos cadastros antes de encerrar a manutenção. Se o reinício falhar, manter atendimento suspenso e acionar o suporte.
 
 O dump não depende de redirecionamento binário do PowerShell. PostgreSQL fica ligado; nenhum volume é removido. Não alterar código, configuração, certificado ou banco por ferramentas externas durante o backup. A cópia não inclui imagens Docker nem todos os arquivos do repositório: guardar a versão indicada no manifesto e garantir acesso ao código/imagens aprovados também faz parte da recuperação.
+
+Se a imagem original da API já não existir no catálogo local, a `v0.1.3` usa a imagem local `<projeto>-api` apenas no auxiliar Python de cópia, sem rede e com exames montados somente para leitura. Resolve essa imagem antes de parar a API e não faz download. A imagem original continua registrada em `apiImage`; o fallback não altera o serviço nem garante disponibilidade da imagem original para recuperação da aplicação. O ensaio de restauração de arquivos aceita `archiveImage`, mantendo compatibilidade com manifestos antigos.
+
+Durante atualização, parar primeiro o gateway conforme o [roteiro de manutenção](./ATUALIZACAO-SERVIDOR-WINDOWS.md). O backup exige edge/HTTPS ligado para copiar certificados; o gateway parado impede que o reinício da API reabra acesso antes do aceite. Esse bloqueio foi ensaiado também em falha tardia do backup.
 
 ## Guardar e conferir
 

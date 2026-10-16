@@ -7,6 +7,7 @@ Python is a developer test dependency.
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import tarfile
@@ -67,6 +68,9 @@ def main():
     if not any(m.get('Name') == PROJECT + '_postgres_data' for m in info['Mounts']):
         raise RuntimeError('Unexpected database volume.')
     image = run('docker', 'inspect', '--format', '{{.Image}}', PROJECT + '-api-1').decode().strip()
+    archive_image = manifest.get('archiveImage', image)
+    if not isinstance(archive_image, str) or not re.fullmatch(r'sha256:[a-f0-9]{64}', archive_image):
+        raise RuntimeError('Unexpected archive helper image identifier.')
     before = fingerprint('erp_dents_homolog')
     if not before:
         raise RuntimeError('Source database must contain representative fictional records.')
@@ -95,7 +99,7 @@ base=pathlib.Path('/restore/exams')
 print(json.dumps({p.relative_to(base).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in base.rglob('*') if p.is_file()},sort_keys=True))
 '''
         run('docker', 'create', '--name', helper, '--label', 'com.docker.compose.project=' + PROJECT,
-            '--network', 'none', '--user', '0:0', '--mount', f'type=volume,src={volume},dst=/restore', image, 'python', '-c', code)
+            '--network', 'none', '--user', '0:0', '--mount', f'type=volume,src={volume},dst=/restore', archive_image, 'python', '-c', code)
         created_helper = True
         run('docker', 'cp', str(backup / 'exams.tar'), helper + ':/tmp/exams.tar')
         restored_files = json.loads(run('docker', 'start', '-a', helper))

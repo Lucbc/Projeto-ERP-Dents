@@ -1,6 +1,6 @@
 # Liberação para instalar — piloto de cadastros
 
-**16/10/2026: liberado para instalação assistida na clínica, no escopo abaixo.** Versão identificada pela tag Git **`piloto-cadastros-v0.1.2`**. Tags anteriores preservadas; inclui [paginação](./ATUALIZACAO-U1-1.md) e [busca por CPF sem pontuação/nome social](./ATUALIZACAO-U1-2.md), sem mudar configuração, dependências ou migrações. O início dos cadastros reais depende de concluir as verificações locais do [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md), pois o outro computador e a rede da clínica ainda não foram acessados.
+**16/10/2026: liberado para instalação assistida na clínica, no escopo abaixo.** Versão identificada pela tag Git **`piloto-cadastros-v0.1.3`**. Tags anteriores preservadas; inclui [paginação](./ATUALIZACAO-U1-1.md), [busca por CPF sem pontuação/nome social](./ATUALIZACAO-U1-2.md) e [ferramentas/roteiro de atualização](./ATUALIZACAO-SERVIDOR-WINDOWS.md). A `v0.1.3` altera ferramentas de backup e ensaio, sem mudança da aplicação, configuração, dependências ou migrações frente à `v0.1.2`. O início dos cadastros reais depende de concluir as verificações locais do [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md), pois o outro computador e a rede da clínica ainda não foram acessados.
 
 ## O que está liberado
 
@@ -48,4 +48,4 @@ Paginação entregue na U1.1: Chrome/API com 105 registros e banco com 205 regis
 
 Instalação: `scripts/smoke_windows_install_homolog.py`, relatório local ignorado `.data/install_466b9495e6b7/result.json`. Recepção: `scripts/smoke_registration_pilot_homolog.py`, relatório `.data/homolog/last-registration-pilot.json`. Recuperação: `scripts/smoke_backup_restore_homolog.py --application` e [evidências](./BACKUP-RECUPERACAO.md).
 
-Próximo: instalação física P3 e acompanhamento dos primeiros cadastros; preparar procedimento P4 de atualização semanal com backup e verificação. Não reabrir a revisão inteira nem colocar financeiro/prontuário no caminho desse piloto.
+P4.2 aprovada localmente com ensaios Windows/Docker de atualização, restauração, bloqueio durante backup e falha simulada. A aplicação conserva o aceite de CI da U1.2; não houve novo teste de navegador nesta entrega operacional. Próximo: instalação física P3, definição da janela semanal e acompanhamento dos primeiros cadastros. Novas migrações exigem ensaio próprio. Não reabrir a revisão inteira nem colocar financeiro/prontuário no caminho desse piloto.

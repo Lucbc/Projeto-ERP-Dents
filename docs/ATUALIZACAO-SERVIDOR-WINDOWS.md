@@ -2,7 +2,7 @@
 
 ## Estado — 16/10/2026
 
-**P4.1 concluída: preparação e conferência de versão.** A troca efetiva com preservação de dados ainda será ensaiada em P4.2. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
+**P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
 
 Somente o suporte atualiza o servidor. As estações continuam usando a mesma URL e não precisam instalar pacotes. Fazer a manutenção em janela combinada, com um único operador e todos os usuários fora do sistema até o aceite final.
 
@@ -15,26 +15,73 @@ Somente o suporte atualiza o servidor. As estações continuam usando a mesma UR
 
 ### Conferência somente de leitura
 
-O suporte pode executar o novo `scripts/check-update-version.ps1` de uma cópia atualizada das ferramentas, apontando para o repositório instalado. Ele ainda não faz parte da tag `piloto-cadastros-v0.1.2`; não trocar o código do servidor apenas para obter esse verificador.
+O suporte pode executar `scripts/check-update-version.ps1` de uma cópia das ferramentas da `v0.1.3`, apontando para o repositório instalado. Para instalações anteriores, ele não existe na pasta antiga; executar da cópia de suporte, sem trocar o código do servidor apenas para obter esse verificador.
 
 Exemplo, substituindo a tag pelo destino aprovado e o caminho pela instalação real:
 
 ```powershell
-.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.2'
+.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.3'
 ```
 
 O comando exige histórico completo, árvore de trabalho limpa, tag local no formato do piloto, destino igual ou descendente do commit atual e presença dos arquivos básicos de implantação. Exibe somente identificadores Git e mensagens de estado. Não lê `.env`, não faz fetch/checkout e não chama Docker.
 
 Se indicar que o código já está na versão escolhida, ainda é necessário conferir as imagens realmente em execução. A checagem não certifica backup, migrações, TLS ou funcionamento do sistema. Um destino anterior/divergente é recusado: rollback exige análise própria, não uma exceção automática.
 
-## 2. Executar a janela — sequência a ensaiar em P4.2
+## 2. Executar a janela — suporte, um bloco por vez
 
 1. Avisar a indisponibilidade, retirar os usuários e registrar o início da janela. Escolher um cadastro existente para verificar depois, sem copiar dados pessoais para logs ou Git.
-2. Fazer o [backup completo](./BACKUP-RECUPERACAO.md) em pasta nova e protegida. Conferir manifesto e ausência de `INCOMPLETE`; preservar cópia anterior e garantir destino separado. Se falhar, não avançar para troca de versão.
-3. **O script de backup tenta reiniciar a API ao terminar, inclusive após falha. Isso não encerra a manutenção.** Manter os usuários fora e interromper novamente o acesso durante a troca. A forma técnica de manter essa interrupção será validada no ensaio integrado.
-4. Aplicar a tag aprovada e construir/substituir os serviços previstos nas notas, preservando nome do projeto, configuração, TLS e volumes. Não executar `down -v`, limpeza de volumes ou downgrade automático. Os comandos executáveis de troca serão acrescentados depois do ensaio P4.2.
+2. Parar o gateway antes do [backup completo](./BACKUP-RECUPERACAO.md). Isso bloqueia os pedidos à API; a página pode continuar aparecendo no navegador. HTTPS/edge permanece ligado para permitir a cópia dos certificados. Conferir manifesto e ausência de `INCOMPLETE`; preservar cópia anterior e garantir destino separado. Se falhar, não avançar para troca de versão.
+3. **O script de backup tenta reiniciar a API ao terminar, inclusive após falha. O gateway permanece parado, mantendo o bloqueio.** Manter os usuários fora e parar novamente a API antes da troca.
+4. Aplicar a tag aprovada e construir/substituir os serviços previstos nas notas, preservando nome do projeto, configuração, TLS e volumes. Não executar `down -v`, limpeza de volumes ou downgrade automático. Os blocos abaixo cobrem o piloto sem mudança de banco, dependências ou infraestrutura; versões com novas migrações exigem notas e ensaio próprios.
 5. Verificar estado dos serviços, migrações e HTTPS sem ignorar certificado. Conferir login individual, busca por nome/CPF, paginação, abertura e edição autorizada, além de conferir cadastros anteriores. Se houver exames, verificar acesso a um arquivo anterior. Não registrar conteúdo clínico nos relatórios.
 6. Reabrir o acesso somente após essas verificações. Registrar versões, horário de início/fim, resultado e responsável, sem segredos/dados pessoais. Em cada estação, recarregar a página e entrar novamente se necessário.
+
+### Comandos para o piloto sem nova migração
+
+**Somente no servidor da clínica, nunca neste ambiente de desenvolvimento.** Executar cada bloco separadamente e parar em qualquer erro. Antes, concluir a conferência de versão e a preparação do destino de backup. Não colar todos os blocos sem verificar seus resultados.
+
+```powershell
+Set-Location C:\ERP-Dents
+$composeArgs = @('compose', '--project-name', 'erp-dents-prod', '--env-file', '.env', '-f', 'docker-compose.yml')
+docker @composeArgs config --quiet
+if ($LASTEXITCODE -ne 0) { throw 'Configuracao invalida; nao continuar.' }
+docker @composeArgs stop -t 60 gateway
+if ($LASTEXITCODE -ne 0) { throw 'Nao foi possivel bloquear o acesso; nao continuar.' }
+```
+
+Confirmar que tentativas de acesso à API ficam indisponíveis. Pode haver erro 502/504 ou espera até o tempo limite do proxy. A API não deve publicar porta diretamente na rede. Com os usuários fora, executar o backup **da versão instalada**, em pasta nova cujo diretório pai exista:
+
+```powershell
+.\scripts\backup-server.ps1 -Destination 'E:\Backups-ERP\antes-atualizacao-2026-10-16'
+```
+
+Substituir data/unidade. Conferir a cópia antes de seguir. Se a imagem original da API tiver sido removida do Docker, backups anteriores à `v0.1.3` podem falhar; preservar a cópia incompleta e resolver com o suporte, sem trocar a versão para contornar a falta de backup. A `v0.1.3` confere uma imagem auxiliar local disponível antes de parar a API; não baixa imagens durante essa seleção.
+
+```powershell
+docker @composeArgs stop -t 60 api
+if ($LASTEXITCODE -ne 0) { throw 'API ainda nao confirmada como parada.' }
+git checkout --detach piloto-cadastros-v0.1.3
+if ($LASTEXITCODE -ne 0) { throw 'Troca de versao falhou; manter manutencao.' }
+git rev-parse HEAD
+docker @composeArgs config --quiet
+if ($LASTEXITCODE -ne 0) { throw 'Configuracao invalida na nova versao.' }
+docker @composeArgs build api
+if ($LASTEXITCODE -ne 0) { throw 'Construcao falhou; manter manutencao.' }
+```
+
+Conferir o commit exibido com a versão aprovada. Neste recorte, frontend, banco, antivírus, configuração e inicializador de volumes são iguais entre as versões; não reconstruir/trocar esses componentes por suposição em futuras atualizações.
+
+```powershell
+docker @composeArgs up -d --no-deps --force-recreate api
+if ($LASTEXITCODE -ne 0) { throw 'Inicio da API falhou; manter manutencao.' }
+docker @composeArgs up -d --no-deps --force-recreate gateway web
+if ($LASTEXITCODE -ne 0) { throw 'Proxies nao iniciaram; manter usuarios fora.' }
+docker @composeArgs up -d --no-deps --force-recreate edge
+if ($LASTEXITCODE -ne 0) { throw 'HTTPS nao iniciou; manter usuarios fora.' }
+docker @composeArgs ps -a
+```
+
+Os proxies são recriados para resolver o endereço da API substituída. A partir daí o suporte testa a URL HTTPS e `/health`, novo login, registro anterior, busca, edição e exame anterior, antes de avisar os usuários. Se falhar, parar novamente `gateway` com o primeiro bloco de bloqueio e investigar. Não concluir sucesso somente porque os containers estão ligados.
 
 ## 3. Se houver falha
 
@@ -45,5 +92,8 @@ A recuperação validada usa ambiente isolado. A decisão de substituir produç�
 ## Evidências e próximo passo
 
 - `powershell -NoProfile -File scripts/test-check-update-version.ps1`: nove cenários reais de Git aprovados, com conteúdo fictício em repositório exclusivo sob `.data`; HEAD, estado e referências preservados em cada verificação. Log ignorado `.data/update-version-test.log`.
-- Sem teste de API, banco ou interface nesta subetapa; nenhum serviço/volume foi alterado.
-- **P4.2:** ensaiar troca de versão em recursos exclusivos de `erp-dents-homolog`, começando com dados fictícios existentes; conferir backup, indisponibilidade durante manutenção, preservação de dados/configuração e retomada. Medir duração e documentar comandos apenas após o aceite. Não usar produção nem volumes de outros projetos.
+- `smoke_windows_update_homolog.py`: imagens construídas das tags, Compose de produção adaptado para nomes/rede/volumes privados de `erp-dents-homolog`; dump restaurado, todas as tabelas comparadas antes/depois, mesmos volumes/configuração/TLS, exame/sessão preservados, busca nova, edição e novo login aprovados. Backup privado do harness separado do script operacional. Não repetiu ensaio de navegador, reinício físico ou nova migração.
+- `smoke_update_backup_gate_homolog.py`: script Windows real com gateway parado, backup completo e restauração comparada, falha tardia injetada mantendo bloqueio mesmo após reinício da API. Dados de origem preservados; gateway reaberto com HTTPS saudável. Nenhum volume removido.
+- Último ensaio privado: **109,31 segundos**, incluindo cópia/verificações e novo login; imagens já construídas. Execução anterior com menos verificações: 41,86 s. Não são previsão para a clínica: construção/download, volume de dados e recursos do outro Windows podem aumentar bastante a janela.
+- Logs locais ignorados: `.data/update-integrated-final.log`, `.data/update-backup-gate.log`; relatórios aprovados `.data/install_41487b31edcd/result.json` e `.data/update-gate-fca548f459324174aa8f2e90ebd8d7ff.result.json`.
+- Próximo: instalação/aceite físico P3 e definição da janela semanal com a clínica. Futuras mudanças de esquema/infraestrutura exigem novo ensaio; não bloquear o início dos cadastros pelas melhorias gerais adiadas.

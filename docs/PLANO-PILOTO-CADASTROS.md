@@ -2,7 +2,7 @@
 
 ## Situação atual — 16/10/2026
 
-**Liberado para instalação assistida: `piloto-cadastros-v0.1.2`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados; paginação entregue na U1.1. Busca por CPF sem pontuação/nome social aprovada na U1.2, incluindo CI `38902882227`. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Não declarar os demais módulos liberados.
+**Liberado para instalação assistida: `piloto-cadastros-v0.1.3`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados; paginação entregue na U1.1. Busca por CPF sem pontuação/nome social aprovada na U1.2, incluindo CI `38902882227`. P4.2 acrescenta ferramentas operacionais e ensaio de atualização sem nova migração, sem alterar a aplicação. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Não declarar os demais módulos liberados.
 
 ## Decisão de prioridade — 15/10/2026
 
@@ -66,6 +66,8 @@ Aplicar pacote no **outro Windows**, após identificar máquina/recursos, URL da
 Só então indicar que os cadastros reais podem começar. Não transferir credenciais ou banco de homologação para produção. A ausência de acesso a essa máquina é uma dependência de implantação, não motivo para interromper a construção e validação do pacote.
 
 ### P4 — atualização semanal do servidor
+
+**Recorte sem nova migração concluído em P4.2:** [comandos, evidências e limites](./ATUALIZACAO-SERVIDOR-WINDOWS.md). Troca real entre versões, backup/restauração, bloqueio durante reinício da API e preservação aprovados em homologação. Versão `v0.1.3` consolida ferramentas; atualização física e futuras migrações permanecem aceites separados.
 
 Preparar uma versão identificada por commit/tag e entregar notas curtas: mudanças, cuidados, duração estimada medida no ensaio e recuperação. Agendar a janela com o responsável da clínica; não instalar automaticamente uma branch em movimento.
 
