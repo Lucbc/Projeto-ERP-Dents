@@ -39,7 +39,7 @@ let stage = 'start';
     matrix.permissions.dashboard.view = true;
     await api(admin, author, 'PUT', '/api/permissions/reception', {version:matrix.version,permissions:matrix.permissions});
     const oldest = await api(admin, author, 'POST', '/api/patients', {
-      full_name:'Paciente Antigo Piloto Ficticio', birth_date:'1990-01-15', cpf:'123.456.789-01'
+      full_name:'Paciente Antigo Piloto Ficticio', preferred_name:'Nome Social Piloto Ficticio', birth_date:'1990-01-15', cpf:'123.456.789-01'
     }, 201);
     for(let i=0;i<104;i++) await api(admin, author, 'POST', '/api/patients', {full_name:'Massa Piloto Ficticia '+String(i).padStart(3,'0')},201);
     stage = 'reception permissions'; const receiver = await login(reception, account.email);
@@ -63,6 +63,18 @@ let stage = 'start';
     assert.ok((await oldRow.innerText()).includes('15/01/1990'));
     assert.equal(await oldRow.getByRole('button',{name:'Excluir',exact:true}).count(),0);
     await search.fill('123.456.789-01'); await oldRow.waitFor();
+    stage = 'normalized CPF and preferred name';
+    for (const term of ['12345678901', 'nome social piloto']) {
+      const loaded = reception.waitForResponse(r => r.url().includes('/api/patients?') &&
+        new URL(r.url()).searchParams.get('search') === term && r.request().method() === 'GET');
+      await search.fill(term);
+      const result = await loaded;
+      assert.equal(result.status(), 200);
+      const found = await result.json();
+      assert.equal(found.total, 1);
+      assert.equal(found.items[0].id, oldest.id);
+      await oldRow.waitFor();
+    }
     stage = 'create without CPF';
     await search.fill('');
     await reception.getByRole('button',{name:'Novo',exact:true}).click();
@@ -97,6 +109,6 @@ let stage = 'start';
     assert.equal(await reception.locator('[name=birth_date]').inputValue(),'1985-05-17');
     assert.equal(await reception.locator('[name=notes]').inputValue(),'Cadastro ficticio revisado');
     assert.equal(await reception.locator('[name=cpf]').inputValue(),'');
-    console.log('PASS: reception account, denied administration/deletion, search beyond 100, formatted CPF, no-CPF create, birth date, edit conflict and reopen.');
+    console.log('PASS: reception account, denied administration/deletion, search beyond 100, formatted/unformatted CPF, preferred name, no-CPF create, birth date, edit conflict and reopen.');
   } finally { await browser.close(); }
 })().catch(() => { console.error('Registration pilot failed at stage: '+stage); process.exit(1); });

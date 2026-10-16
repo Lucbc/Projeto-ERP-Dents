@@ -21,17 +21,21 @@ class SqlAlchemyPatientRepository(PatientRepository):
         stmt = select(PatientModel)
 
         if search:
-            pattern = f"%{search.strip()}%"
-            stmt = stmt.where(
-                or_(
-                    PatientModel.full_name.ilike(pattern),
-                    PatientModel.cpf.ilike(pattern),
-                    PatientModel.rg.ilike(pattern),
-                    PatientModel.phone.ilike(pattern),
-                    PatientModel.email.ilike(pattern),
-                    PatientModel.insurance_provider.ilike(pattern),
-                )
-            )
+            term = search.strip()
+            pattern = f"%{term}%"
+            predicates = [
+                PatientModel.full_name.ilike(pattern),
+                PatientModel.preferred_name.ilike(pattern),
+                PatientModel.cpf.ilike(pattern),
+                PatientModel.rg.ilike(pattern),
+                PatientModel.phone.ilike(pattern),
+                PatientModel.email.ilike(pattern),
+                PatientModel.insurance_provider.ilike(pattern),
+            ]
+            digits = re.sub(r'[^0-9]', '', term)
+            if digits and re.fullmatch(r'[0-9.\s-]+', term):
+                predicates.append(func.regexp_replace(PatientModel.cpf, '[^0-9]', '', 'g').like(f'%{digits}%'))
+            stmt = stmt.where(or_(*predicates))
 
         total = self.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
         items = self.session.scalars(
