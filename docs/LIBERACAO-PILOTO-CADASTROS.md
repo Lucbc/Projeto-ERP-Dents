@@ -1,6 +1,6 @@
 # Liberação para instalar — piloto de cadastros
 
-**15/10/2026: liberado para instalação assistida na clínica, no escopo abaixo.** Versão identificada pela tag Git **`piloto-cadastros-v0.1.0`**. O início dos cadastros reais depende de concluir as verificações locais do [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md), pois o outro computador e a rede da clínica ainda não foram acessados.
+**16/10/2026: liberado para instalação assistida na clínica, no escopo abaixo.** Versão identificada pela tag Git **`piloto-cadastros-v0.1.1`**. A liberação inicial `v0.1.0` de 15/10 permanece preservada; esta atualização acrescenta [paginação validada](./ATUALIZACAO-U1-1.md), sem mudar configuração, dependências ou migrações. O início dos cadastros reais depende de concluir as verificações locais do [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md), pois o outro computador e a rede da clínica ainda não foram acessados.
 
 ## O que está liberado
 
@@ -25,12 +25,12 @@ Os ensaios usaram imagens já construídas e, na instalação nova, cópia das a
 
 ## Limites conhecidos para orientar quem digita
 
-- A lista mostra no máximo 100 resultados. **Não há limite de 100 cadastros no banco.** Buscar pelo nome completo antes de criar um registro; se a busca ainda mostrar mais de 100 resultados, refiná-la. Não interpretar a ausência na primeira lista como inexistência do paciente.
+- A lista mostra até 100 resultados por página, com Página anterior/Próxima página. **Não há limite de 100 cadastros no banco.** Buscar pelo nome completo e conferir as páginas antes de criar um registro. Alterar a busca volta à primeira página. Não interpretar a ausência na primeira lista como inexistência do paciente.
 - CPF e telefone ainda exigem a pontuação usada no cadastro. Para um CPF como `123.456.789-01`, buscar com essa pontuação; quando houver dúvida, buscar pelo nome completo. Nome social/preferido ainda não participa da busca.
 - Nomes semelhantes e pessoas sem CPF podem ser cadastrados. Conferir nascimento e demais dados antes de criar outro registro; o sistema não faz deduplicação automática por nome.
 - Se houver conflito de edição, conferir a alteração da outra pessoa e recarregar o cadastro antes de salvar. O teste comprovou a preservação do rascunho e a recusa de sobrescrita silenciosa.
 
-Paginação e busca independente de pontuação ficam na primeira fila semanal. Essa redução do escopo de P2 atende à prioridade do usuário de começar a digitar agora, com o percurso essencial comprovado e esses limites visíveis. Não representa conclusão da revisão geral de cadastros.
+Paginação entregue na U1.1: Chrome/API com 105 registros e banco com 205 registros aprovados, além das suítes de regressão. Instalação vazia e recuperação são evidências da versão inicial; não foram repetidas nesta atualização sem mudanças de infraestrutura. Busca independente de pontuação permanece na fila semanal. Não representa conclusão da revisão geral de cadastros.
 
 ## Antes do primeiro cadastro real, no local
 
@@ -47,4 +47,4 @@ Paginação e busca independente de pontuação ficam na primeira fila semanal. 
 
 Instalação: `scripts/smoke_windows_install_homolog.py`, relatório local ignorado `.data/install_466b9495e6b7/result.json`. Recepção: `scripts/smoke_registration_pilot_homolog.py`, relatório `.data/homolog/last-registration-pilot.json`. Recuperação: `scripts/smoke_backup_restore_homolog.py --application` e [evidências](./BACKUP-RECUPERACAO.md).
 
-Próximo: instalação física P3 e acompanhamento dos primeiros cadastros; preparar paginação/busca para atualização semanal. Não reabrir a revisão inteira nem colocar financeiro/prontuário no caminho desse piloto.
+Próximo: instalação física P3 e acompanhamento dos primeiros cadastros; preparar busca por CPF sem pontuação/nome social para atualização semanal. Não reabrir a revisão inteira nem colocar financeiro/prontuário no caminho desse piloto.
