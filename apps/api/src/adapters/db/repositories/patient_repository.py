@@ -35,6 +35,8 @@ class SqlAlchemyPatientRepository(PatientRepository):
             digits = re.sub(r'[^0-9]', '', term)
             if digits and re.fullmatch(r'[0-9.\s-]+', term):
                 predicates.append(func.regexp_replace(PatientModel.cpf, '[^0-9]', '', 'g').like(f'%{digits}%'))
+            if digits and re.fullmatch(r'[+0-9().\s-]+', term):
+                predicates.append(func.regexp_replace(PatientModel.phone, '[^0-9]', '', 'g').like(f'%{digits}%'))
             stmt = stmt.where(or_(*predicates))
 
         total = self.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
