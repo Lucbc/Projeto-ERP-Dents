@@ -18,4 +18,4 @@ Iniciada em 16/10/2026, base `08004e5`. Em validação; versão de instalação 
 
 ## Retomada
 
-Concluir CI; registrar resultado antes de publicar nova tag. Manter a liberação anterior e não atualizar o servidor da clínica nesta etapa. Após aceite, corrigir os limites de busca no roteiro/liberação. Dados físicos do servidor continuam aguardando confirmação do usuário.
+Implementação enviada no commit `a464613`. Acompanhar [CI 38902882227](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/38902882227), em execução no registro deste checkpoint; registrar resultado antes de publicar nova tag. Manter a liberação anterior e não atualizar o servidor da clínica nesta etapa. Após aceite, corrigir os limites de busca no roteiro/liberação. Dados físicos do servidor continuam aguardando confirmação do usuário. Não repetir PostgreSQL/Chrome aprovados sem mudança ou falha que justifique.

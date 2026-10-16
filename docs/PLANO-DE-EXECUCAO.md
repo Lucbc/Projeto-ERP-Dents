@@ -16,7 +16,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 15/10/2026
 
-**U1.2 implementada — 16/10/2026, aguardando CI:** [busca de pacientes](./ATUALIZACAO-U1-2.md). PostgreSQL privado e Chrome/API com perfil de recepção aprovados para CPF sem pontuação e nome social; dados armazenados preservados. Sem migração ou atualização do ambiente principal/clínica. Próximo: concluir CI e publicar nova versão com roteiro/limites atualizados; até lá instalar `piloto-cadastros-v0.1.1`.
+**U1.2 implementada — 16/10/2026, aguardando CI:** [busca de pacientes](./ATUALIZACAO-U1-2.md), código `a464613`, CI `38902882227` em execução. PostgreSQL privado e Chrome/API com perfil de recepção aprovados para CPF sem pontuação e nome social; dados armazenados preservados. Sem migração ou atualização do ambiente principal/clínica. Próximo: concluir CI e publicar nova versão com roteiro/limites atualizados; até lá instalar `piloto-cadastros-v0.1.1`. Não considerar U1.2 concluída antes desse aceite.
 
 **Início U1.2 — 16/10/2026, base `08004e5`:** incluir nome social/preferido na busca e permitir CPF com/sem pontuação, preservando valores armazenados, paginação e demais campos pesquisáveis. Normalização numérica somente para termos compostos de dígitos, espaços, ponto e hífen; não transformar texto misto em uma busca ampla por números. Aceite: PostgreSQL privado com contagem/páginas e casos negativos, API/Chrome com perfil de recepção e regressão automatizada. Instalação continua na tag `piloto-cadastros-v0.1.1` até nova liberação; não alterar volumes ou servidor da clínica.
 
