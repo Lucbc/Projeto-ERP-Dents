@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Entrega atual — 15/10/2026
 
+**Bloqueio encontrado na consolidação U1.6B — 17/10/2026:** CI `39036157289` aprovou frontend, mas falhou no build Nginx porque `libexpat=2.8.5-r0` saiu do repositório Alpine. Consulta ao índice oficial e `apk policy` confirmaram `2.9.0-r0` disponível. Corrigir pin de web/proxies, construir e auditar, ampliar ensaio de atualização para incluir proxies antes de liberar. 398 testes frontend locais e banco/Chrome aprovados. Não publicar v0.1.6 antes do novo CI/aceites; instalação do zero de tags anteriores pode falhar pelo pacote ausente mesmo com código previamente aprovado.
+
 **U1.6B implementada, validação em andamento — 17/10/2026:** endpoint de leitura com permissão e dados mínimos, aviso no novo cadastro, candidatos exatos por CPF ou nome/nascimento, inativos e total real. PostgreSQL privado e Chrome/API aprovados, build API/web aprovado; suíte frontend/CI em andamento. [Detalhes e logs](./ATUALIZACAO-U1-6.md). Próximo: fechar validações, consolidar versão e guias no mesmo ciclo conforme pedido de entregas maiores. Nenhuma mudança no ambiente principal ou instalação física; tag aprovada continua v0.1.5.
 
 **Início U1.6B — 17/10/2026, base `1402fd6`:** usuário pediu entregas maiores. Implementar consulta exata e aviso de possíveis duplicidades na criação, validar banco/API/componentes/Chrome e CI, consolidar versão e guias se aprovados. Sem bloqueio de gravação ou migração. Comparar CPF completo equivalente ou nome completo/nascimento; incluir inativos, limitar dados exibidos e proteger respostas antigas/permissões. Instalação v0.1.5 preservada até nova liberação.
