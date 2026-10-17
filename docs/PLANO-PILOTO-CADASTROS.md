@@ -2,7 +2,7 @@
 
 ## Situação atual — 16/10/2026
 
-**Liberado para instalação assistida: `piloto-cadastros-v0.1.3`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados; paginação entregue na U1.1. Busca por CPF sem pontuação/nome social aprovada na U1.2, incluindo CI `38902882227`. P4.2 acrescenta ferramentas operacionais e ensaio de atualização sem nova migração, sem alterar a aplicação. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Não declarar os demais módulos liberados.
+**Liberado para instalação assistida: `piloto-cadastros-v0.1.4`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados; paginação entregue na U1.1. Busca por CPF sem pontuação/nome social aprovada na U1.2, incluindo CI `38902882227`. P4.2 acrescenta ferramentas operacionais; U1.3/U1.4 entregam busca por telefone sem pontuação e preservação de internacionais/ramais na edição. CI `38945859869` e atualização de API/web com preservação aprovados, sem nova migração. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Não declarar os demais módulos liberados.
 
 ## Decisão de prioridade — 15/10/2026
 
@@ -21,12 +21,12 @@ Solicitação do usuário: concluir 3B.2B, disponibilizar o ERP para começar os
 
 | Área | Estado atual verificado | Decisão para entrada em uso |
 | --- | --- | --- |
-| Cadastro e edição | Ensaios existentes de pacientes, controle de versão, autorização e preservação; exibição de nascimento corrigida em 3B.1 | Reutilizar evidências; homologar o percurso final de recepção no pacote instalado |
-| Servidor | `docker-compose.yml` tem projeto de produção, volumes persistentes, HTTPS, reinício dos serviços e bootstrap | Falta pacote/assistente operacional para Windows e ensaio de instalação/reinício; não usar volumes de homologação na clínica |
+| Cadastro e edição | Percurso de recepção em Chrome/API aprovado, incluindo conflito e preservação de telefones | Confirmar acesso e percurso na instalação física |
+| Servidor | Preparadores Windows e ensaio isolado de instalação vazia/reexecução/reinício de serviços aprovados | Confirmar recursos e reinício físico no outro Windows; não usar volumes de homologação na clínica |
 | Estações | Frontend acessível por navegador; não exige instalação da API/banco em cada PC | Configurar nome/IP estável, certificado confiável, acesso de rede e atalho; provar em segunda estação |
-| Backup e restauração | Cópias e comparação de preservação usadas no desenvolvimento; README reconhece restauração assistida pendente | Entregar procedimento executável, testar restauração isolada antes dos cadastros reais e definir responsável/destino da cópia |
-| Atualização | CI e migrações existentes; processo atual conduzido pelo desenvolvedor | Entregar versão identificada, backup prévio, verificações e recuperação documentada para a rotina semanal |
-| Busca e volume | Pacientes têm busca e aviso de limite; `limit: 100`, sem navegação de páginas. CPF/telefone não são normalizados e nome preferido não participa da busca | Priorizar percurso de localização e prevenção de recadastro; paginação e busca vêm antes de ampliar volume. Não bloquear cadastro por exigir CPF de todos |
+| Backup e restauração | Rotina Windows, restauração isolada de dados e aplicação, comparação e falha simulada aprovadas | Definir responsável/destino e conferir cópia externa na clínica |
+| Atualização | Troca de API/web com backup e preservação aprovada; roteiro publicado | Combinar janela semanal e executar aceite local antes de reabrir |
+| Busca e volume | Paginação, nome social e CPF/telefone com ou sem pontuação aprovados; nome ainda distingue acentos | Conferir resultados antes de criar registro; melhoria de acentos em subetapa futura |
 | Importação | Usuário confirmou digitação do zero | Remover importador da fila de entrada em uso; não inventar formato de planilha |
 
 Inspeção em 15/10: [Compose](../docker-compose.yml), [bootstrap](../scripts/configure-bootstrap.ps1), [pacientes](../apps/api/src/core/use_cases/patient_use_cases.py), [busca](../apps/api/src/adapters/db/repositories/patient_repository.py). Não foi feita instalação no computador da clínica nem ensaio em estação física nesta preparação.
@@ -85,4 +85,4 @@ Correção de perda de dados, acesso indevido, indisponibilidade ou bloqueio de 
 
 ## Retomada
 
-**Próximo: apoiar P3 — instalar a versão liberada no outro Windows e concluir checklist local.** Aceites essenciais P1/P2 e melhorias U1.1/U1.2 aprovados; detalhes e limites no documento de liberação. Origem dos dados e sistema operacional já respondidos: digitação do zero, outro Windows. Windows Home e 16 GB são estimativas; edição/build e recursos aguardam confirmação. Backup externo será manual semanal na nuvem, com provedor/conta/pasta ainda a definir. Não continuar automaticamente em 3B.2C. Ao alterar, atualizar o roteiro, registrar evidências, commit/push e conferir remoto. Preparar o procedimento P4 de atualização semanal, sem condicionar a instalação inicial às melhorias gerais.
+**Próximo: apoiar P3 — instalar a versão liberada no outro Windows e concluir checklist local.** Aceites essenciais P1/P2 e melhorias U1.1/U1.2 aprovados; detalhes e limites no documento de liberação. Origem dos dados e sistema operacional já respondidos: digitação do zero, outro Windows. Windows Home e 16 GB são estimativas; edição/build e recursos aguardam confirmação. Backup externo será manual semanal na nuvem, com provedor/conta/pasta ainda a definir. Não continuar automaticamente em 3B.2C. Ao alterar, atualizar o roteiro, registrar evidências, commit/push e conferir remoto. P4 já validado para atualizações sem nova migração. Enquanto aguardamos os dados físicos, continuar melhorias em subetapas; próxima investigação: busca por nome sem acentos.

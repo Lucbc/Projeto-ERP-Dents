@@ -12,12 +12,13 @@ from smoke_backup_restore_homolog import ROOT, PROJECT, run
 
 
 def prepare_images(folder):
-    releases = {'old': 'piloto-cadastros-v0.1.1', 'new': 'piloto-cadastros-v0.1.2'}
+    releases = {'old': 'piloto-cadastros-v0.1.3', 'new': 'b4678e33f4de6a7f5c9a0b723325452538287190'}
     # This acceptance is specifically a no-migration application update.
-    unchanged = ['docker-compose.yml', 'ops', 'apps/api/alembic', 'apps/web',
+    unchanged = ['docker-compose.yml', 'ops', 'apps/api/alembic', 'apps/web/Dockerfile',
+                 'apps/web/package.json', 'apps/web/package-lock.json',
                  'apps/api/Dockerfile', 'apps/api/requirements.txt']
     if run('git', 'diff', '--name-only', releases['old'], releases['new'], '--', *unchanged).strip():
-        raise RuntimeError('This harness requires identical deployment/schema/frontend between releases.')
+        raise RuntimeError('This harness requires identical deployment/schema/dependencies between releases.')
     images = {'releases': releases}
     for label, tag in releases.items():
         source = folder / label
@@ -26,9 +27,6 @@ def prepare_images(folder):
             archive.extractall(source, filter='data')
         images[label] = {}
         for service in ('api', 'web'):
-            if label == 'new' and service == 'web':
-                images[label][service] = images['old'][service]
-                continue
             image = PROJECT + '-update-' + folder.name + '-' + label + '-' + service
             print('Building isolated release image: ' + label + '/' + service, flush=True)
             run('docker', 'build', '-q', '-t', image, str(source / 'apps' / service))
@@ -64,8 +62,10 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         return result
 
     patient = request('PUT', '/api/patients/' + patient['id'],
-                      {'version': patient['version'], 'cpf': '123.456.789-01', 'preferred_name': 'Update Social Fictitious'})
-    assert request('GET', '/api/patients?search=12345678901')['total'] == 0
+                      {'version': patient['version'], 'cpf': '123.456.789-01', 'preferred_name': 'Update Social Fictitious',
+                       'phone': '(11) 3333-4444'})
+    assert request('GET', '/api/patients?search=1133334444')['total'] == 0
+    old_html = client.raw('GET', '/patients')[1]
     png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=')
     boundary = 'update-fixture'
     body = (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="test.png"\r\nContent-Type: image/png\r\n\r\n').encode() + png + f'\r\n--{boundary}--\r\n'.encode()
@@ -126,6 +126,7 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         compose_run('stop', '-t', '60', names['api'])
         for service in ('api', 'exam-storage-init'):
             config['services'][names[service]]['image'] = images['new']['api']
+        config['services'][names['web']]['image'] = images['new']['web']
         compose_run('up', '-d', '--no-build', '--no-deps', names['api'])
         blocked()
         # Explicitly recreate proxies after API replacement to refresh upstream DNS.
@@ -137,9 +138,11 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         for name in ('db', 'api'):
             assert json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts'] == original_mounts[name]
         assert json.loads(run('docker', 'inspect', containers['api']))[0]['Image'] == images['new']['api']
+        assert json.loads(run('docker', 'inspect', containers['web']))[0]['Image'] == images['new']['web']
+        assert client.raw('GET', '/patients')[1] != old_html
         assert request('GET', '/api/patients/' + patient['id']) == patient
         assert request('GET', '/api/exams/' + exam['id'] + '/download') == png
-        for term in ('12345678901', 'Update%20Social%20Fictitious'):
+        for term in ('12345678901', 'Update%20Social%20Fictitious', '1133334444'):
             found = request('GET', '/api/patients?search=' + term)
             assert found['total'] == 1 and found['items'][0]['id'] == patient['id']
         assert request('GET', '/api/auth/needs-bootstrap')['needsBootstrap'] is False
@@ -150,7 +153,8 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         elapsed = round(time.monotonic() - started, 2)
         (folder / 'result.json').write_text(json.dumps({'passed': True, 'releases': images['releases'],
             'maintenanceSeconds': elapsed, 'checks': ['backup restored', 'gateway blocked during backup/replacement',
-            'all public rows preserved', 'same volumes/config/TLS', 'old session and exam preserved', 'new search', 'edit', 'fresh login'],
+            'all public rows preserved', 'same volumes/config/TLS', 'old session and exam preserved',
+            'new API and frontend images', 'new search', 'edit', 'fresh login'],
             'limits': ['private harness backup, not backup-server.ps1', 'API/HTTPS, no browser',
                        'no new migration', 'cached images/signatures', 'no physical clinic installation']}, indent=2))
         print(f'PASS: release update, preserved rows/volumes/config/TLS/exam/session, new search and edit; maintenance {elapsed}s.', flush=True)
