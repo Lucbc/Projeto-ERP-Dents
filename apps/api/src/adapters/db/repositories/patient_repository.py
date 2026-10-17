@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import func, literal_column, or_, select, update
 from sqlalchemy.orm import Session
 
 from src.adapters.db.models.models import PatientModel, ExamModel
@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from src.core.domain.exceptions import ConflictError, ValidationError, ForbiddenError
 from src.adapters.db.repositories.patient_deletion import exams_fingerprint
 import re
+import unicodedata
 from src.core.domain.entities import Patient
 from src.core.ports.repositories import PatientRepository
 
@@ -32,6 +33,15 @@ class SqlAlchemyPatientRepository(PatientRepository):
                 PatientModel.email.ilike(pattern),
                 PatientModel.insurance_provider.ilike(pattern),
             ]
+            # Fold only names at query time; stored spelling remains untouched.
+            # Match the same combining-mark range in Python and PostgreSQL NFD.
+            marks = '[\u0300-\u036f]'
+            folded = re.sub(marks, '', unicodedata.normalize('NFD', term))
+            if folded.strip():
+                for column in (PatientModel.full_name, PatientModel.preferred_name):
+                    predicates.append(func.regexp_replace(
+                        func.normalize(column, literal_column('NFD')), marks, '', 'g'
+                    ).ilike(f'%{folded}%'))
             digits = re.sub(r'[^0-9]', '', term)
             if digits and re.fullmatch(r'[0-9.\s-]+', term):
                 predicates.append(func.regexp_replace(PatientModel.cpf, '[^0-9]', '', 'g').like(f'%{digits}%'))

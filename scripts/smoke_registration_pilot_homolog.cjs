@@ -39,7 +39,7 @@ let stage = 'start';
     matrix.permissions.dashboard.view = true;
     await api(admin, author, 'PUT', '/api/permissions/reception', {version:matrix.version,permissions:matrix.permissions});
     const oldest = await api(admin, author, 'POST', '/api/patients', {
-      full_name:'Paciente Antigo Piloto Ficticio', preferred_name:'Nome Social Piloto Ficticio', birth_date:'1990-01-15', cpf:'123.456.789-01', phone:'(11) 3333-4444'
+      full_name:'Paciente Antigo Jo\u00e3o Gon\u00e7alves Ficticio', preferred_name:'Nome Social Jos\u00e9 Piloto Ficticio', birth_date:'1990-01-15', cpf:'123.456.789-01', phone:'(11) 3333-4444'
     }, 201);
     for(let i=0;i<104;i++) await api(admin, author, 'POST', '/api/patients', {full_name:'Massa Piloto Ficticia '+String(i).padStart(3,'0')},201);
     stage = 'reception permissions'; const receiver = await login(reception, account.email);
@@ -63,8 +63,9 @@ let stage = 'start';
     assert.ok((await oldRow.innerText()).includes('15/01/1990'));
     assert.equal(await oldRow.getByRole('button',{name:'Excluir',exact:true}).count(),0);
     await search.fill('123.456.789-01'); await oldRow.waitFor();
-    stage = 'normalized CPF, phone and preferred name';
-    for (const term of ['12345678901', 'nome social piloto', '(11) 3333-4444', '1133334444']) {
+    stage = 'normalized CPF, phone and accented names';
+    for (const term of ['12345678901', 'nome social jose piloto', '(11) 3333-4444', '1133334444',
+                       'joao goncalves', 'JO\u00c3O GON\u00c7ALVES', 'Joa\u0303o Gonc\u0327alves', 'jose piloto']) {
       const loaded = reception.waitForResponse(r => r.url().includes('/api/patients?') &&
         new URL(r.url()).searchParams.get('search') === term && r.request().method() === 'GET');
       await search.fill(term);
@@ -73,6 +74,8 @@ let stage = 'start';
       const found = await result.json();
       assert.equal(found.total, 1);
       assert.equal(found.items[0].id, oldest.id);
+      assert.equal(found.items[0].full_name, oldest.full_name);
+      assert.equal(found.items[0].preferred_name, oldest.preferred_name);
       await oldRow.waitFor();
     }
     stage = 'create without CPF';
@@ -115,6 +118,6 @@ let stage = 'start';
     assert.equal(await reception.locator('[name=cpf]').inputValue(),'');
     assert.equal(await reception.locator('[name=phone]').inputValue(),patient.phone);
     assert.equal(await reception.locator('[name=emergency_contact_phone]').inputValue(),patient.emergency_contact_phone);
-    console.log('PASS: reception account, denied administration/deletion, search beyond 100, formatted/unformatted CPF and phone, preferred name, no-CPF create, birth date, edit conflict and reopen.');
+    console.log('PASS: reception account, denied administration/deletion, search beyond 100, formatted/unformatted CPF and phone, accented names and preserved spelling, no-CPF create, birth date, edit conflict and reopen.');
   } finally { await browser.close(); }
 })().catch(() => { console.error('Registration pilot failed at stage: '+stage); process.exit(1); });
