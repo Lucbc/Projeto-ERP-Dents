@@ -1,5 +1,20 @@
 # U1.6 — prevenção de cadastros duplicados
 
+## U1.6B — implementação em validação, 17/10/2026
+
+Aviso automático no formulário de novo paciente após informar CPF completo ou nome completo/nascimento. Consulta exata no banco inteiro, incluindo inativos; nome ignora acentos, caixa e espaços repetidos. CPF compara 11 dígitos com pontuação opcional, sem converter texto misto em documento. Não valida dígitos verificadores nem impede gravação simultânea.
+
+`POST /api/patients/duplicate-check` é somente leitura, exige permissão de visualizar pacientes e retorna apenas ID, nome, nascimento, situação e motivo, total e até dez candidatos. Não retorna CPF, contato ou informações clínicas. Corpo evita colocar os critérios na URL. A resposta informa se havia critérios suficientes; ausência de correspondência não prova inexistência.
+
+Interface preserva rascunho, consulta após pausa na digitação, cancela ao fechar/trocar campos e ignora respostas antigas mesmo quando o transporte não respeita cancelamento. Falha mostra aviso e nova tentativa; 401/403 encerra a visualização. Cadastro legítimo continua disponível. Não há consulta na edição nem alterações automáticas em registros existentes.
+
+Validação até este checkpoint:
+
+- PostgreSQL privado aprovado, 3,866 s: busca além dos primeiros 100, correspondência exata, inativos, ausência de CPF, documentos mistos, negativos, limite/total e preservação. `.data/duplicates-db.log`.
+- Build API/web e TypeScript aprovados; `.data/duplicates-build.log`. Último ajuste da condição SQL para CPF misto validado no banco após esse build.
+- Chrome/API aprovado: aviso, conta de recepção, resposta mínima, alteração de critérios, rascunho, ausência de CPF, regressões e recusa 403 após revogar visualização. `.data/duplicates-browser.log`.
+- Suíte frontend em execução; CI completo será conferido após publicar o código. Instalação aprovada permanece v0.1.5 até concluir os aceites. Nenhuma migração ou alteração de configuração.
+
 ## U1.6A — diagnóstico concluído em 16/10/2026
 
 Base `f00d889`, aplicação da versão `piloto-cadastros-v0.1.5`. Nenhuma alteração funcional nesta subetapa; versão de instalação preservada.

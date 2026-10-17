@@ -1,4 +1,5 @@
 import { formatPhone } from "@/lib/phone";
+import { PatientDuplicateCheck } from './patient-duplicate-check';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
@@ -437,6 +438,9 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
         title={editingPatient ? "Editar paciente" : "Novo paciente"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {openModal && !editingPatient && can('patients', 'view') && <PatientDuplicateCheck
+            fullName={form.watch('full_name')} birthDate={form.watch('birth_date') ?? ''}
+            cpf={form.watch('cpf') ?? ''} onDenied={onDenied} />}
           {editConflict && editingPatient && (
             <div className="md:col-span-2 rounded-sm border border-amber-300 bg-amber-50 p-3" role="alert">
               <p>Não foi possível salvar. Seu rascunho permanece abaixo. Carregar o cadastro atual substituirá os campos deste formulário.</p>

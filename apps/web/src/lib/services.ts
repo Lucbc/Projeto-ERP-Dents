@@ -172,6 +172,10 @@ export const authService = {
 };
 
 export const patientService = {
+  async duplicateCheck(payload: { full_name: string; birth_date: string | null; cpf: string | null }, signal?: AbortSignal) {
+    return (await api.post<{ items: { id: string; full_name: string; birth_date: string | null; active: boolean; same_cpf: boolean }[]; total: number; checked: boolean }>(
+      '/api/patients/duplicate-check', payload, { signal })).data;
+  },
   async list(params: PaginationParams, signal?: AbortSignal) {
     const response = await api.get<ListResponse<Patient>>("/api/patients", { params, signal });
     return response.data;

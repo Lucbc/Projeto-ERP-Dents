@@ -32,6 +32,26 @@ class PatientDeletionPreview(AppBaseSchema):
     exams_fingerprint: str
 
 
+class PatientDuplicateRequest(BaseModel):
+    full_name: str = Field(default='', max_length=250)
+    birth_date: date | None = None
+    cpf: str | None = Field(default=None, max_length=32)
+
+
+class PatientDuplicateCandidate(BaseModel):
+    id: UUID
+    full_name: str
+    birth_date: date | None
+    active: bool
+    same_cpf: bool
+
+
+class PatientDuplicateResponse(BaseModel):
+    items: list[PatientDuplicateCandidate]
+    total: int
+    checked: bool
+
+
 class PatientCreateRequest(BaseModel):
     full_name: str = Field(min_length=1)
     preferred_name: str | None = None

@@ -13,6 +13,8 @@ from src.api.schemas.schemas import (
     PatientListResponse,
     PatientResponse,
     PatientUpdateRequest,
+    PatientDuplicateRequest,
+    PatientDuplicateResponse,
 )
 from src.core.use_cases.patient_use_cases import PatientUseCases
 from src.api.schemas.schemas import PatientDeletionPreview
@@ -62,6 +64,13 @@ def list_patients(
 def create_patient(payload: PatientCreateRequest, db: Session = Depends(get_db_dep)):
     use_case = PatientUseCases(SqlAlchemyPatientRepository(db))
     return use_case.create(payload.model_dump())
+
+
+@router.post('/duplicate-check', response_model=PatientDuplicateResponse,
+    dependencies=[Depends(require_permission('patients', 'view'))])
+def duplicate_check(payload: PatientDuplicateRequest, db: Session = Depends(get_db_dep)):
+    return SqlAlchemyPatientRepository(db).duplicate_candidates(
+        payload.full_name, payload.birth_date, payload.cpf)
 
 
 @router.get(

@@ -18,6 +18,32 @@ class SqlAlchemyPatientRepository(PatientRepository):
     def __init__(self, session: Session) -> None:
         self.session = session
 
+    def duplicate_candidates(self, full_name, birth_date, cpf):
+        predicates = []
+        digits = re.sub(r'[^0-9]', '', cpf or '')
+        cpf_match = None
+        if len(digits) == 11 and re.fullmatch(r'[0-9.\s-]+', cpf or ''):
+            cpf_match = (PatientModel.cpf.op('~')(r'^[0-9.\s-]+$')) & (
+                func.regexp_replace(PatientModel.cpf, '[^0-9]', '', 'g') == digits)
+            predicates.append(cpf_match)
+        marks = '[\u0300-\u036f]'
+        name = ' '.join(re.sub(marks, '', unicodedata.normalize('NFD', full_name or '')).split())
+        if len(name) >= 2 and birth_date:
+            stored_name = func.trim(func.regexp_replace(func.regexp_replace(
+                func.normalize(PatientModel.full_name, literal_column('NFD')), marks, '', 'g'), r'\s+', ' ', 'g'))
+            predicates.append((func.lower(stored_name) == func.lower(name)) & (PatientModel.birth_date == birth_date))
+        if not predicates:
+            return {'items': [], 'total': 0, 'checked': False}
+        match = or_(*predicates)
+        total = self.session.scalar(select(func.count()).select_from(PatientModel).where(match)) or 0
+        # Select only the fields needed for review, including inactive records.
+        rows = self.session.execute(select(PatientModel.id, PatientModel.full_name,
+            PatientModel.birth_date, PatientModel.active,
+            (cpf_match if cpf_match is not None else literal_column('false')).label('same_cpf'))
+            .where(match).order_by(PatientModel.created_at.desc(), PatientModel.id.desc()).limit(10)).all()
+        return {'items': [dict(id=row.id, full_name=row.full_name, birth_date=row.birth_date,
+            active=row.active, same_cpf=bool(row.same_cpf)) for row in rows], 'total': int(total), 'checked': True}
+
     def list(self, search: str | None, limit: int, offset: int) -> tuple[list[Patient], int]:
         stmt = select(PatientModel)
 
