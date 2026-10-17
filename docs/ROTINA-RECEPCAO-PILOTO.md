@@ -9,7 +9,7 @@
 
 1. Procurar pelo nome completo, nome social/preferido ou CPF. O CPF pode ser digitado com ou sem pontuação.
 2. Conferir os dados encontrados para evitar duplicidade. A lista tem até 100 resultados por página; usar **Próxima página** quando necessário.
-3. O telefone também pode ser pesquisado com ou sem pontuação, inclusive por um trecho do número. A busca de nomes ainda diferencia acentos; tentar outro trecho do nome ou CPF quando necessário.
+3. O telefone também pode ser pesquisado com ou sem pontuação, inclusive por um trecho do número. Nome completo e nome social podem ser buscados com ou sem acentos: Joao encontra João. Confira nascimento e demais dados antes de criar outro registro.
 
 ## Cadastrar e conferir
 

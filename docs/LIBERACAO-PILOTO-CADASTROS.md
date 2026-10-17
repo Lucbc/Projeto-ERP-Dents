@@ -1,6 +1,6 @@
 # Liberação para instalar — piloto de cadastros
 
-**16/10/2026: liberado para instalação assistida na clínica, no escopo abaixo.** Versão identificada pela tag Git **`piloto-cadastros-v0.1.4`**. Tags anteriores preservadas; inclui [paginação](./ATUALIZACAO-U1-1.md), [busca por CPF sem pontuação/nome social](./ATUALIZACAO-U1-2.md) e [ferramentas/roteiro de atualização](./ATUALIZACAO-SERVIDOR-WINDOWS.md). A `v0.1.4` inclui [busca por telefone sem pontuação](./ATUALIZACAO-U1-3.md) e [preservação de telefones na edição](./ATUALIZACAO-U1-4.md), sem mudança de configuração, dependências ou migrações frente à `v0.1.3`. O início dos cadastros reais depende de concluir as verificações locais do [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md), pois o outro computador e a rede da clínica ainda não foram acessados.
+**16/10/2026: liberado para instalação assistida na clínica, no escopo abaixo.** Versão identificada pela tag Git **`piloto-cadastros-v0.1.5`**. Tags anteriores preservadas; inclui [paginação](./ATUALIZACAO-U1-1.md), [busca por CPF sem pontuação/nome social](./ATUALIZACAO-U1-2.md) e [ferramentas/roteiro de atualização](./ATUALIZACAO-SERVIDOR-WINDOWS.md). A `v0.1.4` inclui [busca por telefone sem pontuação](./ATUALIZACAO-U1-3.md) e [preservação de telefones na edição](./ATUALIZACAO-U1-4.md), sem mudança de configuração, dependências ou migrações frente à `v0.1.3`. A `v0.1.5` acrescenta [busca por nomes sem acentos](./ATUALIZACAO-U1-5.md), sem migração ou alteração de configuração. O início dos cadastros reais depende de concluir as verificações locais do [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md), pois o outro computador e a rede da clínica ainda não foram acessados.
 
 ## O que está liberado
 
@@ -27,7 +27,7 @@ Os ensaios usaram imagens já construídas e, na instalação nova, cópia das a
 
 - A lista mostra até 100 resultados por página, com Página anterior/Próxima página. **Não há limite de 100 cadastros no banco.** Buscar pelo nome completo e conferir as páginas antes de criar um registro. Alterar a busca volta à primeira página. Não interpretar a ausência na primeira lista como inexistência do paciente.
 - CPF pode ser buscado com ou sem pontos, hífen e espaços. Nome social/preferido também participa da busca, sem distinção de maiúsculas/minúsculas. Conferir os dados do resultado antes de criar outro cadastro.
-- Telefone pode ser buscado com ou sem pontuação, inclusive por trecho dos dígitos. Nomes ainda não ignoram acentos; quando necessário, buscar por CPF ou outro trecho do nome.
+- Telefone pode ser buscado com ou sem pontuação, inclusive por trecho dos dígitos. Nome completo e nome social podem ser buscados com ou sem acentos, preservando a grafia cadastrada.
 - Nomes semelhantes e pessoas sem CPF podem ser cadastrados. Conferir nascimento e demais dados antes de criar outro registro; o sistema não faz deduplicação automática por nome.
 - Se houver conflito de edição, conferir a alteração da outra pessoa e recarregar o cadastro antes de salvar. O teste comprovou a preservação do rascunho e a recusa de sobrescrita silenciosa.
 
@@ -45,6 +45,8 @@ Paginação entregue na U1.1: Chrome/API com 105 registros e banco com 205 regis
 **Concluídos esses passos, começar os cadastros reais.** Não é necessário esperar as demais melhorias do ERP. Caso algum passo falhe, resolver esse bloqueio específico antes de iniciar, sem apagar volumes.
 
 ## Evidências e retomada
+
+U1.5: [CI 38989240918](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/38989240918) do código `95d0666` aprovado, com 310 testes backend e 393 frontend. PostgreSQL privado e Chrome/API aprovaram busca de nomes completos/sociais sem acentos e preservação da grafia. Sem migração, mudança de configuração ou novo ensaio de instalação/troca de imagens nesta entrega; as evidências operacionais abaixo são das versões anteriores.
 
 Instalação: `scripts/smoke_windows_install_homolog.py`, relatório local ignorado `.data/install_466b9495e6b7/result.json`. Recepção: `scripts/smoke_registration_pilot_homolog.py`, relatório `.data/homolog/last-registration-pilot.json`. Recuperação: `scripts/smoke_backup_restore_homolog.py --application` e [evidências](./BACKUP-RECUPERACAO.md).
 
