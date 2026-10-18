@@ -290,7 +290,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
       full_name: patient.full_name,
       preferred_name: patient.preferred_name ?? "",
       birth_date: patient.birth_date ?? "",
-      cpf: formatCpf(patient.cpf ?? ""),
+      cpf: patient.cpf ?? "",
       rg: patient.rg ?? "",
       phone: patient.phone ?? "",
       email: patient.email ?? "",

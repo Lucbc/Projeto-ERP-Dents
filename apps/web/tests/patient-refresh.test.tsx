@@ -25,6 +25,18 @@ beforeEach(() => {
   vi.spyOn(patientService, "list").mockResolvedValue({ items: [patient], total: 1 });
   vi.spyOn(patientService, "deletionPreview").mockResolvedValue(preview);
 });
+
+it("preserves historical CPF exactly when editing another field", async () => {
+  const stored = { ...patient, cpf: 'DOC-LEGADO-123456789012', notes: 'Original fictitious' };
+  vi.mocked(patientService.list).mockResolvedValue({ items: [stored], total: 1 });
+  const update = vi.spyOn(patientService, 'update').mockResolvedValue(stored);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button', { name: 'Editar', exact: true })); await tick();
+  expect((view.container.querySelector('[name="cpf"]') as HTMLInputElement).value).toBe(stored.cpf);
+  fireEvent.change(view.notes(), { target: { value: 'Only notes changed' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar', exact: true })); await tick();
+  expect(update).toHaveBeenCalledWith(patient.id, expect.objectContaining({ cpf: stored.cpf, notes: 'Only notes changed' }));
+});
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
 it("preserves international and extension phones when editing another field", async () => {
