@@ -12,13 +12,19 @@ from smoke_backup_restore_homolog import ROOT, PROJECT, run
 
 
 def prepare_images(folder):
-    releases = {'old': 'piloto-cadastros-v0.1.3', 'new': 'b4678e33f4de6a7f5c9a0b723325452538287190'}
+    releases = {'old': 'piloto-cadastros-v0.1.5', 'new': 'de20ba110e4286e5070bcd1cb9e16189a1b5fd63'}
     # This acceptance is specifically a no-migration application update.
-    unchanged = ['docker-compose.yml', 'ops', 'apps/api/alembic', 'apps/web/Dockerfile',
+    unchanged = ['docker-compose.yml', 'ops', ':(exclude)ops/nginx/Dockerfile', 'apps/api/alembic',
                  'apps/web/package.json', 'apps/web/package-lock.json',
                  'apps/api/Dockerfile', 'apps/api/requirements.txt']
     if run('git', 'diff', '--name-only', releases['old'], releases['new'], '--', *unchanged).strip():
         raise RuntimeError('This harness requires identical deployment/schema/dependencies between releases.')
+    # This release permits exactly the reviewed runtime-package replacement.
+    for path in ('apps/web/Dockerfile', 'ops/nginx/Dockerfile'):
+        old = run('git', 'show', releases['old'] + ':' + path)
+        new = run('git', 'show', releases['new'] + ':' + path)
+        if old.replace(b'libexpat=2.8.5-r0', b'libexpat=2.9.0-r0') != new:
+            raise RuntimeError('Unexpected runtime Dockerfile change.')
     images = {'releases': releases}
     for label, tag in releases.items():
         source = folder / label
@@ -31,6 +37,16 @@ def prepare_images(folder):
             print('Building isolated release image: ' + label + '/' + service, flush=True)
             run('docker', 'build', '-q', '-t', image, str(source / 'apps' / service))
             images[label][service] = run('docker', 'image', 'inspect', '--format', '{{.Id}}', image).decode().strip()
+        if label == 'new':
+            proxy = PROJECT + '-update-' + folder.name + '-proxy'
+            print('Building isolated release image: new/proxy', flush=True)
+            run('docker', 'build', '-q', '-t', proxy, str(source / 'ops' / 'nginx'))
+            proxy_id = run('docker', 'image', 'inspect', '--format', '{{.Id}}', proxy).decode().strip()
+            images[label].update(gateway=proxy_id, edge=proxy_id)
+            # Old libexpat is no longer downloadable, and the original running
+            # proxy image is absent locally. Test the corrected proxies with
+            # both old and new APIs; do not claim a swap from the old proxy.
+            images['old'].update(gateway=proxy_id, edge=proxy_id)
     if images['old']['api'] == images['new']['api']:
         raise RuntimeError('Expected different API release images.')
     return images
@@ -64,7 +80,7 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
     patient = request('PUT', '/api/patients/' + patient['id'],
                       {'version': patient['version'], 'cpf': '123.456.789-01', 'preferred_name': 'Update Social Fictitious',
                        'phone': '(11) 3333-4444'})
-    assert request('GET', '/api/patients?search=1133334444')['total'] == 0
+    assert request('GET', '/api/patients?search=1133334444')['total'] == 1
     old_html = client.raw('GET', '/patients')[1]
     png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=')
     boundary = 'update-fixture'
@@ -127,6 +143,8 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         for service in ('api', 'exam-storage-init'):
             config['services'][names[service]]['image'] = images['new']['api']
         config['services'][names['web']]['image'] = images['new']['web']
+        for service in ('gateway', 'edge'):
+            config['services'][names[service]]['image'] = images['new'][service]
         compose_run('up', '-d', '--no-build', '--no-deps', names['api'])
         blocked()
         # Explicitly recreate proxies after API replacement to refresh upstream DNS.
@@ -139,6 +157,9 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
             assert json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts'] == original_mounts[name]
         assert json.loads(run('docker', 'inspect', containers['api']))[0]['Image'] == images['new']['api']
         assert json.loads(run('docker', 'inspect', containers['web']))[0]['Image'] == images['new']['web']
+        for service in ('web', 'gateway', 'edge'):
+            assert json.loads(run('docker', 'inspect', containers[service]))[0]['Image'] == images['new'][service]
+            assert b'libexpat-2.9.0-r0' in run('docker', 'exec', containers[service], 'apk', 'list', '--installed', 'libexpat')
         assert client.raw('GET', '/patients')[1] != old_html
         assert request('GET', '/api/patients/' + patient['id']) == patient
         assert request('GET', '/api/exams/' + exam['id'] + '/download') == png
@@ -146,6 +167,11 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
             found = request('GET', '/api/patients?search=' + term)
             assert found['total'] == 1 and found['items'][0]['id'] == patient['id']
         assert request('GET', '/api/auth/needs-bootstrap')['needsBootstrap'] is False
+        duplicates = request('POST', '/api/patients/duplicate-check', {'cpf': '12345678901'})
+        assert duplicates['checked'] and duplicates['total'] == 1
+        assert duplicates['items'][0]['id'] == patient['id']
+        assert duplicates['items'][0]['same_cpf'] is True
+        assert fingerprint() == before
         request('PUT', '/api/patients/' + patient['id'], {'version': patient['version'], 'notes': 'Fictitious post-update edit'})
         status, identity, _ = client.request('POST', '/api/auth/login', credentials)
         assert status == 200
@@ -154,10 +180,11 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         (folder / 'result.json').write_text(json.dumps({'passed': True, 'releases': images['releases'],
             'maintenanceSeconds': elapsed, 'checks': ['backup restored', 'gateway blocked during backup/replacement',
             'all public rows preserved', 'same volumes/config/TLS', 'old session and exam preserved',
-            'new API and frontend images', 'new search', 'edit', 'fresh login'],
+            'new API/frontend/proxy images', 'runtime libexpat version', 'search', 'read-only duplicate check', 'edit', 'fresh login'],
             'limits': ['private harness backup, not backup-server.ps1', 'API/HTTPS, no browser',
+                       'corrected proxy image used in both phases; old proxy image unavailable',
                        'no new migration', 'cached images/signatures', 'no physical clinic installation']}, indent=2))
-        print(f'PASS: release update, preserved rows/volumes/config/TLS/exam/session, new search and edit; maintenance {elapsed}s.', flush=True)
+        print(f'PASS: release update, preserved rows/volumes/config/TLS/exam/session, duplicate check and edit; maintenance {elapsed}s.', flush=True)
     finally:
         if subprocess.run(['docker', 'inspect', helper], capture_output=True).returncode == 0:
             run('docker', 'rm', '-f', helper)

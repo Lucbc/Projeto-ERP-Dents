@@ -1,10 +1,10 @@
 # Atualização semanal do servidor Windows
 
-## Estado — 16/10/2026
+## Estado — 18/10/2026
 
 **P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
 
-**Versão atual: `piloto-cadastros-v0.1.5`.** U1.5 altera somente a consulta de nomes na API, com CI e Chrome/API aprovados; sem migração, dependências ou configuração nova. O ensaio de troca abaixo é evidência da v0.1.4, não uma nova execução na v0.1.5. Troca adicional a partir da `v0.1.3` para o código `b4678e3` aprovada, incluindo novas imagens de API **e web**, preservação e busca por telefone. Os comandos abaixo foram ajustados para reconstruir ambos. Sem nova migração ou alteração de dependências/infraestrutura.
+**Versão atual: `piloto-cadastros-v0.1.6`.** Inclui aviso de duplicidade e libexpat 2.9.0 nas imagens Nginx. Reconstruir API, web, gateway e edge conforme os comandos abaixo. Sem migração ou configuração nova. Ensaio de atualização aprovado com backup/restauração e dados existentes; proxies corrigidos usados com API antiga e nova porque a imagem antiga não estava disponível localmente. Detalhes e limites em [U1.6](./ATUALIZACAO-U1-6.md).
 
 Somente o suporte atualiza o servidor. As estações continuam usando a mesma URL e não precisam instalar pacotes. Fazer a manutenção em janela combinada, com um único operador e todos os usuários fora do sistema até o aceite final.
 
@@ -22,7 +22,7 @@ O suporte pode executar `scripts/check-update-version.ps1` de uma cópia das fer
 Exemplo, substituindo a tag pelo destino aprovado e o caminho pela instalação real:
 
 ```powershell
-.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.5'
+.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.6'
 ```
 
 O comando exige histórico completo, árvore de trabalho limpa, tag local no formato do piloto, destino igual ou descendente do commit atual e presença dos arquivos básicos de implantação. Exibe somente identificadores Git e mensagens de estado. Não lê `.env`, não faz fetch/checkout e não chama Docker.
@@ -62,16 +62,16 @@ Substituir data/unidade. Conferir a cópia antes de seguir. Se a imagem original
 ```powershell
 docker @composeArgs stop -t 60 api
 if ($LASTEXITCODE -ne 0) { throw 'API ainda nao confirmada como parada.' }
-git checkout --detach piloto-cadastros-v0.1.5
+git checkout --detach piloto-cadastros-v0.1.6
 if ($LASTEXITCODE -ne 0) { throw 'Troca de versao falhou; manter manutencao.' }
 git rev-parse HEAD
 docker @composeArgs config --quiet
 if ($LASTEXITCODE -ne 0) { throw 'Configuracao invalida na nova versao.' }
-docker @composeArgs build api web
+docker @composeArgs build api web gateway edge
 if ($LASTEXITCODE -ne 0) { throw 'Construcao falhou; manter manutencao.' }
 ```
 
-Conferir o commit exibido com a versão aprovada. Da v0.1.4 para v0.1.5, somente API muda; reconstruir ambos também atende instalações anteriores. No ensaio v0.1.3 para v0.1.4, API e frontend mudaram; banco, antivírus, configuração e inicializador de volumes permanecem iguais. Futuras versões exigem conferir novamente as notas dos componentes e migrações.
+Conferir o commit exibido com a versão aprovada. Para v0.1.6, reconstruir API, frontend e os dois proxies: há aviso de duplicidade e atualização da biblioteca libexpat nas imagens Nginx. Banco, antivírus, configuração e inicializador de volumes permanecem iguais. Futuras versões exigem conferir novamente as notas dos componentes e migrações.
 
 ```powershell
 docker @composeArgs up -d --no-deps --force-recreate api

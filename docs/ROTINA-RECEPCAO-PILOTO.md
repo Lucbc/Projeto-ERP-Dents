@@ -17,6 +17,10 @@
 2. Conferir nome, nascimento e contatos, salvar e verificar o registro na lista.
 3. Se houver erro ou dúvida sobre o salvamento, procurar o registro antes de tentar criar novamente. Evitar cadastros duplicados.
 
+Na versão v0.1.6, o formulário **Novo** confere possíveis duplicidades ao informar CPF completo ou nome completo e nascimento. Aguarde a conferência e confira os nomes, nascimentos e a situação dos registros encontrados, inclusive inativos. Se já for a mesma pessoa, feche o novo cadastro e localize o existente na lista; anote antes qualquer informação que precisar preservar. Se for outra pessoa, pode continuar e salvar.
+
+O aviso não impede CPF repetido, não une registros e não aparece na edição. Nenhuma correspondência não garante que a pessoa seja nova. Se a conferência falhar, use **Tentar conferir novamente** ou pesquise na lista antes de salvar. Não invente CPF ou nascimento para completar a conferência.
+
 ## Editar
 
 Abrir o cadastro correto, alterar e salvar. Se o sistema avisar que outra pessoa alterou o mesmo registro, conferir a mudança e carregar a versão atual antes de salvar novamente. Copiar ou anotar o que precisa preservar antes de escolher descartar o rascunho.

@@ -1,6 +1,8 @@
 # U1.6 — prevenção de cadastros duplicados
 
-## U1.6B — implementação em validação, 17/10/2026
+## U1.6B — concluída, versão consolidada em 18/10/2026
+
+Liberada em `piloto-cadastros-v0.1.6`. Código funcional `c850498`, imagens corrigidas `de20ba1`. [CI 39036439232](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/39036439232) aprovado: 311 testes backend e 398 frontend, builds, regressões HTTP e auditorias. Log ignorado `.data/duplicates-ci-final.log`.
 
 Aviso automático no formulário de novo paciente após informar CPF completo ou nome completo/nascimento. Consulta exata no banco inteiro, incluindo inativos; nome ignora acentos, caixa e espaços repetidos. CPF compara 11 dígitos com pontuação opcional, sem converter texto misto em documento. Não valida dígitos verificadores nem impede gravação simultânea.
 
@@ -13,7 +15,18 @@ Validação até este checkpoint:
 - PostgreSQL privado aprovado, 3,866 s: busca além dos primeiros 100, correspondência exata, inativos, ausência de CPF, documentos mistos, negativos, limite/total e preservação. `.data/duplicates-db.log`.
 - Build API/web e TypeScript aprovados; `.data/duplicates-build.log`. Último ajuste da condição SQL para CPF misto validado no banco após esse build.
 - Chrome/API aprovado: aviso, conta de recepção, resposta mínima, alteração de critérios, rascunho, ausência de CPF, regressões e recusa 403 após revogar visualização. `.data/duplicates-browser.log`.
-- Suíte frontend em execução; CI completo será conferido após publicar o código. Instalação aprovada permanece v0.1.5 até concluir os aceites. Nenhuma migração ou alteração de configuração.
+- Suíte frontend aprovada: 398 testes/45 arquivos, 134,50 s. Cinco casos novos cobrem critérios incompletos, candidatos, falha/retentativa, resposta antiga e permissão revogada. A primeira execução focada revelou falta de limpeza entre testes; corrigido isolamento do teste antes da suíte completa. `.data/duplicates-frontend.log`.
+- Código `c850498`: primeiro ensaio de atualização v0.1.5 → pacote aprovado em 68,72 s, preservando todas as tabelas, exame, sessão, volumes/configuração/TLS e validando consulta de duplicidade sem escrita. `.data/duplicates-update.log`. Esse tempo exclui build/download e não dimensiona a clínica.
+
+### Correção adicional de construção das imagens
+
+CI `39036157289` aprovou frontend, mas parou no build Nginx: o pin `libexpat=2.8.5-r0` não estava mais disponível. [Índice oficial Alpine v3.24](https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/libexpat) e `apk policy` no mesmo digest base confirmaram `2.9.0-r0`; atualizado em `ops/nginx/Dockerfile` e `apps/web/Dockerfile`, código `de20ba1`. Build local de web/gateway/edge aprovado; `.data/duplicates-runtime-build.log`.
+
+Novo CI `39036439232` e ensaio incluindo proxies aprovados. Auditoria local das seis imagens aprovada, sem achados reportados (`.data/duplicates-runtime-audit.log`). Sem mudança de configuração, dependências Python/JS ou esquema. A versão antiga pode falhar numa construção nova sem cache; tags antigas preservadas. O roteiro da nova versão reconstrói API, web, gateway e edge.
+
+Limitação do ensaio adicional: primeira tentativa parou antes do aceite porque as imagens originais dos proxies ativos não estavam no catálogo Docker local. Nenhum volume removido. Com a biblioteca antiga indisponível para download, o ensaio usa proxies corrigidos tanto com a API antiga quanto com a nova; não comprova troca da imagem antiga de proxy. Confere imagens e versão da biblioteca, HTTPS/TLS e preservação nas duas fases. Log da tentativa `.data/duplicates-update-runtime.log`; execução ajustada `.data/duplicates-update-runtime-final.log`.
+
+Ensaio ajustado aprovado: 115,31 s de manutenção, backup restaurado e todas as tabelas iguais, versões de imagens/biblioteca conferidas, dados/exame/sessão/volumes/configuração/TLS preservados, consulta de duplicidade sem escrita, edição e novo login aprovados. Recursos privados removidos, volumes de ensaio preservados. Esse aceite é HTTP; Chrome foi validado separadamente. Não é instalação física na clínica.
 
 ## U1.6A — diagnóstico concluído em 16/10/2026
 
@@ -39,7 +52,7 @@ Foi executado caso de uso + repositório + PostgreSQL real em schema privado. **
 - O formulário envia a criação/edição sem conferência de possíveis duplicados. CPF continua opcional.
 - Nome igual, telefone compartilhado e ausência de CPF não identificam uma pessoa de forma suficiente para bloquear cadastro ou mesclar registros.
 
-## Próximo recorte — U1.6B: aviso antes de criar
+## Escopo original da U1.6B — atendido
 
 Implementar aviso não bloqueante de possível duplicidade, inicialmente por CPF equivalente completo e/ou nome completo com nascimento igual. Mostrar apenas dados necessários para conferência, respeitando permissão de visualizar pacientes. Não comparar só os primeiros 100 registros nem usar a busca genérica como prova de correspondência exata. Não sinalizar o próprio registro numa futura extensão para edição.
 
@@ -53,4 +66,4 @@ Uma consulta prévia isolada não resolve duas gravações simultâneas. A prote
 
 ## Retomada
 
-Implementar U1.6B, mantendo as limitações explícitas até os aceites. A versão v0.1.5 continua liberada para instalação assistida de cadastros; consultar antes de cadastrar. Ao receber os dados do computador da clínica, priorizar instalação física P3.
+U1.6B concluída e versão v0.1.6 liberada para instalação assistida de cadastros. Próximo recorte: proteção de CPF na gravação, com tratamento de históricos e concorrência; aviso atual não substitui essa proteção. Consultar antes de cadastrar continua necessário. Ao receber os dados do computador da clínica, priorizar instalação física P3.
