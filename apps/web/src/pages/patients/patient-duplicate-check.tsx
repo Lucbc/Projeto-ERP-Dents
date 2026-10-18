@@ -48,7 +48,7 @@ function DuplicateCheck({ fullName, birthDate, cpf, onDenied }: Props) {
         {item.full_name} — {item.birth_date ? formatDate(item.birth_date) : 'Nascimento não informado'} — {item.active ? 'Ativo' : 'Inativo'} — {item.same_cpf ? 'Mesmo CPF' : 'Mesmo nome e nascimento'}
       </li>)}</ul>
       {result.total > result.items.length && <p>Exibindo {result.items.length} de {result.total}. Use a busca da lista para conferir os demais.</p>}
-      <p>Se for outra pessoa, você pode continuar o cadastro. Nenhum registro será unido automaticamente.</p>
+      <p>Se a coincidência for apenas de nome e nascimento, você pode continuar o cadastro de outra pessoa. CPF já usado, inclusive em cadastro inativo, precisa ser corrigido antes de salvar. Nenhum registro será unido automaticamente.</p>
     </>}
   </section>;
 }
