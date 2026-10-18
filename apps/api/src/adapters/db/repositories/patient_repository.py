@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from sqlalchemy import func, literal_column, or_, select, update
+from sqlalchemy import func, literal_column, or_, select, text, update
 from sqlalchemy.orm import Session
 
 from src.adapters.db.models.models import PatientModel, ExamModel
@@ -17,6 +17,29 @@ from src.core.ports.repositories import PatientRepository
 class SqlAlchemyPatientRepository(PatientRepository):
     def __init__(self, session: Session) -> None:
         self.session = session
+
+    @staticmethod
+    def _cpf_key(value):
+        if not value or not re.fullmatch(r'[0-9.\s-]+', value):
+            return None
+        digits = re.sub(r'[^0-9]', '', value)
+        return digits if len(digits) == 11 else None
+
+    def _guard_cpf(self, key, patient_id=None):
+        if key is None:
+            return
+        # All application writers acquire this transaction lock BEFORE checking.
+        # The separate SELECT obtains a fresh READ COMMITTED snapshot after waiting.
+        self.session.execute(text("SELECT pg_advisory_xact_lock(hashtextextended("
+            "current_schema() || ' patient-cpf ' || :cpf, 0))"), {'cpf': key})
+        stmt = select(PatientModel.id).where(
+            PatientModel.cpf.op('~')(r'^[0-9.\s-]+$'),
+            func.regexp_replace(PatientModel.cpf, '[^0-9]', '', 'g') == key)
+        if patient_id is not None:
+            stmt = stmt.where(PatientModel.id != patient_id)
+        if self.session.scalar(stmt.limit(1)) is not None:
+            raise ConflictError('Este CPF já está em outro cadastro, inclusive se inativo. '
+                'Confira o cadastro existente ou corrija o CPF. Seu rascunho foi mantido.', code='duplicate_cpf')
 
     def duplicate_candidates(self, full_name, birth_date, cpf):
         predicates = []
@@ -86,13 +109,25 @@ class SqlAlchemyPatientRepository(PatientRepository):
         return self._to_entity(item) if item else None
 
     def create(self, data: dict) -> Patient:
-        item = PatientModel(**data)
-        self.session.add(item)
-        self.session.commit()
-        self.session.refresh(item)
-        return self._to_entity(item)
+        try:
+            self._guard_cpf(self._cpf_key(data.get('cpf')))
+            item = PatientModel(**data)
+            self.session.add(item)
+            self.session.commit()
+            self.session.refresh(item)
+            return self._to_entity(item)
+        except Exception:
+            self.session.rollback()
+            raise
 
     def update(self, patient_id, data: dict):
+        try:
+            return self._update(patient_id, data)
+        except Exception:
+            self.session.rollback()
+            raise
+
+    def _update(self, patient_id, data: dict):
         version = data.get('version')
         if type(version) is not int or version < 1:
             raise ValidationError("Reabra o cadastro para obter a versão atual antes de salvar.")
@@ -119,6 +154,15 @@ class SqlAlchemyPatientRepository(PatientRepository):
         ]:
             if key in data:
                 values[key] = data[key]
+
+        if 'cpf' in values:
+            current = self.session.execute(select(PatientModel.cpf, PatientModel.version)
+                .where(PatientModel.id == patient_id)).first()
+            # Let the versioned UPDATE below report missing/stale records.
+            if current is not None and current.version == version:
+                key = self._cpf_key(values['cpf'])
+                if key != self._cpf_key(current.cpf):
+                    self._guard_cpf(key, patient_id)
 
         # The predicate and increment are one SQL statement, including no-op edits.
         item = self.session.scalar(update(PatientModel).where(

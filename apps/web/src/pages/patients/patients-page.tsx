@@ -191,7 +191,8 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
       void queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
     onError: (error) => {
-      if (isAxiosError(error) && [404, 409].includes(error.response?.status ?? 0)) setEditConflict(true);
+      if (isAxiosError(error) && [404, 409].includes(error.response?.status ?? 0) &&
+          error.response?.data?.code !== 'duplicate_cpf') setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
     },
   });

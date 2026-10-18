@@ -100,6 +100,24 @@ it("updates records and count without writes, preserving search and showing trun
   vi.mocked(patientService.list).mockResolvedValue({ items: [], total: 0 }); await tick(15010); expect(screen.getByText("Nenhum paciente encontrado.")).toBeTruthy();
 });
 
+it("lets the operator correct duplicate CPF without discarding the draft", async () => {
+  const duplicate = failure(409);
+  duplicate.response!.data = { detail: 'CPF already used', code: 'duplicate_cpf' };
+  const update = vi.spyOn(patientService, 'update').mockRejectedValueOnce(duplicate).mockResolvedValue(patient);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button', { name: 'Editar', exact: true }));
+  fireEvent.change(view.notes(), { target: { value: 'Keep this draft' } });
+  const cpf = view.container.querySelector('[name="cpf"]') as HTMLInputElement;
+  fireEvent.change(cpf, { target: { value: '12345678901' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar', exact: true })); await tick();
+  expect(view.notes().value).toBe('Keep this draft');
+  expect((screen.getByRole('button', { name: 'Salvar', exact: true }) as HTMLButtonElement).disabled).toBe(false);
+  expect(screen.queryByRole('button', { name: 'Descartar rascunho e carregar atual' })).toBeNull();
+  fireEvent.change(cpf, { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Salvar', exact: true })); await tick();
+  expect(update).toHaveBeenLastCalledWith(patient.id, expect.objectContaining({ version: 7, cpf: null, notes: 'Keep this draft' }));
+});
+
 it.each([404, 409])("preserves draft/version after remote changes and blocks saving again after %s until reviewed", async status => {
   const update = vi.spyOn(patientService, "update").mockRejectedValue(failure(status));
   const get = vi.spyOn(patientService, "get").mockResolvedValue({ ...patient, version: 8, notes: "Reviewed remote" });

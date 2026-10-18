@@ -2,6 +2,8 @@
 
 Run explicitly with RUN_HOMOLOG_TESTS=1 in erp-dents-homolog only.
 Uses the existing private-schema fixture; never prints identifiers or records.
+Historical reproduction for v0.1.6 and earlier. After the CPF guard, rejection
+is expected; use test_patient_cpf_guard_db.py for current acceptance instead.
 """
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
