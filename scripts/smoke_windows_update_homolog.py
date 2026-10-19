@@ -12,18 +12,18 @@ from smoke_backup_restore_homolog import ROOT, PROJECT, run
 
 
 def prepare_images(folder):
-    releases = {'old': 'piloto-cadastros-v0.1.5', 'new': 'de20ba110e4286e5070bcd1cb9e16189a1b5fd63'}
+    releases = {'old': 'piloto-cadastros-v0.1.6', 'new': '005c28d8f33dd03cdb3d43d5f863e90b04227c28'}
     # This acceptance is specifically a no-migration application update.
     unchanged = ['docker-compose.yml', 'ops', ':(exclude)ops/nginx/Dockerfile', 'apps/api/alembic',
                  'apps/web/package.json', 'apps/web/package-lock.json',
                  'apps/api/Dockerfile', 'apps/api/requirements.txt']
     if run('git', 'diff', '--name-only', releases['old'], releases['new'], '--', *unchanged).strip():
         raise RuntimeError('This harness requires identical deployment/schema/dependencies between releases.')
-    # This release permits exactly the reviewed runtime-package replacement.
     for path in ('apps/web/Dockerfile', 'ops/nginx/Dockerfile'):
         old = run('git', 'show', releases['old'] + ':' + path)
         new = run('git', 'show', releases['new'] + ':' + path)
-        if old.replace(b'libexpat=2.8.5-r0', b'libexpat=2.9.0-r0') != new:
+        addition = b" \\\n    'libx11=1.8.14-r0' 'libxpm=3.5.20-r0'"
+        if old.replace(b"'tiff=4.7.2-r0'", b"'tiff=4.7.2-r0'" + addition) != new:
             raise RuntimeError('Unexpected runtime Dockerfile change.')
     images = {'releases': releases}
     for label, tag in releases.items():
@@ -37,18 +37,15 @@ def prepare_images(folder):
             print('Building isolated release image: ' + label + '/' + service, flush=True)
             run('docker', 'build', '-q', '-t', image, str(source / 'apps' / service))
             images[label][service] = run('docker', 'image', 'inspect', '--format', '{{.Id}}', image).decode().strip()
-        if label == 'new':
-            proxy = PROJECT + '-update-' + folder.name + '-proxy'
-            print('Building isolated release image: new/proxy', flush=True)
-            run('docker', 'build', '-q', '-t', proxy, str(source / 'ops' / 'nginx'))
-            proxy_id = run('docker', 'image', 'inspect', '--format', '{{.Id}}', proxy).decode().strip()
-            images[label].update(gateway=proxy_id, edge=proxy_id)
-            # Old libexpat is no longer downloadable, and the original running
-            # proxy image is absent locally. Test the corrected proxies with
-            # both old and new APIs; do not claim a swap from the old proxy.
-            images['old'].update(gateway=proxy_id, edge=proxy_id)
+        proxy = PROJECT + '-update-' + folder.name + '-' + label + '-proxy'
+        print('Building isolated release image: ' + label + '/proxy', flush=True)
+        run('docker', 'build', '-q', '-t', proxy, str(source / 'ops' / 'nginx'))
+        proxy_id = run('docker', 'image', 'inspect', '--format', '{{.Id}}', proxy).decode().strip()
+        images[label].update(gateway=proxy_id, edge=proxy_id)
     if images['old']['api'] == images['new']['api']:
         raise RuntimeError('Expected different API release images.')
+    if images['old']['gateway'] == images['new']['gateway']:
+        raise RuntimeError('Expected different proxy release images.')
     return images
 
 
@@ -81,6 +78,8 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
                       {'version': patient['version'], 'cpf': '123.456.789-01', 'preferred_name': 'Update Social Fictitious',
                        'phone': '(11) 3333-4444'})
     assert request('GET', '/api/patients?search=1133334444')['total'] == 1
+    legacy = request('POST', '/api/patients', {'full_name': 'Legacy Duplicate Fictitious',
+                     'cpf': '12345678901', 'active': False}, 201)
     old_html = client.raw('GET', '/patients')[1]
     png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=')
     boundary = 'update-fixture'
@@ -160,19 +159,31 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         for service in ('web', 'gateway', 'edge'):
             assert json.loads(run('docker', 'inspect', containers[service]))[0]['Image'] == images['new'][service]
             assert b'libexpat-2.9.0-r0' in run('docker', 'exec', containers[service], 'apk', 'list', '--installed', 'libexpat')
+            packages = run('docker', 'exec', containers[service], 'apk', 'list', '--installed', 'libx11', 'libxpm')
+            assert b'libx11-1.8.14-r0' in packages and b'libxpm-3.5.20-r0' in packages
         assert client.raw('GET', '/patients')[1] != old_html
         assert request('GET', '/api/patients/' + patient['id']) == patient
         assert request('GET', '/api/exams/' + exam['id'] + '/download') == png
-        for term in ('12345678901', 'Update%20Social%20Fictitious', '1133334444'):
+        for term in ('Update%20Social%20Fictitious', '1133334444'):
             found = request('GET', '/api/patients?search=' + term)
             assert found['total'] == 1 and found['items'][0]['id'] == patient['id']
         assert request('GET', '/api/auth/needs-bootstrap')['needsBootstrap'] is False
         duplicates = request('POST', '/api/patients/duplicate-check', {'cpf': '12345678901'})
-        assert duplicates['checked'] and duplicates['total'] == 1
-        assert duplicates['items'][0]['id'] == patient['id']
-        assert duplicates['items'][0]['same_cpf'] is True
+        assert duplicates['checked'] and duplicates['total'] == 2
+        assert {item['id'] for item in duplicates['items']} == {patient['id'], legacy['id']}
+        assert all(item['same_cpf'] for item in duplicates['items'])
+        assert request('GET', '/api/patients/' + legacy['id']) == legacy
+        denied = request('POST', '/api/patients', {'full_name': 'Rejected Fictitious', 'cpf': '123.456.789-01'}, 409)
+        assert denied['code'] == 'duplicate_cpf'
         assert fingerprint() == before
-        request('PUT', '/api/patients/' + patient['id'], {'version': patient['version'], 'notes': 'Fictitious post-update edit'})
+        changed = request('PUT', '/api/patients/' + patient['id'], {'version': patient['version'],
+                          'cpf': patient['cpf'], 'notes': 'Fictitious post-update edit'})
+        assert changed['cpf'] == patient['cpf']
+        fresh = request('POST', '/api/patients', {'full_name': 'No CPF Fictitious'}, 201)
+        denied = request('PUT', '/api/patients/' + fresh['id'], {'version': fresh['version'],
+                         'cpf': '12345678901', 'notes': 'Must not persist'}, 409)
+        assert denied['code'] == 'duplicate_cpf'
+        assert request('GET', '/api/patients/' + fresh['id']) == fresh
         status, identity, _ = client.request('POST', '/api/auth/login', credentials)
         assert status == 200
         assert client.request('GET', '/api/auth/me', session=identity['session'])[0] == 200
@@ -180,9 +191,9 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         (folder / 'result.json').write_text(json.dumps({'passed': True, 'releases': images['releases'],
             'maintenanceSeconds': elapsed, 'checks': ['backup restored', 'gateway blocked during backup/replacement',
             'all public rows preserved', 'same volumes/config/TLS', 'old session and exam preserved',
-            'new API/frontend/proxy images', 'runtime libexpat version', 'search', 'read-only duplicate check', 'edit', 'fresh login'],
+            'new API/frontend/proxy images', 'runtime libexpat/libx11/libxpm versions', 'search', 'read-only duplicate check',
+            'legacy duplicates preserved and editable', 'new CPF duplicates rejected', 'fresh login'],
             'limits': ['private harness backup, not backup-server.ps1', 'API/HTTPS, no browser',
-                       'corrected proxy image used in both phases; old proxy image unavailable',
                        'no new migration', 'cached images/signatures', 'no physical clinic installation']}, indent=2))
         print(f'PASS: release update, preserved rows/volumes/config/TLS/exam/session, duplicate check and edit; maintenance {elapsed}s.', flush=True)
     finally:

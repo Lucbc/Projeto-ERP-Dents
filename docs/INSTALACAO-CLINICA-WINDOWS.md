@@ -6,7 +6,7 @@ Atualizado em 18/10/2026. Dados serão cadastrados do zero, em outro computador 
 
 O servidor fica ligado e concentra o programa, banco e exames. Cada estação abre o mesmo endereço HTTPS pelo navegador, com login individual. Somente o servidor precisa de Docker. As estações não precisam de Git, Python, Node ou banco de dados.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.6`, incluindo paginação, busca por CPF com/sem pontuação, nome completo/social sem distinguir acentos, busca por telefone sem pontuação, preservação de internacionais/ramais na edição aviso de possível duplicidade ao criar e imagens corrigidas para instalação nova. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.7`, incluindo paginação, busca por CPF com/sem pontuação, nome completo/social sem distinguir acentos, busca por telefone sem pontuação, preservação de internacionais/ramais na edição, aviso de possível duplicidade ao criar, bloqueio de novas atribuições de CPF completo repetido (inclusive em inativos) e imagens corrigidas para instalação nova. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
@@ -36,7 +36,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.6
+git checkout piloto-cadastros-v0.1.7
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1

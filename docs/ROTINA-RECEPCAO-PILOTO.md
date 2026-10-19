@@ -17,9 +17,11 @@
 2. Conferir nome, nascimento e contatos, salvar e verificar o registro na lista.
 3. Se houver erro ou dúvida sobre o salvamento, procurar o registro antes de tentar criar novamente. Evitar cadastros duplicados.
 
-Na versão v0.1.6, o formulário **Novo** confere possíveis duplicidades ao informar CPF completo ou nome completo e nascimento. Aguarde a conferência e confira os nomes, nascimentos e a situação dos registros encontrados, inclusive inativos. Se já for a mesma pessoa, feche o novo cadastro e localize o existente na lista; anote antes qualquer informação que precisar preservar. Se for outra pessoa, pode continuar e salvar.
+Na versão v0.1.7, o formulário **Novo** confere possíveis duplicidades ao informar CPF completo ou nome completo e nascimento. Aguarde a conferência e confira os nomes, nascimentos e a situação dos registros encontrados, inclusive inativos. Se já for a mesma pessoa, feche o novo cadastro e localize o existente na lista; anote antes qualquer informação que precisar preservar. Se a coincidência for somente de nome e nascimento e for outra pessoa, pode continuar e salvar.
 
-O aviso não impede CPF repetido, não une registros e não aparece na edição. Nenhuma correspondência não garante que a pessoa seja nova. Se a conferência falhar, use **Tentar conferir novamente** ou pesquise na lista antes de salvar. Não invente CPF ou nascimento para completar a conferência.
+Ao salvar um cadastro novo ou alterar seu CPF, o sistema bloqueia CPF completo já usado, inclusive em cadastro inativo. O rascunho permanece disponível: confira o cadastro existente ou corrija o CPF e tente novamente. Não invente CPF; cadastro sem CPF continua permitido. Duplicidades antigas não são apagadas nem unidas, e seus outros dados continuam editáveis quando o CPF é mantido.
+
+O aviso antecipado aparece somente no formulário Novo; o bloqueio ao salvar também vale na edição. Nenhuma correspondência não garante que a pessoa seja nova. Se a conferência falhar, use **Tentar conferir novamente** ou pesquise na lista antes de salvar. A comparação de CPF completo não verifica sua autenticidade nem impede documentos incompletos ou mistos.
 
 ## Editar
 

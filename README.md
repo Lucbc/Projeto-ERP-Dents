@@ -4,9 +4,9 @@ Logins cadastrados na homologação local (20/09/2026): `admin.homolog@example.c
 
 ## Instalar na clínica — piloto de cadastros
 
-Versão de instalação: **`piloto-cadastros-v0.1.6`**. Comece pelo [passo a passo Windows](docs/INSTALACAO-CLINICA-WINDOWS.md) e conclua o [checklist no local](docs/CHECKLIST-INICIO-CLINICA.md) antes dos registros reais. As estações acessam pelo navegador; somente o servidor executa Docker.
+Versão de instalação: **`piloto-cadastros-v0.1.7`**. Comece pelo [passo a passo Windows](docs/INSTALACAO-CLINICA-WINDOWS.md) e conclua o [checklist no local](docs/CHECKLIST-INICIO-CLINICA.md) antes dos registros reais. As estações acessam pelo navegador; somente o servidor executa Docker.
 
-Consulte a [rotina da recepção](docs/ROTINA-RECEPCAO-PILOTO.md), o [escopo liberado](docs/LIBERACAO-PILOTO-CADASTROS.md) e o [roteiro de atualização](docs/ATUALIZACAO-SERVIDOR-WINDOWS.md). Esta versão inclui aviso de possível duplicidade ao criar paciente; o aviso não bloqueia CPF repetido nem une registros.
+Consulte a [rotina da recepção](docs/ROTINA-RECEPCAO-PILOTO.md), o [escopo liberado](docs/LIBERACAO-PILOTO-CADASTROS.md) e o [roteiro de atualização](docs/ATUALIZACAO-SERVIDOR-WINDOWS.md). Esta versão avisa sobre possíveis duplicidades e bloqueia novas atribuições de CPF completo já usado, inclusive por inativos. Cadastros sem CPF continuam permitidos; registros históricos não são apagados nem unidos.
 
 Monorepo para clínica pequena de ortodontia com arquitetura cliente-servidor, backend FastAPI (Clean Architecture Hexagonal), frontend React e persistência em Postgres + filesystem para exames.
 

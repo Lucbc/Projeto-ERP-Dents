@@ -1,5 +1,7 @@
 # U1.6 — prevenção de cadastros duplicados
 
+Este documento registra o aviso entregue na v0.1.6. A proteção de CPF na gravação, incluindo inativos e preservação dos históricos, está documentada na [U1.6C](./ATUALIZACAO-U1-6C.md).
+
 ## U1.6B — concluída, versão consolidada em 18/10/2026
 
 Liberada em `piloto-cadastros-v0.1.6`. Código funcional `c850498`, imagens corrigidas `de20ba1`. [CI 39036439232](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/39036439232) aprovado: 311 testes backend e 398 frontend, builds, regressões HTTP e auditorias. Log ignorado `.data/duplicates-ci-final.log`.

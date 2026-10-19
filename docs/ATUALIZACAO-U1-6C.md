@@ -1,6 +1,6 @@
 # U1.6C — proteção de CPF na gravação
 
-Iniciada em 18/10/2026, base `d54aab4`. Versão de instalação aprovada: `piloto-cadastros-v0.1.6`.
+Iniciada em 18/10/2026, base `d54aab4`; consolidada em 19/10/2026. Pacote aprovado: `piloto-cadastros-v0.1.7`, código final `005c28d`. [CI 39159743791](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/39159743791) aprovado: 318 testes backend, 400 frontend, builds, regressões HTTP e auditorias. Guias atualizados; instalação física permanece pendente do aceite no outro Windows.
 
 ## Regra de negócio confirmada em 18/10/2026
 
@@ -21,7 +21,7 @@ O formulário aplicava `formatCpf` ao abrir edição: removia letras e cortava e
 
 1. Canonicalizar CPF somente para comparação; nunca regravar documentos históricos em lote. Definir separadamente documentos incompletos/mistos e a política para alteração de CPF histórico.
 2. Na criação ou mudança efetiva de CPF, adquirir trava transacional por schema/CPF antes de consultar duplicidade e gravar. Usar uma consulta separada depois da trava para enxergar a transação concorrente concluída em READ COMMITTED. Nenhuma trava deve permanecer aguardando interação do usuário.
-3. Na edição, preservar o controle otimista por versão e excluir o próprio ID da comparação. Duplicidade histórica inalterada não deve impedir editar notas/contato. Se a política envolver apenas ativos, reativação exige a mesma proteção de gravação.
+3. Na edição, preservar o controle otimista por versão e excluir o próprio ID da comparação. Duplicidade histórica inalterada não deve impedir editar notas/contato. A política confirmada inclui inativos; manter o CPF ao reativar um registro histórico não representa nova atribuição.
 4. Responder com conflito específico `duplicate_cpf`, sem revelar dados de outro paciente. A interface deve preservar o rascunho e permitir corrigir o CPF; não confundir esse conflito com versão antiga nem exigir descartar todo o rascunho.
 5. Reverter a transação em falhas, liberando travas. Verificar criação/criação, criação/edição, edição/edição, mesmo paciente/versão antiga, históricos duplicados, alteração de pontuação, CPF ausente e política de inativos.
 
@@ -39,4 +39,24 @@ Sete testes PostgreSQL privados aprovados em 19,746 s: inativos, criação/ediç
 
 Chrome/API aprovado: CPF de inativo bloqueia criação/edição, sem gravação parcial; rascunho preservado, correção e nova tentativa aprovadas, documento histórico mantido até alteração explícita, permissões/buscas/paginação/conflito de versão aprovados. `.data/cpf-guard-browser.log`. Recursos privados limpos e origem preservada.
 
-Próximo: concluir regressão frontend e CI; ensaiar atualização com duplicados históricos preservados, então consolidar versão/guias. Instalação aprovada permanece v0.1.6 até fechar aceites. Durante atualização, parar escritores antigos antes de iniciar API nova: SQL externo ou API antiga não participam da trava consultiva.
+Regressão frontend local: **400 testes / 45 arquivos aprovados**, 137,68 s, `.data/cpf-guard-frontend.log`. Código funcional `5d43e8f`; `40e14bb` ajusta somente o parágrafo explicativo do aviso. CI `39157911163` aprovou testes funcionais, mas falhou na auditoria de imagens; correção e novo aceite descritos abaixo.
+
+Ensaio de atualização `v0.1.6` → `5d43e8f` aprovado: **123,92 s** de manutenção, sem build/download. Backup privado restaurado com todas as tabelas comparadas; volumes, configuração, TLS, exame e sessão preservados. Dois cadastros fictícios com CPF equivalente (um inativo) criados na versão antiga continuam intactos; edição de outros dados mantendo CPF funciona. Novas duplicidades recusadas na criação/edição, sem mudança parcial; cadastro sem CPF e novo login aprovados. Log `.data/cpf-guard-update.log`, relatório `.data/install_91737bc72281/result.json`.
+
+Limites: ensaio de atualização por API/HTTPS, navegador testado separadamente; backup do harness, rotina operacional Windows validada em etapa anterior. Proxies idênticos nas duas fases, sem mudança de dependências/esquema. A alteração posterior `40e14bb` é apenas texto, coberto pelo CI final; o ensaio de troca usa o código funcional `5d43e8f`. Recursos privados de homologação, volumes preservados, sem atualização dos containers principais nem instalação na clínica. Tempo local não dimensiona a janela do outro servidor.
+
+Durante atualização, parar escritores antigos antes de iniciar API nova: SQL externo ou API antiga não participam da trava consultiva. Priorizar P3 quando chegarem os dados do computador.
+
+## Auditoria das imagens — correção adicional
+
+Os CIs `39157793381` e `39157911163` aprovaram testes funcionais (318 backend, 400 frontend), builds e regressões HTTP, mas falharam na auditoria de imagens. Reprodução local confirmou um achado HIGH e quatro MEDIUM em web/gateway/edge: libx11 1.8.13-r0 e libxpm 3.5.19-r0. API, banco e antivírus sem achados. Não houve supressão de alertas ou redução do critério de segurança.
+
+`apk policy` confirmou correções no Alpine v3.24: libx11 1.8.14-r0 e libxpm 3.5.20-r0; [índice oficial libx11](https://pkgs.alpinelinux.org/package/v3.24/main/x86_64/libx11). Pins dos Dockerfiles web/proxies atualizados em `005c28d`. Build e auditoria local das seis imagens aprovados, nenhum achado nessa execução: `.data/cpf-guard-runtime-build.log`, `.data/cpf-guard-runtime-audit-final.log`. CI `39159743791` aprovado, incluindo auditoria das seis imagens; resultado conferido em 19/10/2026, log local `.data/cpf-guard-ci-final.log`.
+
+Ensaio final `v0.1.6` → `005c28d` aprovado em **63,94 s**, agora com imagens antigas e novas dos proxies construídas e trocadas, além de API/web. Bibliotecas corrigidas conferidas dentro dos containers novos. Todos os aceites anteriores de backup, preservação, CPF, edição e login passaram novamente. Log `.data/cpf-guard-update-runtime.log`, relatório `.data/install_5194eea8f48d/result.json`. Mantêm-se os limites de API/HTTPS, recursos privados, backup do harness e ausência de instalação física. Esse ensaio substitui o anterior como aceite do pacote final.
+
+## Próximo recorte: formato de documentos (pendente)
+
+Leitura do código: `PatientCreateRequest`/`PatientUpdateRequest` recebem CPF como texto opcional; o caso de uso remove apenas espaços externos e converte vazio em ausente. O formulário aplica máscara na digitação, sem validar dígitos verificadores. A criação e a atualização de pacientes na aplicação passam pelo repositório protegido nesta entrega. Essa leitura não substitui testes de novos contratos.
+
+Antes de impor formato, reproduzir API e interface com CPF incompleto/misto, colagem e documentos históricos; definir validação somente para novas atribuições, mantendo cadastro sem CPF e edição de outros campos de históricos. Evitar transformar/cortar silenciosamente um documento informado. Essa melhoria permanece pendente e não é pré-requisito da instalação do piloto.
