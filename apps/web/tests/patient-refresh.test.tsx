@@ -79,6 +79,35 @@ it("displays birth date without shifting it and retains the civil value in the e
   expect((view.container.querySelector('[name="birth_date"]') as HTMLInputElement).value).toBe("2000-02-29");
 });
 
+it('rejects a future birth date by clinic day and keeps the draft for correction', async () => {
+  vi.setSystemTime(new Date('2030-01-02T01:00:00Z')); // Still January 1 in Sao Paulo.
+  const update = vi.spyOn(patientService, 'update').mockResolvedValue(patient);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button', {name:'Editar',exact:true})); await tick();
+  const birth = view.container.querySelector('[name="birth_date"]') as HTMLInputElement;
+  fireEvent.change(birth,{target:{value:'2030-01-02'}});
+  fireEvent.change(view.notes(),{target:{value:'Kept birth draft'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar',exact:true})); await tick();
+  expect(screen.getByRole('alert').textContent).toContain('até hoje');
+  expect(update).not.toHaveBeenCalled();
+  expect(birth.value).toBe('2030-01-02');
+  expect(view.notes().value).toBe('Kept birth draft');
+  fireEvent.change(birth,{target:{value:'2030-01-01'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar',exact:true})); await tick();
+  expect(update).toHaveBeenCalledWith(patient.id,expect.objectContaining({birth_date:'2030-01-01',notes:'Kept birth draft'}));
+});
+
+it('allows unchanged future historical birth date while editing other fields', async () => {
+  const stored = {...patient,birth_date:'9999-12-31'};
+  vi.mocked(patientService.list).mockResolvedValue({items:[stored],total:1});
+  const update = vi.spyOn(patientService,'update').mockResolvedValue(stored);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button',{name:'Editar',exact:true})); await tick();
+  fireEvent.change(view.notes(),{target:{value:'Kept legacy date'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar',exact:true})); await tick();
+  expect(update).toHaveBeenCalledWith(patient.id,expect.objectContaining({birth_date:'9999-12-31',notes:'Kept legacy date'}));
+});
+
 it("navigates beyond 100 and resets the offset when searching", async () => {
   vi.mocked(patientService.list).mockImplementation(async params => ({
     items: [{ ...patient, full_name: params?.offset ? "Fictitious older patient" : "Fictitious newest patient" }], total: 105,

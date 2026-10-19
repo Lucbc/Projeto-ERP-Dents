@@ -6,7 +6,7 @@ from smoke_financial_history_browser_homolog import verify as browser
 def verify(*args):
     sql, schema = args[7:9]
     sql(f"INSERT INTO {schema}.patients (id, full_name, birth_date, cpf, active, created_at, updated_at) "
-        "VALUES (gen_random_uuid(), 'Paciente Legado Formato Ficticio', '1985-05-17', 'DOC-LEGADO-123456789012', true, now(), now())")
+        "VALUES (gen_random_uuid(), 'Paciente Legado Formato Ficticio', '9999-12-31', 'DOC-LEGADO-123456789012', true, now(), now())")
     browser(*args, browser_script='smoke_registration_pilot_homolog.cjs')
 
 

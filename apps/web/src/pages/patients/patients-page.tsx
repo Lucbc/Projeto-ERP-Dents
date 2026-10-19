@@ -21,7 +21,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { getApiErrorMessage } from "@/lib/api";
-import { formatDate } from "@/lib/datetime";
+import { clinicDate, formatDate } from "@/lib/datetime";
 import { patientService } from "@/lib/services";
 import type { Patient } from "@/types";
 
@@ -305,6 +305,13 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
   const onSubmit = (values: PatientForm) => {
     if (isSubmitting || editConflict) return;
+    const birthDate = values.birth_date || null;
+    if (birthDate && !(editingPatient && birthDate === editingPatient.birth_date) &&
+        (formatDate(birthDate) === '-' || birthDate > clinicDate())) {
+      form.setError('birth_date', {type:'validate', message:'Informe uma data de nascimento válida, até hoje, ou deixe o campo em branco.'}, {shouldFocus:true});
+      return;
+    }
+    form.clearErrors('birth_date');
     if (!(editingPatient && sameCpf(values.cpf ?? '', editingPatient.cpf ?? '')) && !validCpf(values.cpf ?? '')) {
       form.setError('cpf', { type: 'validate', message: 'CPF inválido. Confira os 11 dígitos ou deixe o campo em branco.' }, { shouldFocus: true });
       return;
@@ -465,6 +472,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Data de nascimento</label>
             <Input type="date" {...form.register("birth_date")} />
+            {form.formState.errors.birth_date && <p role="alert" className="mt-1 text-xs text-red-600">{form.formState.errors.birth_date.message}</p>}
           </div>
 
           <div>

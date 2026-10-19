@@ -12,6 +12,7 @@ import re
 import unicodedata
 from src.core.domain.entities import Patient
 from src.core.domain.cpf import cpf_digits, same_cpf, validate_cpf
+from src.core.domain.patient_dates import validate_birth_date
 from src.core.ports.repositories import PatientRepository
 
 
@@ -108,6 +109,7 @@ class SqlAlchemyPatientRepository(PatientRepository):
 
     def create(self, data: dict) -> Patient:
         try:
+            validate_birth_date(data.get('birth_date'))
             validate_cpf(data.get('cpf'))
             self._guard_cpf(self._cpf_key(data.get('cpf')))
             item = PatientModel(**data)
@@ -154,16 +156,19 @@ class SqlAlchemyPatientRepository(PatientRepository):
             if key in data:
                 values[key] = data[key]
 
-        if 'cpf' in values:
-            current = self.session.execute(select(PatientModel.cpf, PatientModel.version)
+        if 'cpf' in values or 'birth_date' in values:
+            current = self.session.execute(select(PatientModel.cpf, PatientModel.birth_date, PatientModel.version)
                 .where(PatientModel.id == patient_id)).first()
             # Let the versioned UPDATE below report missing/stale records.
             if current is not None and current.version == version:
-                if not same_cpf(values['cpf'], current.cpf):
-                    validate_cpf(values['cpf'])
-                key = self._cpf_key(values['cpf'])
-                if key != self._cpf_key(current.cpf):
-                    self._guard_cpf(key, patient_id)
+                if 'birth_date' in values and values['birth_date'] != current.birth_date:
+                    validate_birth_date(values['birth_date'])
+                if 'cpf' in values:
+                    if not same_cpf(values['cpf'], current.cpf):
+                        validate_cpf(values['cpf'])
+                    key = self._cpf_key(values['cpf'])
+                    if key != self._cpf_key(current.cpf):
+                        self._guard_cpf(key, patient_id)
 
         # The predicate and increment are one SQL statement, including no-op edits.
         item = self.session.scalar(update(PatientModel).where(
