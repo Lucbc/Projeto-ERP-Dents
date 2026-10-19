@@ -21,7 +21,9 @@ Na versão v0.1.7, o formulário **Novo** confere possíveis duplicidades ao inf
 
 Ao salvar um cadastro novo ou alterar seu CPF, o sistema bloqueia CPF completo já usado, inclusive em cadastro inativo. O rascunho permanece disponível: confira o cadastro existente ou corrija o CPF e tente novamente. Não invente CPF; cadastro sem CPF continua permitido. Duplicidades antigas não são apagadas nem unidas, e seus outros dados continuam editáveis quando o CPF é mantido.
 
-O aviso antecipado aparece somente no formulário Novo; o bloqueio ao salvar também vale na edição. Nenhuma correspondência não garante que a pessoa seja nova. Se a conferência falhar, use **Tentar conferir novamente** ou pesquise na lista antes de salvar. A comparação de CPF completo não verifica sua autenticidade nem impede documentos incompletos ou mistos.
+O aviso antecipado aparece somente no formulário Novo; o bloqueio ao salvar também vale na edição. Nenhuma correspondência não garante que a pessoa seja nova. Se a conferência falhar, use **Tentar conferir novamente** ou pesquise na lista antes de salvar.
+
+Na v0.1.8, CPF novo ou alterado precisa ter 11 dígitos e passar pela conferência dos dígitos verificadores. Se aparecer **CPF inválido**, confira o documento ou deixe o campo em branco; não invente um número. O texto e os demais dados digitados permanecem no formulário para correção. Essa conferência não consulta a Receita Federal nem comprova titularidade. Documentos antigos mantidos não impedem corrigir contato ou outros dados; nenhuma correção automática é aplicada ao histórico.
 
 ## Editar
 

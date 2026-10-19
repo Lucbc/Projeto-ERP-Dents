@@ -1,10 +1,10 @@
 # Atualização semanal do servidor Windows
 
-## Estado — 18/10/2026
+## Estado — 19/10/2026
 
 **P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
 
-**Versão atual: `piloto-cadastros-v0.1.7`.** Inclui bloqueio de novas atribuições de CPF completo repetido, inclusive em inativos, preservação de CPF histórico na edição e correções de libx11/libxpm nas imagens Nginx. Reconstruir API, web, gateway e edge conforme os comandos abaixo. Sem migração ou configuração nova. Detalhes e limites em [U1.6C](./ATUALIZACAO-U1-6C.md). Parar a API antiga antes de iniciar a nova: não manter as duas versões gravando ao mesmo tempo.
+**Versão atual: `piloto-cadastros-v0.1.8`.** Inclui validação de formato/dígitos de CPF novo ou alterado, entrada sem corte silencioso e preservação de documentos históricos. Reconstruir API, web, gateway e edge conforme os comandos abaixo; o roteiro também atende instalações anteriores às correções das bibliotecas Nginx. Sem migração ou configuração nova. Detalhes e limites em [U1.6D](./ATUALIZACAO-U1-6D.md). Parar a API antiga antes de iniciar a nova: não manter as duas versões gravando ao mesmo tempo.
 
 Somente o suporte atualiza o servidor. As estações continuam usando a mesma URL e não precisam instalar pacotes. Fazer a manutenção em janela combinada, com um único operador e todos os usuários fora do sistema até o aceite final.
 
@@ -22,7 +22,7 @@ O suporte pode executar `scripts/check-update-version.ps1` de uma cópia das fer
 Exemplo, substituindo a tag pelo destino aprovado e o caminho pela instalação real:
 
 ```powershell
-.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.7'
+.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.8'
 ```
 
 O comando exige histórico completo, árvore de trabalho limpa, tag local no formato do piloto, destino igual ou descendente do commit atual e presença dos arquivos básicos de implantação. Exibe somente identificadores Git e mensagens de estado. Não lê `.env`, não faz fetch/checkout e não chama Docker.
@@ -62,7 +62,7 @@ Substituir data/unidade. Conferir a cópia antes de seguir. Se a imagem original
 ```powershell
 docker @composeArgs stop -t 60 api
 if ($LASTEXITCODE -ne 0) { throw 'API ainda nao confirmada como parada.' }
-git checkout --detach piloto-cadastros-v0.1.7
+git checkout --detach piloto-cadastros-v0.1.8
 if ($LASTEXITCODE -ne 0) { throw 'Troca de versao falhou; manter manutencao.' }
 git rev-parse HEAD
 docker @composeArgs config --quiet
@@ -71,7 +71,7 @@ docker @composeArgs build api web gateway edge
 if ($LASTEXITCODE -ne 0) { throw 'Construcao falhou; manter manutencao.' }
 ```
 
-Conferir o commit exibido com a versão aprovada. Para v0.1.7, reconstruir API, frontend e os dois proxies: API/frontend contêm a proteção de CPF; frontend/proxies atualizam libx11 e libxpm. A correção de libexpat da v0.1.6 também está incluída. Banco, antivírus, configuração e inicializador de volumes permanecem iguais. Futuras versões exigem conferir novamente as notas dos componentes e migrações.
+Conferir o commit exibido com a versão aprovada. Para v0.1.8, reconstruir API, frontend e os dois proxies: API/frontend contêm a validação de CPF. As correções de bibliotecas das versões anteriores também estão incluídas; entre v0.1.7 e v0.1.8 os proxies e dependências são iguais. Banco, antivírus, configuração e inicializador de volumes permanecem iguais. Futuras versões exigem conferir novamente as notas dos componentes e migrações.
 
 ```powershell
 docker @composeArgs up -d --no-deps --force-recreate api
@@ -93,6 +93,7 @@ A recuperação validada usa ambiente isolado. A decisão de substituir produç�
 
 ## Evidências e próximo passo
 
+- Pacote `v0.1.8`: atualização `v0.1.7` → `5f23b8f` aprovada em **146,2 segundos** sem build/download. Histórico inválido preservado/editável, novos CPFs incorretos ou repetidos recusados, CPF ausente aceito. Backup restaurado, tabelas/volumes/configuração/TLS/exame/sessão mantidos e novo login aprovado; sem migração ou mudança de dependências. [Evidências e limites U1.6D](./ATUALIZACAO-U1-6D.md).
 - Pacote `v0.1.7`: ensaio final `v0.1.6` → `005c28d` aprovado em **63,94 segundos** sem build/download, incluindo troca de API/web/proxies, versões corrigidas das bibliotecas, duplicados históricos preservados/editáveis e bloqueio de novas atribuições de CPF. Backup restaurado, tabelas/volumes/configuração/TLS/exame/sessão mantidos e novo login aprovado. [Evidências e limites U1.6C](./ATUALIZACAO-U1-6C.md).
 - `powershell -NoProfile -File scripts/test-check-update-version.ps1`: nove cenários reais de Git aprovados, com conteúdo fictício em repositório exclusivo sob `.data`; HEAD, estado e referências preservados em cada verificação. Log ignorado `.data/update-version-test.log`.
 - `smoke_windows_update_homolog.py`: imagens construídas das tags, Compose de produção adaptado para nomes/rede/volumes privados de `erp-dents-homolog`; dump restaurado, todas as tabelas comparadas antes/depois, mesmos volumes/configuração/TLS, exame/sessão preservados, busca nova, edição e novo login aprovados. Backup privado do harness separado do script operacional. Não repetiu ensaio de navegador, reinício físico ou nova migração.
