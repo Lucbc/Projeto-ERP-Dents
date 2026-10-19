@@ -1,4 +1,5 @@
 import { formatPhone } from "@/lib/phone";
+import { formatCpf, sameCpf, validCpf } from '@/lib/cpf';
 import { PatientDuplicateCheck } from './patient-duplicate-check';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -50,14 +51,6 @@ type PatientForm = z.infer<typeof patientSchema>;
 function nullable(value?: string) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
-}
-
-function formatCpf(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
 function normalizeRg(value: string): string {
@@ -312,6 +305,11 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
   const onSubmit = (values: PatientForm) => {
     if (isSubmitting || editConflict) return;
+    if (!(editingPatient && sameCpf(values.cpf ?? '', editingPatient.cpf ?? '')) && !validCpf(values.cpf ?? '')) {
+      form.setError('cpf', { type: 'validate', message: 'CPF inválido. Confira os 11 dígitos ou deixe o campo em branco.' }, { shouldFocus: true });
+      return;
+    }
+    form.clearErrors('cpf');
     if (editingPatient) {
       updateMutation.mutate({ id: editingPatient.id, version: editingPatient.version, payload: values });
       return;
@@ -479,6 +477,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
                 },
               })}
             />
+            {form.formState.errors.cpf && <p role="alert" className="mt-1 text-xs text-red-600">{form.formState.errors.cpf.message}</p>}
           </div>
 
           <div>

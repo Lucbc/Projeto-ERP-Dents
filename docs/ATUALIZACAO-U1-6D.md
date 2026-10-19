@@ -2,9 +2,15 @@
 
 Iniciada em 19/10/2026, base `92c33a4` (`piloto-cadastros-v0.1.7`). Subetapa de diagnóstico; nenhuma validação nova aplicada ao produto.
 
-## Regra de negócio pendente
+## Regra de negócio confirmada em 19/10/2026
 
-Pergunta enviada ao usuário: bloquear novas atribuições de CPF incompleto/com dígitos verificadores inválidos, ou apenas avisar e permitir salvar. Em ambas as opções, CPF ausente continua permitido e documentos antigos mantidos não impedem editar outros campos. Não presumir resposta nem confundir esta escolha com o bloqueio de duplicidade já aprovado.
+Usuário escolheu bloquear novas atribuições de CPF incompleto/com dígitos verificadores inválidos. CPF ausente continua permitido e documentos antigos mantidos não impedem editar outros campos. A validação confere formato e dígitos, sem consultar existência, titularidade ou situação cadastral em serviço externo. A regra de duplicidade incluindo inativos permanece.
+
+## Implementação e validação em andamento
+
+Validação na gravação pelo repositório, dentro do tratamento de transação; atualização compara o documento atual e a versão antes de validar alterações. Mesmo documento com apenas mudança de pontuação continua equivalente; documentos mistos diferentes não são confundidos. Recusa não grava notas, documento ou versão parcialmente. O formulário preserva entrada mista/longa, informa erro junto ao campo e mantém o rascunho; CPF em branco continua permitido.
+
+11 testes focados de domínio/PostgreSQL aprovados, incluindo concorrência e históricos; 3 testes de domínio refeitos no container com caso adicional do primeiro dígito aprovados. Teste pelo Python do host não executou por dependência ausente; validação válida realizada no ambiente Docker do projeto. 17 testes de componente e build API/web aprovados; suíte frontend completa pendente. Chrome/API aprovado com rejeição de formatos, ausência de corte silencioso, históricos, CPF ausente, duplicidade inativa, permissões e conflitos. Fixture histórica é criada por SQL somente no schema privado; falha inicial por timestamps ausentes corrigida no roteiro. Logs locais `.data/cpf-validation-db.log`, `.data/cpf-validation-unit-final.log`, `.data/cpf-validation-components.log`, `.data/cpf-validation-build.log`, `.data/cpf-validation-browser-final.log`. CI e ensaio de atualização ainda pendentes; instalação permanece v0.1.7.
 
 ## Reprodução
 

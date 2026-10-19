@@ -11,6 +11,7 @@ from src.adapters.db.repositories.patient_deletion import exams_fingerprint
 import re
 import unicodedata
 from src.core.domain.entities import Patient
+from src.core.domain.cpf import cpf_digits, same_cpf, validate_cpf
 from src.core.ports.repositories import PatientRepository
 
 
@@ -20,10 +21,7 @@ class SqlAlchemyPatientRepository(PatientRepository):
 
     @staticmethod
     def _cpf_key(value):
-        if not value or not re.fullmatch(r'[0-9.\s-]+', value):
-            return None
-        digits = re.sub(r'[^0-9]', '', value)
-        return digits if len(digits) == 11 else None
+        return cpf_digits(value)
 
     def _guard_cpf(self, key, patient_id=None):
         if key is None:
@@ -110,6 +108,7 @@ class SqlAlchemyPatientRepository(PatientRepository):
 
     def create(self, data: dict) -> Patient:
         try:
+            validate_cpf(data.get('cpf'))
             self._guard_cpf(self._cpf_key(data.get('cpf')))
             item = PatientModel(**data)
             self.session.add(item)
@@ -160,6 +159,8 @@ class SqlAlchemyPatientRepository(PatientRepository):
                 .where(PatientModel.id == patient_id)).first()
             # Let the versioned UPDATE below report missing/stale records.
             if current is not None and current.version == version:
+                if not same_cpf(values['cpf'], current.cpf):
+                    validate_cpf(values['cpf'])
                 key = self._cpf_key(values['cpf'])
                 if key != self._cpf_key(current.cpf):
                     self._guard_cpf(key, patient_id)

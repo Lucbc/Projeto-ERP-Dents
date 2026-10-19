@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 import test_appointment_concurrency as fixture
 from src.adapters.db.models.models import PatientModel
 from src.adapters.db.repositories.patient_repository import SqlAlchemyPatientRepository
-from src.core.domain.exceptions import ConflictError
+from src.core.domain.exceptions import ConflictError, ValidationError
 
 
 @unittest.skipUnless(os.getenv('RUN_HOMOLOG_TESTS') == '1', 'Homologation opt-in required')
@@ -22,11 +22,11 @@ class PatientCpfGuardTests(unittest.TestCase):
     def test_inactive_blocks_create_and_update_without_changes(self):
         with Session(self.data.engine) as db:
             repo = SqlAlchemyPatientRepository(db)
-            owner = repo.create(dict(full_name='Inactive Fictitious', cpf='123.456.789-01', active=False))
+            owner = repo.create(dict(full_name='Inactive Fictitious', cpf='123.456.789-09', active=False))
             other = repo.create(dict(full_name='Other Fictitious'))
             for operation in (
-                lambda: repo.create(dict(full_name='New Fictitious', cpf='12345678901')),
-                lambda: repo.update(other.id, dict(version=other.version, cpf='12345678901', notes='Should not persist')),
+                lambda: repo.create(dict(full_name='New Fictitious', cpf='12345678909')),
+                lambda: repo.update(other.id, dict(version=other.version, cpf='12345678909', notes='Should not persist')),
             ):
                 with self.assertRaises(ConflictError) as error:
                     operation()
@@ -35,13 +35,36 @@ class PatientCpfGuardTests(unittest.TestCase):
             saved = repo.get(other.id)
             self.assertEqual((saved.version, saved.cpf, saved.notes), (other.version, None, None))
             self.assertEqual(repo.get(owner.id).cpf, owner.cpf)
-            fixed = repo.update(other.id, dict(version=other.version, cpf='98765432109', notes='Corrected'))
+            fixed = repo.update(other.id, dict(version=other.version, cpf='98765432100', notes='Corrected'))
             self.assertEqual(fixed.version, other.version + 1)
+
+    def test_format_validation_preserves_history_and_rejects_partial_writes(self):
+        with Session(self.data.engine) as db:
+            legacy = PatientModel(full_name='Legacy Format Fictitious', cpf='OLD-DOCUMENT')
+            db.add(legacy)
+            db.commit()
+            repo = SqlAlchemyPatientRepository(db)
+            original = repo.get(legacy.id)
+            for value in ('123', 'DOC-456', '123456789012', '00000000000', '12345678901'):
+                with self.assertRaises(ValidationError):
+                    repo.create(dict(full_name='Rejected Fictitious', cpf=value))
+                with self.assertRaises(ValidationError):
+                    repo.update(original.id, dict(version=original.version, cpf=value, notes='Must not persist'))
+                self.assertFalse(db.in_transaction())
+                saved = repo.get(original.id)
+                self.assertEqual((saved.cpf, saved.notes, saved.version), (original.cpf, None, original.version))
+            saved = repo.update(original.id, dict(version=original.version, cpf=original.cpf, notes='Kept history'))
+            saved = repo.update(saved.id, dict(version=saved.version, cpf=None))
+            self.assertIsNone(saved.cpf)
+            saved = repo.update(saved.id, dict(version=saved.version, cpf='12345678909'))
+            self.assertEqual(saved.cpf, '12345678909')
+            with self.assertRaises(ConflictError):
+                repo.update(saved.id, dict(version=original.version, cpf='OLD-DOCUMENT'))
 
     def test_legacy_duplicates_and_absent_cpf_remain_editable(self):
         with Session(self.data.engine) as db:
             legacy = [PatientModel(full_name='Legacy Fictitious', cpf=value)
-                      for value in ('123.456.789-01', '12345678901', 'OLD-DOCUMENT')]
+                      for value in ('123.456.789-09', '12345678909', 'OLD-DOCUMENT')]
             db.add_all(legacy)
             db.commit()
             ids = [row.id for row in legacy]
@@ -51,8 +74,8 @@ class PatientCpfGuardTests(unittest.TestCase):
                 saved = repo.update(patient_id, dict(version=original.version, cpf=original.cpf, notes='Only notes'))
                 self.assertEqual(saved.cpf, original.cpf)
             original = repo.get(ids[0])
-            reformatted = repo.update(original.id, dict(version=original.version, cpf='123 456 789 01'))
-            self.assertEqual(reformatted.cpf, '123 456 789 01')
+            reformatted = repo.update(original.id, dict(version=original.version, cpf='123 456 789 09'))
+            self.assertEqual(reformatted.cpf, '123 456 789 09')
             for _ in range(2):
                 self.assertIsNone(repo.create(dict(full_name='Same Name Fictitious', cpf=None)).cpf)
 
@@ -77,7 +100,7 @@ class PatientCpfGuardTests(unittest.TestCase):
                             raise RuntimeError('Fictitious rollback')
                 repo._guard_cpf = controlled
                 try:
-                    payload = dict(cpf='123.456.789-01' if index == 1 else '12345678901')
+                    payload = dict(cpf='123.456.789-09' if index == 1 else '12345678909')
                     if mode == 'create':
                         repo.create(dict(full_name='Concurrent Fictitious', **payload))
                     else:
@@ -127,11 +150,11 @@ class PatientCpfGuardTests(unittest.TestCase):
     def test_stale_version_cannot_restore_previous_cpf(self):
         with Session(self.data.engine) as db:
             repo = SqlAlchemyPatientRepository(db)
-            patient = repo.create(dict(full_name='Stale Fictitious', cpf='12345678901'))
+            patient = repo.create(dict(full_name='Stale Fictitious', cpf='12345678909'))
             current = repo.update(patient.id, dict(version=patient.version, cpf=None))
-            repo.create(dict(full_name='New Owner Fictitious', cpf='12345678901'))
+            repo.create(dict(full_name='New Owner Fictitious', cpf='12345678909'))
             with self.assertRaises(ConflictError) as error:
-                repo.update(patient.id, dict(version=patient.version, cpf='12345678901'))
+                repo.update(patient.id, dict(version=patient.version, cpf='12345678909'))
             self.assertNotEqual(error.exception.code, 'duplicate_cpf')
             self.assertEqual(repo.get(patient.id).version, current.version)
             self.assertIsNone(repo.get(patient.id).cpf)

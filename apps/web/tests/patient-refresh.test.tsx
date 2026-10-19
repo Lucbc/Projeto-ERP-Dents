@@ -27,7 +27,7 @@ beforeEach(() => {
 });
 
 it("preserves historical CPF exactly when editing another field", async () => {
-  const stored = { ...patient, cpf: 'DOC-LEGADO-123456789012', notes: 'Original fictitious' };
+  const stored = { ...patient, cpf: 'DOC-LEGADO-123456789092', notes: 'Original fictitious' };
   vi.mocked(patientService.list).mockResolvedValue({ items: [stored], total: 1 });
   const update = vi.spyOn(patientService, 'update').mockResolvedValue(stored);
   const view = show(); await tick();
@@ -38,6 +38,25 @@ it("preserves historical CPF exactly when editing another field", async () => {
   expect(update).toHaveBeenCalledWith(patient.id, expect.objectContaining({ cpf: stored.cpf, notes: 'Only notes changed' }));
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
+
+it('retains invalid CPF and draft, blocks submission and allows clearing it', async () => {
+  const update = vi.spyOn(patientService, 'update').mockResolvedValue(patient);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button', {name:'Editar',exact:true})); await tick();
+  const cpf = view.container.querySelector('[name="cpf"]') as HTMLInputElement;
+  fireEvent.change(view.notes(), {target:{value:'Keep draft'}});
+  for (const value of ['DOC-123', '123456789012', '12345678901']) {
+    fireEvent.change(cpf, {target:{value}});
+    fireEvent.click(screen.getByRole('button', {name:'Salvar',exact:true})); await tick();
+    expect(screen.getByRole('alert').textContent).toContain('CPF inválido');
+    expect(update).not.toHaveBeenCalled();
+    expect(view.notes().value).toBe('Keep draft');
+    if (value !== '12345678901') expect(cpf.value).toBe(value);
+  }
+  fireEvent.change(cpf, {target:{value:''}});
+  fireEvent.click(screen.getByRole('button', {name:'Salvar',exact:true})); await tick();
+  expect(update).toHaveBeenCalledWith(patient.id, expect.objectContaining({cpf:null, notes:'Keep draft'}));
+});
 
 it("preserves international and extension phones when editing another field", async () => {
   const stored = { ...patient, phone: "+55 (11) 98765-4321", emergency_contact_phone: "(11) 3333-4444 ramal 20" };
@@ -108,7 +127,7 @@ it("lets the operator correct duplicate CPF without discarding the draft", async
   fireEvent.click(screen.getByRole('button', { name: 'Editar', exact: true }));
   fireEvent.change(view.notes(), { target: { value: 'Keep this draft' } });
   const cpf = view.container.querySelector('[name="cpf"]') as HTMLInputElement;
-  fireEvent.change(cpf, { target: { value: '12345678901' } });
+  fireEvent.change(cpf, { target: { value: '12345678909' } });
   fireEvent.click(screen.getByRole('button', { name: 'Salvar', exact: true })); await tick();
   expect(view.notes().value).toBe('Keep this draft');
   expect((screen.getByRole('button', { name: 'Salvar', exact: true }) as HTMLButtonElement).disabled).toBe(false);

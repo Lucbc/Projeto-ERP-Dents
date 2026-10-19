@@ -39,9 +39,15 @@ let stage = 'start';
     matrix.permissions.dashboard.view = true;
     await api(admin, author, 'PUT', '/api/permissions/reception', {version:matrix.version,permissions:matrix.permissions});
     const oldest = await api(admin, author, 'POST', '/api/patients', {
-      full_name:'Paciente Antigo Jo\u00e3o Gon\u00e7alves Ficticio', preferred_name:'Nome Social Jos\u00e9 Piloto Ficticio', birth_date:'1990-01-15', cpf:'123.456.789-01', phone:'(11) 3333-4444', active:false
+      full_name:'Paciente Antigo Jo\u00e3o Gon\u00e7alves Ficticio', preferred_name:'Nome Social Jos\u00e9 Piloto Ficticio', birth_date:'1990-01-15', cpf:'123.456.789-09', phone:'(11) 3333-4444', active:false
     }, 201);
     for(let i=0;i<104;i++) await api(admin, author, 'POST', '/api/patients', {full_name:'Massa Piloto Ficticia '+String(i).padStart(3,'0')},201);
+    stage = 'API CPF format rejection without partial writes';
+    for (const cpf of ['123', 'DOC-FICTICIO-123', '123456789012', '00000000000', '12345678901']) {
+      await api(admin, author, 'POST', '/api/patients', {full_name:'Rejected Format Fictitious',cpf},400);
+      await api(admin, author, 'PUT', '/api/patients/'+oldest.id, {version:oldest.version,cpf,notes:'Must not persist'},400);
+      assert.deepEqual(await api(admin,author,'GET','/api/patients/'+oldest.id),oldest);
+    }
     stage = 'reception permissions'; const receiver = await login(reception, account.email);
     assert.notEqual(author.session_id, receiver.session_id);
     await api(reception,receiver,'GET','/api/users',undefined,403);
@@ -49,10 +55,10 @@ let stage = 'start';
     await api(reception,receiver,'DELETE','/api/patients/'+oldest.id+'?version='+oldest.version,undefined,403);
     await reception.goto(origin+'/patients');
     stage = 'find patient outside first 100';
-    await reception.getByText(/Exibindo 100 de 105 pacientes/).waitFor();
+    await reception.getByText(/Exibindo 100 de 106 pacientes/).waitFor();
     stage = 'pagination beyond 100';
     await reception.getByRole('button',{name:'Próxima página',exact:true}).click();
-    await reception.getByText(/Exibindo 5 de 105 pacientes/).waitFor();
+    await reception.getByText(/Exibindo 6 de 106 pacientes/).waitFor();
     await reception.getByRole('row').filter({hasText:oldest.full_name}).waitFor();
     assert.equal(await reception.getByRole('button',{name:'Próxima página',exact:true}).isDisabled(),true);
     const search = reception.getByPlaceholder(/Buscar por nome/);
@@ -62,9 +68,9 @@ let stage = 'start';
     await reception.getByText('Página 1 de 1',{exact:true}).waitFor();
     assert.ok((await oldRow.innerText()).includes('15/01/1990'));
     assert.equal(await oldRow.getByRole('button',{name:'Excluir',exact:true}).count(),0);
-    await search.fill('123.456.789-01'); await oldRow.waitFor();
+    await search.fill('123.456.789-09'); await oldRow.waitFor();
     stage = 'normalized CPF, phone and accented names';
-    for (const term of ['12345678901', 'nome social jose piloto', '(11) 3333-4444', '1133334444',
+    for (const term of ['12345678909', 'nome social jose piloto', '(11) 3333-4444', '1133334444',
                        'joao goncalves', 'JO\u00c3O GON\u00c7ALVES', 'Joa\u0303o Gonc\u0327alves', 'jose piloto']) {
       const loaded = reception.waitForResponse(r => r.url().includes('/api/patients?') &&
         new URL(r.url()).searchParams.get('search') === term && r.request().method() === 'GET');
@@ -81,8 +87,20 @@ let stage = 'start';
     stage = 'create without CPF';
     await search.fill('');
     await reception.getByRole('button',{name:'Novo',exact:true}).click();
+    stage = 'browser CPF validation preserves input and draft';
+    await reception.locator('[name=full_name]').fill('Entrada Ficticia');
+    await reception.locator('[name=notes]').fill('Rascunho ficticio preservado');
+    for (const cpf of ['123', 'DOC-FICTICIO-123', '123456789012', '00000000000']) {
+      await reception.locator('[name=cpf]').fill(cpf);
+      await reception.getByRole('button',{name:'Salvar',exact:true}).click();
+      await reception.getByRole('alert').filter({hasText:'CPF inválido'}).waitFor();
+      assert.equal((await reception.locator('[name=cpf]').inputValue()).replace(/[.\s-]/g,''),cpf.replace(/[.\s-]/g,''));
+      assert.equal(await reception.locator('[name=notes]').inputValue(),'Rascunho ficticio preservado');
+    }
+    assert.equal((await api(admin,author,'GET','/api/patients')).total,106);
+    await reception.locator('[name=cpf]').fill('');
     stage = 'duplicate warning and preserved draft';
-    const duplicate = await api(reception, receiver, 'POST', '/api/patients/duplicate-check', {cpf:'12345678901'});
+    const duplicate = await api(reception, receiver, 'POST', '/api/patients/duplicate-check', {cpf:'12345678909'});
     assert.equal(duplicate.total, 1);
     assert.deepEqual(Object.keys(duplicate.items[0]).sort(), ['active','birth_date','full_name','id','same_cpf']);
     await reception.locator('[name=full_name]').fill(oldest.full_name);
@@ -92,14 +110,14 @@ let stage = 'start';
     await review.getByText(/Encontramos 1/).waitFor();
     assert.equal(await reception.getByRole('button',{name:'Salvar',exact:true}).isEnabled(),true);
     stage = 'inactive CPF prevents creation and retains draft';
-    await reception.locator('[name=cpf]').fill('12345678901');
+    await reception.locator('[name=cpf]').fill('12345678909');
     const duplicateCreate = reception.waitForResponse(r=>r.url().endsWith('/api/patients') && r.request().method()==='POST');
     await reception.getByRole('button',{name:'Salvar',exact:true}).click();
     const rejectedCreate = await duplicateCreate;
     assert.equal(rejectedCreate.status(),409);
     assert.equal((await rejectedCreate.json()).code,'duplicate_cpf');
     assert.equal(await reception.locator('[name=notes]').inputValue(),'Rascunho ficticio preservado');
-    assert.equal((await api(admin,author,'GET','/api/patients')).total,105);
+    assert.equal((await api(admin,author,'GET','/api/patients')).total,106);
     await reception.locator('[name=cpf]').fill('');
     await reception.locator('[name=full_name]').fill('Paciente Piloto Cadastro Ficticio');
     await reception.locator('[name=birth_date]').fill('1985-05-17');
@@ -109,8 +127,9 @@ let stage = 'start';
     await reception.getByRole('button',{name:'Salvar',exact:true}).click();
     const createdResponse = await saved; assert.equal(createdResponse.status(),201);
     let patient = await createdResponse.json(); assert.equal(patient.cpf,null);
+    patient = (await api(admin,author,'GET','/api/patients?search=Paciente%20Legado%20Formato%20Ficticio')).items[0];
     patient = await api(admin,author,'PUT','/api/patients/'+patient.id,{version:patient.version,
-      phone:'+55 (11) 98765-4321', emergency_contact_phone:'(11) 3333-4444 ramal 20', cpf:'DOC-LEGADO-123456789012'});
+      phone:'+55 (11) 98765-4321', emergency_contact_phone:'(11) 3333-4444 ramal 20'});
     stage = 'edit conflict retains draft';
     await search.fill(patient.full_name);
     const row = reception.getByRole('row').filter({hasText:patient.full_name});
@@ -119,6 +138,11 @@ let stage = 'start';
     assert.equal(await reception.locator('[name=cpf]').inputValue(),patient.cpf);
     assert.equal(await reception.locator('[name=emergency_contact_phone]').inputValue(),patient.emergency_contact_phone);
     await reception.locator('[name=notes]').fill('Rascunho ficticio da recepcao');
+    await reception.locator('[name=cpf]').fill('OUTRO-DOCUMENTO');
+    await reception.getByRole('button',{name:'Salvar',exact:true}).click();
+    await reception.getByRole('alert').filter({hasText:'CPF inválido'}).waitFor();
+    assert.equal(await reception.locator('[name=cpf]').inputValue(),'OUTRO-DOCUMENTO');
+    await reception.locator('[name=cpf]').fill(patient.cpf);
     await api(admin,author,'PUT','/api/patients/'+patient.id,{version:patient.version,preferred_name:'Mudanca concorrente'});
     saved = reception.waitForResponse(r=>r.url().endsWith('/api/patients/'+patient.id) && r.request().method()==='PUT');
     await reception.getByRole('button',{name:'Salvar',exact:true}).click();
@@ -142,7 +166,7 @@ let stage = 'start';
     assert.equal(await reception.locator('[name=phone]').inputValue(),patient.phone);
     assert.equal(await reception.locator('[name=emergency_contact_phone]').inputValue(),patient.emergency_contact_phone);
     stage = 'duplicate endpoint respects current permissions';
-    await reception.locator('[name=cpf]').fill('12345678901');
+    await reception.locator('[name=cpf]').fill('12345678909');
     const duplicateEdit = reception.waitForResponse(r=>r.url().endsWith('/api/patients/'+patient.id) && r.request().method()==='PUT');
     await reception.getByRole('button',{name:'Salvar',exact:true}).click();
     const rejectedEdit = await duplicateEdit;
@@ -158,7 +182,7 @@ let stage = 'start';
     matrix.permissions.patients.view = false;
     const currentMatrix = (await api(admin, author, 'GET', '/api/permissions')).items.find(p => p.role === 'reception');
     await api(admin, author, 'PUT', '/api/permissions/reception', {version:currentMatrix.version,permissions:matrix.permissions});
-    await api(reception, receiver, 'POST', '/api/patients/duplicate-check', {cpf:'12345678901'},403);
-    console.log('PASS: reception, inactive CPF blocks create/edit, corrected CPF retries with draft preserved, warning and permissions, searches, pagination, historical CPF, conflict and reopen.');
+    await api(reception, receiver, 'POST', '/api/patients/duplicate-check', {cpf:'12345678909'},403);
+    console.log('PASS: CPF format/check digits rejected by API and Chrome without partial writes or silent truncation; historical CPF editable, absent CPF allowed, inactive duplicates blocked, draft retry, permissions, search, conflict and reopen.');
   } finally { await browser.close(); }
 })().catch(() => { console.error('Registration pilot failed at stage: '+stage); process.exit(1); });
