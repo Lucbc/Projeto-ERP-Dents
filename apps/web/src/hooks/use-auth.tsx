@@ -33,6 +33,8 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(!session.ready || Boolean(session.sessionId));
   const [sessionError, setSessionError] = useState(false);
+  const [expiresSoon, setExpiresSoon] = useState(false);
+  const [expiryWarningDismissed, setExpiryWarningDismissed] = useState(false);
   const [logoutState, setLogoutState] = useState<"idle" | "pending" | "failed">("idle");
   const loggingOut = useRef(false);
   const validation = useRef(0);
@@ -90,8 +92,10 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
     let timer: number;
     const check = () => {
       const remaining = expires - Date.now();
+      setExpiresSoon(remaining > 0 && remaining <= 5 * 60_000);
       if (remaining <= 0) endSession(session);
-      else timer = window.setTimeout(check, Math.min(remaining, 2_147_483_647));
+      else timer = window.setTimeout(check, Math.min(
+        remaining > 5 * 60_000 ? remaining - 5 * 60_000 : remaining, 2_147_483_647));
     };
     check();
     return () => window.clearTimeout(timer);
@@ -143,7 +147,14 @@ function SessionScope({ children, session }: PropsWithChildren<{ session: Sessio
               {session.ready && <button className="rounded-sm border px-4 py-2" onClick={logout}>Sair</button>}
             </div>
           </div>
-        ) : children}
+        ) : <>
+          {user && expiresSoon && !expiryWarningDismissed && <div role="alert"
+            className="fixed left-3 right-3 top-3 z-50 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-lg sm:left-auto sm:max-w-lg">
+            <p>Sua sessão termina em até 5 minutos. Salve o que estiver preenchendo. Campos não salvos serão descartados ao encerrar a sessão.</p>
+            <button type="button" className="mt-2 underline" onClick={() => setExpiryWarningDismissed(true)}>Ocultar aviso</button>
+          </div>}
+          {children}
+        </>}
       </AuthContext.Provider>
     </QueryClientProvider>
   );

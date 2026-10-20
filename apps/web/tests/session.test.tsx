@@ -291,6 +291,28 @@ describe("session boundaries", () => {
     expect(getSession().sessionId).toBeNull();
   });
 
+  it("warns five minutes before expiry without clearing the draft or extending the session", async () => {
+    vi.useFakeTimers();
+    const expiry = Date.now() + 6 * 60_000;
+    changeSession(tokenA, "fictitious-csrf", expiry);
+    mount();
+    await act(async () => { await vi.advanceTimersByTimeAsync(100); });
+    fireEvent.change(screen.getByLabelText("draft"), {target:{value:"Fictitious unsaved draft"}});
+    expect(screen.queryByText(/Sua sessão termina em até 5 minutos/)).toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+    expect(screen.getByText(/Sua sessão termina em até 5 minutos/)).toBeTruthy();
+    expect((screen.getByLabelText("draft") as HTMLInputElement).value).toBe("Fictitious unsaved draft");
+    expect(getSession().expiresAt).toBe(expiry);
+    fireEvent.click(screen.getByRole('button',{name:'Ocultar aviso',exact:true}));
+    expect(screen.queryByText(/Sua sessão termina em até 5 minutos/)).toBeNull();
+    expect((screen.getByLabelText("draft") as HTMLInputElement).value).toBe("Fictitious unsaved draft");
+    expect(getSession().expiresAt).toBe(expiry);
+    await act(async () => { await vi.advanceTimersByTimeAsync(5 * 60_000); });
+    expect(screen.getByText("Login B")).toBeTruthy();
+    expect(screen.queryByText(/Sua sessão termina em até 5 minutos/)).toBeNull();
+    expect(getSession().sessionId).toBeNull();
+  });
+
   it("rejects a disabled identity on /me without treating ordinary permission errors as logout", async () => {
     changeSession(tokenA);
     api.defaults.adapter = async (config) => { throw httpError(config, 403); };
