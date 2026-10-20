@@ -53,10 +53,6 @@ function nullable(value?: string) {
   return normalized ? normalized : null;
 }
 
-function normalizeRg(value: string): string {
-  return value.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 14);
-}
-
 export function PatientsPage() {
   const client = useQueryClient();
   const [denied, setDenied] = useState(false);
@@ -490,13 +486,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">RG</label>
-            <Input
-              {...form.register("rg", {
-                onChange: (event) => {
-                  event.target.value = normalizeRg(event.target.value);
-                },
-              })}
-            />
+            <Input {...form.register("rg")} />
           </div>
 
           <div>

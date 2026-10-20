@@ -39,6 +39,21 @@ it("preserves historical CPF exactly when editing another field", async () => {
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
 
+it('preserves RG punctuation, case and long values while editing and submitting', async () => {
+  const stored = { ...patient, rg: 'Registro-Ficticio/123456789012345' };
+  vi.mocked(patientService.list).mockResolvedValue({ items: [stored], total: 1 });
+  const update = vi.spyOn(patientService, 'update').mockResolvedValue(stored);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button', {name:'Editar',exact:true})); await tick();
+  const rg = view.container.querySelector('[name="rg"]') as HTMLInputElement;
+  expect(rg.value).toBe(stored.rg);
+  const value = 'Registro-Ficticio/123456789012345-x';
+  fireEvent.change(rg, {target:{value}});
+  expect(rg.value).toBe(value);
+  fireEvent.click(screen.getByRole('button', {name:'Salvar',exact:true})); await tick();
+  expect(update).toHaveBeenCalledWith(patient.id, expect.objectContaining({rg:value}));
+});
+
 it('retains invalid CPF and draft, blocks submission and allows clearing it', async () => {
   const update = vi.spyOn(patientService, 'update').mockResolvedValue(patient);
   const view = show(); await tick();
