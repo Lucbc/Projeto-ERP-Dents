@@ -6,7 +6,7 @@ Atualizado em 18/10/2026. Dados serão cadastrados do zero, em outro computador 
 
 O servidor fica ligado e concentra o programa, banco e exames. Cada estação abre o mesmo endereço HTTPS pelo navegador, com login individual. Somente o servidor precisa de Docker. As estações não precisam de Git, Python, Node ou banco de dados.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.8`, incluindo paginação, busca por CPF com/sem pontuação, nome completo/social sem distinguir acentos, busca por telefone sem pontuação, preservação de internacionais/ramais na edição, aviso de possível duplicidade ao criar, bloqueio de novas atribuições de CPF completo repetido (inclusive em inativos) validação de formato/dígitos de CPF novo ou alterado e imagens corrigidas para instalação nova. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.9`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
@@ -36,7 +36,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.8
+git checkout piloto-cadastros-v0.1.9
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1
@@ -132,6 +132,7 @@ Preencher uma cópia do [checklist de início na clínica](./CHECKLIST-INICIO-CL
 - [x] Recuperação de banco, exames e aplicação comprovada em ambiente isolado. No local, confirmar o backup produzido e o responsável pela recuperação; copiar só a pasta do código não salva os volumes.
 - [x] Fluxo essencial de pacientes aprovado: busca acima de 100 registros, cadastro sem CPF e edição simultânea; observar os [limites de busca](./LIBERACAO-PILOTO-CADASTROS.md).
 - [ ] Segundo computador acessa HTTPS, login individual e cadastro sem avisos/erros.
+- [ ] Data/hora do servidor e das estações corretas, com sincronização automática do Windows. As regras de dia da clínica usam São Paulo; relógio incorreto pode afetar a validação de nascimento.
 - [ ] Reinício completo do Windows testado, dados preservados e rotina de abertura do Docker definida.
 - [ ] Responsável por backups, certificado e atualizações definido.
 

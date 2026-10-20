@@ -27,6 +27,8 @@ Na v0.1.8, CPF novo ou alterado precisa ter 11 dígitos e passar pela conferênc
 
 ## Editar
 
+Na v0.1.9, nascimento novo ou alterado não pode estar no futuro, considerando o dia da clínica em São Paulo. Se houver erro, confira a data ou deixe o campo em branco; os demais dados digitados permanecem disponíveis. Uma data antiga mantida não impede editar outros campos. Não invente datas para preencher informação desconhecida.
+
 Abrir o cadastro correto, alterar e salvar. Se o sistema avisar que outra pessoa alterou o mesmo registro, conferir a mudança e carregar a versão atual antes de salvar novamente. Copiar ou anotar o que precisa preservar antes de escolher descartar o rascunho.
 
 ## Encerrar e pedir ajuda

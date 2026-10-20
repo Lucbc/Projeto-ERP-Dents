@@ -12,7 +12,7 @@ from smoke_backup_restore_homolog import ROOT, PROJECT, run
 
 
 def prepare_images(folder):
-    releases = {'old': 'piloto-cadastros-v0.1.7', 'new': '5f23b8fb82c713ca6c57ec18b8488418dcb1f659'}
+    releases = {'old': 'piloto-cadastros-v0.1.8', 'new': '803ee675497554433a471ec6957fa1a2358c9714'}
     # This acceptance is specifically a no-migration application update.
     unchanged = ['docker-compose.yml', 'ops', 'apps/web/Dockerfile', 'apps/api/alembic',
                  'apps/web/package.json', 'apps/web/package-lock.json',
@@ -70,8 +70,8 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
                       {'version': patient['version'], 'cpf': '123.456.789-09', 'preferred_name': 'Update Social Fictitious',
                        'phone': '(11) 3333-4444'})
     assert request('GET', '/api/patients?search=1133334444')['total'] == 1
-    legacy = request('POST', '/api/patients', {'full_name': 'Legacy Format Fictitious',
-                     'cpf': 'OLD-DOCUMENT', 'active': False}, 201)
+    legacy = request('POST', '/api/patients', {'full_name': 'Legacy Birth Fictitious',
+                     'birth_date': '9999-12-31', 'active': False}, 201)
     old_html = client.raw('GET', '/patients')[1]
     png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=')
     boundary = 'update-fixture'
@@ -169,10 +169,11 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         assert denied['code'] == 'duplicate_cpf'
         for invalid in ('123', 'OLD-DOCUMENT', '123456789092', '00000000000'):
             request('POST', '/api/patients', {'full_name': 'Rejected Format Fictitious', 'cpf': invalid}, 400)
+        request('POST', '/api/patients', {'full_name': 'Rejected Birth Fictitious', 'birth_date': '9999-12-31'}, 400)
         assert fingerprint() == before
         legacy_changed = request('PUT', '/api/patients/' + legacy['id'], {'version': legacy['version'],
-                          'cpf': legacy['cpf'], 'notes': 'Historical document preserved'})
-        assert legacy_changed['cpf'] == legacy['cpf']
+                          'birth_date': legacy['birth_date'], 'notes': 'Historical date preserved'})
+        assert legacy_changed['birth_date'] == legacy['birth_date']
         changed = request('PUT', '/api/patients/' + patient['id'], {'version': patient['version'],
                           'cpf': patient['cpf'], 'notes': 'Fictitious post-update edit'})
         assert changed['cpf'] == patient['cpf']
@@ -184,6 +185,9 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         request('PUT', '/api/patients/' + fresh['id'], {'version': fresh['version'],
                          'cpf': '123', 'notes': 'Must not persist'}, 400)
         assert request('GET', '/api/patients/' + fresh['id']) == fresh
+        request('PUT', '/api/patients/' + fresh['id'], {'version': fresh['version'],
+                         'birth_date': '9999-12-31', 'notes': 'Must not persist'}, 400)
+        assert request('GET', '/api/patients/' + fresh['id']) == fresh
         status, identity, _ = client.request('POST', '/api/auth/login', credentials)
         assert status == 200
         assert client.request('GET', '/api/auth/me', session=identity['session'])[0] == 200
@@ -192,7 +196,8 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
             'maintenanceSeconds': elapsed, 'checks': ['backup restored', 'gateway blocked during backup/replacement',
             'all public rows preserved', 'same volumes/config/TLS', 'old session and exam preserved',
             'new API/frontend/proxy images', 'runtime libexpat/libx11/libxpm versions', 'search', 'read-only duplicate check',
-            'legacy invalid CPF preserved and editable', 'new invalid and duplicate CPF rejected', 'fresh login'],
+            'legacy future birth date preserved and editable', 'new future birth date rejected',
+            'new invalid and duplicate CPF rejected', 'fresh login'],
             'limits': ['private harness backup, not backup-server.ps1', 'API/HTTPS, no browser',
                        'no new migration', 'cached images/signatures', 'no physical clinic installation']}, indent=2))
         print(f'PASS: release update, preserved rows/volumes/config/TLS/exam/session, duplicate check and edit; maintenance {elapsed}s.', flush=True)
