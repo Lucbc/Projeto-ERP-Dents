@@ -187,9 +187,13 @@ export const patientService = {
     const response = await api.get<Patient>(`/api/patients/${id}`, { signal });
     return response.data;
   },
-  async create(payload: Partial<Patient>) {
-    const response = await api.post<Patient>("/api/patients", payload);
+  async create(payload: Partial<Patient>, operationKey?: string) {
+    const response = await api.post<Patient>("/api/patients", payload,
+      operationKey ? { headers: { "Idempotency-Key": operationKey } } : undefined);
     return response.data;
+  },
+  async creationResult(operationKey: string) {
+    return (await api.get<{recorded:boolean;patient:Patient|null}>(`/api/patients/creation-attempts/${operationKey}`)).data;
   },
   async update(id: string, payload: Partial<Patient> & { version: number }) {
     const response = await api.put<Patient>(`/api/patients/${id}`, payload);

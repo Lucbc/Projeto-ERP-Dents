@@ -2,8 +2,9 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Header, Query, Response, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from src.adapters.db.repositories.patient_repository import SqlAlchemyPatientRepository
 from src.api.deps.auth import require_permission
@@ -61,9 +62,15 @@ def list_patients(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_permission("patients", "create"))],
 )
-def create_patient(payload: PatientCreateRequest, db: Session = Depends(get_db_dep)):
+def create_patient(payload: PatientCreateRequest, db: Session = Depends(get_db_dep),
+    idempotency_key: UUID | None = Header(default=None),
+    user: User = Depends(require_permission("patients", "create"))):
     use_case = PatientUseCases(SqlAlchemyPatientRepository(db))
-    return use_case.create(payload.model_dump())
+    current = SqlAlchemyRolePermissionRepository(db).get_by_role(user.role)
+    permissions = normalize_permissions(role=user.role, raw_permissions=current.permissions if current else None)
+    can_view = can_access(role=user.role, permissions=permissions, resource="patients", action="view")
+    return use_case.create(payload.model_dump(), operation_key=idempotency_key,
+        actor_id=user.id, allow_replay=can_view)
 
 
 @router.post('/duplicate-check', response_model=PatientDuplicateResponse,
@@ -71,6 +78,19 @@ def create_patient(payload: PatientCreateRequest, db: Session = Depends(get_db_d
 def duplicate_check(payload: PatientDuplicateRequest, db: Session = Depends(get_db_dep)):
     return SqlAlchemyPatientRepository(db).duplicate_candidates(
         payload.full_name, payload.birth_date, payload.cpf)
+
+
+@router.get(
+    "/creation-attempts/{operation_key}",
+    dependencies=[Depends(require_permission("patients", "view"))],
+)
+def creation_result(operation_key: UUID, db: Session = Depends(get_db_dep),
+    user: User = Depends(require_permission("patients", "create"))):
+    receipt = db.execute(text('SELECT patient_id FROM patient_creation_operations '
+        'WHERE actor_id=:actor AND key=:key'), {'actor': user.id, 'key': operation_key}).scalar()
+    patient = SqlAlchemyPatientRepository(db).get(receipt) if receipt else None
+    return {'recorded': receipt is not None,
+        'patient': PatientResponse.model_validate(patient) if patient else None}
 
 
 @router.get(

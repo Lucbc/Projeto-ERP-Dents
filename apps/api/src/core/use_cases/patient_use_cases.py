@@ -27,7 +27,7 @@ class PatientUseCases:
             raise NotFoundError("Paciente não encontrado.")
         return patient
 
-    def create(self, data: dict) -> Patient:
+    def create(self, data: dict, *, operation_key=None, actor_id=None, allow_replay=True) -> Patient:
         full_name = (data.get("full_name") or "").strip()
         if not full_name:
             raise ValidationError("Nome completo do paciente é obrigatório.")
@@ -48,6 +48,9 @@ class PatientUseCases:
         data["medical_history"] = _normalize_text(data.get("medical_history"))
         data["notes"] = _normalize_text(data.get("notes"))
         data["active"] = bool(data.get("active", True))
+        if operation_key is not None:
+            return self.patient_repository.create(data, operation_key=operation_key,
+                actor_id=actor_id, allow_replay=allow_replay)
         return self.patient_repository.create(data)
 
     def update(self, patient_id: UUID, data: dict) -> Patient:

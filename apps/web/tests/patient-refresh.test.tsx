@@ -20,6 +20,7 @@ function show() {
   return { ...view, notes: () => view.container.querySelector('[name="notes"]') as HTMLTextAreaElement };
 }
 beforeEach(() => {
+  sessionStorage.clear();
   vi.useFakeTimers(); vi.setSystemTime(new Date(2030, 0, 7, 12)); focusManager.setFocused(true); onlineManager.setOnline(true);
   client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   vi.spyOn(patientService, "list").mockResolvedValue({ items: [patient], total: 1 });
@@ -38,6 +39,38 @@ it("preserves historical CPF exactly when editing another field", async () => {
   expect(update).toHaveBeenCalledWith(patient.id, expect.objectContaining({ cpf: stored.cpf, notes: 'Only notes changed' }));
 });
 afterEach(() => { cleanup(); client.clear(); vi.restoreAllMocks(); focusManager.setFocused(undefined); onlineManager.setOnline(true); vi.useRealTimers(); });
+
+it('does not queue an offline patient save or send it on reconnect', async () => {
+  const update = vi.spyOn(patientService,'update').mockResolvedValue(patient);
+  const online = vi.spyOn(navigator,'onLine','get').mockReturnValue(false);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button',{name:'Editar',exact:true})); await tick();
+  fireEvent.change(view.notes(),{target:{value:'Offline draft'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar',exact:true})); await tick();
+  expect(update).not.toHaveBeenCalled();
+  expect(screen.getByText(/Nada foi enfileirado/)).toBeTruthy();
+  expect((screen.getByRole('button',{name:'Cancelar',exact:true}) as HTMLButtonElement).disabled).toBe(false);
+  online.mockReturnValue(true); onlineManager.setOnline(true); await tick();
+  expect(update).not.toHaveBeenCalled();
+  expect(view.notes().value).toBe('Offline draft');
+});
+
+it('reuses the same creation key and original draft after an unknown result', async () => {
+  const create = vi.spyOn(patientService,'create').mockRejectedValueOnce(new AxiosError('Network failure','ERR_NETWORK'))
+    .mockResolvedValue(patient);
+  const view = show(); await tick();
+  fireEvent.click(screen.getByRole('button',{name:'Novo',exact:true})); await tick();
+  fireEvent.change(view.container.querySelector('[name=\"full_name\"]')!,{target:{value:'Fictitious creation'}});
+  fireEvent.click(screen.getByRole('button',{name:'Salvar',exact:true})); await tick();
+  expect(create).toHaveBeenCalledTimes(1);
+  const first = create.mock.calls[0];
+  expect(first[1]).toMatch(/^[0-9a-f-]{36}$/);
+  expect(screen.getByText(/Há uma tentativa/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'Salvar',exact:true})); await tick();
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(create.mock.calls[1]).toEqual(first);
+  expect(sessionStorage.length).toBe(0);
+});
 
 it('preserves RG punctuation, case and long values while editing and submitting', async () => {
   const stored = { ...patient, rg: 'Registro-Ficticio/123456789012345' };

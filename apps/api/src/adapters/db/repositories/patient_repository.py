@@ -10,6 +10,8 @@ from src.core.domain.exceptions import ConflictError, ValidationError, Forbidden
 from src.adapters.db.repositories.patient_deletion import exams_fingerprint
 import re
 import unicodedata
+import hashlib
+import json
 from src.core.domain.entities import Patient
 from src.core.domain.cpf import cpf_digits, same_cpf, validate_cpf
 from src.core.domain.patient_dates import validate_birth_date
@@ -107,13 +109,41 @@ class SqlAlchemyPatientRepository(PatientRepository):
         item = self.session.get(PatientModel, patient_id)
         return self._to_entity(item) if item else None
 
-    def create(self, data: dict) -> Patient:
+    def create(self, data: dict, *, operation_key=None, actor_id=None, allow_replay=True) -> Patient:
         try:
+            if operation_key is not None:
+                if actor_id is None:
+                    raise ValidationError('Usuário obrigatório para confirmar a tentativa.')
+                digest = hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False,
+                    separators=(',', ':'), default=str).encode()).hexdigest()
+                self.session.execute(text("SELECT pg_advisory_xact_lock(hashtextextended("
+                    "current_schema() || ' patient-create ' || :identity, 0))"),
+                    {'identity': f'{actor_id}:{operation_key}'})
+                receipt = self.session.execute(text('SELECT request_hash, patient_id '
+                    'FROM patient_creation_operations WHERE actor_id=:actor AND key=:key'),
+                    {'actor': actor_id, 'key': operation_key}).mappings().first()
+                if receipt is not None:
+                    if not allow_replay:
+                        raise ForbiddenError('Sem permissão para consultar o resultado. Peça ajuda ao responsável.')
+                    if receipt['request_hash'] != digest:
+                        raise ConflictError('Esta tentativa já foi usada com outros dados. Confira o cadastro.',
+                            code='idempotency_conflict')
+                    item = self.get(receipt['patient_id'])
+                    if item is None:
+                        raise ConflictError('O cadastro desta tentativa foi excluído. Ele não será recriado.',
+                            code='creation_deleted')
+                    self.session.commit()
+                    return item
             validate_birth_date(data.get('birth_date'))
             validate_cpf(data.get('cpf'))
             self._guard_cpf(self._cpf_key(data.get('cpf')))
             item = PatientModel(**data)
             self.session.add(item)
+            if operation_key is not None:
+                self.session.flush()
+                self.session.execute(text('INSERT INTO patient_creation_operations '
+                    '(actor_id, key, request_hash, patient_id) VALUES (:actor, :key, :hash, :patient)'),
+                    {'actor': actor_id, 'key': operation_key, 'hash': digest, 'patient': item.id})
             self.session.commit()
             self.session.refresh(item)
             return self._to_entity(item)

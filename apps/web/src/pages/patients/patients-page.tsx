@@ -23,6 +23,7 @@ import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { getApiErrorMessage } from "@/lib/api";
 import { clinicDate, formatDate } from "@/lib/datetime";
 import { patientService } from "@/lib/services";
+import { getSession } from "@/lib/session";
 import type { Patient } from "@/types";
 
 const patientSchema = z.object({
@@ -53,6 +54,10 @@ function nullable(value?: string) {
   return normalized ? normalized : null;
 }
 
+function savedAttempt(storageKey: string) {
+  try { return sessionStorage.getItem(storageKey); } catch { return null; }
+}
+
 export function PatientsPage() {
   const client = useQueryClient();
   const [denied, setDenied] = useState(false);
@@ -77,6 +82,18 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
   const [offset, setOffset] = useState(0);
   const pageSize = 100;
   const [openModal, setOpenModal] = useState(false);
+  const attemptStorage = `patient-creation:${getSession().sessionId ?? 'anonymous'}`;
+  const attemptKey = useRef<string | null>(savedAttempt(attemptStorage));
+  const attemptPayload = useRef<PatientForm | null>(null);
+  const [creationUncertain, setCreationUncertain] = useState(Boolean(attemptKey.current));
+  const [saveNotice, setSaveNotice] = useState('');
+  const clearAttempt = () => {
+    try { sessionStorage.removeItem(attemptStorage); } catch { /* The confirmed receipt remains on the server. */ }
+    attemptKey.current = null;
+    attemptPayload.current = null;
+    setCreationUncertain(false);
+    setSaveNotice('');
+  };
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [editConflict, setEditConflict] = useState(false);
 
@@ -119,6 +136,8 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
   }, [patientsQuery.isSuccess, patientsQuery.isFetching, patientsQuery.data, offset]);
 
   const createMutation = useMutation({
+    networkMode: 'always',
+    retry: false,
     mutationFn: (payload: PatientForm) =>
       patientService.create({
         full_name: payload.full_name,
@@ -139,17 +158,48 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
         medical_history: nullable(payload.medical_history),
         notes: nullable(payload.notes),
         active: payload.active === "true",
-      }),
+      }, attemptKey.current!),
     onSuccess: () => {
+      clearAttempt();
       toast("Paciente cadastrado com sucesso.");
       setOpenModal(false);
       form.reset();
       void queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
-    onError: (error) => toast(getApiErrorMessage(error), "error"),
+    onError: (error) => {
+      const status = isAxiosError(error) ? error.response?.status : undefined;
+      const code = isAxiosError(error) ? error.response?.data?.code : undefined;
+      if (!creationUncertain && ((status && [400, 422].includes(status)) ||
+          (status === 409 && code === 'duplicate_cpf'))) {
+        clearAttempt();
+        toast(getApiErrorMessage(error), 'error');
+      } else {
+        setCreationUncertain(true);
+        setSaveNotice('Não foi possível confirmar o cadastro. Confira o resultado ou reenvie a mesma tentativa; ela não criará outro paciente. Não abra outro cadastro para repetir estes dados.');
+        toast(getApiErrorMessage(error), 'error');
+      }
+    },
+  });
+
+  const confirmCreation = useMutation({
+    networkMode: 'always', retry: false,
+    mutationFn: () => patientService.creationResult(attemptKey.current!),
+    onSuccess: (result) => {
+      if (!result.recorded) {
+        setSaveNotice('Ainda não há confirmação. Reenvie esta mesma tentativa quando a conexão voltar. Não abra outro cadastro para repetir estes dados.');
+        return;
+      }
+      clearAttempt();
+      setOpenModal(false);
+      toast(result.patient ? 'Cadastro confirmado. Consulte o paciente na lista.' : 'O cadastro foi criado e depois excluído. Esta tentativa não será recriada.');
+      void queryClient.invalidateQueries({queryKey:['patients']});
+    },
+    onError: (error) => toast(getApiErrorMessage(error), 'error'),
   });
 
   const updateMutation = useMutation({
+    networkMode: 'always',
+    retry: false,
     mutationFn: ({ id, version, payload }: { id: string; version: number; payload: PatientForm }) =>
       patientService.update(id, {
         version,
@@ -173,6 +223,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
         active: payload.active === "true",
       }),
     onSuccess: () => {
+      setSaveNotice('');
       toast("Paciente atualizado com sucesso.");
       setOpenModal(false);
       setEditingPatient(null);
@@ -180,6 +231,10 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
       void queryClient.invalidateQueries({ queryKey: ["patients"] });
     },
     onError: (error) => {
+      if (!isAxiosError(error) || !error.response || error.response.status >= 500) {
+        setEditConflict(true);
+        setSaveNotice('O resultado do salvamento é desconhecido. Seu rascunho permanece abaixo. Confira o cadastro atual antes de salvar novamente.');
+      }
       if (isAxiosError(error) && [404, 409].includes(error.response?.status ?? 0) &&
           error.response?.data?.code !== 'duplicate_cpf') setEditConflict(true);
       toast(getApiErrorMessage(error), "error");
@@ -187,6 +242,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
   });
 
   const reloadPatientMutation = useMutation({
+    networkMode: 'always', retry: false,
     mutationFn: (id: string) => patientService.get(id),
     onSuccess: (patient) => {
       onEdit(patient);
@@ -237,7 +293,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
   });
   const deletionBlocked = previewMutation.isPending || deleteMutation.isPending || deletionReload.isPending || deletionReview !== null || deletionPreview !== null;
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadPatientMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadPatientMutation.isPending || confirmCreation.isPending;
   const canCreate = can("patients", "create");
   const canUpdate = can("patients", "update");
   const canDelete = can("patients", "delete");
@@ -247,6 +303,14 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
   const onNew = () => {
     if (!canCreate) return;
+    if (attemptKey.current && attemptPayload.current) {
+      setEditingPatient(null);
+      setEditConflict(false);
+      form.reset(attemptPayload.current);
+      setOpenModal(true);
+      return;
+    }
+    setSaveNotice('');
     setEditConflict(false);
     setEditingPatient(null);
     form.reset({
@@ -301,6 +365,14 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
   const onSubmit = (values: PatientForm) => {
     if (isSubmitting || editConflict) return;
+    if (!navigator.onLine) {
+      setSaveNotice('Sem conexão. Nada foi enfileirado. Seu rascunho foi mantido; salve quando a conexão voltar.');
+      return;
+    }
+    if (!editingPatient && creationUncertain && attemptPayload.current) {
+      createMutation.mutate(attemptPayload.current);
+      return;
+    }
     const birthDate = values.birth_date || null;
     if (birthDate && !(editingPatient && birthDate === editingPatient.birth_date) &&
         (formatDate(birthDate) === '-' || birthDate > clinicDate())) {
@@ -317,11 +389,21 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
       updateMutation.mutate({ id: editingPatient.id, version: editingPatient.version, payload: values });
       return;
     }
+    if (!attemptKey.current) {
+      const key = crypto.randomUUID();
+      try { sessionStorage.setItem(attemptStorage, key); }
+      catch { setSaveNotice('Não foi possível guardar a tentativa neste navegador. Habilite o armazenamento da sessão antes de salvar.'); return; }
+      attemptKey.current = key;
+    }
+    attemptPayload.current = structuredClone(values);
     createMutation.mutate(values);
   };
 
   return (
     <div className="space-y-4">
+      {creationUncertain && <Card><p role="alert">Há uma tentativa de cadastro sem confirmação. Confira antes de iniciar outro cadastro com os mesmos dados.</p>
+        <Button disabled={isSubmitting} onClick={() => confirmCreation.mutate()}>Conferir resultado do cadastro</Button>
+        <Button disabled={isSubmitting} onClick={onNew}>Retomar tentativa</Button></Card>}
       {deletionReview && <Card><p role="alert">{deletionReview}</p>
         <p>Confira os dados e exames atualizados antes de confirmar outra exclusão.</p>
         <Button disabled={deletionReload.isPending} onClick={() => deletionReload.mutate()}>Recarregar lista para conferir</Button>
@@ -440,6 +522,8 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
         title={editingPatient ? "Editar paciente" : "Novo paciente"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
+          {saveNotice && <p role="alert" className="md:col-span-2">{saveNotice}</p>}
+          <fieldset className="contents" disabled={isSubmitting || (!editingPatient && creationUncertain && Boolean(attemptPayload.current))}>
           {openModal && !editingPatient && can('patients', 'view') && <PatientDuplicateCheck
             fullName={form.watch('full_name')} birthDate={form.watch('birth_date') ?? ''}
             cpf={form.watch('cpf') ?? ''} onDenied={onDenied} />}
@@ -579,11 +663,14 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
             <Textarea {...form.register("notes")} />
           </div>
 
+          </fieldset>
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
             <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting || editConflict}>
+            <Button type={!editingPatient && creationUncertain && attemptPayload.current ? 'button' : 'submit'}
+              onClick={() => { if (!editingPatient && creationUncertain && attemptPayload.current) onSubmit(attemptPayload.current); }}
+              disabled={isSubmitting || editConflict}>
               {isSubmitting ? "Salvando..." : "Salvar"}
             </Button>
           </div>
