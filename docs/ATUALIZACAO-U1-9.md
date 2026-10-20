@@ -1,15 +1,23 @@
 # U1.9 — falhas de conexão no salvamento de pacientes
 
-## U1.9B — implementação em validação, 20/10/2026
+## U1.9B — concluída em 20/10/2026
+
+Versão de instalação `piloto-cadastros-v0.1.11`, código funcional `885acb5`. Este ponto substitui as pendências do diagnóstico histórico abaixo.
 
 - Migração aditiva `0025_patient_creation_operations`: comprovante por usuário e identificador UUID da tentativa, hash dos dados, ID do paciente e data. Sem cópia dos dados cadastrais. Comprovantes permanecem após exclusão de paciente/usuário, sem expiração automática, para não recriar operações antigas.
 - POST com `Idempotency-Key` serializa requisições da mesma tentativa e grava paciente/comprovante na mesma transação. Repetição idêntica retorna o paciente atual; dados divergentes recebem 409; paciente excluído não é recriado. Chamadas antigas sem o cabeçalho continuam compatíveis, mas não têm essa proteção.
 - Permissão de criar é conferida em cada chamada; consultar/repetir resultado exige visualizar. Identificadores são isolados por usuário. O endpoint de consulta não usa ausência de comprovante como garantia de que uma requisição anterior jamais chegará: mantém a mesma tentativa para um eventual reenvio.
 - A interface guarda somente o UUID da tentativa no armazenamento da sessão da aba, associado ao login atual. Rascunho fica em memória; nenhuma gravação do rascunho no navegador. Recarga da página permite consultar o resultado, mas não restaura campos ainda não gravados. Troca de login, aba/dispositivo ou limpeza do armazenamento exige consulta manual antes de abrir outra tentativa.
 - Falha de resultado desconhecido mantém tentativa e rascunho; reenvio usa os dados originais. Consultar resultado confirmado libera o próximo cadastro. Cadastro iniciado offline não entra em fila. Edição de resultado desconhecido exige conferir/recarregar o registro, mantendo proteção por versão.
-- Instalação permanece v0.1.10 até CI, regressões e ensaio de atualização/backup. Atualizar API e interface juntos, com usuários fora do sistema, e recarregar as abas após atualização; a interface antiga não envia o identificador.
+- Atualizar API e interface juntos, com usuários fora do sistema, e recarregar as abas após atualização; a interface antiga não envia o identificador.
 
-Testes iniciais: concorrência/rollback/isolamento/exclusão em PostgreSQL privado aprovados; 22 componentes e Chrome/API com perda de resposta, repetição, edição, offline e recarga aprovados. Suíte completa inicial teve timeout em teste de catálogo sob execução paralela; repetição com `--maxWorkers=1` em andamento. Logs `.data/network-components.log`, `.data/network-db.log`, `.data/network-browser.log`. Não confundir resultados iniciais com aceite final da versão.
+Aceites locais: 36 testes de pacientes em PostgreSQL privado (170,164 s), incluindo concorrência/rollback/isolamento/exclusão; 22 componentes; build API/web; Chrome/API/SQL com perda de resposta, repetição, edição, offline, recarga e permissões atuais aprovados. Regressão de cadastros (CPF, nascimento, RG, busca, conflito e reabertura) também aprovada. Suíte completa inicial teve timeout em teste de catálogo sob execução paralela; repetição com `--maxWorkers=1` aprovada: 408 testes / 46 arquivos, 144,95 s. Logs `.data/network-components.log`, `.data/network-patient-db.log`, `.data/network-build-release.log`, `.data/network-browser-final.log`, `.data/network-registration.log`, `.data/network-frontend-final.log`.
+
+[CI 39426354921](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/39426354921) aprovado no código `885acb5`: 325 backend, 408 frontend, builds, HTTP e auditoria das seis imagens sem achados. Log `.data/network-ci-final.log`.
+
+Atualização privada `v0.1.10` → `885acb5` aprovada em **170,41 s** de manutenção sem build/download. Backup anterior restaurado e tabelas comparadas; migração 0025 adicionou somente a tabela de comprovantes e alterou a revisão Alembic, mantendo todas as linhas anteriores. Sessão, exame, volumes, configuração e TLS preservados. Repetição após reiniciar API retornou o mesmo paciente; backup posterior restaurado com todos os comprovantes e demais tabelas iguais. Log `.data/network-update.log`, relatório `.data/install_65e8841995af/result.json`.
+
+Limites do ensaio: API/HTTPS, navegador validado separadamente; backup do harness, não nova execução de `backup-server.ps1`; imagens/assinaturas previamente disponíveis; sem instalação física ou alteração dos containers principais. O tempo local não prevê a janela de manutenção da clínica. Não executar downgrade/remover comprovantes para contornar falhas. Próximo recorte: expiração de sessão durante preenchimento, sem armazenar rascunhos sensíveis no navegador; P3 físico prioritário quando chegarem os dados.
 
 ## U1.9A — diagnóstico concluído em 20/10/2026
 

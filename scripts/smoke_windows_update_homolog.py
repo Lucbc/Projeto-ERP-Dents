@@ -7,18 +7,22 @@ import shutil
 import subprocess
 import tarfile
 import time
+from uuid import uuid4
 from urllib.error import URLError
 from smoke_backup_restore_homolog import ROOT, PROJECT, run
 
 
 def prepare_images(folder):
-    releases = {'old': 'piloto-cadastros-v0.1.8', 'new': '803ee675497554433a471ec6957fa1a2358c9714'}
-    # This acceptance is specifically a no-migration application update.
-    unchanged = ['docker-compose.yml', 'ops', 'apps/web/Dockerfile', 'apps/api/alembic',
+    releases = {'old': 'piloto-cadastros-v0.1.10', 'new': '885acb584a569c86ca315f10c3bf900b775036c4'}
+    # Permit only the reviewed additive receipt migration; keep deployment unchanged.
+    migrations = run('git','diff','--name-only',releases['old'],releases['new'],'--','apps/api/alembic').decode().splitlines()
+    if migrations != ['apps/api/alembic/versions/0025_patient_creation_operations.py']:
+        raise RuntimeError('Expected only the reviewed patient receipt migration.')
+    unchanged = ['docker-compose.yml', 'ops', 'apps/web/Dockerfile',
                  'apps/web/package.json', 'apps/web/package-lock.json',
                  'apps/api/Dockerfile', 'apps/api/requirements.txt']
     if run('git', 'diff', '--name-only', releases['old'], releases['new'], '--', *unchanged).strip():
-        raise RuntimeError('This harness requires identical deployment/schema/dependencies between releases.')
+        raise RuntimeError('This harness requires identical deployment/dependencies between releases.')
     images = {'releases': releases}
     for label, tag in releases.items():
         source = folder / label
@@ -71,7 +75,10 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
                        'phone': '(11) 3333-4444'})
     assert request('GET', '/api/patients?search=1133334444')['total'] == 1
     legacy = request('POST', '/api/patients', {'full_name': 'Legacy Birth Fictitious',
-                     'birth_date': '9999-12-31', 'active': False}, 201)
+                     'birth_date': '2000-02-29', 'active': False}, 201)
+    # Existing historical dates are seeded only in this disposable installation.
+    sql("UPDATE patients SET birth_date='9999-12-31' WHERE id='" + legacy['id'] + "'")
+    legacy = request('GET', '/api/patients/' + legacy['id'])
     old_html = client.raw('GET', '/patients')[1]
     png = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j7ioAAAAASUVORK5CYII=')
     boundary = 'update-fixture'
@@ -142,7 +149,11 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         compose_run('up', '-d', '--no-build', '--no-deps', '--force-recreate', names['gateway'], names['web'])
         compose_run('up', '-d', '--no-build', '--no-deps', '--force-recreate', names['edge'])
         ready()
-        assert fingerprint() == before
+        after_migration = fingerprint()
+        assert set(after_migration) == set(before) | {'patient_creation_operations'}
+        assert all(after_migration[table] == value for table,value in before.items() if table != 'alembic_version')
+        assert sql('SELECT version_num FROM alembic_version') == '0025_patient_creation_operations'
+        assert sql('SELECT count(*) FROM patient_creation_operations') == '0'
         assert {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in protected_files} == hashes
         for name in ('db', 'api'):
             assert json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts'] == original_mounts[name]
@@ -170,7 +181,7 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         for invalid in ('123', 'OLD-DOCUMENT', '123456789092', '00000000000'):
             request('POST', '/api/patients', {'full_name': 'Rejected Format Fictitious', 'cpf': invalid}, 400)
         request('POST', '/api/patients', {'full_name': 'Rejected Birth Fictitious', 'birth_date': '9999-12-31'}, 400)
-        assert fingerprint() == before
+        assert fingerprint() == after_migration
         legacy_changed = request('PUT', '/api/patients/' + legacy['id'], {'version': legacy['version'],
                           'birth_date': legacy['birth_date'], 'notes': 'Historical date preserved'})
         assert legacy_changed['birth_date'] == legacy['birth_date']
@@ -182,6 +193,21 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
                          'cpf': '12345678909', 'notes': 'Must not persist'}, 409)
         assert denied['code'] == 'duplicate_cpf'
         assert request('GET', '/api/patients/' + fresh['id']) == fresh
+        operation_key = str(uuid4())
+        operation_payload = {'full_name':'Updated Receipt Fictitious'}
+        operation_headers = {'Idempotency-Key':operation_key}
+        first = request('POST','/api/patients',operation_payload,201,operation_headers)
+        compose_run('restart', names['api'])
+        ready()
+        repeated = request('POST','/api/patients',operation_payload,201,operation_headers)
+        assert repeated == first
+        assert request('GET','/api/patients/creation-attempts/'+operation_key)['patient']['id'] == first['id']
+        current_fingerprint = fingerprint()
+        run('docker','exec',db,'sh','-c','umask 077; pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f /tmp/update-after.dump')
+        run('docker','exec',db,'createdb','-U',user,'update_after_restore_check')
+        run('docker','exec',db,'pg_restore','-U',user,'-d','update_after_restore_check',
+            '--no-owner','--no-acl','--exit-on-error','/tmp/update-after.dump')
+        assert fingerprint('update_after_restore_check') == current_fingerprint
         request('PUT', '/api/patients/' + fresh['id'], {'version': fresh['version'],
                          'cpf': '123', 'notes': 'Must not persist'}, 400)
         assert request('GET', '/api/patients/' + fresh['id']) == fresh
@@ -197,9 +223,10 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
             'all public rows preserved', 'same volumes/config/TLS', 'old session and exam preserved',
             'new API/frontend/proxy images', 'runtime libexpat/libx11/libxpm versions', 'search', 'read-only duplicate check',
             'legacy future birth date preserved and editable', 'new future birth date rejected',
-            'new invalid and duplicate CPF rejected', 'fresh login'],
+            'new invalid and duplicate CPF rejected', 'additive receipt migration preserves old rows',
+            'same attempt survives API restart', 'post-migration backup restores receipts', 'fresh login'],
             'limits': ['private harness backup, not backup-server.ps1', 'API/HTTPS, no browser',
-                       'no new migration', 'cached images/signatures', 'no physical clinic installation']}, indent=2))
+                       'only migration 0025 reviewed', 'cached images/signatures', 'no physical clinic installation']}, indent=2))
         print(f'PASS: release update, preserved rows/volumes/config/TLS/exam/session, duplicate check and edit; maintenance {elapsed}s.', flush=True)
     finally:
         if subprocess.run(['docker', 'inspect', helper], capture_output=True).returncode == 0:

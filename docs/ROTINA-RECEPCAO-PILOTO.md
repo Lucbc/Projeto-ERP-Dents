@@ -37,10 +37,13 @@ Abrir o cadastro correto, alterar e salvar. Se o sistema avisar que outra pessoa
 
 ### Se a conexão falhar durante o salvamento
 
-Na v0.1.10, uma resposta perdida pode deixar o cadastro já gravado no servidor, mesmo que a tela mostre erro. **Não clique novamente em Salvar sem conferir.** Preserve o rascunho e, quando a conexão voltar, consulte o paciente em outra aba, conferindo nome e demais dados; procure o suporte se houver dúvida. Em cadastro sem CPF, repetir pode gerar duplicidade. Não exclua um dos registros por conta própria.
+Na v0.1.11, se não houver conexão antes de salvar, o sistema mantém o rascunho e não enfileira o envio. Quando a conexão voltar, clique em Salvar.
 
-Se a tela permanecer em “Salvando...” após iniciar sem conexão, ela pode enviar automaticamente ao reconectar. Aguarde o resultado e consulte antes de abrir outro cadastro. O suporte está tratando esse comportamento na [U1.9](./ATUALIZACAO-U1-9.md).
+Se a conexão cair durante a criação, o resultado pode ser desconhecido. Use **Conferir resultado do cadastro** ou **Retomar tentativa**. Salvar novamente nessa mesma tentativa recupera o registro já criado, sem criar outro. Enquanto não houver confirmação, os dados originais da tentativa ficam preservados; depois, corrija o cadastro pela edição.
 
+Após recarregar a página, ainda é possível conferir o resultado na mesma aba e login, mas os campos que não chegaram ao servidor não são recuperados. Ao trocar de aba, navegador, computador ou login, consulte antes de iniciar outro cadastro com os mesmos dados. A proteção não une cadastros independentes por nome. Não exclua possíveis duplicados por conta própria.
+
+Na edição com resultado desconhecido, preserve o rascunho e confira o registro atual antes de escolher **Descartar rascunho e carregar atual**. Esse botão substitui os campos pelo que está no servidor. Se faltarem permissões para conferir, peça ajuda ao responsável. [Detalhes U1.9](./ATUALIZACAO-U1-9.md).
 
 - Sair da conta ao terminar ou trocar de operador. Não compartilhar senha nem usar a conta administradora para digitação.
 - Durante backup/atualização, aguardar a liberação do suporte. A página pode continuar visível mesmo com as gravações indisponíveis.
