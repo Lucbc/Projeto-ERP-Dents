@@ -32,6 +32,7 @@ Os ensaios usaram imagens já construídas e, na instalação nova, cópia das a
 
 ## Limites conhecidos para orientar quem digita
 
+- **Falha de rede no salvamento:** na v0.1.10, perder a resposta após uma criação e repetir pode duplicar pacientes sem CPF. Consultar antes de reenviar; envio iniciado offline pode ocorrer automaticamente ao reconectar. [Orientação provisória para recepção](./ROTINA-RECEPCAO-PILOTO.md) e [diagnóstico/correção pendente U1.9](./ATUALIZACAO-U1-9.md). Na edição, o controle de versão bloqueia a repetição da versão antiga.
 - Nascimento novo ou alterado não pode estar no futuro, considerando o dia de São Paulo. Pode ficar em branco; datas históricas mantidas não impedem editar outros campos. Conferir os relógios do servidor e das estações.
 - A lista mostra até 100 resultados por página, com Página anterior/Próxima página. **Não há limite de 100 cadastros no banco.** Buscar pelo nome completo e conferir as páginas antes de criar um registro. Alterar a busca volta à primeira página. Não interpretar a ausência na primeira lista como inexistência do paciente.
 - CPF pode ser buscado com ou sem pontos, hífen e espaços. Nome social/preferido também participa da busca, sem distinção de maiúsculas/minúsculas. Conferir os dados do resultado antes de criar outro cadastro.

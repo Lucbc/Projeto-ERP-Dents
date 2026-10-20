@@ -35,6 +35,13 @@ Abrir o cadastro correto, alterar e salvar. Se o sistema avisar que outra pessoa
 
 ## Encerrar e pedir ajuda
 
+### Se a conexão falhar durante o salvamento
+
+Na v0.1.10, uma resposta perdida pode deixar o cadastro já gravado no servidor, mesmo que a tela mostre erro. **Não clique novamente em Salvar sem conferir.** Preserve o rascunho e, quando a conexão voltar, consulte o paciente em outra aba, conferindo nome e demais dados; procure o suporte se houver dúvida. Em cadastro sem CPF, repetir pode gerar duplicidade. Não exclua um dos registros por conta própria.
+
+Se a tela permanecer em “Salvando...” após iniciar sem conexão, ela pode enviar automaticamente ao reconectar. Aguarde o resultado e consulte antes de abrir outro cadastro. O suporte está tratando esse comportamento na [U1.9](./ATUALIZACAO-U1-9.md).
+
+
 - Sair da conta ao terminar ou trocar de operador. Não compartilhar senha nem usar a conta administradora para digitação.
 - Durante backup/atualização, aguardar a liberação do suporte. A página pode continuar visível mesmo com as gravações indisponíveis.
 - Ao relatar um problema, informar horário, ação e mensagem de erro. Não enviar senha ou captura com dados de pacientes.
