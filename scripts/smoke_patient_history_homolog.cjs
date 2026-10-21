@@ -84,6 +84,28 @@ let stage = 'start';
     await page.waitForURL(origin+'/patients');
     await page.getByRole('button',{name:'Editar',exact:true}).click();
     assert.equal(await page.locator('[name=notes]').inputValue(),'Fictitious original note');
+    stage='back while editing and forward while creating';
+    for (const creating of [false,true]) {
+      if (creating) {
+        await page.getByRole('button',{name:'Novo',exact:true}).click();
+        await page.locator('[name=full_name]').fill('Fictitious History New Forward');
+      }
+      await page.locator('[name=notes]').fill('Fictitious History Extra Draft');
+      const move=()=>creating ? page.goForward() : page.goBack();
+      await move();
+      await page.getByRole('alertdialog',{name:'Sair do cadastro?'}).waitFor();
+      await page.waitForURL(origin+'/patients');
+      await move();
+      await page.waitForURL(origin+'/patients');
+      assert.equal(await page.getByRole('alertdialog').count(),1);
+      await page.getByRole('button',{name:'Continuar preenchendo',exact:true}).click();
+      assert.equal(await page.locator('[name=notes]').inputValue(),'Fictitious History Extra Draft');
+      await move();
+      await page.getByRole('button',{name:'Descartar e sair',exact:true}).click();
+      await page.waitForURL(origin+'/');
+      if (creating) await page.goBack(); else await page.goForward();
+      await page.waitForURL(origin+'/patients');
+    }
     const stored=await page.evaluate(async ({identity,id})=>{
       const response=await fetch('/api/patients/'+id,{headers:{'X-Session-ID':identity.session_id,
         'X-CSRF-Token':identity.csrf_token}});

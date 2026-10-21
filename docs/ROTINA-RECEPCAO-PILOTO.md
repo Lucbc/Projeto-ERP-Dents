@@ -39,7 +39,9 @@ Abrir o cadastro correto, alterar e salvar. Se o sistema avisar que outra pessoa
 
 Na v0.1.13, Cancelar, X ou clique fora de um formulário alterado pedem confirmação. Recusar mantém os campos; confirmar fecha o formulário. Se o cadastro foi enviado sem confirmação de resultado, fechar não cancela o envio: confira a tentativa antes de repetir os dados.
 
-Ao recarregar ou fechar a aba com formulário pendente, o navegador pode perguntar se deseja sair. Escolha permanecer para continuar e salvar. Não há recuperação automática de campos após sair, falha do computador ou expiração. **Voltar/Avançar dentro do sistema ainda não têm essa proteção**; salve ou feche conscientemente antes de navegar.
+Ao recarregar ou fechar a aba com formulário pendente, o navegador pode perguntar se deseja sair. Escolha permanecer para continuar e salvar. Não há recuperação automática de campos após sair, falha do computador ou expiração.
+
+Na v0.1.14, ao usar Voltar/Avançar dentro do sistema com cadastro pendente, escolha **Continuar preenchendo** para manter os campos ou **Descartar e sair** para seguir a navegação. Escape mantém o preenchimento. Durante uma operação em andamento, aguarde sua conclusão. Se o resultado do cadastro for desconhecido, sair não cancela o envio: ao voltar, confira a tentativa antes de repetir os dados. A confirmação não prolonga a sessão nem impede o encerramento do acesso.
 
 ### Aviso de fim da sessão
 
