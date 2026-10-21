@@ -13,6 +13,51 @@ vi.mock("@/hooks/use-permissions", () => ({ usePermissions: () => ({ can: () => 
 let client: QueryClient;
 afterEach(() => { cleanup(); client?.clear(); vi.restoreAllMocks(); });
 
+it("asks before discarding a new draft and preserves it when closing is declined", async () => {
+  vi.spyOn(patientService,"list").mockResolvedValue({items:[],total:0});
+  const confirm = vi.spyOn(window,"confirm").mockReturnValue(false);
+  const create = vi.spyOn(patientService,"create");
+  client = new QueryClient({defaultOptions:{queries:{retry:false}}});
+  const {container}=render(<MemoryRouter><QueryClientProvider client={client}><ToastProvider><PatientsPage /></ToastProvider></QueryClientProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button",{name:"Novo"}));
+  const name=()=>container.querySelector('input[name="full_name"]') as HTMLInputElement;
+  fireEvent.change(name(),{target:{value:"Fictitious unsaved draft"}});
+  fireEvent.click(screen.getByRole("button",{name:"Cancelar",exact:true}));
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(name().value).toBe("Fictitious unsaved draft");
+  const leaving = new Event("beforeunload",{cancelable:true});
+  window.dispatchEvent(leaving);
+  expect(leaving.defaultPrevented).toBe(true);
+  confirm.mockReturnValue(true);
+  fireEvent.click(screen.getByRole("button",{name:"x",exact:true}));
+  expect(name()).toBeNull();
+  const closed = new Event("beforeunload",{cancelable:true});
+  window.dispatchEvent(closed);
+  expect(closed.defaultPrevented).toBe(false);
+  fireEvent.click(screen.getByRole("button",{name:"Novo"}));
+  expect(name().value).toBe("");
+  expect(create).not.toHaveBeenCalled();
+});
+
+it("does not prompt for untouched forms or edits restored to their original values", async () => {
+  const patient = {id:"fictitious",full_name:"Fictitious Patient",active:true,version:1,notes:"Original"} as Patient;
+  vi.spyOn(patientService,"list").mockResolvedValue({items:[patient],total:1});
+  const confirm = vi.spyOn(window,"confirm").mockReturnValue(false);
+  client = new QueryClient({defaultOptions:{queries:{retry:false}}});
+  const {container}=render(<MemoryRouter><QueryClientProvider client={client}><ToastProvider><PatientsPage /></ToastProvider></QueryClientProvider></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button",{name:"Editar"}));
+  const notes=container.querySelector('textarea[name="notes"]')!;
+  fireEvent.change(notes,{target:{value:"Changed"}});
+  const dirty = new Event("beforeunload",{cancelable:true}); window.dispatchEvent(dirty);
+  expect(dirty.defaultPrevented).toBe(true);
+  fireEvent.change(notes,{target:{value:"Original"}});
+  const clean = new Event("beforeunload",{cancelable:true}); window.dispatchEvent(clean);
+  expect(clean.defaultPrevented).toBe(false);
+  fireEvent.click(screen.getByRole("button",{name:"Cancelar",exact:true}));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(container.querySelector('textarea[name="notes"]')).toBeNull();
+});
+
 it("preserves a conflicting draft and only replaces it after an explicit successful reload", async () => {
   const patient = { id:"fictitious", full_name:"Fictitious Patient", active:true, version:1 } as Patient;
   vi.spyOn(patientService,"list").mockResolvedValue({items:[patient],total:1});

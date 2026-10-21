@@ -294,6 +294,25 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
   const deletionBlocked = previewMutation.isPending || deleteMutation.isPending || deletionReload.isPending || deletionReview !== null || deletionPreview !== null;
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending || reloadPatientMutation.isPending || confirmCreation.isPending;
+  const hasUnsavedChanges = form.formState.isDirty;
+  const uncertainCreation = !editingPatient && creationUncertain;
+  const warnBeforeLeaving = openModal && (hasUnsavedChanges || isSubmitting || uncertainCreation);
+  useEffect(() => {
+    if (!warnBeforeLeaving) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => window.removeEventListener('beforeunload', beforeUnload);
+  }, [warnBeforeLeaving]);
+  const closeForm = () => {
+    if (isSubmitting) return;
+    if ((hasUnsavedChanges || uncertainCreation) && !window.confirm(uncertainCreation
+      ? 'O resultado do cadastro ainda não foi confirmado. Fechar não cancela o envio. Fechar o formulário mesmo assim?'
+      : 'Há alterações não salvas. Fechar o formulário e descartar essas alterações?')) return;
+    setOpenModal(false);
+  };
   const canCreate = can("patients", "create");
   const canUpdate = can("patients", "update");
   const canDelete = can("patients", "delete");
@@ -518,7 +537,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
       <Modal
         open={openModal}
-        onClose={() => { if (!isSubmitting) setOpenModal(false); }}
+        onClose={closeForm}
         title={editingPatient ? "Editar paciente" : "Novo paciente"}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
@@ -665,7 +684,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
 
           </fieldset>
           <div className="md:col-span-2 mt-2 flex justify-end gap-2">
-            <Button type="button" variant="outline" disabled={isSubmitting} onClick={() => setOpenModal(false)}>
+            <Button type="button" variant="outline" disabled={isSubmitting} onClick={closeForm}>
               Cancelar
             </Button>
             <Button type={!editingPatient && creationUncertain && attemptPayload.current ? 'button' : 'submit'}
