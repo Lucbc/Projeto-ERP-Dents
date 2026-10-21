@@ -35,6 +35,12 @@ Abrir o cadastro correto, alterar e salvar. Se o sistema avisar que outra pessoa
 
 ## Encerrar e pedir ajuda
 
+### Fechar ou recarregar durante preenchimento
+
+Na v0.1.13, Cancelar, X ou clique fora de um formulário alterado pedem confirmação. Recusar mantém os campos; confirmar fecha o formulário. Se o cadastro foi enviado sem confirmação de resultado, fechar não cancela o envio: confira a tentativa antes de repetir os dados.
+
+Ao recarregar ou fechar a aba com formulário pendente, o navegador pode perguntar se deseja sair. Escolha permanecer para continuar e salvar. Não há recuperação automática de campos após sair, falha do computador ou expiração. **Voltar/Avançar dentro do sistema ainda não têm essa proteção**; salve ou feche conscientemente antes de navegar.
+
 ### Aviso de fim da sessão
 
 Na v0.1.12, um aviso aparece nos últimos cinco minutos do acesso. Salve o cadastro enquanto a sessão estiver válida. **Ocultar aviso** apenas fecha a mensagem; não renova a sessão.

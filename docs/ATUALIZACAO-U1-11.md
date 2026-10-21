@@ -1,6 +1,6 @@
 # U1.11A — confirmação ao fechar cadastros não salvos
 
-Iniciada em 20/10/2026, base `51f4fbb`. Instalação permanece `piloto-cadastros-v0.1.12` até concluir aceites.
+Iniciada em 20/10/2026, base `51f4fbb`, concluída em 21/10/2026. Versão liberada: `piloto-cadastros-v0.1.13`.
 
 ## Diagnóstico e mudança
 
@@ -26,6 +26,9 @@ O CI `39535429544` e as novas execuções do commit de documentação v0.1.12 fa
 - Antes: `.data/unsaved-before.log`, duas falhas esperadas e um teste anterior aprovado.
 - Componentes: 54 testes em quatro arquivos aprovados (`.data/unsaved-focused.log`), incluindo confirmação recusada/aceita, valores restaurados e remoção do aviso após fechamento.
 - Build TypeScript/Vite/imagem web aprovado (`.data/unsaved-build.log`).
-- Em andamento: Chrome/API/SQL (`.data/unsaved-browser.log`) e frontend completo (`.data/unsaved-frontend.log`). CI ainda não iniciado para esta alteração.
+- Chrome/API/SQL aprovados (`.data/unsaved-browser.log`): Cancelar/X/fundo e recarga recusados preservam campos; descarte e recarga aceitos; salvamento remove aviso; apenas uma criação explícita e seu comprovante no banco, edição descartada ausente.
+- Regressão de expiração real aprovada (`.data/unsaved-expiry.log`): sessão encerra sem ser bloqueada, cookie expirado recebe 401, novo login não recupera rascunho, SQL sem gravações.
+- Após correções de dependências: build aprovado (`.data/unsaved-build-final.log`), 411 testes frontend em 46 arquivos (126,45 s, `.data/unsaved-frontend-final.log`) e regressão Chrome/API/SQL de falhas de rede aprovada (`.data/unsaved-network.log`), incluindo confirmação nativa antes da recarga e consulta posterior do comprovante.
+- Código final `0d99501`, [CI 39535630988](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/39535630988) aprovado: 325 testes backend, 411 frontend, builds, regressões HTTP, auditoria de pacotes e das seis imagens sem achados (`.data/unsaved-ci-final.log`). Chrome de fechamento na imagem reconstruída aprovado (`.data/unsaved-browser-final.log`), incluindo SQL e limpeza dos recursos privados. Guias de instalação/atualização e rotina da recepção atualizados para v0.1.13.
 
 Somente `erp-dents-homolog`, dados fictícios e recursos privados; containers principais e volumes preservados. P3 físico prioritário quando chegarem os dados do servidor.
