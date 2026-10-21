@@ -116,6 +116,10 @@ let stage = 'start';
     await page.locator('[name=full_name]').fill('Network Reload Fictitious');
     await page.locator('[name=notes]').fill('Fictitious retained draft');
     mode = 'after'; await failedSave();
+    page.once('dialog', async dialog => {
+      assert.equal(dialog.type(), 'beforeunload');
+      await dialog.accept();
+    });
     await page.reload();
     await page.getByRole('button',{name:'Conferir resultado do cadastro',exact:true}).click();
     await page.getByText('Cadastro confirmado. Consulte o paciente na lista.').waitFor();

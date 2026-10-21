@@ -15,7 +15,11 @@ Enquanto o formulário aberto tem alterações, operação em andamento ou cria�
 - O navegador controla a mensagem e pode não exibi-la sem interação prévia; encerramento forçado, falha do computador ou perda de energia não são protegidos.
 - Navegação interna pelo histórico, sem recarga do documento, **ainda não está protegida**. Será diagnosticada em U1.11B antes de modificar o roteamento.
 - A ação explícita “Descartar rascunho e carregar atual” após conflito mantém seu comportamento.
-- Sem migração, API, dependência ou configuração nova. Ensaio operacional de atualização anterior permanece identificado como U1.9; não foi repetido nesta subetapa.
+- Sem migração, API ou configuração nova. Ensaio operacional de atualização anterior permanece identificado como U1.9; não foi repetido nesta subetapa.
+
+## Correção de dependências identificada pelo CI
+
+O CI `39535429544` e as novas execuções do commit de documentação v0.1.12 falharam na auditoria npm. A aprovação histórica da U1.10 continua sendo a execução `39473228288`; não representa auditorias futuras. A consulta atual detectou alertas em `vite` e `follow-redirects`. Atualizados Vite 7.3.6 → 7.3.7 e dependência transitiva follow-redirects 1.16.0 → 1.16.1, mantendo versões travadas no lockfile. Auditoria após instalação: zero vulnerabilidades. Referências: [follow-redirects](https://github.com/advisories/GHSA-q3jh-wrc6-jgq8), [Vite/launch-editor](https://github.com/advisories/GHSA-587h-7wmj-h5pm). Reconstruir a imagem web; sem alteração de dependências da API ou imagens de infraestrutura.
 
 ## Evidências e retomada
 
