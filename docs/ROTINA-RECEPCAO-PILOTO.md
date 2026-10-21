@@ -35,6 +35,12 @@ Abrir o cadastro correto, alterar e salvar. Se o sistema avisar que outra pessoa
 
 ## Encerrar e pedir ajuda
 
+### Aviso de fim da sessão
+
+Na v0.1.12, um aviso aparece nos últimos cinco minutos do acesso. Salve o cadastro enquanto a sessão estiver válida. **Ocultar aviso** apenas fecha a mensagem; não renova a sessão.
+
+Ao expirar, o sistema volta ao login e descarta campos não salvos. Eles não reaparecem após entrar novamente. Se havia um salvamento sem confirmação, consulte o paciente antes de criar outra tentativa. Não deixe o preenchimento de um cadastro longo para o fim da sessão.
+
 ### Se a conexão falhar durante o salvamento
 
 Na v0.1.11, se não houver conexão antes de salvar, o sistema mantém o rascunho e não enfileira o envio. Quando a conexão voltar, clique em Salvar.
