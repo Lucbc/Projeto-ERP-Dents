@@ -1,4 +1,5 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 import { AppLayout } from "@/components/layout/app-layout";
 import { ProtectedRoute } from "@/components/layout/protected-route";
@@ -21,15 +22,8 @@ import { ProceduresPage } from "@/pages/procedures/procedures-page";
 import { SpecialtiesPage } from "@/pages/specialties/specialties-page";
 import { UsersPage } from "@/pages/users/users-page";
 
-export default function App() {
-  return (
-    <ThemeProvider>
-      <AuthProvider>
-        <EffectivePermissionsProvider>
-        <EffectiveAccessGate>
-        <ToastProvider>
-          <BrowserRouter>
-            <Routes>
+const routes = createRoutesFromElements(<>
+
               <Route path="/login" element={<LoginPage />} />
 
               <Route
@@ -139,12 +133,21 @@ export default function App() {
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
-            </Routes>
-          </BrowserRouter>
-        </ToastProvider>
-        </EffectiveAccessGate>
-        </EffectivePermissionsProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  );
+</>);
+
+// Dispose history listeners and blocked navigation together with the session scope.
+function SessionRouter() {
+  const [router, setRouter] = useState<ReturnType<typeof createBrowserRouter> | null>(null);
+  useEffect(() => {
+    const current = createBrowserRouter(routes);
+    setRouter(current);
+    return () => current.dispose();
+  }, []);
+  return router ? <RouterProvider router={router} /> : null;
+}
+
+export default function App() {
+  return <ThemeProvider><AuthProvider><EffectivePermissionsProvider><EffectiveAccessGate>
+    <ToastProvider><SessionRouter /></ToastProvider>
+  </EffectiveAccessGate></EffectivePermissionsProvider></AuthProvider></ThemeProvider>;
 }

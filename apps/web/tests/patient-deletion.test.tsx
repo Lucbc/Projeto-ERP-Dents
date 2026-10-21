@@ -2,7 +2,7 @@ import React from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter } from "./data-router";
 import { AxiosError } from "axios";
 import { PatientsPage } from "../src/pages/patients/patients-page";
 import { ToastProvider } from "../src/components/ui/toast";

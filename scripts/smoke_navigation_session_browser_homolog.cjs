@@ -69,6 +69,10 @@ process.on('unhandledRejection', fail);
     const draft = 'Fictitious old session draft';
     stage = 'fill old draft';
     await reader.locator('textarea[name=notes]').fill(draft);
+    await reader.goBack();
+    await reader.getByRole('alertdialog',{name:'Sair do cadastro?'}).waitFor();
+    await reader.waitForURL(origin + '/patients');
+    await reader.screenshot({path: '.data/homolog/patient-navigation-confirmation.png', fullPage: true});
 
     let privateGets = 0, writes = 0, patientsGets = 0, dentistsGets = 0, unauthorized = 0;
     reader.on('request', r => {
@@ -105,6 +109,7 @@ process.on('unhandledRejection', fail);
     await reader.getByRole('button', {name: 'Entrar', exact: true}).waitFor({timeout: 25000});
     assert.ok(unauthorized >= 1);
     assert.equal(await reader.locator('textarea[name=notes]').count(), 0);
+    assert.equal(await reader.getByRole('alertdialog').count(), 0);
     assert.equal(await reader.getByText(patient.body.full_name, {exact: true}).count(), 0);
     stage = 'anonymous pause'; await reader.waitForTimeout(500);
     const before = privateGets;

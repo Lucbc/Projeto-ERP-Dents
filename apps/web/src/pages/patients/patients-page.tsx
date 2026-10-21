@@ -1,6 +1,7 @@
 import { formatPhone } from "@/lib/phone";
 import { formatCpf, sameCpf, validCpf } from '@/lib/cpf';
 import { PatientDuplicateCheck } from './patient-duplicate-check';
+import { PatientNavigationGuard } from '@/components/patient-navigation-guard';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
@@ -535,6 +536,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
         </Card>
       )}
 
+      <PatientNavigationGuard when={warnBeforeLeaving} pending={isSubmitting} uncertain={uncertainCreation} />
       <Modal
         open={openModal}
         onClose={closeForm}

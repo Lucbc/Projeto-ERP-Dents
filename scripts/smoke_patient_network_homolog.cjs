@@ -15,15 +15,18 @@ let stage = 'start';
     await page.getByRole('button',{name:'Entrar',exact:true}).click();
     const identity = await (await login).json();
     await page.getByRole('region',{name:'Pacientes cadastrados',exact:true}).waitFor();
-    await page.goto('https://localhost:18444/patients');
+    await page.getByRole('link',{name:'Pacientes',exact:true}).click();
     await page.getByRole('button',{name:'Novo',exact:true}).click();
     await page.locator('[name=full_name]').fill('Network Lost Response Fictitious');
     await page.locator('[name=notes]').fill('Fictitious retained draft');
     let mode = 'before', writes = 0;
+    let entered, release;
+    const captured = new Promise(resolve => { entered = resolve; });
+    const hold = new Promise(resolve => { release = resolve; });
     await page.route('**/api/patients', async route => {
       if (route.request().method() !== 'POST') return route.continue();
       writes++;
-      if (mode === 'before') return route.abort('failed');
+      if (mode === 'before') { entered(); await hold; return route.abort('failed'); }
       if (mode === 'after') {
         const result = await route.fetch({maxRetries:0});
         assert.equal(result.status(),201);
@@ -40,7 +43,13 @@ let stage = 'start';
       assert.equal(await page.locator('[name=notes]').inputValue(),'Fictitious retained draft');
     };
     stage = 'failure before request';
-    await failedSave();
+    const firstSave = failedSave();
+    await captured;
+    await page.goBack();
+    await page.getByRole('alertdialog',{name:'Sair do cadastro?'}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Descartar e sair',exact:true}).isEnabled(),false);
+    await page.getByRole('button',{name:'Continuar preenchendo',exact:true}).click();
+    release(); await firstSave;
     const total = async name => page.evaluate(async ({name,identity}) => {
       const response = await fetch('/api/patients?search='+encodeURIComponent(name), {
         headers:{'X-Session-ID':identity.session_id,'X-CSRF-Token':identity.csrf_token}});
@@ -116,6 +125,16 @@ let stage = 'start';
     await page.locator('[name=full_name]').fill('Network Reload Fictitious');
     await page.locator('[name=notes]').fill('Fictitious retained draft');
     mode = 'after'; await failedSave();
+    stage = 'unknown creation survives accepted internal navigation';
+    await page.goBack();
+    await page.getByText(/Confira a tentativa ao voltar/).waitFor();
+    await page.getByRole('button',{name:'Descartar e sair',exact:true}).click();
+    await page.waitForURL('https://localhost:18444/');
+    await page.goForward();
+    await page.getByRole('button',{name:'Retomar tentativa',exact:true}).click();
+    assert.equal(await page.locator('[name=full_name]').inputValue(),'');
+    await page.getByRole('button',{name:'Conferir resultado do cadastro',exact:true}).first().waitFor();
+    // Keep the original reload recovery coverage after returning to the uncertain attempt.
     page.once('dialog', async dialog => {
       assert.equal(dialog.type(), 'beforeunload');
       await dialog.accept();

@@ -1,5 +1,11 @@
 # U1.11B — navegação interna com formulário de paciente pendente
 
+## B.2 — implementação em validação (21/10/2026)
+
+Tabela de rotas migrada para data router, mantendo as proteções de acesso. A instância nasce e é descartada dentro do limite de sessão existente; não compartilhar navegação bloqueada entre logins. O cadastro usa confirmação própria, com foco inicial em continuar preenchendo, Escape para permanecer e saída desabilitada durante operações em andamento. Se a operação termina com sucesso, a decisão pendente é cancelada; nenhuma navegação automática após salvar.
+
+47 testes focados de pacientes/permissões/bloqueador e build aprovados (`.data/history-components.log`, `.data/history-build.log`). Chrome/API/SQL de Voltar/Avançar aprovado (`.data/history-browser.log`), incluindo repetição de Voltar, permanência de campos quando recusado e ausência de gravações automáticas. Em andamento: frontend completo e regressões de expiração, revogação e rede. Instalação permanece v0.1.13 até completar aceites e CI. Sem migração, mudança de API, dependências ou configuração.
+
 ## B.1 — diagnóstico concluído em 21/10/2026
 
 Base `5ebf97c`, pacote `piloto-cadastros-v0.1.13`. Esta subetapa acrescenta um roteiro reproduzível de diagnóstico; **não corrige a navegação nem libera nova versão**. A proteção de Cancelar/X/fundo e recarga da U1.11A permanece disponível.
