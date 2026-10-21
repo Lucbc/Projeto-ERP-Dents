@@ -6,7 +6,7 @@ Atualizado em 18/10/2026. Dados serão cadastrados do zero, em outro computador 
 
 O servidor fica ligado e concentra o programa, banco e exames. Cada estação abre o mesmo endereço HTTPS pelo navegador, com login individual. Somente o servidor precisa de Docker. As estações não precisam de Git, Python, Node ou banco de dados.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.14`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.15`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
@@ -36,7 +36,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.14
+git checkout piloto-cadastros-v0.1.15
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1

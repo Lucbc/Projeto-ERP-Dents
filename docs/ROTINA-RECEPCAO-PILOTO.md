@@ -4,6 +4,7 @@
 
 1. Abrir o atalho do ERP no navegador e entrar com sua conta individual.
 2. Se não abrir, avisar o responsável pelo servidor. Se aparecer aviso de certificado, pedir suporte antes de prosseguir.
+3. Se aparecer “Sem conexão. Nada foi enfileirado”, restabelecer a conexão e clicar novamente em **Entrar**. Voltar a ter rede não envia o login automaticamente. Se o servidor continuar inacessível, avisar o suporte; não é necessário criar outra conta.
 
 ## Antes de cadastrar
 
