@@ -38,6 +38,11 @@ export function LoginPage() {
   const { user, login } = useAuth();
   const { toast } = useToast();
   const [bootstrapFinished, setBootstrapFinished] = useState(false);
+  const offline = () => {
+    if (navigator.onLine) return false;
+    toast('Sem conexão. Nada foi enfileirado. Quando a conexão voltar, clique novamente para tentar.', 'error');
+    return true;
+  };
 
   const needsBootstrapQuery = useQuery({
     queryKey: ["auth", "needs-bootstrap"],
@@ -57,6 +62,8 @@ export function LoginPage() {
   const needsBootstrap = !bootstrapFinished && Boolean(needsBootstrapQuery.data?.needsBootstrap);
 
   const loginMutation = useMutation({
+    networkMode: 'always',
+    retry: false,
     mutationFn: async (values: LoginForm) => {
       await login(values.email, values.password);
     },
@@ -66,6 +73,8 @@ export function LoginPage() {
   });
 
   const bootstrapMutation = useMutation({
+    networkMode: 'always',
+    retry: false,
     mutationFn: async (values: BootstrapForm) => {
       await authService.bootstrapAdmin({
         name: values.name,
@@ -104,7 +113,9 @@ export function LoginPage() {
 
           <form
             className="mt-6 space-y-4"
-            onSubmit={loginForm.handleSubmit((values) => loginMutation.mutate(values))}
+            onSubmit={loginForm.handleSubmit((values) => {
+              if (!loginMutation.isPending && !offline()) loginMutation.mutate(values);
+            })}
           >
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">E-mail</label>
@@ -148,7 +159,9 @@ export function LoginPage() {
             <form
               aria-label="Configuração inicial"
               className="mt-6 space-y-4"
-              onSubmit={bootstrapForm.handleSubmit((values) => bootstrapMutation.mutate(values))}
+              onSubmit={bootstrapForm.handleSubmit((values) => {
+                if (!bootstrapMutation.isPending && !offline()) bootstrapMutation.mutate(values);
+              })}
             >
               <div>
                 <label htmlFor="activation-token" className="mb-1 block text-sm font-semibold text-slate-700">Código de ativação</label>

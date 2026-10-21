@@ -1,7 +1,7 @@
 import React from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { LoginPage } from "../src/pages/login-page";
 import { ToastProvider } from "../src/components/ui/toast";
@@ -44,7 +44,7 @@ beforeEach(() => {
     return { ...response, data: { id: "fictitious-admin" } };
   };
 });
-afterEach(() => { cleanup(); client?.clear(); });
+afterEach(() => { cleanup(); client?.clear(); onlineManager.setOnline(true); vi.restoreAllMocks(); });
 
 function mount() {
   client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -59,6 +59,40 @@ async function fill(code = "fictitious-activation-code-for-tests-only", password
   fireEvent.change(form.getByLabelText("Confirmar senha"), { target: { value: password } });
   fireEvent.click(form.getByRole("button", { name: "Criar administrador" }));
 }
+
+it("does not queue offline login and requires another explicit submit after reconnecting", async () => {
+  pending=false;
+  const view=mount();
+  await waitFor(()=>expect(client.getQueryData(["auth","needs-bootstrap"])).toEqual({needsBootstrap:false}));
+  fireEvent.change(view.container.querySelector('[name=email]')!,{target:{value:'offline@example.com'}});
+  fireEvent.change(view.container.querySelector('[name=password]')!,{target:{value:'fictitious-password'}});
+  const online=vi.spyOn(navigator,'onLine','get').mockReturnValue(false);
+  onlineManager.setOnline(false);
+  fireEvent.click(screen.getByRole('button',{name:'Entrar',exact:true}));
+  await screen.findByText(/Nada foi enfileirado/);
+  expect(login).not.toHaveBeenCalled();
+  expect((screen.getByRole('button',{name:'Entrar',exact:true}) as HTMLButtonElement).disabled).toBe(false);
+  online.mockReturnValue(true); onlineManager.setOnline(true);
+  await client.resumePausedMutations();
+  expect(login).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'Entrar',exact:true}));
+  await waitFor(()=>expect(login).toHaveBeenCalledTimes(1));
+});
+
+it("does not queue offline initial setup or auto-create an administrator after reconnecting", async () => {
+  mount(); await screen.findByRole('form',{name:'Configuração inicial'});
+  const online=vi.spyOn(navigator,'onLine','get').mockReturnValue(false);
+  onlineManager.setOnline(false);
+  await fill();
+  await screen.findByText(/Nada foi enfileirado/);
+  expect(posted).toHaveLength(0);
+  online.mockReturnValue(true); onlineManager.setOnline(true);
+  await client.resumePausedMutations();
+  expect(posted).toHaveLength(0);
+  expect(login).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'Criar administrador',exact:true}));
+  await waitFor(()=>expect(posted).toHaveLength(1));
+});
 
 it("hides setup on initialized installations and omits endpoint implementation text", async () => {
   pending = false; mount();
