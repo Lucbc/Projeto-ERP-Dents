@@ -47,6 +47,7 @@ def prepare_images(folder):
 
 def verify_update(folder, environment, tls, config, names, volumes, compose, images,
                   client, request, ready, patient, settings, credentials):
+    runtime_only = images.get('runtime_only', False)
     def compose_run(*args):
         return run(*compose, *args, input=json.dumps(config).encode())
 
@@ -89,7 +90,8 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
     before = fingerprint()
     protected_files = [environment, *(tls / name for name in ('server.crt', 'server.key', 'ca.crt'))]
     hashes = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in protected_files}
-    original_mounts = {name: json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts'] for name in ('db', 'api')}
+    mount_services = ('db', 'api', 'clamav') if runtime_only else ('db', 'api')
+    original_mounts = {name: json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts'] for name in mount_services}
     backup = folder / 'backup'
     backup.mkdir()
     sid = run('powershell', '-NoProfile', '-Command', '[System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value').decode().strip()
@@ -143,6 +145,12 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         config['services'][names['web']]['image'] = images['new']['web']
         for service in ('gateway', 'edge'):
             config['services'][names[service]]['image'] = images['new'][service]
+        if runtime_only:
+            for service in ('db', 'clamav'):
+                config['services'][names[service]]['image'] = images['new'][service]
+            compose_run('up', '-d', '--no-build', '--no-deps', '--force-recreate',
+                        '--wait', '--wait-timeout', '180', names['db'], names['clamav'])
+            blocked()
         compose_run('up', '-d', '--no-build', '--no-deps', names['api'])
         blocked()
         # Explicitly recreate proxies after API replacement to refresh upstream DNS.
@@ -150,12 +158,15 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         compose_run('up', '-d', '--no-build', '--no-deps', '--force-recreate', names['edge'])
         ready()
         after_migration = fingerprint()
-        assert set(after_migration) == set(before) | {'patient_creation_operations'}
-        assert all(after_migration[table] == value for table,value in before.items() if table != 'alembic_version')
+        if runtime_only:
+            assert after_migration == before
+        else:
+            assert set(after_migration) == set(before) | {'patient_creation_operations'}
+            assert all(after_migration[table] == value for table,value in before.items() if table != 'alembic_version')
         assert sql('SELECT version_num FROM alembic_version') == '0025_patient_creation_operations'
         assert sql('SELECT count(*) FROM patient_creation_operations') == '0'
         assert {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in protected_files} == hashes
-        for name in ('db', 'api'):
+        for name in mount_services:
             assert json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts'] == original_mounts[name]
         assert json.loads(run('docker', 'inspect', containers['api']))[0]['Image'] == images['new']['api']
         assert json.loads(run('docker', 'inspect', containers['web']))[0]['Image'] == images['new']['web']
@@ -164,7 +175,14 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
             assert b'libexpat-2.9.0-r0' in run('docker', 'exec', containers[service], 'apk', 'list', '--installed', 'libexpat')
             packages = run('docker', 'exec', containers[service], 'apk', 'list', '--installed', 'libx11', 'libxpm')
             assert b'libx11-1.8.14-r0' in packages and b'libxpm-3.5.20-r0' in packages
-        assert client.raw('GET', '/patients')[1] != old_html
+        if runtime_only:
+            assert client.raw('GET', '/patients')[1] == old_html
+            for service in ('api', 'web', 'gateway', 'edge', 'db', 'clamav'):
+                assert json.loads(run('docker', 'inspect', containers[service]))[0]['Image'] == images['new'][service]
+                packages = run('docker', 'exec', containers[service], 'apk', 'list', '--installed', 'musl', 'musl-utils')
+                assert b'musl-1.2.6-r3 ' in packages and b'musl-utils-1.2.6-r3 ' in packages
+        else:
+            assert client.raw('GET', '/patients')[1] != old_html
         assert request('GET', '/api/patients/' + patient['id']) == patient
         assert request('GET', '/api/exams/' + exam['id'] + '/download') == png
         for term in ('Update%20Social%20Fictitious', '1133334444'):
@@ -223,10 +241,12 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
             'all public rows preserved', 'same volumes/config/TLS', 'old session and exam preserved',
             'new API/frontend/proxy images', 'runtime libexpat/libx11/libxpm versions', 'search', 'read-only duplicate check',
             'legacy future birth date preserved and editable', 'new future birth date rejected',
-            'new invalid and duplicate CPF rejected', 'additive receipt migration preserves old rows',
+            'new invalid and duplicate CPF rejected',
+            'six runtime images patched; schema unchanged' if runtime_only else 'additive receipt migration preserves old rows',
             'same attempt survives API restart', 'post-migration backup restores receipts', 'fresh login'],
             'limits': ['private harness backup, not backup-server.ps1', 'API/HTTPS, no browser',
-                       'only migration 0025 reviewed', 'cached images/signatures', 'no physical clinic installation']}, indent=2))
+                       'no migration' if runtime_only else 'only migration 0025 reviewed',
+                       'cached images/signatures', 'no physical clinic installation']}, indent=2))
         print(f'PASS: release update, preserved rows/volumes/config/TLS/exam/session, duplicate check and edit; maintenance {elapsed}s.', flush=True)
     finally:
         if subprocess.run(['docker', 'inspect', helper], capture_output=True).returncode == 0:

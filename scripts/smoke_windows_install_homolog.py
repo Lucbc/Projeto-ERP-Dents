@@ -14,7 +14,7 @@ from cookie_client import CookieClient
 from smoke_backup_restore_homolog import ROOT, PROJECT, run
 
 
-def main(upgrade=False):
+def main(upgrade=False, update_module=None):
     identifier = 'install_' + uuid4().hex[:12]
     folder = ROOT / '.data' / identifier
     folder.mkdir()
@@ -27,8 +27,9 @@ def main(upgrade=False):
     try:
         release_images = None
         if upgrade:
-            from smoke_windows_update_homolog import prepare_images
-            release_images = prepare_images(folder)
+            if update_module is None:
+                import smoke_windows_update_homolog as update_module
+            release_images = update_module.prepare_images(folder)
         run('powershell', '-NoProfile', '-File', str(ROOT / 'scripts/configure-server.ps1'),
             '-PublicOrigin', origin, '-EnvFile', str(environment))
         run('powershell', '-NoProfile', '-File', str(ROOT / 'scripts/configure-server-tls.ps1'),
@@ -107,8 +108,7 @@ def main(upgrade=False):
         patient = request('POST','/api/patients',{'full_name':'Fictitious Fresh Install Patient','birth_date':'1980-04-21'},201)
         patient = request('PUT','/api/patients/'+patient['id'],{'version':patient['version'],'notes':'Fictitious persisted update'})
         if upgrade:
-            from smoke_windows_update_homolog import verify_update
-            verify_update(folder, environment, tls, config, names, physical_volumes,
+            update_module.verify_update(folder, environment, tls, config, names, physical_volumes,
                           compose, release_images, client, request, ready, patient, settings, credentials)
             return
         # Repeating up must reuse the same database and preserve activation state.
