@@ -23,3 +23,9 @@ O teste usa `route.fetch` para concluir autenticação real e aborta a resposta 
 ## Próxima subetapa U1.13B
 
 Melhorar a orientação e recuperação do resultado desconhecido na tela de login. Antes de adotar uma sessão encontrada, cobrir identidade diferente da tentativa, cookie antigo, outra aba e falha de consulta. Não reenviar senha automaticamente nem persistir credenciais. Validar componentes, Chrome/API/SQL e regressões de sessão antes de liberar alteração funcional. Instalação física P3 tem prioridade quando chegarem os dados do computador.
+
+## U1.13B — implementação em validação, 22/10/2026
+
+Após falha de conexão, a tela oferece **Conferir acesso**. O clique faz apenas GET de sessão, sob a mesma trava usada entre abas no login. A conta precisa corresponder ao e-mail da tentativa; resposta de contexto alterado é descartada. Uma sessão válida anterior da mesma conta também pode ser recuperada: não se afirma que ela foi criada pela última tentativa. Ausência de sessão e conta diferente orientam login explícito; falha na consulta permite tentar a conferência novamente. Senha incorreta não oferece recuperação. Nenhuma senha adicional é armazenada ou reenviada pela conferência.
+
+Sem alteração de API, migração, dependências ou configuração. A conferência não revoga cookies de outra conta e não interfere no encerramento de acesso. Ainda não cobre resposta perdida na criação do administrador inicial. Instalação permanece v0.1.15 até conclusão dos aceites e publicação de nova versão.

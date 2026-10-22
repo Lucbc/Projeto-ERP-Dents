@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import axios from "axios";
 import { useForm } from "react-hook-form";
 import { Navigate } from "react-router-dom";
 import { z } from "zod";
@@ -12,6 +13,8 @@ import { useToast } from "@/components/ui/toast";
 import { getApiErrorMessage } from "@/lib/api";
 import { authService } from "@/lib/services";
 import { useAuth } from "@/hooks/use-auth";
+import { recoverLogin } from "@/lib/login-recovery";
+import { getSession, type SessionSnapshot } from "@/lib/session";
 
 const loginSchema = z.object({
   email: z.string().email("Informe um e-mail válido."),
@@ -38,6 +41,20 @@ export function LoginPage() {
   const { user, login } = useAuth();
   const { toast } = useToast();
   const [bootstrapFinished, setBootstrapFinished] = useState(false);
+  const [uncertainLogin, setUncertainLogin] = useState<{ email: string; session: SessionSnapshot } | null>(null);
+  const recoveryMutation = useMutation({
+    networkMode: 'always', retry: false,
+    mutationFn: async () => {
+      if (!uncertainLogin) return;
+      return recoverLogin(uncertainLogin.email, uncertainLogin.session);
+    },
+    onSuccess: (result) => {
+      if (result === 'absent') toast('Nenhum acesso confirmado. Clique em Entrar para tentar novamente.', 'error');
+      if (result === 'different') toast('Há uma sessão de outra conta. Confira seu e-mail e clique em Entrar para acessar com sua conta.', 'error');
+      if (result === 'changed') toast('A sessão mudou em outra aba. Recarregue a página e confira a conta antes de continuar.', 'error');
+    },
+    onError: (error) => toast(getApiErrorMessage(error), 'error'),
+  });
   const offline = () => {
     if (navigator.onLine) return false;
     toast('Sem conexão. Nada foi enfileirado. Quando a conexão voltar, clique novamente para tentar.', 'error');
@@ -65,7 +82,16 @@ export function LoginPage() {
     networkMode: 'always',
     retry: false,
     mutationFn: async (values: LoginForm) => {
-      await login(values.email, values.password);
+      setUncertainLogin(null);
+      const session = getSession();
+      try {
+        await login(values.email, values.password);
+      } catch (error) {
+        if (axios.isAxiosError(error) && !error.response && !axios.isCancel(error)) {
+          setUncertainLogin({ email: values.email, session });
+        }
+        throw error;
+      }
     },
     onError: (error) => {
       toast(getApiErrorMessage(error), "error");
@@ -114,12 +140,13 @@ export function LoginPage() {
           <form
             className="mt-6 space-y-4"
             onSubmit={loginForm.handleSubmit((values) => {
-              if (!loginMutation.isPending && !offline()) loginMutation.mutate(values);
+              if (!loginMutation.isPending && !recoveryMutation.isPending && !offline()) loginMutation.mutate(values);
             })}
           >
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">E-mail</label>
-              <Input type="email" {...loginForm.register("email")} />
+              <Input type="email" disabled={loginMutation.isPending || recoveryMutation.isPending}
+                {...loginForm.register("email", { onChange: () => setUncertainLogin(null) })} />
               {loginForm.formState.errors.email && (
                 <p className="mt-1 text-xs text-red-600">{loginForm.formState.errors.email.message}</p>
               )}
@@ -127,16 +154,24 @@ export function LoginPage() {
 
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">Senha</label>
-              <Input type="password" {...loginForm.register("password")} />
+              <Input type="password" disabled={loginMutation.isPending || recoveryMutation.isPending} {...loginForm.register("password")} />
               {loginForm.formState.errors.password && (
                 <p className="mt-1 text-xs text-red-600">{loginForm.formState.errors.password.message}</p>
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
+            <Button type="submit" className="w-full" disabled={loginMutation.isPending || recoveryMutation.isPending}>
               {loginMutation.isPending ? "Entrando..." : "Entrar"}
             </Button>
           </form>
+
+          {uncertainLogin && <div role="alert" className="mt-5 space-y-2 text-sm text-slate-600">
+            <p>Não foi possível confirmar o login. Quando a conexão voltar, confira se o acesso foi concluído. Sua senha não será reenviada nessa conferência.</p>
+            <Button type="button" variant="outline" disabled={recoveryMutation.isPending || loginMutation.isPending}
+              onClick={() => { if (!offline()) recoveryMutation.mutate(); }}>
+              {recoveryMutation.isPending ? 'Conferindo acesso...' : 'Conferir acesso'}
+            </Button>
+          </div>}
 
           {needsBootstrapQuery.isError && (
             <div role="alert" className="mt-5 space-y-2 text-sm text-slate-600">

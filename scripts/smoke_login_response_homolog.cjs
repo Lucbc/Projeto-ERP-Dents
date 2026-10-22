@@ -4,6 +4,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 let stage = 'start';
 (async () => {
   const credentials = JSON.parse(fs.readFileSync(0, 'utf8'));
+  const recovery = process.env.LOGIN_RECOVERY_ACCEPTANCE === '1';
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
   try {
     for (const retainCookie of [false, true]) {
@@ -39,9 +40,23 @@ let stage = 'start';
       await page.waitForTimeout(1000);
       assert.equal(logins, 1);
       await page.unroute('**/api/auth/login');
+      if (recovery) {
+        stage = 'explicit recovery lookup failure';
+        await page.route('**/api/auth/session', route => route.abort('failed'));
+        await Promise.all([
+          page.waitForEvent('requestfailed', request => request.url().endsWith('/api/auth/session')),
+          page.getByRole('button', { name: 'Conferir acesso', exact: true }).click(),
+        ]);
+        await page.getByRole('button', { name: 'Conferir acesso', exact: true }).waitFor();
+        assert.equal(logins, 1);
+        await page.unroute('**/api/auth/session');
+        stage = 'explicit recovery lookup';
+        await page.getByRole('button', { name: 'Conferir acesso', exact: true }).click();
+        if (!retainCookie) await page.getByText(/Nenhum acesso confirmado/).waitFor();
+      }
       stage = retainCookie ? 'reload recovers confirmed identity' : 'explicit retry without cookie';
-      if (retainCookie) await page.reload();
-      else await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+      if (retainCookie && !recovery) await page.reload();
+      else if (!retainCookie) await page.getByRole('button', { name: 'Entrar', exact: true }).click();
       await page.getByRole('region', { name: 'Pacientes cadastrados', exact: true }).waitFor();
       assert.equal(logins, retainCookie ? 1 : 2);
       const marker = await page.evaluate(() => localStorage.getItem('erp_dents_session_marker'));
@@ -52,7 +67,7 @@ let stage = 'start';
       assert.equal((await identity.json()).email, credentials.email);
       assert.equal(await page.evaluate(password => [localStorage, sessionStorage].some(storage =>
         Object.values(storage).some(value => String(value).includes(password))), credentials.password), false);
-      console.log(retainCookie
+      console.log(recovery ? 'PASS: explicit session lookup recovers only received access; lookup failure remains retryable; no credential resend.' : retainCookie
         ? 'DIAGNOSIS: cookie retained; UI reports failure; reload validates intended identity without another login.'
         : 'DIAGNOSIS: cookie absent; UI reports failure; explicit retry authenticates; no automatic retry.');
       await context.close();

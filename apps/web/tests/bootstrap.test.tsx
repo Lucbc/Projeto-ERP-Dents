@@ -50,6 +50,40 @@ function mount() {
   client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   return render(<QueryClientProvider client={client}><ToastProvider><LoginPage /></ToastProvider></QueryClientProvider>);
 }
+it('offers explicit access lookup after network failure without resending the password', async () => {
+  pending = false;
+  login.mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
+  const view = mount();
+  await waitFor(() => expect(client.getQueryData(['auth', 'needs-bootstrap'])).toEqual({ needsBootstrap: false }));
+  fireEvent.change(view.container.querySelector('[name=email]')!, { target: { value: 'test@example.com' } });
+  fireEvent.change(view.container.querySelector('[name=password]')!, { target: { value: 'fictitious-password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar', exact: true }));
+  await screen.findByRole('button', { name: 'Conferir acesso' });
+  const adapter = vi.fn(async (config: InternalAxiosRequestConfig) => ({ config, status: 200,
+    statusText: 'OK', headers: {}, data: { session_id: null, user: null } }));
+  sessionTransport.defaults.adapter = adapter;
+  expect(adapter).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Conferir acesso' }));
+  await screen.findByText(/Nenhum acesso confirmado/);
+  expect(login).toHaveBeenCalledTimes(1);
+  expect(adapter).toHaveBeenCalledTimes(1);
+  fireEvent.change(view.container.querySelector('[name=email]')!, { target: { value: 'other@example.com' } });
+  expect(screen.queryByRole('button', { name: 'Conferir acesso' })).toBeNull();
+});
+
+it('does not offer session recovery for a rejected password', async () => {
+  pending = false;
+  login.mockRejectedValue(new AxiosError('Rejected', 'ERR_BAD_REQUEST', undefined, undefined,
+    { status: 401, statusText: 'Unauthorized', headers: {}, config: {} as InternalAxiosRequestConfig,
+      data: { detail: 'Credenciais inválidas.' } }));
+  const view = mount();
+  await waitFor(() => expect(client.getQueryData(['auth', 'needs-bootstrap'])).toEqual({ needsBootstrap: false }));
+  fireEvent.change(view.container.querySelector('[name=email]')!, { target: { value: 'test@example.com' } });
+  fireEvent.change(view.container.querySelector('[name=password]')!, { target: { value: 'fictitious-password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar', exact: true }));
+  await screen.findByText('Credenciais inválidas.');
+  expect(screen.queryByRole('button', { name: 'Conferir acesso' })).toBeNull();
+});
 async function fill(code = "fictitious-activation-code-for-tests-only", password = "fictitious-password") {
   const form = within(await screen.findByRole("form", { name: "Configuração inicial" }));
   fireEvent.change(form.getByLabelText("Código de ativação"), { target: { value: code } });
