@@ -6,7 +6,7 @@ import subprocess
 from smoke_bootstrap_homolog import main, docker
 
 
-def verify(request,email,password,token,container,ready,passed,sql,schema, *, browser_script='smoke_financial_history_browser_homolog.cjs'):
+def verify(request,email,password,token,container,ready,passed,sql,schema, *, browser_script='smoke_financial_history_browser_homolog.cjs', browser_input=None):
     root=Path(__file__).resolve().parents[1]
     config=root/'.data/homolog/history-browser.conf'
     web=container+'-web'
@@ -24,7 +24,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema, *, br
                '-v',str(config)+':/etc/nginx/conf.d/default.conf:ro',
                '-v',str(root/'.data/tls/homolog')+':/etc/erp-tls:ro','erp-dents-homolog-web')
         result=subprocess.run(['node',str(root/'scripts'/browser_script)],
-                              input=json.dumps({'email':email,'password':password}),text=True,capture_output=True,
+                              input=json.dumps({'email':email,'password':password, **(browser_input or {})}),text=True,capture_output=True,
                               env={**os.environ,'NODE_EXTRA_CA_CERTS':str(root/'.data/tls/homolog/ca.crt')})
         if result.returncode:
             for line in result.stdout.splitlines():

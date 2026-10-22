@@ -116,6 +116,8 @@ Preservar sempre o nome `erp-dents-prod` e seus volumes. Não executar `down -v`
 3. Criar uma conta por pessoa. Para digitação: **Painel: visualizar; Pacientes: visualizar/criar/editar**. Desabilitar exclusão e os demais módulos para esse perfil inicial. Conferir o acesso com uma conta da recepção; não distribuir a conta administradora.
 4. Guardar os acessos fora do repositório. Não enviar prints que mostrem o código de ativação ou senhas.
 
+Se a criação terminar com falha de conexão, ela pode ter sido concluída no servidor. Restabelecer a conexão e recarregar a página. Se a configuração desaparecer, tentar **Entrar** com o e-mail e senha informados na criação. Se continuar aparecendo erro de consulta, avisar o suporte e verificar a conexão antes de repetir; não apagar banco/volumes nem tentar reabrir a configuração. Se outro operador tiver criado a conta, combinar o acesso com ele. [Diagnóstico e limites](./ATUALIZACAO-U1-15.md).
+
 ## 7. Preparar cada estação
 
 1. Usar navegador atualizado; ensaios atuais do projeto usam Chrome.

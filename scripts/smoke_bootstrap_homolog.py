@@ -24,7 +24,7 @@ def docker(*args, check=True):
     return result
 
 
-def main(session_checks=None, report_name=None, extra_env=None, *, versioned_user_fixtures=True):
+def main(session_checks=None, report_name=None, extra_env=None, *, versioned_user_fixtures=True, setup_checks=None):
     smoke.verify_target()
     db_info = json.loads(docker("inspect", "erp-dents-homolog-db-1").stdout)[0]
     db_env = dict(line.split("=", 1) for line in db_info["Config"]["Env"] if "=" in line)
@@ -99,11 +99,16 @@ def main(session_checks=None, report_name=None, extra_env=None, *, versioned_use
         def register(number):
             payload = {**data, "email": f"initial{number}@example.com"}
             return request("POST", "/api/auth/bootstrap-admin", payload, code), payload
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            results = list(pool.map(register, (1, 2)))
-        assert sorted(result[0][0] for result in results) == [200, 409]
-        winner = next(payload for (status, _), payload in results if status == 200)
-        passed("concurrent HTTP registrations create exactly one administrator")
+        if setup_checks:
+            winner = setup_checks(request, data, code, name, ready, passed, sql, schema)
+            assert sql(f'SELECT count(*) FROM "{schema}".users') == '1'
+            passed("browser initial setup creates exactly one administrator")
+        else:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                results = list(pool.map(register, (1, 2)))
+            assert sorted(result[0][0] for result in results) == [200, 409]
+            winner = next(payload for (status, _), payload in results if status == 200)
+            passed("concurrent HTTP registrations create exactly one administrator")
         status, login = request("POST", "/api/auth/login", {"email": winner["email"], "password": password})
         assert status == 200
         token = login["session"]
