@@ -1,6 +1,6 @@
 # Checklist para começar os cadastros na clínica
 
-Preparado em 16/10/2026. Usar junto com o [passo a passo de instalação](./INSTALACAO-CLINICA-WINDOWS.md). **Esta ficha está em branco: não comprova que a clínica já foi instalada.** Versão indicada: `piloto-cadastros-v0.1.16`.
+Preparado em 16/10/2026. Usar junto com o [passo a passo de instalação](./INSTALACAO-CLINICA-WINDOWS.md). **Esta ficha está em branco: não comprova que a clínica já foi instalada.** Versão indicada: `piloto-cadastros-v0.1.17`.
 
 O suporte preenche uma cópia fora do Git, por exemplo em `.data/implantacao-clinica.md`. Não incluir senhas, código de ativação, conteúdo de `.env`, dados ou capturas de pacientes. Guardar as credenciais em local próprio.
 

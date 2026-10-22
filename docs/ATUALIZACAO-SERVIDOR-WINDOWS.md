@@ -4,7 +4,7 @@
 
 **P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
 
-**Versão atual: `piloto-cadastros-v0.1.16`.** Acrescenta conferência explícita do acesso após falha de conexão no login; reconstruir a imagem web. Frente à v0.1.15, muda a interface e corrige a dependência de testes Vitest para 4.1.12. Sem nova migração/configuração ou mudança na API. Mantém a proteção de reenvio e a migração 0025 introduzidas na v0.1.11 para instalações anteriores. Reconstruir API, web, gateway e edge conforme o roteiro abaixo, que atende também versões antigas. [Detalhes e limites U1.13](./ATUALIZACAO-U1-13.md). Não manter APIs de versões diferentes gravando juntas. Após atualizar, recarregar as abas das estações; interfaces anteriores à v0.1.11 não enviam o identificador de tentativa.
+**Versão atual: `piloto-cadastros-v0.1.17`.** Corrige musl/musl-utils para 1.2.6-r3 nas seis imagens de execução. Reconstruir e substituir também banco e antivírus, preservando os mesmos volumes. Frente à v0.1.16, não muda código da aplicação, esquema ou configuração. Mantém a migração 0025 introduzida na v0.1.11 para instalações anteriores. [Detalhes e limites U1.14](./ATUALIZACAO-U1-14.md). Não manter APIs de versões diferentes gravando juntas. Após atualizar, recarregar as abas das estações; interfaces anteriores à v0.1.11 não enviam o identificador de tentativa.
 
 Somente o suporte atualiza o servidor. As estações continuam usando a mesma URL e não precisam instalar pacotes. Fazer a manutenção em janela combinada, com um único operador e todos os usuários fora do sistema até o aceite final.
 
@@ -22,7 +22,7 @@ O suporte pode executar `scripts/check-update-version.ps1` de uma cópia das fer
 Exemplo, substituindo a tag pelo destino aprovado e o caminho pela instalação real:
 
 ```powershell
-.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.16'
+.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.17'
 ```
 
 O comando exige histórico completo, árvore de trabalho limpa, tag local no formato do piloto, destino igual ou descendente do commit atual e presença dos arquivos básicos de implantação. Exibe somente identificadores Git e mensagens de estado. Não lê `.env`, não faz fetch/checkout e não chama Docker.
@@ -62,18 +62,20 @@ Substituir data/unidade. Conferir a cópia antes de seguir. Se a imagem original
 ```powershell
 docker @composeArgs stop -t 60 api
 if ($LASTEXITCODE -ne 0) { throw 'API ainda nao confirmada como parada.' }
-git checkout --detach piloto-cadastros-v0.1.16
+git checkout --detach piloto-cadastros-v0.1.17
 if ($LASTEXITCODE -ne 0) { throw 'Troca de versao falhou; manter manutencao.' }
 git rev-parse HEAD
 docker @composeArgs config --quiet
 if ($LASTEXITCODE -ne 0) { throw 'Configuracao invalida na nova versao.' }
-docker @composeArgs build api web gateway edge
+docker @composeArgs build api web gateway edge db clamav
 if ($LASTEXITCODE -ne 0) { throw 'Construcao falhou; manter manutencao.' }
 ```
 
-Conferir o commit exibido com a versão aprovada. Para v0.1.16, reconstruir API, frontend e os dois proxies conforme o roteiro. Frente à v0.1.15, muda a interface e a dependência de testes Vitest; API, esquema e infraestrutura são iguais. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo do PostgreSQL inclui essa tabela. Não apagá-la nem executar downgrade para contornar erros: isso removeria a proteção de tentativas já processadas. Futuras versões exigem conferir novamente as notas dos componentes e migrações.
+Conferir o commit exibido com a versão aprovada. Para v0.1.17, as seis imagens precisam ser reconstruídas e substituídas. A versão principal do PostgreSQL permanece 16; não se trata de atualização de versão principal do banco. Com API e gateway parados e backup conferido, recriar banco/antivírus e aguardar saúde antes de subir a API. Preservar os volumes existentes; nunca usar `down -v`. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo do PostgreSQL inclui essa tabela. Não apagá-la nem executar downgrade para contornar erros: isso removeria a proteção de tentativas já processadas.
 
 ```powershell
+docker @composeArgs up -d --no-deps --force-recreate --wait --wait-timeout 180 db clamav
+if ($LASTEXITCODE -ne 0) { throw 'Banco ou antivirus nao ficaram saudaveis; manter manutencao e verificar logs sem apagar volumes.' }
 docker @composeArgs up -d --no-deps --force-recreate api
 if ($LASTEXITCODE -ne 0) { throw 'Inicio da API falhou; manter manutencao.' }
 docker @composeArgs up -d --no-deps --force-recreate gateway web
@@ -93,6 +95,7 @@ A recuperação validada usa ambiente isolado. A decisão de substituir produç�
 
 ## Evidências e próximo passo
 
+- Pacote `v0.1.17`: atualização `v0.1.16` → `f2f903a` aprovada em **189,19 segundos**, sem build/download. Seis imagens substituídas, incluindo PostgreSQL e ClamAV; musl/musl-utils 1.2.6-r3 conferidos. Todas as tabelas, volumes/configuração/TLS, sessão e exame preservados; backups anterior/posterior restaurados, reenvio após reinício e novo login aprovados. Sem migração; API/HTTPS no ensaio, Chrome validado separadamente. [Evidências e limites U1.14](./ATUALIZACAO-U1-14.md).
 - Pacote `v0.1.11`: atualização `v0.1.10` → `885acb5` aprovada em **170,41 segundos** sem build/download. Migração aditiva 0025 preservou linhas anteriores, sessão/exame/volumes/configuração/TLS. Backups anterior e posterior restaurados e comparados, incluindo novos comprovantes; reenvio após reinício retornou o mesmo paciente. Ensaio por API/HTTPS, navegador validado separadamente; backup do harness, sem instalação física. [Evidências e limites](./ATUALIZACAO-U1-9.md).
 - Pacote `v0.1.9`: atualização `v0.1.8` → `803ee67` aprovada em **146,31 segundos** sem build/download. Data futura histórica preservada/editável e novas atribuições futuras recusadas sem gravação parcial. Backup restaurado, tabelas/volumes/configuração/TLS/exame/sessão mantidos e novo login aprovado. Sem migração ou alteração de dependências. [Evidências e limites U1.7](./ATUALIZACAO-U1-7.md).
 - Pacote `v0.1.8`: atualização `v0.1.7` → `5f23b8f` aprovada em **146,2 segundos** sem build/download. Histórico inválido preservado/editável, novos CPFs incorretos ou repetidos recusados, CPF ausente aceito. Backup restaurado, tabelas/volumes/configuração/TLS/exame/sessão mantidos e novo login aprovado; sem migração ou mudança de dependências. [Evidências e limites U1.6D](./ATUALIZACAO-U1-6D.md).
