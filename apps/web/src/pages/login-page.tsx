@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { Navigate } from "react-router-dom";
@@ -41,6 +41,10 @@ export function LoginPage() {
   const { user, login } = useAuth();
   const { toast } = useToast();
   const [bootstrapFinished, setBootstrapFinished] = useState(false);
+  const [uncertainBootstrap, setUncertainBootstrap] = useState(false);
+  const [setupNotice, setSetupNotice] = useState(false);
+  const setupSeen = useRef(false);
+  const queryClient = useQueryClient();
   const [uncertainLogin, setUncertainLogin] = useState<{ email: string; session: SessionSnapshot } | null>(null);
   const recoveryMutation = useMutation({
     networkMode: 'always', retry: false,
@@ -99,6 +103,7 @@ export function LoginPage() {
   });
 
   const bootstrapMutation = useMutation({
+    mutationKey: ['auth', 'bootstrap-admin'],
     networkMode: 'always',
     retry: false,
     mutationFn: async (values: BootstrapForm) => {
@@ -121,9 +126,45 @@ export function LoginPage() {
     },
     onError: (error) => {
       toast(getApiErrorMessage(error), "error");
+      if (axios.isAxiosError(error) && (!error.response || error.response.status >= 500)) {
+        setUncertainBootstrap(true);
+        return;
+      }
+      if (axios.isAxiosError(error) && error.response?.status === 409) setUncertainBootstrap(true);
       void needsBootstrapQuery.refetch();
     },
+    onSettled: (_data, _error, values) => {
+      values.activationToken = ''; values.password = ''; values.confirmPassword = '';
+      const cache = queryClient.getMutationCache();
+      for (const mutation of cache.findAll({ mutationKey: ['auth', 'bootstrap-admin'] })) {
+        if (mutation.state.variables === values) cache.remove(mutation);
+      }
+      bootstrapMutation.reset();
+    },
   });
+
+  const setupCheck = useMutation({
+    networkMode: 'always', retry: false,
+    mutationFn: authService.needsBootstrap,
+    onSuccess: (status) => {
+      queryClient.setQueryData(['auth', 'needs-bootstrap'], status);
+      if (status.needsBootstrap) {
+        setUncertainBootstrap(false);
+        toast('A configuração ainda está disponível. Confira os dados e clique em Criar administrador para tentar novamente.', 'success');
+      }
+    },
+    onError: (error) => toast(getApiErrorMessage(error), 'error'),
+  });
+
+  useEffect(() => {
+    if (needsBootstrapQuery.data?.needsBootstrap) setupSeen.current = true;
+    if (setupSeen.current && needsBootstrapQuery.data?.needsBootstrap === false && !bootstrapMutation.isPending) {
+      bootstrapForm.reset();
+      setBootstrapFinished(true);
+      setUncertainBootstrap(false);
+      setSetupNotice(true);
+    }
+  }, [needsBootstrapQuery.data?.needsBootstrap, bootstrapMutation.isPending, bootstrapForm]);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -173,7 +214,19 @@ export function LoginPage() {
             </Button>
           </div>}
 
-          {needsBootstrapQuery.isError && (
+          {setupNotice && <p role="status" className="mt-5 text-sm text-slate-600">
+            A configuração já foi concluída. Entre com sua conta. Se outra pessoa fez a configuração, combine o acesso com ela.
+          </p>}
+
+          {uncertainBootstrap && <div role="alert" className="mt-5 space-y-2 text-sm text-slate-600">
+            <p>Não foi possível confirmar a criação. Confira a configuração antes de tentar criar novamente. Essa conferência não reenvia a senha nem o código de ativação.</p>
+            <Button type="button" variant="outline" disabled={setupCheck.isPending}
+              onClick={() => { if (!offline()) setupCheck.mutate(); }}>
+              {setupCheck.isPending ? 'Conferindo configuração...' : 'Conferir configuração'}
+            </Button>
+          </div>}
+
+          {needsBootstrapQuery.isError && !uncertainBootstrap && (
             <div role="alert" className="mt-5 space-y-2 text-sm text-slate-600">
               <p>Não foi possível consultar a configuração do servidor.</p>
               <Button type="button" variant="outline" onClick={() => void needsBootstrapQuery.refetch()}>
@@ -195,7 +248,7 @@ export function LoginPage() {
               aria-label="Configuração inicial"
               className="mt-6 space-y-4"
               onSubmit={bootstrapForm.handleSubmit((values) => {
-                if (!bootstrapMutation.isPending && !offline()) bootstrapMutation.mutate(values);
+                if (!bootstrapMutation.isPending && !uncertainBootstrap && !setupCheck.isPending && !offline()) bootstrapMutation.mutate({ ...values });
               })}
             >
               <div>
@@ -238,7 +291,7 @@ export function LoginPage() {
                 )}
               </div>
 
-              <Button type="submit" className="w-full" disabled={bootstrapMutation.isPending}>
+              <Button type="submit" className="w-full" disabled={bootstrapMutation.isPending || uncertainBootstrap || setupCheck.isPending}>
                 {bootstrapMutation.isPending ? "Criando..." : "Criar administrador"}
               </Button>
             </form>

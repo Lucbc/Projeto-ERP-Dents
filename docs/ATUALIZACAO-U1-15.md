@@ -24,3 +24,11 @@ A proteção de criação única funciona. A orientação da interface ainda nã
 ## Próxima U1.15B
 
 Orientar resultado desconhecido na própria tela: conferir configuração explicitamente sem reenviar criação, informar quando já configurada sem afirmar quem criou a conta, permitir login manual e preservar nova tentativa se nenhuma criação foi confirmada. Cobrir falha antes do envio, resposta perdida, consulta indisponível, outra pessoa concluindo a configuração e descarte de dados sensíveis do formulário quando deixar de ser necessário. Não persistir código/senha, não reabrir bootstrap ou criar outro administrador para contornar erro. Componentes e Chrome/API/SQL antes de liberar. P3 físico prioritário quando chegarem dados do servidor.
+
+## U1.15B — em validação, 22/10/2026
+
+Após falha de conexão ou erro 5xx, bloquear nova criação até **Conferir configuração** consultar o estado. A conferência faz apenas leitura e não reenvia código/senha; falha mantém o bloqueio e permite nova conferência. Se ainda disponível, liberar nova tentativa explícita. Se já configurada, fechar/resetar o formulário e orientar login com mensagem neutra, inclusive quando outra pessoa criou a conta. Conflito 409 também bloqueia enquanto a atualização do estado não confirmar o resultado.
+
+Preservar login automático somente no fluxo com criação confirmada pela resposta original. Resultados desconhecidos não fazem login automaticamente. Alterar somente interface, sem API, migração, configuração ou dependência nova. Limpar a cópia da tentativa após término e removê-la do cache de mutações; resetar os campos quando a configuração fecha. Isso não é uma garantia de apagamento físico de bytes da memória JavaScript. Nada é persistido em localStorage/sessionStorage.
+
+46 testes focados em três arquivos, 427 frontend em 48 arquivos (132,70 s), build/imagem e dois cenários de falha Chrome/API/SQL aprovados (`.data/bootstrap-recovery-components-final.log`, `.data/bootstrap-recovery-frontend.log`, `.data/bootstrap-recovery-image.log`, `.data/bootstrap-recovery-browser.log`). Fluxo normal de criação/login automático e CI pendentes. Versão de instalação permanece v0.1.17 até os aceites.

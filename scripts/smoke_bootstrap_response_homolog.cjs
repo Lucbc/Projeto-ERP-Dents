@@ -22,19 +22,47 @@ let stage = 'start';
       if (request.url().endsWith('/api/auth/login')) logins++;
     });
     if (credentials.failStatus) await page.route('**/api/auth/needs-bootstrap', route => route.abort('failed'));
-    await page.route('**/api/auth/bootstrap-admin', async route => {
+    if (!credentials.normalCreation) await page.route('**/api/auth/bootstrap-admin', async route => {
       const response = await route.fetch({ maxRetries: 0 });
       serverCreated = response.status() === 200;
       await route.abort('failed');
     });
     stage = 'committed setup response lost';
     await form.getByRole('button', { name: 'Criar administrador', exact: true }).click();
+    if (credentials.normalCreation) {
+      stage = 'confirmed creation automatically logs in';
+      await page.getByRole('region', { name: 'Pacientes cadastrados', exact: true }).waitFor();
+      assert.equal(creations, 1);
+      assert.equal(logins, 1);
+      assert.equal(await page.evaluate(values => [localStorage, sessionStorage].some(storage =>
+        Object.values(storage).some(value => values.some(secret => String(value).includes(secret)))),
+        [credentials.password, credentials.activationCode]), false);
+      console.log('PASS: confirmed initial creation keeps automatic login; no stored secrets.');
+      return;
+    }
     await page.getByText(/Não foi possível conectar ao servidor/).waitFor();
     assert.equal(serverCreated, true);
     assert.equal(creations, 1);
     assert.equal(logins, 0);
     await page.unroute('**/api/auth/bootstrap-admin');
-    if (credentials.failStatus) {
+    if (credentials.acceptance) {
+      stage = 'explicit setup confirmation';
+      await page.getByRole('button', { name: 'Conferir configuração', exact: true }).waitFor();
+      assert.equal(await form.getByRole('button', { name: 'Criar administrador', exact: true }).isEnabled(), false);
+      if (credentials.failStatus) {
+        await Promise.all([
+          page.waitForEvent('requestfailed', request => request.url().endsWith('/api/auth/needs-bootstrap')),
+          page.getByRole('button', { name: 'Conferir configuração', exact: true }).click(),
+        ]);
+        await page.getByRole('button', { name: 'Conferir configuração', exact: true }).waitFor();
+        assert.equal(await form.getByRole('button', { name: 'Criar administrador', exact: true }).isEnabled(), false);
+        await page.unroute('**/api/auth/needs-bootstrap');
+      }
+      await page.getByRole('button', { name: 'Conferir configuração', exact: true }).click();
+      await page.getByText(/Se outra pessoa fez a configuração/).waitFor();
+      assert.equal(creations, 1);
+      assert.equal(logins, 0);
+    } else if (credentials.failStatus) {
       stage = 'status unavailable and explicit repeated creation';
       await page.getByText('Não foi possível consultar a configuração do servidor.').waitFor();
       assert.equal(await form.isVisible(), true);
@@ -58,7 +86,7 @@ let stage = 'start';
     assert.equal(await page.evaluate(values => [localStorage, sessionStorage].some(storage =>
       Object.values(storage).some(value => values.some(secret => String(value).includes(secret)))),
       [credentials.password, credentials.activationCode]), false);
-    console.log(credentials.failStatus
+    console.log(credentials.acceptance ? 'PASS: unknown setup blocks creation; explicit read-only confirmation closes setup; manual login succeeds; no stored secrets.' : credentials.failStatus
       ? 'DIAGNOSIS: status failure retains setup form; explicit repeat receives 409; status refresh closes setup; explicit login succeeds.'
       : 'DIAGNOSIS: response lost after creation; status refresh closes setup without automatic login; explicit login succeeds.');
   } finally { await browser.close(); }

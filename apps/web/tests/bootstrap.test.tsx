@@ -181,6 +181,58 @@ it("refreshes setup status after another client completed registration", async (
   postStatus = 409; mount(); await fill();
   await waitFor(() => expect(screen.queryByLabelText("Código de ativação")).toBeNull());
   expect(login).not.toHaveBeenCalled();
+  expect(screen.getByText(/Se outra pessoa fez a configuração/)).toBeTruthy();
+});
+
+it.each([false, true])('confirms unknown setup explicitly without resending secrets (committed=%s)', async (committed) => {
+  const original = api.defaults.adapter as (config: InternalAxiosRequestConfig) => Promise<any>;
+  api.defaults.adapter = async config => {
+    if (config.url === '/api/auth/bootstrap-admin') {
+      posted.push(config);
+      if (committed) pending = false;
+      throw new AxiosError('Network Error', 'ERR_NETWORK', config);
+    }
+    return original(config);
+  };
+  mount(); await fill();
+  await screen.findByRole('button', { name: 'Conferir configuração' });
+  expect((screen.getByRole('button', { name: 'Criar administrador' }) as HTMLButtonElement).disabled).toBe(true);
+  await waitFor(() => expect(client.getMutationCache().findAll({ mutationKey: ['auth', 'bootstrap-admin'] })).toHaveLength(0));
+  expect(posted).toHaveLength(1);
+  expect(login).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Conferir configuração' }));
+  if (committed) {
+    await screen.findByText(/A configuração já foi concluída/);
+    expect(screen.queryByLabelText('Código de ativação')).toBeNull();
+  } else {
+    await screen.findByText(/A configuração ainda está disponível/);
+    expect((screen.getByRole('button', { name: 'Criar administrador' }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByLabelText('Código de ativação') as HTMLInputElement).value).toBe('fictitious-activation-code-for-tests-only');
+  }
+  expect(posted).toHaveLength(1);
+  expect(login).not.toHaveBeenCalled();
+});
+
+it('keeps creation blocked when confirmation fails and permits a later explicit lookup', async () => {
+  const original = api.defaults.adapter as (config: InternalAxiosRequestConfig) => Promise<any>;
+  let failLookup = false;
+  api.defaults.adapter = async config => {
+    if (config.url === '/api/auth/bootstrap-admin') {
+      posted.push(config); pending = false; failLookup = true;
+      throw new AxiosError('Network Error', 'ERR_NETWORK', config);
+    }
+    if (config.url === '/api/auth/needs-bootstrap' && failLookup) throw new AxiosError('Network Error', 'ERR_NETWORK', config);
+    return original(config);
+  };
+  mount(); await fill();
+  fireEvent.click(await screen.findByRole('button', { name: 'Conferir configuração' }));
+  await waitFor(() => expect(client.getMutationCache().getAll().some(mutation => mutation.state.status === 'error')).toBe(true));
+  expect((screen.getByRole('button', { name: 'Criar administrador' }) as HTMLButtonElement).disabled).toBe(true);
+  failLookup = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Conferir configuração' }));
+  await screen.findByText(/A configuração já foi concluída/);
+  expect(posted).toHaveLength(1);
+  expect(login).not.toHaveBeenCalled();
 });
 
 it("does not reopen setup when creation succeeds but status refresh and login fail", async () => {
