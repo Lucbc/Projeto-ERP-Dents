@@ -167,7 +167,10 @@ def verify_update(folder, environment, tls, config, names, volumes, compose, ima
         assert sql('SELECT count(*) FROM patient_creation_operations') == '0'
         assert {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in protected_files} == hashes
         for name in mount_services:
-            assert json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts'] == original_mounts[name]
+            current_mounts = json.loads(run('docker', 'inspect', containers[name]))[0]['Mounts']
+            # Docker does not guarantee array order after recreating a container.
+            assert sorted(current_mounts, key=lambda mount: mount['Destination']) == sorted(
+                original_mounts[name], key=lambda mount: mount['Destination']), 'Mount mismatch: ' + name
         assert json.loads(run('docker', 'inspect', containers['api']))[0]['Image'] == images['new']['api']
         assert json.loads(run('docker', 'inspect', containers['web']))[0]['Image'] == images['new']['web']
         for service in ('web', 'gateway', 'edge'):
