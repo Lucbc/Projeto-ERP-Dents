@@ -1,6 +1,6 @@
-# U1.15A — resposta perdida na configuração inicial
+# U1.15 — recuperação da configuração inicial
 
-Diagnóstico de 22/10/2026, base `2ccc847`. Sem alteração funcional ou nova versão de instalação; permanece `piloto-cadastros-v0.1.17`.
+Versão atual: `piloto-cadastros-v0.1.18`, liberada na subetapa B abaixo. A subetapa A foi o diagnóstico de 22/10/2026, base `2ccc847`, sem alteração funcional; naquela entrega a instalação permaneceu v0.1.17.
 
 ## Resultado
 
@@ -25,10 +25,12 @@ A proteção de criação única funciona. A orientação da interface ainda nã
 
 Orientar resultado desconhecido na própria tela: conferir configuração explicitamente sem reenviar criação, informar quando já configurada sem afirmar quem criou a conta, permitir login manual e preservar nova tentativa se nenhuma criação foi confirmada. Cobrir falha antes do envio, resposta perdida, consulta indisponível, outra pessoa concluindo a configuração e descarte de dados sensíveis do formulário quando deixar de ser necessário. Não persistir código/senha, não reabrir bootstrap ou criar outro administrador para contornar erro. Componentes e Chrome/API/SQL antes de liberar. P3 físico prioritário quando chegarem dados do servidor.
 
-## U1.15B — em validação, 22/10/2026
+## U1.15B — concluída em 22/10/2026, v0.1.18
 
 Após falha de conexão ou erro 5xx, bloquear nova criação até **Conferir configuração** consultar o estado. A conferência faz apenas leitura e não reenvia código/senha; falha mantém o bloqueio e permite nova conferência. Se ainda disponível, liberar nova tentativa explícita. Se já configurada, fechar/resetar o formulário e orientar login com mensagem neutra, inclusive quando outra pessoa criou a conta. Conflito 409 também bloqueia enquanto a atualização do estado não confirmar o resultado.
 
 Preservar login automático somente no fluxo com criação confirmada pela resposta original. Resultados desconhecidos não fazem login automaticamente. Alterar somente interface, sem API, migração, configuração ou dependência nova. Limpar a cópia da tentativa após término e removê-la do cache de mutações; resetar os campos quando a configuração fecha. Isso não é uma garantia de apagamento físico de bytes da memória JavaScript. Nada é persistido em localStorage/sessionStorage.
 
-46 testes focados em três arquivos, 427 frontend em 48 arquivos (132,70 s), build/imagem e dois cenários de falha Chrome/API/SQL aprovados (`.data/bootstrap-recovery-components-final.log`, `.data/bootstrap-recovery-frontend.log`, `.data/bootstrap-recovery-image.log`, `.data/bootstrap-recovery-browser.log`). Fluxo normal de criação/login automático e CI pendentes. Versão de instalação permanece v0.1.17 até os aceites.
+46 testes focados em três arquivos, 427 frontend em 48 arquivos (132,70 s), build/imagem e dois cenários de falha Chrome/API/SQL aprovados (`.data/bootstrap-recovery-components-final.log`, `.data/bootstrap-recovery-frontend.log`, `.data/bootstrap-recovery-image.log`, `.data/bootstrap-recovery-browser.log`). Fluxo normal de criação/login automático aprovado (`.data/bootstrap-recovery-normal.log`): a sessão é automática nesse cenário; o texto antigo do resumo SQL dizia “explicit” e foi corrigido no harness, sem alterar os asserts. Regressão de recuperação do login aprovada (`.data/bootstrap-recovery-login-regression.log`). Consulta indisponível coberta no navegador; falha anterior à criação e outro operador cobertos em componente.
+
+Código `0e1ae16`; [CI 39834926871](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/39834926871) aprovado: 325 backend (512,916 s), 427 frontend, builds, HTTP e auditorias de pacotes/seis imagens sem achados. `.data/bootstrap-recovery-ci-final.log`. Versão de instalação `piloto-cadastros-v0.1.18`; guias atualizados. Sem alteração de implantação/esquema: ensaio operacional U1.14 não repetido; volumes/containers principais preservados. Próximo recorte: diagnosticar perda da resposta ao sair da conta, verificando revogação e proteção dos dados exibidos. P3 físico prioritário.

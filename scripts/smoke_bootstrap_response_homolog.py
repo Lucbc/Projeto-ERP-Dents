@@ -15,7 +15,7 @@ def run_case(fail_status, normal_creation=False):
         assert sql(f'SELECT count(*) FROM "{schema}".users') == '1'
         assert sql(f'SELECT count(*) FROM "{schema}".patients') == '0'
         assert sql(f'SELECT count(*) FROM "{schema}".auth_sessions') == '1'
-        passed('Private SQL: exactly one initial user, one explicit login session, zero patients')
+        passed('Private SQL: exactly one initial user, one login session, zero patients')
         return data
 
     main(report_name='last-bootstrap-response-' + ('normal' if normal_creation else 'status-failed' if fail_status else 'status-ok') + '.json',

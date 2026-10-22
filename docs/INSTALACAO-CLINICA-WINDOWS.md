@@ -6,7 +6,7 @@ Atualizado em 18/10/2026. Dados serão cadastrados do zero, em outro computador 
 
 O servidor fica ligado e concentra o programa, banco e exames. Cada estação abre o mesmo endereço HTTPS pelo navegador, com login individual. Somente o servidor precisa de Docker. As estações não precisam de Git, Python, Node ou banco de dados.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.17`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.18`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
@@ -36,7 +36,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.17
+git checkout piloto-cadastros-v0.1.18
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1
@@ -116,7 +116,7 @@ Preservar sempre o nome `erp-dents-prod` e seus volumes. Não executar `down -v`
 3. Criar uma conta por pessoa. Para digitação: **Painel: visualizar; Pacientes: visualizar/criar/editar**. Desabilitar exclusão e os demais módulos para esse perfil inicial. Conferir o acesso com uma conta da recepção; não distribuir a conta administradora.
 4. Guardar os acessos fora do repositório. Não enviar prints que mostrem o código de ativação ou senhas.
 
-Se a criação terminar com falha de conexão, ela pode ter sido concluída no servidor. Restabelecer a conexão e recarregar a página. Se a configuração desaparecer, tentar **Entrar** com o e-mail e senha informados na criação. Se continuar aparecendo erro de consulta, avisar o suporte e verificar a conexão antes de repetir; não apagar banco/volumes nem tentar reabrir a configuração. Se outro operador tiver criado a conta, combinar o acesso com ele. [Diagnóstico e limites](./ATUALIZACAO-U1-15.md).
+Se a criação terminar com falha de conexão, ela pode ter sido concluída no servidor. Na v0.1.18, restabelecer a conexão e clicar em **Conferir configuração**; essa consulta não reenvia senha nem código. A criação fica bloqueada até conferir. Se já estiver configurada, tentar **Entrar** com a conta criada; se outro operador concluiu, combinar o acesso com ele. Se ainda estiver disponível, conferir os campos e clicar novamente em **Criar administrador**. Se a consulta falhar, restabelecer a conexão e tentar conferi-la novamente. Em versões anteriores, recarregar a página para consultar. Não apagar banco/volumes nem tentar reabrir a configuração para contornar falhas. [Detalhes e limites](./ATUALIZACAO-U1-15.md).
 
 ## 7. Preparar cada estação
 

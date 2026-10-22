@@ -4,7 +4,7 @@
 
 **P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
 
-**Versão atual: `piloto-cadastros-v0.1.17`.** Corrige musl/musl-utils para 1.2.6-r3 nas seis imagens de execução. Reconstruir e substituir também banco e antivírus, preservando os mesmos volumes. Frente à v0.1.16, não muda código da aplicação, esquema ou configuração. Mantém a migração 0025 introduzida na v0.1.11 para instalações anteriores. [Detalhes e limites U1.14](./ATUALIZACAO-U1-14.md). Não manter APIs de versões diferentes gravando juntas. Após atualizar, recarregar as abas das estações; interfaces anteriores à v0.1.11 não enviam o identificador de tentativa.
+**Versão atual: `piloto-cadastros-v0.1.18`.** Acrescenta conferência explícita após resultado desconhecido na criação do administrador inicial. Frente à v0.1.17, muda somente a interface, sem dependência, migração, API ou configuração nova. [Detalhes e limites U1.15](./ATUALIZACAO-U1-15.md). O roteiro continua reconstruindo/substituindo as seis imagens para atender versões anteriores à correção musl da v0.1.17; preservar os mesmos volumes. Mantém a migração 0025 introduzida na v0.1.11 para instalações anteriores. Não manter APIs de versões diferentes gravando juntas. Após atualizar, recarregar as abas das estações; interfaces anteriores à v0.1.11 não enviam o identificador de tentativa.
 
 Somente o suporte atualiza o servidor. As estações continuam usando a mesma URL e não precisam instalar pacotes. Fazer a manutenção em janela combinada, com um único operador e todos os usuários fora do sistema até o aceite final.
 
@@ -22,7 +22,7 @@ O suporte pode executar `scripts/check-update-version.ps1` de uma cópia das fer
 Exemplo, substituindo a tag pelo destino aprovado e o caminho pela instalação real:
 
 ```powershell
-.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.17'
+.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.18'
 ```
 
 O comando exige histórico completo, árvore de trabalho limpa, tag local no formato do piloto, destino igual ou descendente do commit atual e presença dos arquivos básicos de implantação. Exibe somente identificadores Git e mensagens de estado. Não lê `.env`, não faz fetch/checkout e não chama Docker.
@@ -62,7 +62,7 @@ Substituir data/unidade. Conferir a cópia antes de seguir. Se a imagem original
 ```powershell
 docker @composeArgs stop -t 60 api
 if ($LASTEXITCODE -ne 0) { throw 'API ainda nao confirmada como parada.' }
-git checkout --detach piloto-cadastros-v0.1.17
+git checkout --detach piloto-cadastros-v0.1.18
 if ($LASTEXITCODE -ne 0) { throw 'Troca de versao falhou; manter manutencao.' }
 git rev-parse HEAD
 docker @composeArgs config --quiet
@@ -71,7 +71,7 @@ docker @composeArgs build api web gateway edge db clamav
 if ($LASTEXITCODE -ne 0) { throw 'Construcao falhou; manter manutencao.' }
 ```
 
-Conferir o commit exibido com a versão aprovada. Para v0.1.17, as seis imagens precisam ser reconstruídas e substituídas. A versão principal do PostgreSQL permanece 16; não se trata de atualização de versão principal do banco. Com API e gateway parados e backup conferido, recriar banco/antivírus e aguardar saúde antes de subir a API. Preservar os volumes existentes; nunca usar `down -v`. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo do PostgreSQL inclui essa tabela. Não apagá-la nem executar downgrade para contornar erros: isso removeria a proteção de tentativas já processadas.
+Conferir o commit exibido com a versão aprovada. Para v0.1.18, o roteiro mantém a troca das seis imagens para cobrir versões anteriores; frente à v0.1.17, somente a interface mudou. A versão principal do PostgreSQL permanece 16. Com API e gateway parados e backup conferido, recriar banco/antivírus e aguardar saúde antes de subir a API. Preservar os volumes existentes; nunca usar `down -v`. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo do PostgreSQL inclui essa tabela. Não apagá-la nem executar downgrade para contornar erros: isso removeria a proteção de tentativas já processadas.
 
 ```powershell
 docker @composeArgs up -d --no-deps --force-recreate --wait --wait-timeout 180 db clamav
