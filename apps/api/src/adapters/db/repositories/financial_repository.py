@@ -17,6 +17,7 @@ from src.core.domain.entities import (
     FinancialSummary,
 )
 from src.core.ports.repositories import FinancialRepository
+from src.core.domain.clinic_clock import clinic_today
 
 
 class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
@@ -36,6 +37,7 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
         limit: int,
         offset: int,
     ) -> tuple[list[FinancialEntry], int]:
+        today = clinic_today()
         stmt = (
             select(FinancialEntryModel, PatientModel.full_name, DentistModel.full_name)
             .outerjoin(PatientModel, FinancialEntryModel.patient_id == PatientModel.id)
@@ -79,7 +81,7 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
             .offset(offset)
         ).all()
 
-        return [self._to_entity(row[0], patient_name=row[1], dentist_name=row[2]) for row in rows], int(total)
+        return [self._to_entity(row[0], patient_name=row[1], dentist_name=row[2], today=today) for row in rows], int(total)
 
     def get(self, financial_entry_id):
         row = self.session.execute(
@@ -206,6 +208,7 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
         return True
 
     def summarize(self, dt_from: date | None, dt_to: date | None) -> FinancialSummary:
+        today = clinic_today()
         stmt = select(
             FinancialEntryModel.entry_type,
             FinancialEntryModel.status,
@@ -218,7 +221,6 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
             stmt = stmt.where(FinancialEntryModel.due_date <= dt_to)
 
         rows = self.session.execute(stmt).all()
-        today = date.today()
 
         income_total_cents = 0
         expense_total_cents = 0
@@ -268,7 +270,11 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
         model: FinancialEntryModel,
         patient_name: str | None = None,
         dentist_name: str | None = None,
+        *,
+        today: date | None = None,
     ) -> FinancialEntry:
+        if today is None:
+            today = clinic_today()
         procedure_ids: list[UUID] = []
         for raw_procedure_id in model.procedure_ids or []:
             try:
@@ -308,6 +314,6 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
             patient_name=patient_name,
             dentist_name=dentist_name,
             is_overdue=bool(
-                model.status == FinancialEntryStatus.pending and model.due_date < date.today()
+                model.status == FinancialEntryStatus.pending and model.due_date < today
             ),
         )

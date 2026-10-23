@@ -24,7 +24,7 @@ def docker(*args, check=True):
     return result
 
 
-def main(session_checks=None, report_name=None, extra_env=None, *, versioned_user_fixtures=True, setup_checks=None):
+def main(session_checks=None, report_name=None, extra_env=None, *, versioned_user_fixtures=True, setup_checks=None, api_command=None):
     smoke.verify_target()
     db_info = json.loads(docker("inspect", "erp-dents-homolog-db-1").stdout)[0]
     db_env = dict(line.split("=", 1) for line in db_info["Config"]["Env"] if "=" in line)
@@ -88,7 +88,7 @@ def main(session_checks=None, report_name=None, extra_env=None, *, versioned_use
         env_file.write_text("\n".join(key + "=" + value for key, value in env.items()) + "\n", encoding="utf8")
         docker("run", "-d", "--name", name, "--label", "com.docker.compose.project=erp-dents-homolog",
                "--network", "erp-dents-homolog_default", "--env-file", str(env_file),
-               "-p", "127.0.0.1:18001:8000", "erp-dents-homolog-api")
+               "-p", "127.0.0.1:18001:8000", "erp-dents-homolog-api", *(api_command or []))
         assert ready()["needsBootstrap"] is True
         passed("fresh API applies migrations and offers initial setup")
         data = {"name": "Fictitious Initial Admin", "email": "initial@example.com", "password": password}

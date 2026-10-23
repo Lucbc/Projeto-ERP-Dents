@@ -16,6 +16,10 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 23/10/2026
 
+**Início 3B.2C — 23/10/2026, base `564664f`:** corrigir atraso financeiro dependente do fuso do processo. Relógio clínico em São Paulo, uma amostra por leitura; manter status, versões e históricos. Aceites: reprodução antes/depois da meia-noite, receitas/despesas pendentes/pagas/canceladas, PostgreSQL privado, API e indicador/resumo no Chrome. Sem migração; pacote de instalação permanece v0.1.18 até validação e CI.
+
+**Checkpoint 3B.2C — implementação local validada:** três testes focados aprovados (matriz PostgreSQL em três fusos, limites do calendário e amostra única), seis cenários Chrome/API nos dois lados da meia-noite e três fusos aprovados; fingerprints de cinco tabelas financeiras preservados. Logs `.data/overdue-after.log` e `.data/overdue-integrated.log`. Regressão financeira em andamento; publicar código e aguardar CI antes de liberar v0.1.19. Corrigir registros de retomada ao concluir. Sem mudança de schema/configuração, nem atualização dos containers principais.
+
 **Retorno ao plano principal autorizado pelo usuário.** Encerrar a sequência de melhorias excepcionais de autenticação; diagnóstico de resposta perdida no logout vai para o backlog, sem bloquear instalação. A instalação assistida de cadastros permanece em `piloto-cadastros-v0.1.18`; P3 físico tem prioridade assim que chegarem os dados do servidor.
 
 **Base operacional de agenda/consulta concluída em 23/10/2026, produto `23c08ff`:** imagens API/web reconstruídas; três cenários existentes aprovados (concorrência HTTP com SQL direto, lista/calendário em duas sessões Chrome, acompanhamento recepção/dentista em contas distintas). Propagação observada em aproximadamente 15 segundos; rascunhos, rejeição de edição desatualizada e revogação de permissão aprovados. [Evidências, limites e fila de entregas](./RETOMADA-OPERACIONAL.md). Sem mudança funcional, nova versão, atualização dos containers principais ou repetição de backup/CI completo. Links locais e diff conferidos. Publicar documentação, conferir HEAD remoto e árvore limpa ao encerrar.
