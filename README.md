@@ -4,7 +4,7 @@ Logins cadastrados na homologação local (20/09/2026): `admin.homolog@example.c
 
 ## Instalar na clínica — piloto de cadastros
 
-Versão de instalação: **`piloto-cadastros-v0.1.18`**. Comece pelo [passo a passo Windows](docs/INSTALACAO-CLINICA-WINDOWS.md) e conclua o [checklist no local](docs/CHECKLIST-INICIO-CLINICA.md) antes dos registros reais. As estações acessam pelo navegador; somente o servidor executa Docker.
+Versão de instalação: **`piloto-cadastros-v0.1.19`**. Comece pelo [passo a passo Windows](docs/INSTALACAO-CLINICA-WINDOWS.md) e conclua o [checklist no local](docs/CHECKLIST-INICIO-CLINICA.md) antes dos registros reais. As estações acessam pelo navegador; somente o servidor executa Docker.
 
 Consulte a [rotina da recepção](docs/ROTINA-RECEPCAO-PILOTO.md), o [escopo liberado](docs/LIBERACAO-PILOTO-CADASTROS.md) e o [roteiro de atualização](docs/ATUALIZACAO-SERVIDOR-WINDOWS.md). Esta versão avisa sobre possíveis duplicidades e bloqueia novas atribuições de CPF completo já usado, inclusive por inativos. CPF novo ou alterado também precisa passar pela validação de formato e dígitos verificadores. Nascimento novo ou alterado não pode estar no futuro. Campos opcionais podem ficar vazios; registros históricos não são apagados nem unidos.
 

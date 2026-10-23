@@ -67,3 +67,7 @@ Os três harnesses concluíram reinício e limpeza dos recursos temporários, pr
 - Não criar uma nova fase para cada hipótese de falha rara. Resposta perdida no logout fica no backlog, salvo evidência de bloqueador.
 - Cada entrega registra capacidade obtida, testes por camada, pendências e próximo passo. Falha em teste deve ser investigada antes de declarar aceite.
 - Atualizar roteiro e pacote quando houver mudança real de instalação/produto e seus aceites; manter commit/push ao concluir alterações.
+
+## Fechamento 3B.2C/D — 23/10/2026
+
+Etapa 3B.2 concluída: [atraso clínico e evidências C](./homologacao-etapa-3B-2C.md), [consolidação A/B/C e limites D](./homologacao-etapa-3B-2D.md). Código final `6f08e88`, CI 40000877678 aprovado (328 backend, 427 frontend, builds/HTTP e seis imagens sem achados), versão de instalação v0.1.19. Próximo: 3B.3 — horários, entradas e filtros da agenda. Este fechamento substitui as próximas ações históricas acima. P3 físico prioritário quando houver os dados do servidor.
