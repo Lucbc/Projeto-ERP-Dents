@@ -35,7 +35,7 @@ def main():
             failed = True
             print(service+': scanner unavailable (not a clean result)')
             continue
-        report = json.loads((output/('image-'+service+'.json')).read_text())
+        report = json.loads((output/('image-'+service+'.json')).read_text(encoding='utf-8'))
         findings = [v for r in report.get('Results', []) for v in r.get('Vulnerabilities', [])]
         counts = Counter(v['Severity'] for v in findings)
         failed |= any(v['Severity'] in ('HIGH','CRITICAL') for v in findings)
