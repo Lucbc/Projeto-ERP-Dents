@@ -14,7 +14,15 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
-## Entrega atual — 15/10/2026
+## Ponto de retomada — 23/10/2026
+
+**Retorno ao plano principal autorizado pelo usuário.** Encerrar a sequência de melhorias excepcionais de autenticação; diagnóstico de resposta perdida no logout vai para o backlog, sem bloquear instalação. A instalação assistida de cadastros permanece em `piloto-cadastros-v0.1.18`; P3 físico tem prioridade assim que chegarem os dados do servidor.
+
+**Base operacional de agenda/consulta concluída em 23/10/2026, produto `23c08ff`:** imagens API/web reconstruídas; três cenários existentes aprovados (concorrência HTTP com SQL direto, lista/calendário em duas sessões Chrome, acompanhamento recepção/dentista em contas distintas). Propagação observada em aproximadamente 15 segundos; rascunhos, rejeição de edição desatualizada e revogação de permissão aprovados. [Evidências, limites e fila de entregas](./RETOMADA-OPERACIONAL.md). Sem mudança funcional, nova versão, atualização dos containers principais ou repetição de backup/CI completo. Links locais e diff conferidos. Publicar documentação, conferir HEAD remoto e árvore limpa ao encerrar.
+
+**Próximo: executar 3B.2C — vencidos pelo dia da clínica**, conforme [contrato já preparado](./plano-etapa-3B-2.md), depois consolidar 3B.2D e seguir horários da agenda 3B.3. Não repetir os três cenários desta retomada sem mudança/falha. O percurso completo de criação pela interface → consulta → lançamento → pagamento continua pendente; não declarar atendimento clínico completo homologado por testes de acompanhamento. P3 físico interrompe essa fila quando houver dados do servidor. Este ponto substitui as próximas ações históricas abaixo.
+
+## Histórico de entregas
 
 **U1.15B concluída — 22/10/2026:** versão `piloto-cadastros-v0.1.18`, código `0e1ae16`. [CI 39834926871](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/39834926871) aprovado: 325 backend, 427 frontend, builds, HTTP e auditorias de pacotes/seis imagens sem achados. 46 focados; Chrome/API/SQL de resposta perdida/consulta indisponível e criação normal/login automático aprovados; recuperação do login preservada. Conferência explícita bloqueia repetição até consultar estado, não reenvia senha/código; orientação neutra e limpeza de campos/cópia da tentativa. [Evidências e limites](./ATUALIZACAO-U1-15.md). Guias atualizados; sem migração/API/dependências/configuração ou atualização principal, ensaio operacional U1.14 não repetido. Consolidar docs/correção textual do harness/tag, commit/push e conferir HEAD/main/tag remoto e árvore limpa. **Próximo:** diagnosticar resposta perdida ao sair da conta, verificando revogação e dados exibidos. P3 físico prioritário quando chegarem dados do servidor. Este ponto substitui pendências históricas abaixo.
 
