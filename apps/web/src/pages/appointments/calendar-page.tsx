@@ -252,7 +252,7 @@ export function CalendarPage() {
   const rangeFrom = startOfDay(addMonths(currentDate, -2)).toISOString();
   const rangeTo = endOfDay(addMonths(currentDate, 2)).toISOString();
 
-  const form = useForm<AppointmentForm>({
+  const form = useForm<z.input<typeof appointmentSchema>, unknown, AppointmentForm>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
       patient_id: "",

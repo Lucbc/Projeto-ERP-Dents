@@ -142,7 +142,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   const createAttempt = useRef<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<FinancialEntry | null>(null);
 
-  const entryForm = useForm<FinancialForm>({
+  const entryForm = useForm<z.input<typeof financialSchema>, unknown, FinancialForm>({
     resolver: zodResolver(financialSchema),
     defaultValues: {
       entry_type: "income",

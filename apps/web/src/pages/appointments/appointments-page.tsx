@@ -101,7 +101,7 @@ export function AppointmentsPage() {
   useEffect(() => { if (references.dentists.status === "denied") pageReferences.dentists.deny(); }, [references.dentists.status, pageReferences.dentists.deny]);
   useEffect(() => { if (references.procedures.status === "denied") pageReferences.procedures.deny(); }, [references.procedures.status, pageReferences.procedures.deny]);
 
-  const form = useForm<AppointmentForm>({
+  const form = useForm<z.input<typeof appointmentSchema>, unknown, AppointmentForm>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
       patient_id: "",
