@@ -19,6 +19,42 @@ let client: QueryClient;
 afterEach(()=>{cleanup();client?.clear();vi.restoreAllMocks();});
 
 it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar evento"]] as const)(
+  "%s preserves untouched timestamps at microsecond precision and converts only an edited boundary",async(_name,Page,button)=>{
+    const patientId="11111111-1111-4111-8111-111111111111", dentistId="22222222-2222-4222-8222-222222222222";
+    const appointment={id:"44444444-4444-4444-8444-444444444444",version:4,patient_id:patientId,dentist_id:dentistId,
+      patient_name:"Fictitious precision",dentist_name:"Fictitious dentist",start_at:"2030-01-07T10:00:12.123456-03:00",
+      end_at:"2030-01-07T14:00:47.654321Z",status:"scheduled",notes:"Original",procedure_ids:[]} as Appointment;
+    vi.spyOn(appointmentService,"list").mockResolvedValue([appointment]);
+    vi.spyOn(patientService,"listAll").mockResolvedValue({items:[{id:patientId,full_name:"Fictitious precision",active:true} as Patient],total:1});
+    vi.spyOn(dentistService,"listAll").mockResolvedValue({items:[{id:dentistId,full_name:"Fictitious dentist",active:true} as Dentist],total:1});
+    vi.spyOn(procedureService,"listAll").mockResolvedValue({items:[],total:0});
+    const update=vi.spyOn(appointmentService,"update").mockResolvedValue(appointment);
+    client=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});
+    const {container}=render(<QueryClientProvider client={client}><ToastProvider><Page /></ToastProvider></QueryClientProvider>);
+    const field=(name:string)=>container.querySelector(`[name="${name}"]`) as HTMLInputElement;
+    const open=async()=>{
+      const edit=await screen.findByRole("button",{name:button,exact:true});
+      await waitFor(()=>expect((edit as HTMLButtonElement).disabled).toBe(false));fireEvent.click(edit);
+      await waitFor(()=>expect(field("start_at")?.disabled).toBe(false));
+    };
+    await open();fireEvent.change(field("notes"),{target:{value:"Only notes"}});
+    fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
+    await waitFor(()=>expect(update).toHaveBeenCalledTimes(1));
+    expect(update.mock.calls[0][1]).toMatchObject({version:4,start_at:appointment.start_at,end_at:appointment.end_at,notes:"Only notes"});
+    await waitFor(()=>expect(field("start_at")).toBeNull());
+    for (const boundary of ["start_at","end_at"] as const) {
+      await open();const changed=field(boundary).value.slice(0,-2)+"15";
+      fireEvent.change(field(boundary),{target:{value:changed}});
+      fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
+      await waitFor(()=>expect(field("start_at")).toBeNull());
+      expect(update.mock.calls.at(-1)![1]).toMatchObject({
+        [boundary]:new Date(changed).toISOString(),
+        [boundary==="start_at"?"end_at":"start_at"]:appointment[boundary==="start_at"?"end_at":"start_at"],
+      });
+    }
+  });
+
+it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar evento"]] as const)(
   "%s keeps draft dates/procedures and original version until explicit reload",async(_name,Page,button)=>{
     const patientId="11111111-1111-4111-8111-111111111111";
     const dentistId="22222222-2222-4222-8222-222222222222";
@@ -73,7 +109,7 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
     fireEvent.change(notes(),{target:{value:"Reviewed"}});
     fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
     await waitFor(()=>expect(update).toHaveBeenCalledTimes(2));
-    expect(update.mock.calls[1][1]).toMatchObject({version:2,procedure_ids:[],notes:"Reviewed",end_at:"2030-01-07T14:30:00.000Z"});
+    expect(update.mock.calls[1][1]).toMatchObject({version:2,procedure_ids:[],notes:"Reviewed",end_at:"2030-01-07T14:30:00Z"});
     await waitFor(()=>expect(container.querySelector('textarea[name="notes"]')).toBeNull());
     list.mockRejectedValue(failure(403));
     fireEvent.click(screen.getByRole("button",{name:"Atualizar agenda",exact:true}));

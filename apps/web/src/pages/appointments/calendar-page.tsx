@@ -303,14 +303,14 @@ export function CalendarPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, version, payload }: { id: string; version: number; payload: AppointmentForm }) =>
-      appointmentService.update(id, {
-        version,
+    mutationFn: ({ appointment, payload }: { appointment: Appointment; payload: AppointmentForm }) =>
+      appointmentService.update(appointment.id, {
+        version: appointment.version,
         patient_id: payload.patient_id,
         dentist_id: payload.dentist_id,
         procedure_ids: payload.procedure_ids,
-        start_at: fromInputDateTime(payload.start_at),
-        end_at: fromInputDateTime(payload.end_at),
+        start_at: fromInputDateTime(payload.start_at, appointment.start_at),
+        end_at: fromInputDateTime(payload.end_at, appointment.end_at),
         status: payload.status,
         notes: payload.notes?.trim() ? payload.notes.trim() : null,
       }),
@@ -502,7 +502,7 @@ export function CalendarPage() {
     if (isSubmitting || deleteReview || editConflict || !references.ready || missingReference) return;
     if (editingAppointment ? !canUpdate : !canCreate) return;
     if (editingAppointment) {
-      updateMutation.mutate({ id: editingAppointment.id, version: editingAppointment.version, payload: values });
+      updateMutation.mutate({ appointment: editingAppointment, payload: values });
       return;
     }
     createMutation.mutate(values);

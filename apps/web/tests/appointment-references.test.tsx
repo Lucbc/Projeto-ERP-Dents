@@ -59,7 +59,7 @@ it("keeps filters, selected IDs, notes and captured version distinct from page r
   vi.mocked(appointmentService.list).mockResolvedValue([{...visit,version:9}]);await tick(15010);
   vi.mocked(procedureService.listAll).mockResolvedValue({items:[{...procedure,duration_minutes:90}],total:1});
   fireEvent.click(button("Atualizar cadastros do formulário"));await tick();expect(field("end_at").value).toBe(end);expect((filter as HTMLSelectElement).value).toBe(dentist.id);
-  fireEvent.click(button("Salvar"));await tick();expect(update).toHaveBeenCalledWith(visit.id,expect.objectContaining({version:7,notes:"Fictitious draft",procedure_ids:[procedure.id],end_at:visit.end_at.replace("Z",".000Z")}));
+  fireEvent.click(button("Salvar"));await tick();expect(update).toHaveBeenCalledWith(visit.id,expect.objectContaining({version:7,notes:"Fictitious draft",procedure_ids:[procedure.id],end_at:visit.end_at}));
 });
 
 it.each([503,403])("blocks partial preparation on %s and recovers without changing draft",async status=>{

@@ -20,7 +20,10 @@ export function toInputDateTime(isoValue: string): string {
   return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
 }
 
-export function fromInputDateTime(input: string): string {
+export function fromInputDateTime(input: string, original?: string): string {
+  // Minute-resolution editors must not truncate an untouched server timestamp.
+  // Keep the original string, including microseconds beyond JavaScript Date precision.
+  if (original && input === toInputDateTime(original)) return original;
   return new Date(input).toISOString();
 }
 

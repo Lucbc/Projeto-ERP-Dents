@@ -14,7 +14,9 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
-## Ponto de retomada — 23/10/2026
+## Ponto de retomada — 24/10/2026
+
+**Início 3B.3A — base `10776a5`:** inventário identifica conversores compartilhados por agenda/pagamentos, formatação em Consulta/exames e usos locais em painel, exclusão e histórico financeiro. Antes da conversão de fuso, corrigir perda de segundos/microssegundos ao editar outros campos da consulta na lista/calendário. Preservar os instantes capturados junto com a versão; converter somente o horário realmente modificado. Aceites: reprodução em componentes, mudança explícita de início/fim, conflito/revisão, Chrome nos três fusos e SQL privado. Não mudar fuso parcialmente entre exibição e entrada. Instalação permanece v0.1.19 até validação/CI; 3B.3B tratará conversão, filtros e calendário em conjunto.
 
 **3B.2C/D concluídas:** atraso financeiro usa o dia da clínica em São Paulo, uma amostra por lista/resumo, sem regravar históricos. Código funcional `8180748`; código final `6f08e88` inclui base Nginx 1.30.6 e leitura UTF-8 do scanner. Versão de instalação **`piloto-cadastros-v0.1.19`**. [Relatório C](./homologacao-etapa-3B-2C.md) e [consolidação D](./homologacao-etapa-3B-2D.md).
 
