@@ -36,6 +36,7 @@ def verify(request,email,password,token,container,ready,passed,sql,schema, *, br
             stages=[line for line in result.stderr.splitlines() if line.startswith(('Financial history browser failed at stage: ', 'Catalog deletion browser failed at stage: ', 'Appointment deletion browser failed at stage: ', 'Dentist deletion browser failed at stage: ', 'Patient deletion browser failed at stage: ', 'Exam deletion browser failed at stage: ', 'Availability browser failed at stage: '))]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Permissions browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Appointment precision browser failed at stage: ')]
+            stages += [line for line in result.stderr.splitlines() if line.startswith('Appointment timezone diagnosis failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Users browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Agenda refresh browser failed at stage: ')]
             stages += [line for line in result.stderr.splitlines() if line.startswith('Dashboard refresh browser failed at stage: ')]
