@@ -1,8 +1,8 @@
 # Etapa 3B — datas civis e fuso da clínica
 
-**Prioridade de 15/10/2026:** após concluir 3B.2B, seguir o [piloto de cadastros](./PLANO-PILOTO-CADASTROS.md), começando por instalação Windows e recuperação. A indicação de 3B.2C abaixo registra a sequência técnica adiada, não o próximo trabalho imediato.
+**Prioridade atual — 25/10/2026:** plano principal retomado por autorização do usuário enquanto aguardamos os dados do servidor. Instalação física P3 do [piloto de cadastros](./PLANO-PILOTO-CADASTROS.md) tem prioridade assim que esses dados chegarem.
 
-**Status atual: 3B.1 e 3B.2A/B concluídas; atualização em 15/10/2026; 3B.2C adiada pelo piloto.** [Dia clínico e recortes](./plano-etapa-3B-2.md). As seções de preparação abaixo são históricas; retomada ao final.
+**Status atual:** 3B.1 e 3B.2A/B/C/D concluídas. 3B.3A preserva a precisão dos horários ao editar consultas; [evidências e inventário para 3B.3B](./homologacao-etapa-3B-3A.md). Consultar o [ponto de retomada](./PLANO-DE-EXECUCAO.md) para o estado da publicação. Próximo: conversão de fuso, filtros e calendário em conjunto. As seções de preparação abaixo são históricas; não substituem este status.
 
 ## Preparação 3B.P — 14/10/2026
 

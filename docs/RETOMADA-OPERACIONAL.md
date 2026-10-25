@@ -71,3 +71,8 @@ Os três harnesses concluíram reinício e limpeza dos recursos temporários, pr
 ## Fechamento 3B.2C/D — 23/10/2026
 
 Etapa 3B.2 concluída: [atraso clínico e evidências C](./homologacao-etapa-3B-2C.md), [consolidação A/B/C e limites D](./homologacao-etapa-3B-2D.md). Código final `6f08e88`, CI 40000877678 aprovado (328 backend, 427 frontend, builds/HTTP e seis imagens sem achados), versão de instalação v0.1.19. Próximo: 3B.3 — horários, entradas e filtros da agenda. Este fechamento substitui as próximas ações históricas acima. P3 físico prioritário quando houver os dados do servidor.
+## Fechamento 3B.3A e preparação 3B.3B — 25/10/2026
+
+Precisão de horários preservada na edição de consultas, Zod/resolvers e Brotli corrigidos; [evidências 3B.3A](./homologacao-etapa-3B-3A.md). Código de produto `f3d4516`, CI 40245360588 aprovado: 328 backend, 429 frontend, builds/HTTP e auditorias de pacotes/seis imagens sem achados. Versão de instalação v0.1.20; liberação restrita aos cadastros, sem migração/configuração nova.
+
+[Diagnóstico 3B.3B](./diagnostico-etapa-3B-3B.md) também aprovado, commit `adb65d6`: mesma consulta diverge entre fusos na lista/editor/posição do calendário e filtro do dia, sem gravação ou alteração SQL. Próximo: implementar conversão de fuso, filtros e calendário em conjunto, incluindo consumidores compartilhados; preparação concluída, correção pendente. Este fechamento substitui próximas ações históricas acima. P3 físico prioritário quando houver dados do servidor.

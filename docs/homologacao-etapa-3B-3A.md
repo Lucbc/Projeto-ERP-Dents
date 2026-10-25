@@ -20,13 +20,13 @@ CI inicial `40062411068` recusou o pacote npm antes dos testes por [GHSA-mrhx-c7
 
 A tipagem de entrada/saída de agenda e financeiro foi separada conforme [guia Zod](https://zod.dev/v4/changelog) e [adaptador oficial](https://github.com/react-hook-form/resolvers). Defaults de procedimentos e coerção de valores financeiros continuam no schema. Código `06fba16`: build e auditoria npm aprovados, 429 testes em 48 arquivos (157,28 s, `.data/appointment-precision-frontend.log`), nova imagem construída (`.data/appointment-precision-zod-image.log`). Repetição dos 12 envios de agenda aprovada (`.data/appointment-precision-browser-final.log`) e percurso de cadastros aprovado (`.data/appointment-precision-registration.log`), incluindo CPF/nascimento, busca, conflitos e preservação/limpeza de RG no PostgreSQL.
 
-**Pendência:** [CI final 40062809549](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40062809549) em andamento. Não liberar a tag antes do aceite final. Configuração inicial normal aprovada em Chrome/API/SQL com a nova biblioteca (`.data/appointment-precision-bootstrap.log`): login automático, um administrador, uma sessão, zero pacientes, configuração fechada após repetição/reinício e limpeza dos recursos privados.
+**CI inicial após Zod:** [40062809549](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40062809549) aprovou testes funcionais e recusou imagens; correção detalhada abaixo. Configuração inicial normal aprovada em Chrome/API/SQL com a nova biblioteca (`.data/appointment-precision-bootstrap.log`): login automático, um administrador, uma sessão, zero pacientes, configuração fechada após repetição/reinício e limpeza dos recursos privados.
 
 ## Correção das imagens — 25/10/2026
 
 CI `40062809549` aprovou 328 testes backend (695,10 s), 429 frontend, builds e regressões HTTP, mas recusou uma ocorrência HIGH em web/gateway/edge/clamav. Auditoria local reproduziu CVE-2026-111497 em `brotli-libs` 1.2.0-r1; API/banco sem achados. [Correção oficial Brotli 1.2.1](https://github.com/google/brotli/releases/tag/v1.2.1). Fixar `brotli-libs=1.2.1-r0` nas três receitas afetadas, cobrindo as quatro imagens, sem mudar entrypoints, configuração ou volumes.
 
-Build, auditoria das seis imagens, percurso de cadastros e CI da correção pendentes. Instalação liberada ainda v0.1.19; guias v0.1.20 são preparação local, sem tag. Esta pendência substitui a espera pelo CI anterior.
+Código `f3d4516`: quatro imagens construídas (`.data/appointment-precision-brotli-build.log`), seis imagens auditadas sem achados (`.data/appointment-precision-brotli-audit.log`), percurso de cadastros Chrome/API/SQL aprovado na nova web (`.data/appointment-precision-brotli-registration.log`). [CI final 40245360588](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40245360588) aprovado: 328 backend (481,802 s), 429 frontend, builds/HTTP, auditorias de pacotes e seis imagens sem achados. Log local `.data/appointment-precision-ci-final.log`. Instalação assistida liberada na v0.1.20, com guias atualizados.
 
 ## Inventário para 3B.3B
 
@@ -43,4 +43,6 @@ Build, auditoria das seis imagens, percurso de cadastros e CI da correção pend
 
 ## Instalação
 
-Sem API, schema, migração ou configuração nova. Frente à v0.1.19, mudar web/gateway/edge/clamav; o roteiro geral continua reconstruindo seis imagens para cobrir versões antigas. Instalação física e ensaio operacional de atualização não executados nesta subetapa. Manter liberação restrita ao piloto de cadastros; tag v0.1.20 somente após todos os aceites.
+Sem API, schema, migração ou configuração nova. Frente à v0.1.19, mudar web/gateway/edge/clamav; o roteiro geral continua reconstruindo seis imagens para cobrir versões antigas. Instalação física e ensaio operacional de atualização não executados nesta subetapa. Liberação restrita ao piloto de cadastros, tag `piloto-cadastros-v0.1.20`.
+
+Preparação da próxima entrega também concluída em 25/10: [diagnóstico integrado 3B.3B](./diagnostico-etapa-3B-3B.md), commit `adb65d6`, somente scripts/documentação; nenhuma mudança do produto após o código aprovado no CI.
