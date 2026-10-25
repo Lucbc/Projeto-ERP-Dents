@@ -18,7 +18,15 @@ Os dois editores passam a capturar o registro original junto com sua versão. Se
 
 CI inicial `40062411068` recusou o pacote npm antes dos testes por [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5). A versão corrigida publicada é Zod 4.6.6 ou superior. Atualização para Zod 4.6.7 e adaptador `@hookform/resolvers` 5.9.2; lockfile preserva versões exatas. Usar a API v4, sem recorrer à compatibilidade v3 apenas para ocultar o alerta.
 
-A tipagem de entrada/saída de agenda e financeiro foi separada conforme [guia Zod](https://zod.dev/v4/changelog) e [adaptador oficial](https://github.com/react-hook-form/resolvers). Defaults de procedimentos e coerção de valores financeiros continuam no schema. Build e auditoria npm aprovados após ajuste; suíte completa, repetição integrada e CI final pendentes antes da liberação.
+A tipagem de entrada/saída de agenda e financeiro foi separada conforme [guia Zod](https://zod.dev/v4/changelog) e [adaptador oficial](https://github.com/react-hook-form/resolvers). Defaults de procedimentos e coerção de valores financeiros continuam no schema. Código `06fba16`: build e auditoria npm aprovados, 429 testes em 48 arquivos (157,28 s, `.data/appointment-precision-frontend.log`), nova imagem construída (`.data/appointment-precision-zod-image.log`). Repetição dos 12 envios de agenda aprovada (`.data/appointment-precision-browser-final.log`) e percurso de cadastros aprovado (`.data/appointment-precision-registration.log`), incluindo CPF/nascimento, busca, conflitos e preservação/limpeza de RG no PostgreSQL.
+
+**Pendência:** [CI final 40062809549](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40062809549) em andamento. Não liberar a tag antes do aceite final. Configuração inicial normal aprovada em Chrome/API/SQL com a nova biblioteca (`.data/appointment-precision-bootstrap.log`): login automático, um administrador, uma sessão, zero pacientes, configuração fechada após repetição/reinício e limpeza dos recursos privados.
+
+## Correção das imagens — 25/10/2026
+
+CI `40062809549` aprovou 328 testes backend (695,10 s), 429 frontend, builds e regressões HTTP, mas recusou uma ocorrência HIGH em web/gateway/edge/clamav. Auditoria local reproduziu CVE-2026-111497 em `brotli-libs` 1.2.0-r1; API/banco sem achados. [Correção oficial Brotli 1.2.1](https://github.com/google/brotli/releases/tag/v1.2.1). Fixar `brotli-libs=1.2.1-r0` nas três receitas afetadas, cobrindo as quatro imagens, sem mudar entrypoints, configuração ou volumes.
+
+Build, auditoria das seis imagens, percurso de cadastros e CI da correção pendentes. Instalação liberada ainda v0.1.19; guias v0.1.20 são preparação local, sem tag. Esta pendência substitui a espera pelo CI anterior.
 
 ## Inventário para 3B.3B
 
@@ -35,4 +43,4 @@ A tipagem de entrada/saída de agenda e financeiro foi separada conforme [guia Z
 
 ## Instalação
 
-Sem API, schema, migração ou configuração nova. Apenas web deve mudar frente à v0.1.19; o roteiro geral continua reconstruindo seis imagens para cobrir versões antigas. Instalação física e ensaio operacional de atualização não executados nesta subetapa. Manter liberação restrita ao piloto de cadastros; tag v0.1.20 somente após todos os aceites.
+Sem API, schema, migração ou configuração nova. Frente à v0.1.19, mudar web/gateway/edge/clamav; o roteiro geral continua reconstruindo seis imagens para cobrir versões antigas. Instalação física e ensaio operacional de atualização não executados nesta subetapa. Manter liberação restrita ao piloto de cadastros; tag v0.1.20 somente após todos os aceites.
