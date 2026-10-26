@@ -43,7 +43,7 @@ it("list captures displayed identity/version and requires successful reload and 
   const reload=await screen.findByRole("button",{name:"Recarregar lista para conferir"});
   expect(remove).toHaveBeenCalledWith(appointment.id,1);
   expect(confirm.mock.calls[0][0]).toContain(appointment.patient_name);
-  expect(confirm.mock.calls[0][0]).toContain(new Date(appointment.start_at).toLocaleString("pt-BR"));
+  expect(confirm.mock.calls[0][0]).toContain("07/01/2030, 10:00:00");
   expect(confirm.mock.calls[0][0]).toContain("não cancela cobranças nem pagamentos");
   expect((screen.getByRole("button",{name:"Excluir",exact:true}) as HTMLButtonElement).disabled).toBe(true);
   list.mockRejectedValueOnce(failure(503)); fireEvent.click(reload);
@@ -72,7 +72,7 @@ it.each([409,404,503,"network"] as const)("calendar preserves dirty draft after 
   fireEvent.click(screen.getByRole("button",{name:"Excluir",exact:true}));
   const reload=await screen.findByRole("button",{name:"Descartar rascunho e carregar consulta atual"});
   expect(remove).toHaveBeenCalledWith(appointment.id,1);
-  expect(confirm.mock.calls[0][0]).toContain(new Date(appointment.start_at).toLocaleString("pt-BR"));
+  expect(confirm.mock.calls[0][0]).toContain("07/01/2030, 10:00:00");
   expect(confirm.mock.calls[0][0]).not.toContain("2031");
   expect(confirm.mock.calls[0][0]).toContain("rascunho não serão aplicadas");
   expect(notes().value).toBe("Fictitious dirty draft");
