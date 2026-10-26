@@ -35,3 +35,23 @@ Os scripts esperam o comportamento antigo para documentar o defeito. **Não usá
 - Aceite da correção: criar → abrir em outro fuso → reagendar → cancelar, verificando instantes na API/SQL, disponibilidade/concorrência e regressão de cadastros. Esta preparação só verificou leitura, edição aberta sem salvar e filtro; não cobre esses percursos de gravação.
 
 R20 permanece aberto. R21/contrato de offset da API mantém seu recorte. Instalação física P3 interrompe a fila de melhorias quando chegarem os dados do servidor.
+
+## Base de conversão 3B.3B.1 — 25/10/2026
+
+Base `ee7f60f`. Módulo `apps/web/src/lib/clinic-time.ts`, ainda sem importação pelos componentes de produção. Não substitui parcialmente os conversores existentes. **Aceites locais da base concluídos; integração 3B.3B.2 pendente.** Instalação permanece `piloto-cadastros-v0.1.20`, sem nova tag, dependência, API, schema, configuração ou build Docker necessário.
+
+Contrato:
+
+- `toClinicInput` aceita instante ISO com offset explícito e produz campo `YYYY-MM-DDTHH:mm` em São Paulo; rejeita datas impossíveis/instantes sem offset. Os limites de ano são 0001–9999, compatíveis com os formulários/API.
+- `resolveClinicInput` devolve sucesso com ISO ou motivo explícito (`invalid`, `invalid-original`, `nonexistent`, `ambiguous`). Na ambiguidade, devolve as alternativas em ordem cronológica; não escolhe silenciosamente.
+- Se o horário clínico exibido não mudou, devolve a string original exata, incluindo offset, segundos e microssegundos. Isso preserva também a escolha original dentro de uma hora repetida. Um horário diferente não herda essa escolha automaticamente.
+- Offsets derivados do Intl/IANA nas proximidades da data, com conferência da conversão de volta. Algoritmo limitado às regras de São Paulo; não é um resolvedor genérico de fusos. Inclui offset histórico com segundos e não fixa UTC-03. Referência: [dados IANA para América do Sul](https://data.iana.org/time-zones/tzdb/southamerica).
+
+Validação:
+
+- 50 testes semânticos executados em processos Node separados com `TZ=America/Sao_Paulo`, `UTC` e `Asia/Tokyo`: 150 execuções aprovadas. Logs `.data/clinic-time-America-Sao_Paulo.log`, `.data/clinic-time-UTC.log`, `.data/clinic-time-Asia-Tokyo.log`.
+- Cobertura: offsets equivalentes, troca de dia/ano, bissexto, datas/horas inválidas, lacuna de 2018, repetição de 2019, histórico anterior a 1914, anos abaixo de 100, limites de ano e preservação exata de microssegundos.
+- `scripts/check_clinic_time_browser.cjs` compila o módulo real em memória e verifica conversão, lacuna, ambiguidade, preservação, alteração e offset histórico em Chrome nos mesmos três fusos. `.data/clinic-time-browser.log`. **Teste do utilitário no motor do navegador; não é aceite de tela, API ou SQL.** Nenhum servidor, credencial ou dado persistente usado.
+- TypeScript/build aprovado (`.data/clinic-time-build.log`); aviso já existente de tamanho de chunk. Sem mudança nos consumidores, não repetir os percursos integrados da 3B.3A nesta subetapa.
+
+Próximo 3B.3B.2: ligar consumidores e calendário em conjunto, usando erros explícitos nos formulários; implementar limites de dia completo e duração. Escolher integração do calendário que opere no mesmo fuso também na aritmética, posição e seleção. Os testes de diagnóstico acima ainda esperam o defeito e devem ser substituídos por aceites clínicos na integração. CI desta base deve ser conferido antes de promover uma futura versão de instalação.
