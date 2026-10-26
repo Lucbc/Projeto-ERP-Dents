@@ -9,9 +9,9 @@ import { ReadSuspensionContext } from "../src/hooks/read-suspension";
 import { appointmentService, patientService, dentistService, procedureService } from "../src/lib/services";
 import type { Appointment, Patient, Dentist, Procedure } from "../src/types";
 vi.mock("react-big-calendar",async(original)=>({...await original<typeof import("react-big-calendar")>(),
-  Calendar:({events,onSelectEvent,onSelectSlot}:{events:{color:string}[];onSelectEvent:(event:unknown)=>void;onSelectSlot:(slot:{start:Date;end:Date})=>void})=><div>
+  Calendar:({events,onSelectEvent,onSelectSlot}:{events:{color:string}[];onSelectEvent:(event:unknown)=>void;onSelectSlot:(slot:{start:Date;end:Date;slots:Date[]})=>void})=><div>
     <button onClick={()=>onSelectEvent(events[0])} disabled={!events.length}>Editar evento</button>
-    <button onClick={()=>onSelectSlot({start:new Date(2030,0,7,10),end:new Date(2030,0,7,11)})}>Selecionar intervalo</button>
+    <button onClick={()=>onSelectSlot({start:new Date("2030-01-07T13:00:00Z"),end:new Date("2030-01-07T14:00:00Z"),slots:[new Date("2030-01-07T13:00:00Z")]})}>Selecionar intervalo</button>
     <output data-testid="grid-color">{events[0]?.color}</output>
   </div>}));
 let denied: string, client: QueryClient;

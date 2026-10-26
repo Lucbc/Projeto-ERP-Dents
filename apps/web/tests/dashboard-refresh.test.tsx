@@ -25,7 +25,7 @@ const visit = { id: "visit", patient_name: "Fictitious Patient", dentist_name: "
 function show() { return render(<QueryClientProvider client={client}><EffectivePermissionsProvider><EffectiveAccessGate><DashboardPage /></EffectiveAccessGate></EffectivePermissionsProvider></QueryClientProvider>); }
 
 beforeEach(() => {
-  vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 9, 1, 12));
+  vi.useFakeTimers(); vi.setSystemTime(new Date("2026-10-01T15:00:00Z"));
   focusManager.setFocused(true); onlineManager.setOnline(true); client = new QueryClient();
   user = { id: "admin-one", role: "admin" } as User;
   vi.spyOn(patientService, "list").mockResolvedValue({ items: [], total: 4 });
@@ -130,27 +130,27 @@ it("pauses hidden/offline reads and avoids overlap of a slow indicator on manual
   act(() => onlineManager.setOnline(true)); await tick(); expect(dentistService.list).toHaveBeenCalledTimes(before + 1);
 });
 
-it("switches local day at midnight and ignores an older pending response", async () => {
-  vi.setSystemTime(new Date(2026, 9, 1, 23, 59, 59));
+it("switches clinical day at midnight and ignores an older pending response", async () => {
+  vi.setSystemTime(new Date("2026-10-02T02:59:59Z"));
   let finish!: (value: Appointment[]) => void; let signal!: AbortSignal;
   vi.mocked(appointmentService.list).mockImplementationOnce((_params, current) => { signal = current!; return new Promise(resolve => { finish = resolve; }); }).mockResolvedValue([]);
   show(); await tick(); const first = vi.mocked(appointmentService.list).mock.calls[0][0]!;
-  expect(new Date(first.from!).getHours()).toBe(0); expect(new Date(first.to!).getHours()).toBe(23);
+  expect(first).toEqual({from:"2026-10-01T03:00:00.000Z",to:"2026-10-02T02:59:59.999999Z"});
   await tick(1_010); expect(signal.aborted).toBe(true);
   const last = vi.mocked(appointmentService.list).mock.lastCall![0]!;
-  expect(new Date(last.from!).getDate()).toBe(2); expect(last.from).not.toBe(first.from);
+  expect(last.from).toBe("2026-10-02T03:00:00.000Z"); expect(last.from).not.toBe(first.from);
   await act(async () => finish([visit])); await tick();
   expect(screen.queryByText("Fictitious Patient")).toBeNull(); expect(screen.getByText("Nenhuma consulta para hoje.")).toBeTruthy();
 });
 
 it("recomputes the day when returning after suspension and connection recovery", async () => {
   show(); await tick(); act(() => { focusManager.setFocused(false); onlineManager.setOnline(false); });
-  vi.setSystemTime(new Date(2026, 9, 3, 9));
+  vi.setSystemTime(new Date("2026-10-03T12:00:00Z"));
   vi.mocked(appointmentService.list).mockResolvedValue([]);
   act(() => { document.dispatchEvent(new Event("visibilitychange")); window.dispatchEvent(new Event("online")); }); await tick();
   expect(screen.queryByText("Fictitious Patient")).toBeNull();
   act(() => { onlineManager.setOnline(true); focusManager.setFocused(true); }); await tick();
-  expect(new Date(vi.mocked(appointmentService.list).mock.lastCall![0]!.from!).getDate()).toBe(3);
+  expect(vi.mocked(appointmentService.list).mock.lastCall![0]!.from).toBe("2026-10-03T03:00:00.000Z");
   expect(screen.getByText("Nenhuma consulta para hoje.")).toBeTruthy();
 });
 

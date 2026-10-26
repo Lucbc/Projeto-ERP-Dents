@@ -1,3 +1,4 @@
+import { formatDateTime } from "@/lib/datetime";
 import { Button } from "./button";
 
 interface LiveStatus {
@@ -22,7 +23,7 @@ export function LiveQueryStatus({ query, subject }: { query: LiveStatus; subject
     <div role={!online || isError ? "alert" : "status"}>
       <p>{message}</p>
       <p className="text-sm text-muted-foreground">{dataUpdatedAt
-        ? `Última atualização: ${new Date(dataUpdatedAt).toLocaleString("pt-BR")}`
+        ? `Última atualização: ${formatDateTime(new Date(dataUpdatedAt).toISOString())}`
         : subject ? "Ainda não foi possível verificar estes dados." : "Ainda não foi possível verificar as consultas."}</p>
     </div>
     <Button type="button" variant="outline" disabled={!online || isFetching} onClick={refresh}>Atualizar {subject ?? "agenda"}</Button>

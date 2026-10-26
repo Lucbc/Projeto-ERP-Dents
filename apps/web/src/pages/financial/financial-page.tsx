@@ -1,3 +1,5 @@
+import { clinicTimeError, resolveClinicInput } from "@/lib/clinic-time";
+import { formatDateTime } from "@/lib/datetime";
 import { useActionOptions } from "@/hooks/use-action-options";
 import { readFinancialAppointments, useFinancialReferences } from "./use-financial-references";
 import { PaymentDialog } from "./payment-dialog";
@@ -86,7 +88,7 @@ function nullableUuid(value?: string) {
 }
 
 function formatAppointmentLabel(appointment: Appointment): string {
-  const when = new Date(appointment.start_at).toLocaleString("pt-BR");
+  const when = formatDateTime(appointment.start_at);
   const patient = appointment.patient_name ?? "Paciente";
   const dentist = appointment.dentist_name ?? "Dentista";
   return `${when} - ${patient} / ${dentist}`;
@@ -448,6 +450,10 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   const submitEntry = (values: FinancialForm) => {
     if (!openEntryModal || !references.ready || isSubmittingEntry || createUncertain || editConflict || invalidReference
       || editingEntry?.status === "paid" || (editingEntry ? !canUpdate : !canCreate)) return;
+    if (values.status === "paid" && values.paid_at) {
+      const paid = resolveClinicInput(values.paid_at, editingEntry?.paid_at ?? undefined);
+      if (!paid.ok) { entryForm.setError("paid_at", { message: clinicTimeError(paid) }); return; }
+    }
     if (editingEntry) {
       updateMutation.mutate({ id: editingEntry.id, version: editingEntry.version, payload: values });
       return;
@@ -466,6 +472,10 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   };
   const submitGenerate = (values: GenerateFromAppointmentForm) => {
     if (!openGenerateModal || !canCreate || !generationReferences.ready || isGeneratingEntry || generateUncertain || missingGenerationAppointment) return;
+    if (values.paid_at) {
+      const paid = resolveClinicInput(values.paid_at);
+      if (!paid.ok) { generateForm.setError("paid_at", { message: clinicTimeError(paid) }); return; }
+    }
     generateFromAppointmentMutation.mutate(values);
   };
 
@@ -672,7 +682,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
                       </td>
                       <td className="p-2 font-semibold">{formatCurrency(entry.total_cents)}</td>
                       <td className="p-2">
-                        {entry.paid_at ? new Date(entry.paid_at).toLocaleString("pt-BR") : "-"}
+                        {entry.paid_at ? formatDateTime(entry.paid_at) : "-"}
                       </td>
                       <td className="p-2">
                           <div className="flex gap-2">
@@ -867,7 +877,8 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
 
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-semibold text-slate-700">Data/hora do pagamento</label>
-            <Input type="datetime-local" {...entryForm.register("paid_at")} />
+            <span className="block text-xs text-slate-500">Horário de São Paulo</span><Input type="datetime-local" {...entryForm.register("paid_at")} />
+            {entryForm.formState.errors.paid_at && <p role="alert" className="text-sm text-red-600">{entryForm.formState.errors.paid_at.message}</p>}
             <p className="mt-1 text-xs text-slate-500">
               Se o status estiver como Pago e este campo vazio, o sistema usa o horario atual.
             </p>
@@ -964,7 +975,8 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
 
             <div>
               <label className="mb-1 block text-sm font-semibold text-slate-700">Data/hora do pagamento</label>
-              <Input type="datetime-local" {...generateForm.register("paid_at")} />
+              <span className="block text-xs text-slate-500">Horário de São Paulo</span><Input type="datetime-local" {...generateForm.register("paid_at")} />
+            {generateForm.formState.errors.paid_at && <p role="alert" className="text-sm text-red-600">{generateForm.formState.errors.paid_at.message}</p>}
             </div>
 
             <div className="md:col-span-2">

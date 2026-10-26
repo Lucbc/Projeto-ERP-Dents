@@ -1,6 +1,10 @@
-﻿export function formatDateTime(value: string | null | undefined): string {
+import { CLINIC_TIME_ZONE } from "./clinic-zone";
+import { clinicTimeError, resolveClinicInput, toClinicInput } from "./clinic-time";
+export { CLINIC_TIME_ZONE } from "./clinic-zone";
+
+export function formatDateTime(value: string | null | undefined): string {
   if (!value) return "-";
-  return new Date(value).toLocaleString("pt-BR");
+  return new Date(value).toLocaleString("pt-BR", { timeZone: CLINIC_TIME_ZONE });
 }
 
 export function formatDate(value: string | null | undefined): string {
@@ -15,19 +19,18 @@ export function formatDate(value: string | null | undefined): string {
 }
 
 export function toInputDateTime(isoValue: string): string {
-  const date = new Date(isoValue);
-  const tzOffset = date.getTimezoneOffset() * 60_000;
-  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+  return toClinicInput(isoValue);
 }
 
 export function fromInputDateTime(input: string, original?: string): string {
-  // Minute-resolution editors must not truncate an untouched server timestamp.
-  // Keep the original string, including microseconds beyond JavaScript Date precision.
-  if (original && input === toInputDateTime(original)) return original;
-  return new Date(input).toISOString();
+  const result = resolveClinicInput(input, original);
+  if (!result.ok) throw new RangeError(clinicTimeError(result));
+  return result.iso;
 }
 
-export const CLINIC_TIME_ZONE = "America/Sao_Paulo";
+export function formatTime(value: string): string {
+  return new Date(value).toLocaleTimeString("pt-BR", { timeZone: CLINIC_TIME_ZONE, hour: "2-digit", minute: "2-digit" });
+}
 
 const clinicDateFormatter = new Intl.DateTimeFormat("en-US", {
   timeZone: CLINIC_TIME_ZONE, calendar: "gregory", numberingSystem: "latn",

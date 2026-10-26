@@ -1,25 +1,14 @@
+import { clinicalDate, clinicCalendarLocalizer, clinicMonthWindow, clinicSelection } from "@/lib/clinic-calendar";
+import { clinicIntervalIsPositive, clinicTimeError, resolveClinicInput, suggestedClinicEnd } from "@/lib/clinic-time";
 import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { isAxiosError } from "axios";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  addDays,
-  addMonths,
-  addWeeks,
-  endOfDay,
-  endOfWeek,
-  format,
-  getDay,
-  parse,
-  startOfDay,
-  startOfWeek,
-} from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useForm } from "react-hook-form";
-import { Calendar, type Event, type View, Views, dateFnsLocalizer } from "react-big-calendar";
+import { Calendar, type Event, type View, Views } from "react-big-calendar";
 import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
@@ -39,14 +28,7 @@ import { useAppointmentReferences } from "./use-appointment-references";
 import { useActionOptions } from "@/hooks/use-action-options";
 import type { Appointment, Procedure } from "@/types";
 
-const locales = { "pt-BR": ptBR };
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 1 }),
-  getDay,
-  locales,
-});
+
 
 const calendarMessages = {
   date: "Data",
@@ -87,10 +69,6 @@ const appointmentSchema = z
     end_at: z.string().min(1, "Data/hora final e obrigatoria."),
     status: z.enum(["scheduled", "confirmed", "completed", "cancelled"]),
     notes: z.string().optional(),
-  })
-  .refine((value) => new Date(value.end_at) > new Date(value.start_at), {
-    message: "Horario final deve ser maior que o inicial.",
-    path: ["end_at"],
   });
 
 type AppointmentForm = z.infer<typeof appointmentSchema>;
@@ -177,40 +155,18 @@ function calculateSuggestedDuration(
   }, 0);
 }
 
-function toSuggestedEndAt(startAtInput: string, durationMinutes: number): string | null {
-  if (!startAtInput || durationMinutes <= 0) return null;
 
-  const startDate = new Date(startAtInput);
-  if (Number.isNaN(startDate.getTime())) return null;
-
-  const suggestedEndAt = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
-  return toInputDateTime(suggestedEndAt.toISOString());
-}
 
 function formatPeriodLabel(currentDate: Date, currentView: View): string {
-  if (currentView === Views.DAY) {
-    return format(currentDate, "EEEE, dd/MM/yyyy", { locale: ptBR });
-  }
-
-  if (currentView === Views.WEEK) {
-    const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-    const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-    return `${format(start, "dd/MM/yyyy")} - ${format(end, "dd/MM/yyyy")}`;
-  }
-
-  return format(currentDate, "MMMM 'de' yyyy", { locale: ptBR });
+  const date = clinicalDate(currentDate);
+  if (currentView === Views.DAY) return date.toFormat("cccc, dd/MM/yyyy");
+  if (currentView === Views.WEEK) return `${date.startOf("week").toFormat("dd/MM/yyyy")} - ${date.endOf("week").toFormat("dd/MM/yyyy")}`;
+  return date.toFormat("MMMM 'de' yyyy");
 }
 
 function moveDateByView(currentDate: Date, currentView: View, direction: -1 | 1): Date {
-  if (currentView === Views.DAY) {
-    return addDays(currentDate, direction);
-  }
-
-  if (currentView === Views.WEEK) {
-    return addWeeks(currentDate, direction);
-  }
-
-  return addMonths(currentDate, direction);
+  const unit = currentView === Views.DAY ? "days" : currentView === Views.WEEK ? "weeks" : "months";
+  return clinicalDate(currentDate).plus({ [unit]: direction }).toJSDate();
 }
 
 function getStatusBorderColor(status: Appointment["status"]): string {
@@ -249,8 +205,7 @@ export function CalendarPage() {
 
 
 
-  const rangeFrom = startOfDay(addMonths(currentDate, -2)).toISOString();
-  const rangeTo = endOfDay(addMonths(currentDate, 2)).toISOString();
+  const { from: rangeFrom, to: rangeTo } = clinicMonthWindow(currentDate, 2);
 
   const form = useForm<z.input<typeof appointmentSchema>, unknown, AppointmentForm>({
     resolver: zodResolver(appointmentSchema),
@@ -435,7 +390,7 @@ export function CalendarPage() {
 
   const updateAutomaticEnd = (start: string, ids: string[]) => {
     if (manualEndOverride || !references.ready) return;
-    const end = toSuggestedEndAt(start, calculateSuggestedDuration(ids, procedureById));
+    const end = suggestedClinicEnd(start, calculateSuggestedDuration(ids, procedureById), editingAppointment?.start_at);
     if (end) form.setValue("end_at", end, { shouldDirty: true, shouldValidate: true });
   };
 
@@ -450,7 +405,7 @@ export function CalendarPage() {
   };
 
   const applySuggestedDuration = () => {
-    const suggestedEndAt = toSuggestedEndAt(form.getValues("start_at"), suggestedDurationMinutes);
+    const suggestedEndAt = suggestedClinicEnd(form.getValues("start_at"), suggestedDurationMinutes, editingAppointment?.start_at);
     if (!suggestedEndAt) return;
 
     setManualEndOverride(false);
@@ -501,6 +456,15 @@ export function CalendarPage() {
     if (availabilityReview.blocked || availabilityReview.reload.isPending) return;
     if (isSubmitting || deleteReview || editConflict || !references.ready || missingReference) return;
     if (editingAppointment ? !canUpdate : !canCreate) return;
+    const start = resolveClinicInput(values.start_at, editingAppointment?.start_at);
+    const end = resolveClinicInput(values.end_at, editingAppointment?.end_at);
+    if (!start.ok) form.setError("start_at", { message: clinicTimeError(start) });
+    if (!end.ok) form.setError("end_at", { message: clinicTimeError(end) });
+    if (!start.ok || !end.ok) return;
+    if (!clinicIntervalIsPositive(start.iso, end.iso)) {
+      form.setError("end_at", { message: "Horario final deve ser maior que o inicial." });
+      return;
+    }
     if (editingAppointment) {
       updateMutation.mutate({ appointment: editingAppointment, payload: values });
       return;
@@ -516,6 +480,7 @@ export function CalendarPage() {
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">Horários de São Paulo.</p>
       <Card>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -559,7 +524,7 @@ export function CalendarPage() {
       {appointmentsQuery.data !== undefined && <Card>
         <div className="h-[720px]">
           <Calendar
-            localizer={localizer}
+            localizer={clinicCalendarLocalizer}
             events={events}
             startAccessor="start"
             endAccessor="end"
@@ -576,7 +541,7 @@ export function CalendarPage() {
               openEditModal((event as CalendarEvent).resource);
             }}
             selectable={canCreate}
-            onSelectSlot={(slot) => openCreateModal({ start: slot.start, end: slot.end })}
+            onSelectSlot={(slot) => openCreateModal(clinicSelection(slot, currentView))}
             eventPropGetter={(event) => {
               const currentEvent = event as CalendarEvent;
               const status = currentEvent.resource.status;

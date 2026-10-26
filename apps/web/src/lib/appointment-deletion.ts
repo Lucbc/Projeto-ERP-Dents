@@ -1,9 +1,10 @@
+import { formatDateTime } from "./datetime";
 import { isAxiosError } from "axios";
 import { getApiErrorMessage } from "@/lib/api";
 import type { Appointment } from "@/types";
 
 export function appointmentDeletionConfirmation(appointment: Appointment, dirty = false): string {
-  const when = new Date(appointment.start_at).toLocaleString("pt-BR");
+  const when = formatDateTime(appointment.start_at);
   return `Excluir a consulta salva de ${appointment.patient_name ?? "Paciente"}, em ${when}?\nExcluir esta consulta não cancela cobranças nem pagamentos já registrados.`
     + (dirty ? "\nAs alterações do rascunho não serão aplicadas pela exclusão." : "");
 }

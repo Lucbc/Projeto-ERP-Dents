@@ -62,3 +62,19 @@ it("retains only a review marker across remount and clears it on identity change
   changeSession("fictitious-session-b");
   expect(uncertainFinancialEntry(entry.id)).toBe(false);
 });
+
+it.each(["2018-11-04T00:30", "2019-02-16T23:30"])("rejects DST input %s before creating a payment attempt", async value => {
+  const pay = vi.spyOn(financialService,"markAsPaid").mockResolvedValue(operation);
+  setup();
+  const input = screen.getByLabelText(/Data do pagamento/);
+  fireEvent.change(input,{target:{value}});
+  fireEvent.click(screen.getByRole("button",{name:"Confirmar baixa integral"}));
+  expect(await screen.findByText(/horário de verão/)).toBeTruthy();
+  expect(pay).not.toHaveBeenCalled();
+  expect(uncertainFinancialEntry(entry.id)).toBe(false);
+  expect((input as HTMLInputElement).value).toBe(value);
+  fireEvent.change(input,{target:{value:"2020-01-07T22:30"}});
+  fireEvent.click(screen.getByRole("button",{name:"Confirmar baixa integral"}));
+  await waitFor(()=>expect(pay).toHaveBeenCalledTimes(1));
+  expect(pay.mock.calls[0][1]).toMatchObject({paid_at:"2020-01-08T01:30:00.000Z"});
+});

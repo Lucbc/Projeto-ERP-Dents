@@ -19,6 +19,32 @@ let client: QueryClient;
 afterEach(()=>{cleanup();client?.clear();vi.restoreAllMocks();});
 
 it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar evento"]] as const)(
+  "%s rejects nonexistent/repeated clinical hours before sending and retains the draft",async(_name,Page,button)=>{
+    const patientId="11111111-1111-4111-8111-111111111111", dentistId="22222222-2222-4222-8222-222222222222";
+    const appointment={id:"44444444-4444-4444-8444-444444444444",version:4,patient_id:patientId,dentist_id:dentistId,
+      patient_name:"Fictitious timezone",dentist_name:"Fictitious dentist",start_at:"2020-01-08T01:30:00Z",
+      end_at:"2020-01-08T02:30:00Z",status:"scheduled",notes:"Original",procedure_ids:[]} as Appointment;
+    vi.spyOn(appointmentService,"list").mockResolvedValue([appointment]);
+    vi.spyOn(patientService,"listAll").mockResolvedValue({items:[{id:patientId,full_name:"Fictitious timezone",active:true} as Patient],total:1});
+    vi.spyOn(dentistService,"listAll").mockResolvedValue({items:[{id:dentistId,full_name:"Fictitious dentist",active:true} as Dentist],total:1});
+    vi.spyOn(procedureService,"listAll").mockResolvedValue({items:[],total:0});
+    const update=vi.spyOn(appointmentService,"update").mockResolvedValue(appointment);
+    client=new QueryClient({defaultOptions:{queries:{retry:false},mutations:{retry:false}}});
+    const {container}=render(<QueryClientProvider client={client}><ToastProvider><Page /></ToastProvider></QueryClientProvider>);
+    const field=(name:string)=>container.querySelector(`[name="${name}"]`) as HTMLInputElement;
+    const edit=await screen.findByRole("button",{name:button,exact:true});
+    await waitFor(()=>expect((edit as HTMLButtonElement).disabled).toBe(false));fireEvent.click(edit);
+    await waitFor(()=>expect(field("start_at")?.disabled).toBe(false));
+    expect(field("start_at").value).toBe("2020-01-07T22:30");
+    for (const value of ["2018-11-04T00:30", "2019-02-16T23:30"]) {
+      fireEvent.change(field("start_at"),{target:{value}});
+      fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
+      await screen.findByText(/horário de verão/);
+      expect(update).not.toHaveBeenCalled();expect(field("start_at").value).toBe(value);
+    }
+  });
+
+it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar evento"]] as const)(
   "%s preserves untouched timestamps at microsecond precision and converts only an edited boundary",async(_name,Page,button)=>{
     const patientId="11111111-1111-4111-8111-111111111111", dentistId="22222222-2222-4222-8222-222222222222";
     const appointment={id:"44444444-4444-4444-8444-444444444444",version:4,patient_id:patientId,dentist_id:dentistId,
@@ -48,7 +74,7 @@ it.each([["lista",AppointmentsPage,"Editar"],["calendário",CalendarPage,"Editar
       fireEvent.click(screen.getByRole("button",{name:"Salvar",exact:true}));
       await waitFor(()=>expect(field("start_at")).toBeNull());
       expect(update.mock.calls.at(-1)![1]).toMatchObject({
-        [boundary]:new Date(changed).toISOString(),
+        [boundary]:new Date(changed+":00-03:00").toISOString(),
         [boundary==="start_at"?"end_at":"start_at"]:appointment[boundary==="start_at"?"end_at":"start_at"],
       });
     }

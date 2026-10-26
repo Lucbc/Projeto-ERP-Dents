@@ -1,6 +1,5 @@
-import { CLINIC_TIME_ZONE } from "./datetime";
+import { CLINIC_TIME_ZONE } from "./clinic-zone";
 
-// Kept separate until forms, filters and the calendar can adopt the same contract.
 // Never interpret a wall-clock form value with new Date(input): that uses the host zone.
 const formatter = new Intl.DateTimeFormat("en-US", {
   timeZone: CLINIC_TIME_ZONE, calendar: "gregory", numberingSystem: "latn",
@@ -13,6 +12,28 @@ export type ClinicTimeResult =
   | { ok: true; iso: string }
   | { ok: false; reason: "invalid" | "invalid-original" | "nonexistent" }
   | { ok: false; reason: "ambiguous"; candidates: string[] };
+
+export function clinicTimeError(result: Exclude<ClinicTimeResult, { ok: true }>): string {
+  if (result.reason === "nonexistent") return "Este horário não existe em São Paulo devido à mudança do horário de verão. Escolha outro horário.";
+  if (result.reason === "ambiguous") return "Este horário ocorreu duas vezes em São Paulo devido ao horário de verão. Mantenha o horário original ou escolha um horário fora da repetição.";
+  if (result.reason === "invalid-original") return "O horário original é inválido. Recarregue o registro antes de editar.";
+  return "Informe uma data e hora válidas no horário de São Paulo.";
+}
+
+export function suggestedClinicEnd(input: string, minutes: number, original?: string): string | null {
+  if (!input || !Number.isFinite(minutes) || minutes <= 0) return null;
+  const start = resolveClinicInput(input, original);
+  if (!start.ok) return null;
+  const end = new Date(Date.parse(start.iso) + minutes * 60_000);
+  if (!Number.isFinite(end.getTime())) return null;
+  try { return toClinicInput(end.toISOString()); } catch { return null; }
+}
+
+export function clinicIntervalIsPositive(start: string, end: string): boolean {
+  const micros = (iso: string) => BigInt(Date.parse(iso)) * 1000n +
+    BigInt((iso.match(/\.(\d+)/)?.[1] ?? "").padEnd(6, "0").slice(3, 6));
+  return micros(end) > micros(start);
+}
 
 function utcValue(wall: WallTime): number {
   const date = new Date(0);

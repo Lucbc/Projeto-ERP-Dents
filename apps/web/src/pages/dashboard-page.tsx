@@ -1,10 +1,11 @@
+import { formatTime } from "@/lib/datetime";
 import type { ReactNode } from "react";
 
 import { Card } from "@/components/ui/card";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
 import { useAuth } from "@/hooks/use-auth";
 import { useLiveQuery } from "@/hooks/use-live-query";
-import { useLocalDay } from "@/hooks/use-local-day";
+import { useClinicDay } from "@/hooks/use-clinic-day";
 import { usePermissions } from "@/hooks/use-permissions";
 import { appointmentStatusLabels } from "@/lib/labels";
 import { appointmentService, dentistService, patientService } from "@/lib/services";
@@ -26,7 +27,7 @@ function Count({ resource, userId }: { resource: "patients" | "dentists"; userId
 }
 
 function Today({ userId }: { userId: string }) {
-  const day = useLocalDay();
+  const day = useClinicDay();
   const query = useLiveQuery(["appointments", "dashboard-today", userId, day.from, day.to],
     signal => appointmentService.list(day, signal), isolated);
   if (query.accessDenied) return <p role="alert">Sem permissão para consultar a agenda. Entre novamente nesta página após revisar o acesso.</p>;
@@ -37,7 +38,7 @@ function Today({ userId }: { userId: string }) {
     {query.data && query.data.length > 0 && <div className="mt-3 space-y-2">
       {query.data.map(appointment => <div key={appointment.id} className="rounded-md border p-3 text-sm">
         <p className="font-semibold">{appointment.patient_name ?? "Paciente"}</p>
-        <p className="text-muted-foreground">Dentista: {appointment.dentist_name ?? "-"} | {new Date(appointment.start_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} - {new Date(appointment.end_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
+        <p className="text-muted-foreground">Dentista: {appointment.dentist_name ?? "-"} | {formatTime(appointment.start_at)} - {formatTime(appointment.end_at)}</p>
         <p>Status: {appointmentStatusLabels[appointment.status]}</p>
       </div>)}
     </div>}

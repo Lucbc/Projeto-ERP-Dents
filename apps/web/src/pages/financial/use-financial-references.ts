@@ -1,3 +1,4 @@
+import { clinicMonthWindow } from "@/lib/clinic-calendar";
 import { useContext } from "react";
 import { useActionOptions } from "@/hooks/use-action-options";
 import { usePermissions } from "@/hooks/use-permissions";
@@ -7,12 +8,7 @@ import { appointmentService, dentistService, patientService } from "@/lib/servic
 const readPatients = (signal: AbortSignal) => patientService.listAll({}, signal);
 const readDentists = (signal: AbortSignal) => dentistService.listAll({}, signal);
 export async function readFinancialAppointments(signal: AbortSignal) {
-  const now = new Date();
-  const from = new Date(now);
-  const to = new Date(now);
-  from.setMonth(from.getMonth() - 6);
-  to.setMonth(to.getMonth() + 6);
-  const items = await appointmentService.list({ from: from.toISOString(), to: to.toISOString() }, signal);
+  const items = await appointmentService.list(clinicMonthWindow(new Date(), 6), signal);
   return { items: items.filter(item => item.status !== "cancelled") };
 }
 

@@ -7,7 +7,7 @@ process.on('unhandledRejection',()=>{console.error('Financial history browser fa
 (async()=>{
  const credentials=JSON.parse(fs.readFileSync(0,'utf8'));
  const browser=await chromium.launch({channel:'chrome',headless:true});
- const context=await browser.newContext({ignoreHTTPSErrors:false,viewport:{width:1440,height:1100}});
+ const context=await browser.newContext({ignoreHTTPSErrors:false,timezoneId:credentials.timezoneId,viewport:{width:1440,height:1100}});
  try {
   const page=await context.newPage();
   stage='login';await page.goto('https://localhost:18444/login');
@@ -37,10 +37,16 @@ process.on('unhandledRejection',()=>{console.error('Financial history browser fa
    else await route.continue();
   });
   await row(page).getByRole('button',{name:'Baixar',exact:true}).click();
+  if(credentials.clinicalPayment) await page.getByLabel(/Data do pagamento/).fill('2020-01-07T22:30');
   await page.getByRole('button',{name:'Confirmar baixa integral'}).click();
   await page.getByRole('button',{name:'Consultar/repetir esta operação'}).click();
   await page.getByText('Operação anterior recuperada. Confira o estado atual e o histórico.',{exact:true}).waitFor();
   let history=(await api('GET',endpoint+'/payments')).body;assert.equal(history.length,1);
+  if(credentials.clinicalPayment) {
+   assert.equal(paymentBody.paid_at,'2020-01-08T01:30:00.000Z');
+   assert.equal(Date.parse(history[0].paid_at),Date.parse('2020-01-08T01:30:00Z'));
+   await page.getByText(/07\/01\/2020, 22:30:00/).first().waitFor();
+  }
   assert.equal(history[0].reference_snapshot.patient.name,'Fictitious original reference');
   await page.getByRole('heading',{name:'Origem do lançamento',exact:true}).waitFor();
   assert.equal((await api('PUT','/api/patients/'+patient.id,{version:patient.version,full_name:'Fictitious renamed reference'})).status,200);

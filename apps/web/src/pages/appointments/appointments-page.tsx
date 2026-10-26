@@ -1,3 +1,5 @@
+import { clinicDayRange } from "@/lib/clinic-calendar";
+import { clinicIntervalIsPositive, clinicTimeError, resolveClinicInput, suggestedClinicEnd } from "@/lib/clinic-time";
 import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { useLiveQuery } from "@/hooks/use-live-query";
 import { LiveQueryStatus } from "@/components/ui/live-query-status";
@@ -16,7 +18,7 @@ import { Select } from "@/components/ui/select";
 import { EmptyState, ErrorState } from "@/components/ui/states";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
-import { fromInputDateTime, toInputDateTime } from "@/lib/datetime";
+import { formatDateTime, fromInputDateTime, toInputDateTime } from "@/lib/datetime";
 import { useCatalogDeletion } from "@/hooks/use-catalog-deletion";
 import { usePermissions } from "@/hooks/use-permissions";
 import { appointmentDeletionConfirmation } from "@/lib/appointment-deletion";
@@ -35,10 +37,6 @@ const appointmentSchema = z
     end_at: z.string().min(1, "Data/hora final é obrigatória."),
     status: z.enum(["scheduled", "confirmed", "completed", "cancelled"]),
     notes: z.string().optional(),
-  })
-  .refine((value) => new Date(value.end_at) > new Date(value.start_at), {
-    message: "Horário final deve ser maior que o inicial.",
-    path: ["end_at"],
   });
 
 type AppointmentForm = z.infer<typeof appointmentSchema>;
@@ -53,15 +51,7 @@ function calculateSuggestedDuration(
   }, 0);
 }
 
-function toSuggestedEndAt(startAtInput: string, durationMinutes: number): string | null {
-  if (!startAtInput || durationMinutes <= 0) return null;
 
-  const startDate = new Date(startAtInput);
-  if (Number.isNaN(startDate.getTime())) return null;
-
-  const suggestedEndAt = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
-  return toInputDateTime(suggestedEndAt.toISOString());
-}
 
 function formatProcedureList(
   procedureIds: string[] | undefined,
@@ -118,8 +108,8 @@ export function AppointmentsPage() {
     ["appointments", fromDate, toDate, dentistFilter, patientFilter],
     (signal) =>
       appointmentService.list({
-        from: fromDate ? new Date(`${fromDate}T00:00:00`).toISOString() : undefined,
-        to: toDate ? new Date(`${toDate}T23:59:59`).toISOString() : undefined,
+        from: fromDate ? clinicDayRange(fromDate).from : undefined,
+        to: toDate ? clinicDayRange(toDate).to : undefined,
         dentist_id: dentistFilter || undefined,
         patient_id: patientFilter || undefined,
       }, signal),
@@ -235,7 +225,7 @@ export function AppointmentsPage() {
 
   const updateAutomaticEnd = (start: string, ids: string[]) => {
     if (manualEndOverride || !references.ready) return;
-    const end = toSuggestedEndAt(start, calculateSuggestedDuration(ids, procedureById));
+    const end = suggestedClinicEnd(start, calculateSuggestedDuration(ids, procedureById), editingAppointment?.start_at);
     if (end) form.setValue("end_at", end, { shouldDirty: true, shouldValidate: true });
   };
 
@@ -250,7 +240,7 @@ export function AppointmentsPage() {
   };
 
   const applySuggestedDuration = () => {
-    const suggestedEndAt = toSuggestedEndAt(form.getValues("start_at"), suggestedDurationMinutes);
+    const suggestedEndAt = suggestedClinicEnd(form.getValues("start_at"), suggestedDurationMinutes, editingAppointment?.start_at);
     if (!suggestedEndAt) return;
 
     setManualEndOverride(false);
@@ -302,6 +292,15 @@ export function AppointmentsPage() {
   const onSubmit = (values: AppointmentForm) => {
     if (availabilityReview.blocked || isSubmitting || editConflict || !references.ready || missingReference) return;
     if (editingAppointment ? !canUpdate : !canCreate) return;
+    const start = resolveClinicInput(values.start_at, editingAppointment?.start_at);
+    const end = resolveClinicInput(values.end_at, editingAppointment?.end_at);
+    if (!start.ok) form.setError("start_at", { message: clinicTimeError(start) });
+    if (!end.ok) form.setError("end_at", { message: clinicTimeError(end) });
+    if (!start.ok || !end.ok) return;
+    if (!clinicIntervalIsPositive(start.iso, end.iso)) {
+      form.setError("end_at", { message: "Horario final deve ser maior que o inicial." });
+      return;
+    }
     if (editingAppointment) {
       updateMutation.mutate({ appointment: editingAppointment, payload: values });
       return;
@@ -313,6 +312,7 @@ export function AppointmentsPage() {
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">Horários de São Paulo.</p>
       {deletion.review && <div role="alert" className="rounded-sm border border-amber-300 p-3 space-y-2">
         <p>{deletion.review}</p>
         <p>Confira os dados atualizados e confirme novamente se ainda quiser excluir.</p>
@@ -320,8 +320,8 @@ export function AppointmentsPage() {
       </div>}
       <Card>
         <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_1fr_auto]">
-          <Input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-          <Input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+          <Input aria-label="Data inicial no horário de São Paulo" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+          <Input aria-label="Data final no horário de São Paulo" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
 
           <Select value={dentistFilter} onChange={(event) => setDentistFilter(event.target.value)}>
             <option value="">Todos dentistas</option>
@@ -377,8 +377,8 @@ export function AppointmentsPage() {
                       <td className="p-2 font-medium text-slate-800">{appointment.patient_name ?? "-"}</td>
                       <td className="p-2">{appointment.dentist_name ?? "-"}</td>
                       <td className="p-2">{formatProcedureList(appointment.procedure_ids, pageProcedureById)}</td>
-                      <td className="p-2">{new Date(appointment.start_at).toLocaleString("pt-BR")}</td>
-                      <td className="p-2">{new Date(appointment.end_at).toLocaleString("pt-BR")}</td>
+                      <td className="p-2">{formatDateTime(appointment.start_at)}</td>
+                      <td className="p-2">{formatDateTime(appointment.end_at)}</td>
                       <td className="p-2">{appointmentStatusLabels[appointment.status]}</td>
                       <td className="p-2">
                         {!canUpdate && !canDelete ? (

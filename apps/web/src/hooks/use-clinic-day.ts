@@ -1,19 +1,15 @@
 import { useSyncExternalStore } from "react";
+import { clinicDate } from "@/lib/datetime";
+import { clinicDayRange } from "@/lib/clinic-calendar";
 
-function dayStart() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  return start.toISOString();
-}
 
 function subscribe(notify: () => void) {
   let timer: ReturnType<typeof setTimeout>;
   const schedule = () => {
     clearTimeout(timer);
     notify();
-    const next = new Date();
-    next.setHours(24, 0, 0, 0);
-    timer = setTimeout(schedule, Math.max(1, next.getTime() - Date.now()));
+    const next = Date.parse(clinicDayRange(clinicDate()).to) + 1;
+    timer = setTimeout(schedule, Math.max(1, next - Date.now()));
   };
   schedule();
   document.addEventListener("visibilitychange", schedule);
@@ -27,10 +23,8 @@ function subscribe(notify: () => void) {
   };
 }
 
-/** Local browser day, including DST boundaries and return from suspended tabs. */
-export function useLocalDay() {
-  const from = useSyncExternalStore(subscribe, dayStart);
-  const end = new Date(from);
-  end.setHours(23, 59, 59, 999);
-  return { from, to: end.toISOString() };
+/** Clinical day, including DST boundaries and return from suspended tabs. */
+export function useClinicDay() {
+  const day = useSyncExternalStore(subscribe, clinicDate);
+  return clinicDayRange(day);
 }
