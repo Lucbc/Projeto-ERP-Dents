@@ -1,6 +1,6 @@
 # Entrada em uso — cadastros na clínica
 
-## Prioridade atual — 25/10/2026
+## Prioridade atual — 26/10/2026
 
 Por decisão do usuário, retomamos o plano principal enquanto aguardamos os dados do servidor. O piloto de cadastros já tem pacote para instalação assistida; não deve aguardar o encerramento de todas as melhorias. P3 físico interrompe a fila de melhorias quando houver informações para executá-lo. A sequência adicional de exceções de autenticação fica no backlog.
 
@@ -8,7 +8,7 @@ Base operacional de agenda/consulta e [datas financeiras 3B.2C/D](./homologacao-
 
 ## Situação do pacote
 
-**Liberado para instalação assistida: `piloto-cadastros-v0.1.20`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados; paginação entregue na U1.1. Busca por CPF sem pontuação/nome social aprovada na U1.2, incluindo CI `38902882227`. P4.2 acrescenta ferramentas operacionais; U1.3/U1.4 entregam busca por telefone sem pontuação e preservação de internacionais/ramais na edição. CI `38945859869` e atualização de API/web com preservação aprovados, sem nova migração. U1.5 aprovada no CI `38989240918` e Chrome/API: nomes com ou sem acentos. U1.6B acrescenta aviso de duplicidade na criação e atualização da biblioteca libexpat nas imagens de interface/proxies. U1.6C protege novas atribuições de CPF completo incluindo inativos e preserva documentos históricos ao editar. U1.6D valida formato/dígitos em novas atribuições de CPF e evita corte silencioso da entrada. U1.7 bloqueia nascimento futuro em novas atribuições e preserva históricos. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Não declarar os demais módulos liberados.
+**Liberado para instalação assistida: `piloto-cadastros-v0.1.21`.** [Liberação, evidências e limites](./LIBERACAO-PILOTO-CADASTROS.md). Aceites essenciais de instalação nova, recuperação e recepção aprovados; paginação entregue na U1.1. Busca por CPF sem pontuação/nome social aprovada na U1.2, incluindo CI `38902882227`. P4.2 acrescenta ferramentas operacionais; U1.3/U1.4 entregam busca por telefone sem pontuação e preservação de internacionais/ramais na edição. CI `38945859869` e atualização de API/web com preservação aprovados, sem nova migração. U1.5 aprovada no CI `38989240918` e Chrome/API: nomes com ou sem acentos. U1.6B acrescenta aviso de duplicidade na criação e atualização da biblioteca libexpat nas imagens de interface/proxies. U1.6C protege novas atribuições de CPF completo incluindo inativos e preserva documentos históricos ao editar. U1.6D valida formato/dígitos em novas atribuições de CPF e evita corte silencioso da entrada. U1.7 bloqueia nascimento futuro em novas atribuições e preserva históricos. Próximo P3: outro Windows, acesso de segunda estação, backup e reinício físico; começar cadastros reais após esse checklist. Não declarar os demais módulos liberados.
 
 ## Decisão de prioridade — 15/10/2026
 

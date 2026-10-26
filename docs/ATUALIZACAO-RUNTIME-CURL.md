@@ -16,8 +16,8 @@ Os achados estão em curl/libcurl 8.22.0-r0; correção disponível no Alpine em
 
 ## Aceites e publicação
 
-Em andamento: construir as quatro imagens, auditar as seis com base atualizada, validar cadastros na web corrigida e conferir CI (incluindo proxies/antivírus). Não repetir testes locais já aprovados da conversão clínica; seu módulo não mudou.
+Código `de970fa`: quatro imagens construídas (`.data/curl-runtime-build.log`), seis auditadas sem achados usando base de 26/10 (`.data/curl-runtime-audit.log`), e cadastros Chrome/API/SQL aprovados (`.data/curl-runtime-registration.log`), incluindo validação de CPF/nascimento, busca, conflito, RG e reinício/limpeza privados. [CI final 40324656344](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40324656344) aprovado: 479 frontend, 328 backend (605,094 s), builds/HTTP (incluindo proxies/antivírus) e auditorias de pacotes/seis imagens sem achados. Log `.data/curl-runtime-ci-final.log`; base de vulnerabilidades de 26/10 confirmada no CI e local. Não repetir testes locais já aprovados da conversão clínica; seu módulo não mudou. Containers principais e volumes preservados; ensaio operacional de atualização não repetido.
 
 Logs locais, fora do Git: `.data/clinic-time-ci-failed.log`, `.data/clinic-time-image-audit-fresh.log`, `.data/curl-runtime-build.log`.
 
-Instalação permanece v0.1.20 até o fechamento; destino previsto v0.1.21. Atualizar guias após os aceites, publicar tag e conferir HEAD/main/tag remoto e árvore limpa. Instalação física ainda pendente. Próximo trabalho funcional continua 3B.3B.2: integrar entrada, duração, filtros e calendário no mesmo fuso.
+Versão de instalação `piloto-cadastros-v0.1.21`, liberada para o piloto de cadastros com guias atualizados. Fechamento: publicar documentação/tag e conferir HEAD/main/tag remoto e árvore limpa. Instalação física ainda pendente. Próximo trabalho funcional continua 3B.3B.2: integrar entrada, duração, filtros e calendário no mesmo fuso.
