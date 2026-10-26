@@ -83,3 +83,8 @@ Inspeção estática e reprodução Node concluídas. Documentação e links loc
 ## Fechamento 3B.2C/D — 23/10/2026
 
 Etapa 3B.2 concluída: [atraso clínico e evidências C](./homologacao-etapa-3B-2C.md), [consolidação A/B/C e limites D](./homologacao-etapa-3B-2D.md). Código final `6f08e88`, CI 40000877678 aprovado (328 backend, 427 frontend, builds/HTTP e seis imagens sem achados), versão de instalação v0.1.19. Próximo: 3B.3 — horários, entradas e filtros da agenda. Este fechamento substitui as próximas ações históricas acima. P3 físico prioritário quando houver os dados do servidor.
+
+
+## Integração 3B.3B.2 — 26/10/2026
+
+Horários clínicos integrados nas telas, filtros, calendário e consumidores compartilhados. [Aceites de componentes, Chrome, API, SQL e CI](./homologacao-etapa-3B-3B-2.md). Versão de instalação v0.1.22; sem migração/configuração nova. Próximo: 3B.4, contrato de offset/null/omissão da API; depois 3B.5 e aceite operacional ampliado. R20 permanece aberto para a matriz final. P3 físico prioritário. Este ponto substitui as próximas ações históricas acima.

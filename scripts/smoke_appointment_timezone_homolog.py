@@ -21,16 +21,24 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         return sql(f'''SELECT row_to_json(a)::text FROM "{schema}".appointments a
                        WHERE id='{appointment['id']}' ''')
     original = snapshot()
+    edge_patient = create('/api/patients', {'full_name': 'Fictitious Last Microsecond'})
+    edge = create('/api/appointments', {'patient_id': edge_patient['id'], 'dentist_id': dentist['id'],
+        'start_at': '2020-01-07T15:00:00Z', 'end_at': '2020-01-07T15:01:00Z'})
+    # Private historical fixture: isolate the inclusive filter contract from availability rules.
+    sql(f'''UPDATE "{schema}".appointments SET start_at=timestamptz '2020-01-08T02:59:59.999998Z',
+            end_at=timestamptz '2020-01-08T02:59:59.999999Z' WHERE id='{edge['id']}' ''')
     creations = [create('/api/patients', {'full_name': 'Fictitious Clinical Create ' + str(i)}) for i in range(4)]
     browser(request, email, password, token, container, ready, passed, sql, schema,
             browser_script='smoke_appointment_timezone_homolog.cjs',
-            browser_input={'fixtureName': name, 'dentistName': dentist['full_name'], 'appointmentId': appointment['id'], 'creations': creations})
+            browser_input={'fixtureName': name, 'dentistName': dentist['full_name'], 'appointmentId': appointment['id'],
+                           'edgeId': edge['id'], 'creations': creations})
     assert snapshot() == original, 'Read-only diagnosis modified the appointment'
     for i, patient in enumerate(creations):
+        start, end, status, version = (14, 15, 'cancelled', 2) if i < 3 else (12, 13, 'scheduled', 1)
         assert sql(f'''SELECT count(*) FROM "{schema}".appointments
-          WHERE patient_id='{patient['id']}' AND start_at=timestamptz '2020-01-{8+i:02d}T12:00:00Z'
-          AND end_at=timestamptz '2020-01-{8+i:02d}T13:00:00Z' ''') == '1'
-    passed('SQL: reference unchanged; four UI creations saved clinical instants across four zones')
+          WHERE patient_id='{patient['id']}' AND start_at=timestamptz '2020-01-{8+i:02d}T{start}:00:00Z'
+          AND end_at=timestamptz '2020-01-{8+i:02d}T{end}:00:00Z' AND status='{status}' AND version={version} ''') == '1'
+    passed('SQL: reference unchanged; four UI creations and three cross-zone reschedules/cancellations preserved instants and versions')
 
 
 if __name__ == '__main__':
