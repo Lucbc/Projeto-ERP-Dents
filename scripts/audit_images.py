@@ -40,6 +40,17 @@ def main():
         counts = Counter(v['Severity'] for v in findings)
         failed |= any(v['Severity'] in ('HIGH','CRITICAL') for v in findings)
         print(service+': '+json.dumps(dict(counts)))
+        # CI has no access to the local JSON after its runner is removed. Report
+        # actionable package metadata only, never image config, env or raw scanner logs.
+        for finding in findings:
+            if finding['Severity'] in ('HIGH', 'CRITICAL', 'MEDIUM'):
+                print(service+': '+json.dumps({key: finding.get(key, '') for key in (
+                    'VulnerabilityID', 'PkgName', 'InstalledVersion', 'FixedVersion', 'Severity')}))
+    metadata = cache/'db/metadata.json'
+    if metadata.exists():
+        db = json.loads(metadata.read_text(encoding='utf-8'))
+        print('vulnerability database: '+json.dumps({key: db.get(key, '') for key in (
+            'UpdatedAt', 'DownloadedAt', 'NextUpdate')}))
     return int(failed)
 
 

@@ -14,7 +14,9 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
-## Ponto de retomada — 25/10/2026
+## Ponto de retomada — 26/10/2026
+
+**Retomada 26/10 — bloqueio de auditoria:** CI `40259611481` de `1ddf8d2` aprovou 479 frontend, 328 backend e HTTP, mas recusou imagens (web/gateway/edge: 2 HIGH, 2 MEDIUM, 44 LOW; clamav: 1 HIGH, 1 MEDIUM, 22 LOW). Auditoria local inicialmente sem achados usou cache de 25/10, ainda dentro da validade automática; atualizar somente a base de vulnerabilidades e reproduzir antes de decidir correções. `.data/clinic-time-ci-failed.log`, `.data/clinic-time-image-audit-fresh.log`. Integração 3B.3B.2 ainda não iniciada; não ignorar o bloqueio nem promover nova tag enquanto houver pendência.
 
 **3B.3B.1 — base de conversão, 25/10:** módulo `clinic-time.ts` implementado sem integrar parcialmente o produto. `toClinicInput`/`resolveClinicInput` usam São Paulo/IANA, rejeitam entradas inválidas e horários inexistentes, expõem as alternativas de horas ambíguas e preservam string original/microssegundos quando inalterada. 50 testes em cada um dos três fusos (150 execuções), utilitário real no Chrome nos três fusos e TypeScript/build aprovados. Esses aceites são do módulo, não de telas/API/SQL. [Contrato, início e evidências](./diagnostico-etapa-3B-3B.md). Publicar código e conferir CI; não promover nova instalação nesta subetapa. Piloto permanece v0.1.20. Próximo 3B.3B.2: integrar entrada, filtros, duração e calendário em conjunto, incluindo consumidores compartilhados e mensagens de erro; aplicar os aceites integrados já planejados.
 
