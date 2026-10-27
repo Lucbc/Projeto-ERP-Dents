@@ -2,6 +2,8 @@
 
 ## Estado atual — 27/10/2026
 
+Preparação da etapa 4 [inventariada](./plano-etapa-4.md). Próximo depende de definir com a clínica a prioridade e a leitura das novas evoluções; proposta e aceites concretos registrados. Nenhuma ampliação do piloto de cadastros.
+
 **Percurso operacional ampliado aprovado:** [recepção até pagamento](./homologacao-percurso-operacional.md), mesmo paciente/consulta, três sessões e evidências por interface/HTTP/SQL. Próximo: preparação da etapa 4, atendimento/prontuário, com escopo clínico a definir. A sequência abaixo fica como histórico; nenhum módulo adicional foi liberado para produção.
 
 Datas e horários concluídos na [matriz 3B.5](./homologacao-etapa-3B-5.md), com limites por camada e R21 residual explícitos. Instalação vigente: `piloto-cadastros-v0.1.23`. Próximo: executar o percurso recepção → consulta → dentista → lançamento → pagamento com o mesmo paciente fictício, conforme critérios da matriz. As referências de versão e próximas ações abaixo são históricas. P3 físico segue prioritário; liberação permanece restrita aos cadastros.
