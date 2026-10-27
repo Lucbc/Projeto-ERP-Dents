@@ -88,3 +88,8 @@ Etapa 3B.2 concluída: [atraso clínico e evidências C](./homologacao-etapa-3B-
 ## Integração 3B.3B.2 — 26/10/2026
 
 Horários clínicos integrados nas telas, filtros, calendário e consumidores compartilhados. [Aceites de componentes, Chrome, API, SQL e CI](./homologacao-etapa-3B-3B-2.md). Versão de instalação v0.1.22; sem migração/configuração nova. Próximo: 3B.4, contrato de offset/null/omissão da API; depois 3B.5 e aceite operacional ampliado. R20 permanece aberto para a matriz final. P3 físico prioritário. Este ponto substitui as próximas ações históricas acima.
+
+
+## Diagnóstico 3B.4A — 26/10/2026
+
+[Contrato e matriz HTTP/SQL](./diagnostico-etapa-3B-4.md) concluídos com conexões UTC/São Paulo. Sem alteração do produto; instalação v0.1.22 preservada. Próximo 3B.4B: rejeição controlada de null/offset inválidos e preservação de omissão, precisão e recuperação exata de recibos financeiros antigos. Não substituir o schema de geração de forma que bloqueie esses recibos antes da consulta de idempotência.
