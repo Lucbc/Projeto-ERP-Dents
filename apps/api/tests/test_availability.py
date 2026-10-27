@@ -84,8 +84,8 @@ class AvailabilityTests(unittest.TestCase):
         repo,patients,dentists,procedures=Mock(),Mock(),Mock(),Mock()
         dentists.get.return_value=SimpleNamespace(active=False,availability=[])
         uc=AppointmentUseCases(repo,patients,dentists,procedures)
-        data=dict(patient_id='patient',dentist_id='dentist',start_at=datetime(2030,1,7,8),
-            end_at=datetime(2030,1,7,9),status='cancelled')
+        data=dict(patient_id='patient',dentist_id='dentist',start_at=datetime(2030,1,7,11,tzinfo=timezone.utc),
+            end_at=datetime(2030,1,7,12,tzinfo=timezone.utc),status='cancelled')
         uc.create(dict(data));repo.create.assert_called_once()
         with self.assertRaises(ValidationError): uc.create({**data,'end_at':data['start_at']})
         self.assertEqual(repo.create.call_count,1)
