@@ -4,7 +4,7 @@
 
 Por decisão do usuário, retomamos o plano principal enquanto aguardamos os dados do servidor. O piloto de cadastros já tem pacote para instalação assistida; não deve aguardar o encerramento de todas as melhorias. P3 físico interrompe a fila de melhorias quando houver informações para executá-lo. A sequência adicional de exceções de autenticação fica no backlog.
 
-Base operacional de agenda/consulta e [datas financeiras 3B.2C/D](./homologacao-etapa-3B-2D.md) concluídas. Preservação da precisão dos horários entregue em [3B.3A](./homologacao-etapa-3B-3A.md). Integração de fuso, filtros e calendário registrada em [3B.3B.2](./homologacao-etapa-3B-3B-2.md). Contrato de entrada da API concluído em [3B.4B](./homologacao-etapa-3B-4B.md). Próximo: consolidar a matriz 3B.5 e depois o aceite operacional ampliado, aproveitando as provas existentes. [Escopo e critérios da retomada](./RETOMADA-OPERACIONAL.md). A decisão de 15/10 abaixo é histórica; não impede essa retomada autorizada, nem amplia a liberação do piloto para outros módulos.
+Base operacional de agenda/consulta e [datas financeiras 3B.2C/D](./homologacao-etapa-3B-2D.md) concluídas. Preservação da precisão dos horários entregue em [3B.3A](./homologacao-etapa-3B-3A.md). Integração de fuso, filtros e calendário registrada em [3B.3B.2](./homologacao-etapa-3B-3B-2.md). Contrato de entrada da API concluído em [3B.4B](./homologacao-etapa-3B-4B.md). Matriz [3B.5 concluída](./homologacao-etapa-3B-5.md). Próximo: aceite operacional ampliado, aproveitando as provas existentes. [Escopo e critérios da retomada](./RETOMADA-OPERACIONAL.md). A decisão de 15/10 abaixo é histórica; não impede essa retomada autorizada, nem amplia a liberação do piloto para outros módulos.
 
 ## Situação do pacote
 

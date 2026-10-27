@@ -2,7 +2,7 @@
 
 **Prioridade atual — 25/10/2026:** plano principal retomado por autorização do usuário enquanto aguardamos os dados do servidor. Instalação física P3 do [piloto de cadastros](./PLANO-PILOTO-CADASTROS.md) tem prioridade assim que esses dados chegarem.
 
-**Status atual:** 3B.1, 3B.2, 3B.3 e contrato de instantes 3B.4 concluídos. [Aceites 3B.4B](./homologacao-etapa-3B-4B.md); instalação v0.1.23. Próximo: 3B.5, consolidar matriz e lacunas antes do aceite operacional ampliado. R21 de outros campos permanece separado. Consultar o [ponto de retomada](./PLANO-DE-EXECUCAO.md). As seções abaixo são históricas.
+**Status atual — 27/10:** 3B concluída, com [matriz final 3B.5 e limites](./homologacao-etapa-3B-5.md). R20 corrigido no escopo original; R21 de outros campos permanece separado. Instalação v0.1.23 preservada. Próximo: aceite operacional ampliado, da recepção ao pagamento. Consultar o [ponto de retomada](./PLANO-DE-EXECUCAO.md). As seções abaixo são históricas.
 
 ## Preparação 3B.P — 14/10/2026
 

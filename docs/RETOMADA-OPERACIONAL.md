@@ -1,5 +1,9 @@
 # Retomada da homologação operacional — 23/10/2026
 
+## Estado atual — 27/10/2026
+
+Datas e horários concluídos na [matriz 3B.5](./homologacao-etapa-3B-5.md), com limites por camada e R21 residual explícitos. Instalação vigente: `piloto-cadastros-v0.1.23`. Próximo: executar o percurso recepção → consulta → dentista → lançamento → pagamento com o mesmo paciente fictício, conforme critérios da matriz. As referências de versão e próximas ações abaixo são históricas. P3 físico segue prioritário; liberação permanece restrita aos cadastros.
+
 ## Decisão e objetivo
 
 Retomar o plano principal, por autorização do usuário, para entregar fluxos úteis à clínica. O piloto `piloto-cadastros-v0.1.18` continua disponível para instalação assistida. Não condicionar a digitação inicial ao encerramento de agenda, financeiro ou casos excepcionais de conexão. Instalação física P3 tem prioridade assim que houver os dados do outro Windows.

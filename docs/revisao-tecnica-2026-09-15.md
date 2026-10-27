@@ -341,6 +341,8 @@ Os registros parciais e o diagnóstico abaixo são históricos. Capacidade, inst
 
 ### R20 — P2 — Datas sem horário são tratadas como instantes UTC
 
+**Atualização em 27/10/2026: corrigido no escopo original.** [Matriz 3B.5](./homologacao-etapa-3B-5.md) reúne evidências por camada, versões e limitações. O diagnóstico abaixo é histórico; cobertura visual ampliada de eventos históricos/multidia e aceite operacional completo permanecem separados.
+
 **Reproduzido.** [datetime.ts](../apps/web/src/lib/datetime.ts#L6): `new Date('2000-01-15').toLocaleDateString('pt-BR')` resulta em `14/01/2000` no fuso de São Paulo. Isso afeta nascimento na lista de pacientes e em Consulta. A tabela financeira já usa uma conversão diferente, evidenciando a inconsistência.
 
 Além disso, o vencimento padrão usa `new Date().toISOString().slice(0, 10)` em [financial-page.tsx](../apps/web/src/pages/financial/financial-page.tsx#L329), podendo mudar para o dia seguinte após 21h em São Paulo. A geração pela consulta usa a data/hora recebida do banco sem conversão explícita ao fuso clínico. Horários no frontend dependem do fuso de cada computador, enquanto a validação da agenda fixa São Paulo.
