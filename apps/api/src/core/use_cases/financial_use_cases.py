@@ -210,11 +210,12 @@ class FinancialUseCases:
             existing = self.financial_repository.get_generation(key, request_hash)
             if existing is not None:
                 return existing
+        # Invalid legacy bodies may only recover an exact existing receipt, never write anew.
+        if operation_hash is None:
+            raise ValidationError('Informe o fuso da data de pagamento.')
         paid = data.get('status') in ('paid', FinancialEntryStatus.paid)
         if paid:
             self._payment_identity(key, actor)
-            if operation_hash is None:
-                raise ValidationError('Informe o fuso da data de pagamento.')
         appointment = self.appointment_repository.get(appointment_id)
         if appointment is None:
             raise NotFoundError("Consulta nao encontrada.")

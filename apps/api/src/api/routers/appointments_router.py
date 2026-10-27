@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from datetime import datetime
+from pydantic import AwareDatetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -40,8 +40,8 @@ def build_use_case(db: Session) -> AppointmentUseCases:
     dependencies=[Depends(require_permission("appointments", "view"))],
 )
 def list_appointments(
-    dt_from: datetime | None = Query(default=None, alias="from"),
-    dt_to: datetime | None = Query(default=None, alias="to"),
+    dt_from: AwareDatetime | None = Query(default=None, alias="from"),
+    dt_to: AwareDatetime | None = Query(default=None, alias="to"),
     dentist_id: UUID | None = None,
     patient_id: UUID | None = None,
     db: Session = Depends(get_db_dep),

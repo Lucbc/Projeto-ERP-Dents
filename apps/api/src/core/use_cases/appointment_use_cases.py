@@ -36,6 +36,9 @@ class AppointmentUseCases:
         dentist_id: UUID | None,
         patient_id: UUID | None,
     ) -> list[Appointment]:
+        for value in (dt_from, dt_to):
+            if value is not None:
+                self._validate_instant(value)
         return self.appointment_repository.list(dt_from, dt_to, dentist_id, patient_id)
 
     def get(self, appointment_id: UUID) -> Appointment:
@@ -67,6 +70,9 @@ class AppointmentUseCases:
         return self.appointment_repository.create(data)
 
     def update(self, appointment_id: UUID, data: dict) -> Appointment:
+        for field in ('patient_id', 'dentist_id', 'start_at', 'end_at', 'status'):
+            if field in data and data[field] is None:
+                raise ValidationError('Campos obrigatórios da consulta não podem ser nulos.')
         version = data.get('version')
         if type(version) is not int or version < 1:
             raise ValidationError("Reabra a consulta para obter a versão atual antes de salvar.")
@@ -119,8 +125,15 @@ class AppointmentUseCases:
             raise NotFoundError("Consulta nao encontrada.")
 
     def _validate_datetime(self, start_at: datetime, end_at: datetime) -> None:
+        self._validate_instant(start_at)
+        self._validate_instant(end_at)
         if end_at <= start_at:
             raise ValidationError("Horario final deve ser maior que o horario inicial.")
+
+    @staticmethod
+    def _validate_instant(value) -> None:
+        if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+            raise ValidationError('Informe data e hora com fuso explícito para a consulta.')
 
     def _ensure_patient_and_dentist_exist(self, patient_id: UUID, dentist_id: UUID) -> Dentist:
         patient = self.patient_repository.get(patient_id)

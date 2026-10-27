@@ -57,6 +57,8 @@ jobs:
           python scripts/smoke_homolog.py
           python scripts/smoke_cookie_homolog.py
           python scripts/smoke_agenda_homolog.py
+          python scripts/smoke_datetime_contract_homolog.py --db-zone UTC
+          python scripts/smoke_datetime_contract_homolog.py --db-zone America/Sao_Paulo
           python scripts/smoke_financial_homolog.py
           python scripts/smoke_financial_clinic_date_homolog.py
           python scripts/smoke_financial_overdue_homolog.py

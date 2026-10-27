@@ -14,7 +14,9 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
-## Ponto de retomada — 26/10/2026
+## Ponto de retomada — 27/10/2026
+
+**Início 3B.4B — 27/10, base `d5539d3`:** aplicar o contrato reproduzido: agenda exige instantes com fuso, null obrigatório é rejeitado, omissão/precisão preservadas; geração financeira inválida só pode recuperar recibo exato já existente. Aceites de schemas/casos de uso, HTTP/SQL em duas conexões, regressões integradas e CI. Instalação permanece v0.1.22 até aprovação; sem migração ou alteração dos containers principais.
 
 **3B.4A concluída — 26/10, base `618dc1a`:** [diagnóstico e contrato de offset/null/omissão](./diagnostico-etapa-3B-4.md) reproduzidos em HTTP/SQL privados com conexões UTC e São Paulo. Horários nulos/mistos e status null provocam 500 sem alterar a consulta; horários sem offset dependem da conexão e podem ser salvos fora da disponibilidade clínica validada. Omissão preserva microssegundos. Repetição exata de geração financeira sem offset recupera o lançamento original e deve ser preservada como compatibilidade, sem permitir novas gravações inválidas. Bootstrap/reinício/limpeza aprovados; volumes e containers principais preservados. Sem alteração funcional, nova tag ou CI completo repetido; instalação permanece v0.1.22. Publicar diagnóstico/docs e conferir remoto/árvore limpa.
 

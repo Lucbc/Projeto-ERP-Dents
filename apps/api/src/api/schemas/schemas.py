@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from src.core.domain.entities import (
     AppointmentStatus,
@@ -315,8 +315,8 @@ class AppointmentCreateRequest(BaseModel):
     patient_id: UUID
     dentist_id: UUID
     procedure_ids: list[UUID] = Field(default_factory=list)
-    start_at: datetime
-    end_at: datetime
+    start_at: AwareDatetime
+    end_at: AwareDatetime
     status: AppointmentStatus = AppointmentStatus.scheduled
     notes: str | None = None
 
@@ -326,10 +326,18 @@ class AppointmentUpdateRequest(BaseModel):
     patient_id: UUID | None = None
     dentist_id: UUID | None = None
     procedure_ids: list[UUID] | None = None
-    start_at: datetime | None = None
-    end_at: datetime | None = None
+    start_at: AwareDatetime | None = None
+    end_at: AwareDatetime | None = None
     status: AppointmentStatus | None = None
     notes: str | None = None
+
+    @field_validator('patient_id', 'dentist_id', 'start_at', 'end_at', 'status', mode='before')
+    @classmethod
+    def reject_explicit_null(cls, value):
+        # Omitted defaults are not validated; explicit null must not erase required fields.
+        if value is None:
+            raise ValueError('Este campo não pode ser nulo; omita para manter o valor atual.')
+        return value
 
 
 class AppointmentResponse(AppBaseSchema):
