@@ -2,6 +2,8 @@
 
 ## Estado atual — 27/10/2026
 
+Decisões da etapa 4 recebidas: evolução por consulta com rascunho/finalização/adendos e leitura por permissionamento. [Contrato 4A](./plano-etapa-4.md) definido; próximo 4A.1, persistência/autorização com testes isolados. As perguntas pendentes abaixo são históricas.
+
 Preparação da etapa 4 [inventariada](./plano-etapa-4.md). Próximo depende de definir com a clínica a prioridade e a leitura das novas evoluções; proposta e aceites concretos registrados. Nenhuma ampliação do piloto de cadastros.
 
 **Percurso operacional ampliado aprovado:** [recepção até pagamento](./homologacao-percurso-operacional.md), mesmo paciente/consulta, três sessões e evidências por interface/HTTP/SQL. Próximo: preparação da etapa 4, atendimento/prontuário, com escopo clínico a definir. A sequência abaixo fica como histórico; nenhum módulo adicional foi liberado para produção.

@@ -1,5 +1,26 @@
 # Etapa 4 — atendimento e prontuário
 
+## Decisões recebidas e contrato 4A — 27/10/2026
+
+O usuário aprovou evolução por consulta, escrita pelo dentista, com alergias/histórico em destaque, rascunho, finalização e adendos. A leitura será **baseada em permissionamento**. Estas decisões substituem as pendências e opções históricas abaixo. Contrato definido para implementação; nenhuma funcionalidade nova entregue ainda.
+
+### Autorização
+
+- Recurso próprio `clinical_records`, integrado ao permissionamento existente por perfil. Não foi solicitada uma nova camada de permissões individuais por usuário.
+- `view`: leitura das evoluções da clínica, inclusive de outros dentistas. Não fixar lista rígida de cargos: recepção/coordenação podem ler se receberem essa permissão explicitamente.
+- `create`: iniciar evolução; `update`: editar rascunho próprio, finalizar e acrescentar adendo próprio. Escritas também exigem `view`, usuário dentista vinculado e validação de autoria no servidor. Ler não autoriza editar/finalizar pelo outro dentista.
+- Sem endpoint de exclusão clínica nesta primeira entrega; `delete` não habilita remoção de evolução finalizada. A interface de permissões deve indicar a ação indisponível.
+- Novas permissões negadas inicialmente nos perfis existentes, até configuração explícita. Preservar todas as permissões dos recursos atuais; configurar o novo módulo será parte do aceite e do roteiro quando liberado.
+- Tratar a exceção administrativa somente no novo recurso: atualmente `can_access` e `require_permission` concedem acesso automático ao administrador. API, frontend e normalização precisam respeitar a permissão explícita do prontuário. Administrar acessos não equivale a ler conteúdo; não retirar poderes administrativos dos módulos atuais.
+- Revogação deve impedir novas leituras/escritas e retirar conteúdo da interface. Testar API direta, IDs trocados, resposta atrasada e troca de identidade com os mecanismos existentes.
+- Não expor evoluções por `PatientResponse` nem copiá-las para notas cadastrais/da agenda. Alergias e histórico já existentes continuam sob as permissões atuais do cadastro; esta entrega não promete ocultar esses campos antigos da recepção.
+
+### Próximo recorte
+
+**4A.1: persistência e autorização**, com migração aditiva e testes de domínio/API/PostgreSQL isolados. Implementar os requisitos de autoria, versão, finalização, adendo e preservação descritos abaixo antes da interface 4B. 4A só estará concluída após seus aceites; o contrato documental não é funcionalidade entregue. Instalação permanece v0.1.23.
+
+As seções seguintes preservam o inventário e a proposta original. A indicação de perguntas pendentes é histórica e foi substituída por este contrato.
+
 ## Preparação 4P — 27/10/2026
 
 Base `4232cf1`, instalação vigente `piloto-cadastros-v0.1.23`. Inventário estático concluído; escopo da primeira implementação e autorização de leitura pendentes de resposta da clínica. Nenhuma alteração de produto, banco ou instalação nesta preparação.
