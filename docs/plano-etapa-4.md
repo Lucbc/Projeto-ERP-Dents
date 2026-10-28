@@ -1,5 +1,9 @@
 # Etapa 4 — atendimento e prontuário
 
+## Estado atual — 28/10/2026
+
+[4A.1B concluída](./homologacao-etapa-4A-1B.md): persistência, idempotência, proteção de histórico/vínculos e CI integral aprovados. Próximo 4A.2: API, leitura paginada, permissionamento configurável e erros controlados de exclusão/reassociação. 4A continua em andamento; telas na 4B. Instalação v0.1.24 é um backport de segurança sem a migração clínica.
+
 ## Implementação em andamento — 27/10/2026
 
 [4A.1A concluída](./homologacao-etapa-4A-1A.md): núcleo de domínio e 14 testes aprovados, ainda sem banco/API/telas. Próximo 4A.1B: persistência transacional, idempotência e proteção de vínculos. Não considerar o contrato 4A inteiro concluído; instalação v0.1.23 preservada.

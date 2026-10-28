@@ -28,6 +28,10 @@ A primeira execução falhou no preparo ao inserir um perfil já criado pela mig
 
 ## Próximo passo e limites
 
+**Fechamento em 28/10/2026: 4A.1B concluída.** [CI 40615445075](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40615445075) aprovado no código `2b5b1ae`: 493 testes frontend, 364 backend (794,325 s), builds/HTTP e seis imagens sem achados. Inclui os 28 aceites clínicos. Log ignorado `.data/clinical-record-ci-final.log`. Nenhuma validação de navegador clínico ou atualização de produção foi realizada.
+
+O bloqueio de dependência descrito abaixo foi corrigido. O backport do piloto também passou em CI independente, conforme [manutenção v0.1.24](./ATUALIZACAO-DNS-PILOTO.md); essa tag não contém a migração 0026. As menções de CI em andamento abaixo são históricas.
+
 CI inicial [40615228879](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40615228879) interrompido na auditoria Python antes dos testes: dnspython 2.8.0 afetado por [GHSA-45c3-73f7-pv4m](https://github.com/rthalley/dnspython/security/advisories/GHSA-45c3-73f7-pv4m). Correção 2.9.0 e hashes em `2b5b1ae`; auditoria Python local sem achados. [Novo CI do desenvolvimento](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40615445075) em andamento. Backport separado para o piloto em `220117f`, sem migração 0026; [CI do piloto](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40615539827) também em andamento. Não publicar tag antes desses aceites.
 
-Concluir CI integral antes de encerrar 4A.1B. Depois integrar API e permissionamento real, incluindo configuração do novo recurso, exceção do admin, revogação e conflitos ao excluir/reassociar entidades com registro clínico. Leitura paginada e telas pertencem à integração seguinte. Não é homologação de prontuário em navegador nem liberação para uso clínico. 4A continua em andamento; P3 físico do piloto de cadastros mantém prioridade.
+Próximo 4A.2: integrar API e permissionamento real, incluindo configuração do novo recurso, exceção do admin, revogação e conflitos ao excluir/reassociar entidades com registro clínico. Leitura paginada deve respeitar a mesma autorização; telas vêm na 4B. Não é homologação de prontuário em navegador nem liberação para uso clínico. 4A continua em andamento; P3 físico do piloto de cadastros mantém prioridade.
