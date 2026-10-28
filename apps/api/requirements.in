@@ -10,4 +10,6 @@ passlib[bcrypt]==1.7.4
 bcrypt==3.2.2
 python-multipart==0.0.32
 email-validator==2.3.0
+# Security floor for DNS name decompression (GHSA-45c3-73f7-pv4m).
+dnspython==2.9.0
 pip==26.2.1
