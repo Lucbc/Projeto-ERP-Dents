@@ -28,4 +28,6 @@ A primeira execução falhou no preparo ao inserir um perfil já criado pela mig
 
 ## Próximo passo e limites
 
+CI inicial [40615228879](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40615228879) interrompido na auditoria Python antes dos testes: dnspython 2.8.0 afetado por [GHSA-45c3-73f7-pv4m](https://github.com/rthalley/dnspython/security/advisories/GHSA-45c3-73f7-pv4m). Correção 2.9.0 e hashes em `2b5b1ae`; auditoria Python local sem achados. [Novo CI do desenvolvimento](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40615445075) em andamento. Backport separado para o piloto em `220117f`, sem migração 0026; [CI do piloto](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40615539827) também em andamento. Não publicar tag antes desses aceites.
+
 Concluir CI integral antes de encerrar 4A.1B. Depois integrar API e permissionamento real, incluindo configuração do novo recurso, exceção do admin, revogação e conflitos ao excluir/reassociar entidades com registro clínico. Leitura paginada e telas pertencem à integração seguinte. Não é homologação de prontuário em navegador nem liberação para uso clínico. 4A continua em andamento; P3 físico do piloto de cadastros mantém prioridade.
