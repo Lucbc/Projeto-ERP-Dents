@@ -24,7 +24,7 @@ def docker(*args, check=True):
     return result
 
 
-def main(session_checks=None, report_name=None, extra_env=None, *, versioned_user_fixtures=True, setup_checks=None, api_command=None):
+def main(session_checks=None, report_name=None, extra_env=None, *, versioned_user_fixtures=True, setup_checks=None, api_command=None, verify_user_deletion=True):
     smoke.verify_target()
     db_info = json.loads(docker("inspect", "erp-dents-homolog-db-1").stdout)[0]
     db_env = dict(line.split("=", 1) for line in db_info["Config"]["Env"] if "=" in line)
@@ -122,10 +122,13 @@ def main(session_checks=None, report_name=None, extra_env=None, *, versioned_use
         docker("restart", name)
         assert ready()["needsBootstrap"] is False
         passed("setup remains closed after repeated requests and API restart")
-        sql(f'DELETE FROM "{schema}".users')
-        assert request("GET", "/api/auth/needs-bootstrap")[1]["needsBootstrap"] is False
-        assert request("POST", "/api/auth/bootstrap-admin", data, code)[0] == 409
-        passed("direct deletion in disposable schema does not reopen initialization")
+        if verify_user_deletion:
+            # Clinical fixtures intentionally retain authors through restrictive FKs.
+            # The standalone bootstrap acceptance still exercises this deletion.
+            sql(f'DELETE FROM "{schema}".users')
+            assert request("GET", "/api/auth/needs-bootstrap")[1]["needsBootstrap"] is False
+            assert request("POST", "/api/auth/bootstrap-admin", data, code)[0] == 409
+            passed("direct deletion in disposable schema does not reopen initialization")
     finally:
         if docker("inspect", name, check=False).returncode == 0:
             docker("rm", "-f", name)

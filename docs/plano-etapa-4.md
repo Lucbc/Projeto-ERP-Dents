@@ -2,6 +2,8 @@
 
 ## Estado atual — 28/10/2026
 
+[4A.2 implementada e aprovada localmente](./homologacao-etapa-4A-2.md): API clínica e configuração explícita por perfil, testes de domínio/SQL/HTTP/componentes/Chrome aprovados. CI integral pendente antes de fechar 4A. Próximo funcional: 4B, percurso de atendimento pela interface. Instalação permanece v0.1.24 sem migração clínica; guia de instalação não muda nesta entrega.
+
 [4A.1B concluída](./homologacao-etapa-4A-1B.md): persistência, idempotência, proteção de histórico/vínculos e CI integral aprovados. Próximo 4A.2: API, leitura paginada, permissionamento configurável e erros controlados de exclusão/reassociação. 4A continua em andamento; telas na 4B. Instalação v0.1.24 é um backport de segurança sem a migração clínica.
 
 ## Implementação em andamento — 27/10/2026

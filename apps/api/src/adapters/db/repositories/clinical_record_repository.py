@@ -1,6 +1,6 @@
-"""Transactional clinical storage; not yet exposed by HTTP routes."""
+"""Transactional clinical storage with current session and explicit grants."""
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 import json
 from uuid import UUID, uuid4
@@ -29,6 +29,8 @@ def _decode(value):
     for field in ('created_at', 'updated_at', 'finalized_at'):
         if data[field] is not None and not isinstance(data[field], datetime):
             data[field] = datetime.fromisoformat(data[field])
+        if data[field] is not None:
+            data[field] = data[field].astimezone(timezone.utc)
     data['context'] = ClinicalContext(**data['context']) if data['context'] is not None else None
     items = []
     for raw in data.pop('addenda', ()):
@@ -37,6 +39,7 @@ def _decode(value):
             item[field] = UUID(str(item[field]))
         if not isinstance(item['recorded_at'], datetime):
             item['recorded_at'] = datetime.fromisoformat(item['recorded_at'])
+        item['recorded_at'] = item['recorded_at'].astimezone(timezone.utc)
         items.append(ClinicalAddendum(**item))
     return ClinicalRecord(**data, addenda=tuple(items))
 
@@ -71,6 +74,18 @@ class SqlAlchemyClinicalRecordRepository:
         with users.administration_lock():
             self._authorize(users, actor_id, session_id, 'view')
             return self._load(record_id)
+
+    def list_for_patient(self, patient_id, *, actor_id, session_id, limit=20, offset=0):
+        if type(limit) is not int or not 1 <= limit <= 100 or type(offset) is not int or offset < 0:
+            raise ValidationError('Paginação clínica inválida.')
+        users = SqlAlchemyUserRepository(self.session)
+        with users.administration_lock():
+            self._authorize(users, actor_id, session_id, 'view')
+            params = {'patient': patient_id, 'limit': limit, 'offset': offset}
+            total = self.session.scalar(sql('SELECT count(*) FROM clinical_records WHERE patient_id=:patient'), params)
+            ids = self.session.scalars(sql('''SELECT id FROM clinical_records WHERE patient_id=:patient
+                ORDER BY created_at DESC,id DESC LIMIT :limit OFFSET :offset'''), params).all()
+            return {'items': [self._load(item) for item in ids], 'total': total}
 
     def execute(self, action, target_id, *, actor_id, session_id, key, version=None, text=None, reason=None):
         """Target is appointment on create, record otherwise. Commit receipt + result together.

@@ -46,7 +46,15 @@ function Reader({ user, children }: PropsWithChildren<{ user: User }>) {
     status, permissions: data?.permissions ?? {}, version: data?.version ?? null,
     online: query.online, isFetching: query.isFetching, dataUpdatedAt: query.dataUpdatedAt,
     refresh: query.refresh,
-    can: (resource, action) => Boolean(data && (user.role === "admin" || data.permissions[resource]?.[action])),
+    can: (resource, action) => {
+      if (!data) return false;
+      if (resource === "clinical_records") {
+        const grants = data.permissions[resource];
+        return Boolean(grants?.view && grants[action] && (action === "view" ||
+          (action !== "delete" && user.role === "dentist" && user.dentist_id)));
+      }
+      return user.role === "admin" || Boolean(data.permissions[resource]?.[action]);
+    },
   };
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

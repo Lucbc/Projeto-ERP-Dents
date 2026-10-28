@@ -72,7 +72,7 @@ def require_permission(resource: PermissionResource, action: PermissionAction) -
         current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db_dep),
     ) -> User:
-        if current_user.role == UserRole.admin:
+        if current_user.role == UserRole.admin and resource != 'clinical_records':
             return current_user
 
         repository = SqlAlchemyRolePermissionRepository(db)

@@ -7,7 +7,6 @@ from src.core.domain.exceptions import ForbiddenError, UnauthorizedError, Valida
 from src.core.permissions import (
     PERMISSION_RESOURCES,
     PermissionMatrix,
-    get_default_permissions,
     normalize_permissions,
 )
 from src.core.ports.repositories import RolePermissionRepository, UserRepository
@@ -30,9 +29,6 @@ class PermissionUseCases:
         return self.get_versioned(role)[1]
 
     def get_versioned(self, role: UserRole) -> tuple[int, PermissionMatrix]:
-        if role == UserRole.admin:
-            return 0, get_default_permissions(UserRole.admin)
-
         current = self.repository.get_by_role(role)
         # Defaults are an effective view; only an explicit update persists them.
         return (current.version if current else 0), normalize_permissions(role, current.permissions if current else None)
@@ -49,8 +45,8 @@ class PermissionUseCases:
             actor = self.user_repository.get(actor_id)
             if actor is None or not actor.is_active or actor.role != UserRole.admin:
                 raise ForbiddenError("Acesso restrito a administrador ativo.")
-            if role == UserRole.admin:
-                raise ValidationError("Permissões do perfil Administrador não podem ser alteradas.")
+            if role == UserRole.admin and set(permissions) != {'clinical_records'}:
+                raise ValidationError("No perfil Administrador, altere apenas a permissão de prontuário clínico.")
             if type(version) is not int or not 0 <= version < 2**63 - 1:
                 raise ValidationError('Informe uma versão válida das permissões.')
 

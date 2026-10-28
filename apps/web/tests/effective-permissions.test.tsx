@@ -28,6 +28,26 @@ const tree = (count = 3) => <QueryClientProvider client={client}><EffectivePermi
   {Array.from({ length: count }, (_, id) => <Consumer key={id} id={id} />)}
 </EffectivePermissionsProvider></QueryClientProvider>;
 const state = () => screen.getByTestId("consumer-0").textContent;
+
+function ClinicalConsumer() {
+  const access = useEffectivePermissions();
+  return <span data-testid="clinical">{["view", "create", "update", "delete"].map(action =>
+    String(access.can("clinical_records", action as "view" | "create" | "update" | "delete"))).join(":")}</span>;
+}
+
+it.each<UserRole>(["admin", "coordinator", "dentist", "reception"])("clinical access for %s requires explicit current read", async role => {
+  user = { ...user!, role, dentist_id: "fictitious-dentist" };
+  vi.mocked(permissionService.me).mockResolvedValue(matrix(true, role));
+  render(<QueryClientProvider client={client}><EffectivePermissionsProvider><ClinicalConsumer /></EffectivePermissionsProvider></QueryClientProvider>);
+  await tick(); expect(screen.getByTestId("clinical").textContent).toBe("false:false:false:false");
+  vi.mocked(permissionService.me).mockResolvedValue({ ...matrix(true, role), permissions: {
+    clinical_records: { view: true, create: true, update: true, delete: true },
+  } });
+  await tick(15_005);
+  expect(screen.getByTestId("clinical").textContent).toBe(role === "dentist" ? "true:true:true:false" : "true:false:false:false");
+  vi.mocked(permissionService.me).mockResolvedValue(matrix(true, role)); await tick(15_005);
+  expect(screen.getByTestId("clinical").textContent).toBe("false:false:false:false");
+});
 beforeEach(() => {
   vi.useFakeTimers(); focusManager.setFocused(true); onlineManager.setOnline(true);
   client = new QueryClient(); user = { id: "fictitious-user", role: "reception" } as User;

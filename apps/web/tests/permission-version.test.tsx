@@ -26,6 +26,33 @@ async function open(role: string) { fireEvent.click(await screen.findByRole("but
 const checkbox = (role: string) => screen.getByRole("checkbox", { name: new RegExp(`${role}: Pacientes.*Ver`) }) as HTMLInputElement;
 const save = () => screen.getByRole("button", { name: "Salvar Permissões" }) as HTMLButtonElement;
 
+it("administrator clinical read is explicit and saves only the clinical resource", async () => {
+  setup({ items: [item("admin", 0)] });
+  const update = vi.spyOn(permissionService, "update").mockImplementation(async (role, payload) => ({ role, ...payload, version: 1 }));
+  await open("Administrador");
+  const read = screen.getByRole("checkbox", { name: "Administrador: Prontuário clínico — Ver" }) as HTMLInputElement;
+  expect(read.checked).toBe(false);
+  expect(screen.queryByRole("checkbox", { name: /Administrador: Pacientes/ })).toBeNull();
+  for (const action of ["Criar", "Editar", "Excluir"]) {
+    expect((screen.getByRole("checkbox", { name: `Administrador: Prontuário clínico — ${action}` }) as HTMLInputElement).disabled).toBe(true);
+  }
+  fireEvent.click(read); fireEvent.click(save());
+  await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+  expect(update.mock.calls[0]).toEqual(["admin", { version: 0, permissions: {
+    clinical_records: { view: true, create: false, update: false, delete: false },
+  } }]);
+});
+
+it("clinical author actions require read and deletion is never selectable", async () => {
+  setup(); await open("Dentista");
+  const box = (action: string) => screen.getByRole("checkbox", { name: `Dentista: Prontuário clínico — ${action}` }) as HTMLInputElement;
+  expect(box("Criar").disabled).toBe(true);
+  fireEvent.click(box("Ver"));
+  expect(box("Criar").disabled).toBe(false);
+  expect(box("Editar").disabled).toBe(false);
+  expect(box("Excluir").disabled).toBe(true);
+});
+
 it("saving one profile and background refetch preserve another profile draft and its original version", async () => {
   setup();
   const update = vi.spyOn(permissionService, "update").mockImplementation(async (role, payload) => ({ role, ...payload, version: payload.version + 1 }));

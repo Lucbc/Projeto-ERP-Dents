@@ -20,6 +20,7 @@ PermissionResource: TypeAlias = Literal[
     "consultations",
     "financial",
     "financial_reversals",
+    "clinical_records",
 ]
 PermissionMatrix: TypeAlias = dict[str, dict[str, bool]]
 
@@ -38,6 +39,7 @@ PERMISSION_RESOURCES: tuple[PermissionResource, ...] = (
     "consultations",
     "financial",
     "financial_reversals",
+    "clinical_records",
 )
 
 
@@ -102,6 +104,10 @@ DEFAULT_ROLE_PERMISSIONS: dict[UserRole, PermissionMatrix] = {
     },
 }
 
+# Clinical content always requires an explicit grant, including administrators.
+for _matrix in DEFAULT_ROLE_PERMISSIONS.values():
+    _matrix['clinical_records'] = _deny_all()
+
 
 def get_default_permissions(role: UserRole) -> PermissionMatrix:
     return deepcopy(DEFAULT_ROLE_PERMISSIONS[role])
@@ -117,6 +123,12 @@ def normalize_permissions(role: UserRole, raw_permissions: dict | None) -> Permi
         current_actions = raw_permissions.get(resource, {})
         for action in PERMISSION_ACTIONS:
             normalized[resource][action] = bool(current_actions.get(action, defaults[resource][action]))
+        if role == UserRole.admin and resource != 'clinical_records':
+            normalized[resource] = _allow_all()
+    clinical = normalized['clinical_records']
+    clinical['delete'] = False
+    for action in ('create', 'update'):
+        clinical[action] = clinical[action] and clinical['view'] and role == UserRole.dentist
     return normalized
 
 
@@ -126,6 +138,10 @@ def can_access(
     resource: PermissionResource,
     action: PermissionAction,
 ) -> bool:
+    if resource == 'clinical_records':
+        grants = permissions.get(resource, {})
+        return bool(grants.get('view') is True and grants.get(action) is True
+                    and (action == 'view' or (action in ('create', 'update') and role == UserRole.dentist)))
     if role == UserRole.admin:
         return True
     return bool(permissions.get(resource, {}).get(action, False))

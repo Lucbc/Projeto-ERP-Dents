@@ -84,6 +84,7 @@ jobs:
           python scripts/smoke_consultation_refresh_homolog.py
           python scripts/smoke_permission_authorization_homolog.py
           python scripts/smoke_permission_version_homolog.py
+            python scripts/smoke_clinical_records_homolog.py
           python scripts/smoke_user_session_authorization_homolog.py
           python scripts/smoke_user_version_homolog.py
           python scripts/smoke_exams_homolog.py

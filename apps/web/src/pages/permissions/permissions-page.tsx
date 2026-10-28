@@ -21,7 +21,7 @@ import { permissionService } from "@/lib/services";
 import { cn } from "@/lib/utils";
 import type { PermissionAction, PermissionActions, PermissionResource, UserRole } from "@/types";
 
-const editableRoles: UserRole[] = ["coordinator", "dentist", "reception"];
+const editableRoles: UserRole[] = ["admin", "coordinator", "dentist", "reception"];
 
 type RoleMatrixDraft = Record<PermissionResource, PermissionActions>;
 type RoleDraft = { permissions: RoleMatrixDraft; version: number; review: boolean; reloading: boolean };
@@ -163,7 +163,9 @@ function PermissionsContent({ onDenied }: { onDenied: () => void }) {
   const saveRole = (role: UserRole) => {
     const roleDraft = draft[role];
     if (!roleDraft || roleDraft.review || roleDraft.reloading || updateMutation.isPending || accessLost) return;
-    updateMutation.mutate({ role, permissions: roleDraft.permissions, version: roleDraft.version });
+    const permissions = role === "admin"
+      ? { clinical_records: roleDraft.permissions.clinical_records } : roleDraft.permissions;
+    updateMutation.mutate({ role, permissions, version: roleDraft.version });
   };
 
   const reloadRole = async (role: UserRole) => {
@@ -216,13 +218,10 @@ function PermissionsContent({ onDenied }: { onDenied: () => void }) {
       <Card>
         <h2 className="font-display text-xl font-semibold text-slate-800">Permissões por Perfil</h2>
         <p className="text-sm text-slate-500">
-          O perfil Administrador sempre possui acesso total e não pode ser alterado.
+          O prontuário clínico exige permissão explícita de leitura, inclusive para o Administrador.
+          Criar e editar exigem leitura e são exclusivos do dentista autor. Registros clínicos não podem ser excluídos.
+          O Administrador mantém acesso total aos demais recursos.
         </p>
-      </Card>
-
-      <Card>
-        <h3 className="font-semibold text-slate-800">{userRoleLabels.admin}</h3>
-        <p className="mt-1 text-sm text-slate-600">Acesso total em todos os recursos.</p>
       </Card>
 
       {editableRoles.map((role) => {
@@ -287,7 +286,7 @@ function PermissionsContent({ onDenied }: { onDenied: () => void }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {permissionResources.map((resource) => (
+                      {permissionResources.filter(resource => role !== "admin" || resource === "clinical_records").map((resource) => (
                         <tr key={resource} className="border-b last:border-b-0">
                           <td className="p-2 font-medium text-slate-800">
                             {permissionResourceLabels[resource]}
@@ -297,7 +296,9 @@ function PermissionsContent({ onDenied }: { onDenied: () => void }) {
                               <input
                                 type="checkbox"
                                 aria-label={`${userRoleLabels[role]}: ${permissionResourceLabels[resource]} — ${permissionActionLabels[action]}`}
-                                disabled={!state || state.reloading || savingRole === role}
+                                disabled={!state || state.reloading || savingRole === role ||
+                                  (resource === "clinical_records" && (action === "delete" ||
+                                    (action !== "view" && (role !== "dentist" || !roleDraft.clinical_records.view))))}
                                 checked={Boolean(roleDraft[resource][action])}
                                 onChange={(event) =>
                                   togglePermission(role, resource, action, event.target.checked)

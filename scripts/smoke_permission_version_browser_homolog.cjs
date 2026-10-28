@@ -53,9 +53,27 @@ process.on('unhandledRejection',()=>{console.error('Permissions browser failed a
   const result=(await api('GET','/api/permissions')).body.items;
   assert.equal(result.find(x=>x.role==='reception').version,3);assert.equal(result.find(x=>x.role==='coordinator').version,2);
   await first.screenshot({path:path.resolve(__dirname,'../.data/homolog/permission-version-independent.png'),fullPage:true});
+  stage='clinical administrator explicit access';
+  await open(first,'Administrador');
+  const clinical=(role,action)=>first.getByRole('checkbox',{name:`${role}: Prontuário clínico — ${action}`,exact:true});
+  assert.equal(await clinical('Administrador','Ver').isChecked(),false);
+  for(const action of ['Criar','Editar','Excluir']) assert.equal(await clinical('Administrador',action).isDisabled(),true);
+  const clinicalList='/api/clinical-records?patient_id=00000000-0000-0000-0000-000000000001';
+  assert.equal((await api('GET',clinicalList)).status,403);
+  await clinical('Administrador','Ver').check();assert.equal((await save(first,'admin')).status(),200);
+  assert.equal((await api('GET',clinicalList)).status,200);
+  await clinical('Administrador','Ver').uncheck();assert.equal((await save(first,'admin')).status(),200);
+  assert.equal((await api('GET',clinicalList)).status,403);
+  stage='clinical dentist configuration';await open(first,'Dentista');
+  assert.equal(await clinical('Dentista','Criar').isDisabled(),true);
+  await clinical('Dentista','Ver').check();await clinical('Dentista','Criar').check();await clinical('Dentista','Editar').check();
+  assert.equal(await clinical('Dentista','Excluir').isDisabled(),true);
+  assert.equal((await save(first,'dentist')).status(),200);
+  await first.reload();await first.getByText('Permissões por Perfil',{exact:true}).waitFor();await open(first,'Dentista');
+  for(const action of ['Ver','Criar','Editar']) assert.equal(await clinical('Dentista',action).isChecked(),true);
   stage='revoked session';assert.equal((await api('POST','/api/auth/logout')).status,200);
   const revoked=await save(second,'reception');assert.equal(revoked.status(),401);
   await second.waitForURL('**/login');
-  console.log('PASS: two Chrome tabs reject stale permissions; failed reload keeps draft; explicit review and independent profile drafts persist; revoked session returns to login.');
+  console.log('PASS: two Chrome tabs reject stale permissions; explicit review preserves drafts; clinical admin read grants/revokes via UI and HTTP; dentist grants survive reload; revoked session returns to login.');
  } finally {await browser.close();}
 })().catch(()=>{console.error('Permissions browser failed at stage: '+stage);process.exitCode=1;});

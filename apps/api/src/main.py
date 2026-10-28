@@ -13,6 +13,7 @@ from src.api.error_boundary import SafeErrorMiddleware
 from src.api.routers.appointments_router import router as appointments_router
 from src.api.routers.auth_router import router as auth_router
 from src.api.routers.consultations_router import router as consultations_router
+from src.api.routers.clinical_records_router import router as clinical_records_router
 from src.api.routers.dentists_router import router as dentists_router
 from src.api.routers.exams_router import router as exams_router
 from src.api.routers.financial_router import router as financial_router
@@ -98,6 +99,7 @@ app.include_router(appointments_router)
 app.include_router(exams_router)
 app.include_router(permissions_router)
 app.include_router(consultations_router)
+app.include_router(clinical_records_router)
 app.include_router(procedures_router)
 app.include_router(specialties_router)
 app.include_router(financial_router)
