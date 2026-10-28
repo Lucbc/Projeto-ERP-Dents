@@ -497,7 +497,7 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
                       </td>
                       <td className="p-2">{patient.active ? "Sim" : "Nao"}</td>
                       <td className="p-2">
-                        {!canUpdate && !canDelete && !canViewExams ? (
+                        {!canUpdate && !canDelete && !canViewExams && !can("clinical_records", "view") ? (
                           <span className="text-slate-400">-</span>
                         ) : (
                           <div className="flex gap-2">
@@ -510,6 +510,9 @@ function PatientsContent({ onDenied }: { onDenied: () => void }) {
                               <Link to={`/patients/${patient.id}`}>
                                 <Button variant="outline">Exames</Button>
                               </Link>
+                            )}
+                            {can("clinical_records", "view") && (
+                              <Link to={`/patients/${patient.id}/clinical-records`} className="inline-flex items-center rounded-md border px-3 py-2 text-sm">Prontuário</Link>
                             )}
                             {canDelete && (
                               <Button

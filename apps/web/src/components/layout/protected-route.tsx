@@ -49,7 +49,7 @@ export function ProtectedRoute({
     return <div className="p-8 text-sm text-slate-600">Sem permissão para acessar esta página.</div>;
   }
 
-  if (permission && user.role !== "admin") {
+  if (permission && (user.role !== "admin" || permission.resource === "clinical_records")) {
     if (permissions.isLoading) {
       return <div className="p-8 text-sm text-slate-600">Carregando permissões...</div>;
     }

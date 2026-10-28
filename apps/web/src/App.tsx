@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/hooks/use-theme";
 import { AppointmentsPage } from "@/pages/appointments/appointments-page";
 import { CalendarPage } from "@/pages/appointments/calendar-page";
 import { ConsultationPage } from "@/pages/consultations/consultation-page";
+import { ClinicalRecordsPage } from "@/pages/clinical-records/clinical-records-page";
 import { DashboardPage } from "@/pages/dashboard-page";
 import { DentistsPage } from "@/pages/dentists/dentists-page";
 import { FinancialPage } from "@/pages/financial/financial-page";
@@ -53,6 +54,14 @@ const routes = createRoutesFromElements(<>
                   element={
                     <ProtectedRoute permission={{ resource: "exams", action: "view" }}>
                       <PatientExamsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="patients/:patientId/clinical-records"
+                  element={
+                    <ProtectedRoute permission={{ resource: "clinical_records", action: "view" }}>
+                      <ClinicalRecordsPage />
                     </ProtectedRoute>
                   }
                 />

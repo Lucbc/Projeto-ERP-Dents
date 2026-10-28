@@ -1,0 +1,74 @@
+const fs = require('node:fs'), assert = require('node:assert/strict');
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+let stage = 'start';
+(async () => {
+  const input = JSON.parse(fs.readFileSync(0, 'utf8'));
+  const browser = await chromium.launch({ channel: 'chrome', headless: true });
+  try {
+    const adminContext = await browser.newContext({ ignoreHTTPSErrors: false });
+    const readerContext = await browser.newContext({ ignoreHTTPSErrors: false, viewport: { width: 1440, height: 1000 } });
+    const admin = await adminContext.newPage(), reader = await readerContext.newPage();
+    async function login(page, email) {
+      await page.goto('https://localhost:18444/login');
+      await page.locator('[name=email]').fill(email); await page.locator('[name=password]').fill(input.password);
+      const pending = page.waitForResponse(r => r.url().endsWith('/api/auth/login') && r.request().method() === 'POST');
+      await page.getByRole('button', { name: 'Entrar', exact: true }).click();
+      const body = await (await pending).json();
+      await page.getByText('Pacientes cadastrados', { exact: true }).waitFor();
+      return { 'Content-Type': 'application/json', 'X-Session-ID': body.session_id, 'X-CSRF-Token': body.csrf_token };
+    }
+    stage = 'login';
+    const headers = await login(admin, input.email);
+    await login(reader, input.readerEmail);
+    const api = (method, path, data) => admin.evaluate(async ({ method, path, data, headers }) => {
+      const response = await fetch(path, { method, headers, body: data ? JSON.stringify(data) : undefined });
+      return { status: response.status, body: await response.json() };
+    }, { method, path, data, headers });
+    const route = '/patients/' + input.patientId + '/clinical-records';
+    let writes = 0;
+    reader.on('request', request => { if (request.url().includes('/api/clinical-records') && request.method() !== 'GET') writes++; });
+    stage = 'administrator default denial';
+    await admin.goto('https://localhost:18444' + route);
+    await admin.getByText('Sem permissão para acessar esta página.', { exact: true }).waitFor();
+    stage = 'reader entry and current context';
+    await reader.goto('https://localhost:18444/patients');
+    await reader.getByRole('row').filter({ hasText: 'Fictitious Clinical Reader Patient' }).getByRole('link', { name: 'Prontuário', exact: true }).click();
+    await reader.getByRole('heading', { name: 'Prontuário clínico', exact: true }).waitFor();
+    await reader.getByText('Fictitious current allergy', { exact: true }).waitFor();
+    await reader.getByText('Exibindo 1 a 10 de 11 evoluções.', { exact: true }).waitFor();
+    assert.equal(await reader.getByText('Rascunho — ainda não finalizado', { exact: true }).count(), 10);
+    stage = 'pagination original and addendum';
+    await reader.getByRole('button', { name: 'Mais evoluções', exact: true }).click();
+    await reader.getByText('Fictitious original evolution', { exact: true }).waitFor();
+    await reader.getByText('Fictitious historical allergy', { exact: true }).waitFor();
+    await reader.getByText('Fictitious correction', { exact: true }).waitFor();
+    assert.equal(await reader.getByRole('textbox').count(), 0);
+    assert.equal(await reader.getByRole('button', { name: /Salvar|Finalizar|Excluir/ }).count(), 0);
+    stage = 'different patient and reload';
+    await reader.goto('https://localhost:18444/patients/' + input.otherPatientId + '/clinical-records');
+    await reader.getByText('Nenhuma evolução registrada para este paciente.', { exact: true }).waitFor();
+    assert.equal(await reader.getByText('Fictitious original evolution', { exact: true }).count(), 0);
+    await reader.goto('https://localhost:18444' + route);
+    await reader.getByText('Exibindo 1 a 10 de 11 evoluções.', { exact: true }).waitFor();
+    await reader.reload(); await reader.getByText('Fictitious current allergy', { exact: true }).waitFor();
+    stage = 'clinical revocation';
+    const roles = await api('GET', '/api/permissions'); assert.equal(roles.status, 200);
+    const role = roles.body.items.find(item => item.role === 'reception');
+    role.permissions.clinical_records = { view: false, create: false, update: false, delete: false };
+    assert.equal((await api('PUT', '/api/permissions/reception', role)).status, 200);
+    await reader.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await reader.getByText(/Sem permissão para acessar esta página|Seu acesso ao prontuário foi encerrado/).first().waitFor();
+    assert.equal(await reader.getByText('Fictitious current allergy', { exact: true }).count(), 0);
+    assert.equal(await reader.getByText('Fictitious draft 10', { exact: true }).count(), 0);
+    assert.equal(writes, 0);
+    stage = 'dentist consultation context and entry';
+    const authorContext = await browser.newContext({ ignoreHTTPSErrors: false });
+    const author = await authorContext.newPage(); await login(author, input.authorEmail);
+    await author.goto('https://localhost:18444/consultation');
+    await author.getByRole('row').filter({ hasText: 'Fictitious Clinical Reader Patient' }).getByRole('button', { name: 'Abrir', exact: true }).click();
+    await author.getByText('Fictitious current allergy', { exact: true }).waitFor();
+    await author.getByRole('link', { name: 'Abrir prontuário', exact: true }).click();
+    await author.getByText('Exibindo 1 a 10 de 11 evoluções.', { exact: true }).waitFor();
+    console.log('PASS: Chrome non-dentist clinical reader, current/historical context, pagination, patient isolation, reload, admin denial and live revocation; zero clinical writes.');
+  } finally { await browser.close(); }
+})().catch(() => { console.error('Clinical reader browser failed at stage: ' + stage); process.exitCode = 1; });

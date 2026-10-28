@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import { Link } from "react-router-dom";
+import { ClinicalContextView } from "@/pages/clinical-records/clinical-context";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +31,7 @@ function Visit({ appointment }: { appointment: Appointment }) {
 }
 
 function Detail({ scope, patientId, guard }: { scope: string; patientId: string; guard: Guard }) {
+  const { can } = usePermissions();
   const query = useLiveQuery(["consultations", "patient-detail", scope, patientId],
     signal => guard(() => consultationService.getPatientDetail(patientId, undefined, signal)),
     { ...isolated, stopOnNotFound: true });
@@ -53,6 +56,8 @@ function Detail({ scope, patientId, guard }: { scope: string; patientId: string;
         {query.data.next_appointment ? <Visit appointment={query.data.next_appointment} />
           : <p className="text-sm">Sem próxima consulta agendada para este paciente.</p>}
       </div>
+      <ClinicalContextView title="Contexto atual do cadastro" context={query.data.patient} />
+      {can("clinical_records", "view") && <Link className="inline-block rounded-md border px-3 py-2" to={`/patients/${patientId}/clinical-records`}>Abrir prontuário</Link>}
     </div>}
   </Section>;
 }
