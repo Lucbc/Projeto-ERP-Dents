@@ -14,7 +14,9 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
-## Ponto de retomada — 27/10/2026
+## Ponto de retomada — 28/10/2026
+
+**Manutenção do piloto v0.1.24:** branch `release/pilot-v0.1.24`, base v0.1.23, somente dnspython 2.9.0 corrigido. [Aceites e composição](./ATUALIZACAO-DNS-PILOTO.md): CI 40615539827 aprovado, 493 frontend/336 backend, seis imagens sem achados e cadastros Chrome/API/SQL locais aprovados. Sem migração nova; esta branch não contém o prontuário em desenvolvimento. Para continuar desenvolvimento, usar main e seu ponto de retomada atual. Instalação física P3 prioritária; piloto restrito aos cadastros. Histórico abaixo preservado.
 
 **3B.4B concluída — 27/10:** código `33e4f5b` e fixture `5406e90` aprovados no [CI 40511579039](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40511579039): 493 testes frontend, 336 backend, HTTP/SQL UTC e São Paulo, builds e seis imagens sem achados. Chrome/API/SQL locais de agenda em quatro fusos e cadastros aprovados. Versão de instalação `piloto-cadastros-v0.1.23`, guias atualizados. Sem migração/configuração/reinício principal; volumes preservados. [Relatório e limites](./homologacao-etapa-3B-4B.md). **Próximo: 3B.5**, consolidar a matriz existente e identificar lacunas reais antes do aceite operacional ampliado. R21 de outros campos permanece separado. P3 físico prioritário quando chegarem os dados do servidor. Este checkpoint substitui as próximas ações históricas abaixo.
 

@@ -1,10 +1,10 @@
 # Atualização semanal do servidor Windows
 
-## Estado — 22/10/2026
+## Estado — 28/10/2026
 
 **P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
 
-**Versão atual: `piloto-cadastros-v0.1.23`.** A API rejeita horários sem fuso e campos obrigatórios nulos, preservando edições parciais e recuperação exata de cobranças antigas. Frente à v0.1.22, muda a imagem API, sem migração ou configuração nova. [Detalhes e aceites](./homologacao-etapa-3B-4B.md). O roteiro continua reconstruindo/substituindo as seis imagens para atender versões anteriores à correção musl da v0.1.17; preservar os mesmos volumes. Mantém a migração 0025 introduzida na v0.1.11 para instalações anteriores. Não manter APIs de versões diferentes gravando juntas. Após atualizar, recarregar as abas das estações; interfaces anteriores à v0.1.11 não enviam o identificador de tentativa. A liberação operacional continua restrita ao piloto de cadastros.
+**Versão atual: `piloto-cadastros-v0.1.24`.** Corrige dnspython na API, a partir da v0.1.23, sem migração ou configuração nova. [Composição e aceites](./ATUALIZACAO-DNS-PILOTO.md). Este pacote permanece na migração 0025 e não inclui o prontuário em desenvolvimento na `main`; usar a tag indicada. O roteiro continua reconstruindo/substituindo as seis imagens para atender versões anteriores à correção musl da v0.1.17; preservar os mesmos volumes. Mantém a migração 0025 introduzida na v0.1.11 para instalações anteriores. Não manter APIs de versões diferentes gravando juntas. Após atualizar, recarregar as abas das estações; interfaces anteriores à v0.1.11 não enviam o identificador de tentativa. A liberação operacional continua restrita ao piloto de cadastros.
 
 Somente o suporte atualiza o servidor. As estações continuam usando a mesma URL e não precisam instalar pacotes. Fazer a manutenção em janela combinada, com um único operador e todos os usuários fora do sistema até o aceite final.
 
