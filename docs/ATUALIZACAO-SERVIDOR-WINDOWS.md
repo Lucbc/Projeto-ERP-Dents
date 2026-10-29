@@ -1,10 +1,10 @@
 # Atualização semanal do servidor Windows
 
-## Estado — 28/10/2026
+## Estado — 29/10/2026
 
 **P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).
 
-**Versão atual: `piloto-cadastros-v0.1.24`.** Corrige dnspython na API, a partir da v0.1.23, sem migração ou configuração nova. [Composição e aceites](./ATUALIZACAO-DNS-PILOTO.md). Este pacote permanece na migração 0025 e não inclui o prontuário em desenvolvimento na `main`; usar a tag indicada. O roteiro continua reconstruindo/substituindo as seis imagens para atender versões anteriores à correção musl da v0.1.17; preservar os mesmos volumes. Mantém a migração 0025 introduzida na v0.1.11 para instalações anteriores. Não manter APIs de versões diferentes gravando juntas. Após atualizar, recarregar as abas das estações; interfaces anteriores à v0.1.11 não enviam o identificador de tentativa. A liberação operacional continua restrita ao piloto de cadastros.
+**Versão atual: `piloto-cadastros-v0.1.25`.** Inclui o prontuário e a migração aditiva **0026**, mantendo a correção dnspython da v0.1.24. Ler as [notas específicas e aceites da atualização](./ATUALIZACAO-PRONTUARIO-V25.md) antes da manutenção. Banco, cadastros e exames foram preservados nos ensaios isolados; não há nova variável de configuração. O roteiro reconstrói/substitui as seis imagens para cobrir instalações anteriores; preservar os mesmos volumes. O acesso clínico começa negado em todos os perfis. A entrada em uso continua focada nos cadastros; não habilitar novos módulos automaticamente. Não manter APIs de versões diferentes gravando juntas; após atualizar, recarregar as abas das estações.
 
 Somente o suporte atualiza o servidor. As estações continuam usando a mesma URL e não precisam instalar pacotes. Fazer a manutenção em janela combinada, com um único operador e todos os usuários fora do sistema até o aceite final.
 
@@ -22,7 +22,7 @@ O suporte pode executar `scripts/check-update-version.ps1` de uma cópia das fer
 Exemplo, substituindo a tag pelo destino aprovado e o caminho pela instalação real:
 
 ```powershell
-.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.24'
+.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.25'
 ```
 
 O comando exige histórico completo, árvore de trabalho limpa, tag local no formato do piloto, destino igual ou descendente do commit atual e presença dos arquivos básicos de implantação. Exibe somente identificadores Git e mensagens de estado. Não lê `.env`, não faz fetch/checkout e não chama Docker.
@@ -34,11 +34,11 @@ Se indicar que o código já está na versão escolhida, ainda é necessário co
 1. Avisar a indisponibilidade, retirar os usuários e registrar o início da janela. Escolher um cadastro existente para verificar depois, sem copiar dados pessoais para logs ou Git.
 2. Parar o gateway antes do [backup completo](./BACKUP-RECUPERACAO.md). Isso bloqueia os pedidos à API; a página pode continuar aparecendo no navegador. HTTPS/edge permanece ligado para permitir a cópia dos certificados. Conferir manifesto e ausência de `INCOMPLETE`; preservar cópia anterior e garantir destino separado. Se falhar, não avançar para troca de versão.
 3. **O script de backup tenta reiniciar a API ao terminar, inclusive após falha. O gateway permanece parado, mantendo o bloqueio.** Manter os usuários fora e parar novamente a API antes da troca.
-4. Aplicar a tag aprovada e construir/substituir os serviços previstos nas notas, preservando nome do projeto, configuração, TLS e volumes. Não executar `down -v`, limpeza de volumes ou downgrade automático. Os blocos abaixo cobrem o piloto sem mudança de banco, dependências ou infraestrutura; versões com novas migrações exigem notas e ensaio próprios.
+4. Aplicar a tag aprovada e construir/substituir os serviços previstos nas notas, preservando nome do projeto, configuração, TLS e volumes. Não executar `down -v`, limpeza de volumes ou downgrade automático. Para v0.1.25, a API aplica a migração 0026 ao iniciar; ler suas notas específicas e conferir o resultado antes de reabrir o acesso.
 5. Verificar estado dos serviços, migrações e HTTPS sem ignorar certificado. Conferir login individual, busca por nome/CPF, paginação, abertura e edição autorizada, além de conferir cadastros anteriores. Se houver exames, verificar acesso a um arquivo anterior. Não registrar conteúdo clínico nos relatórios.
 6. Reabrir o acesso somente após essas verificações. Registrar versões, horário de início/fim, resultado e responsável, sem segredos/dados pessoais. Em cada estação, recarregar a página e entrar novamente se necessário.
 
-### Comandos para o piloto sem nova migração
+### Comandos para a v0.1.25 — com migração 0026
 
 **Somente no servidor da clínica, nunca neste ambiente de desenvolvimento.** Executar cada bloco separadamente e parar em qualquer erro. Antes, concluir a conferência de versão e a preparação do destino de backup. Não colar todos os blocos sem verificar seus resultados.
 
@@ -62,7 +62,7 @@ Substituir data/unidade. Conferir a cópia antes de seguir. Se a imagem original
 ```powershell
 docker @composeArgs stop -t 60 api
 if ($LASTEXITCODE -ne 0) { throw 'API ainda nao confirmada como parada.' }
-git checkout --detach piloto-cadastros-v0.1.24
+git checkout --detach piloto-cadastros-v0.1.25
 if ($LASTEXITCODE -ne 0) { throw 'Troca de versao falhou; manter manutencao.' }
 git rev-parse HEAD
 docker @composeArgs config --quiet
@@ -71,7 +71,7 @@ docker @composeArgs build api web gateway edge db clamav
 if ($LASTEXITCODE -ne 0) { throw 'Construcao falhou; manter manutencao.' }
 ```
 
-Conferir o commit exibido com a versão aprovada. Para v0.1.24, o roteiro mantém a troca das seis imagens para cobrir versões anteriores; frente à v0.1.23, mudou a dependência dnspython da API. A versão principal do PostgreSQL permanece 16. Com API e gateway parados e backup conferido, recriar banco/antivírus e aguardar saúde antes de subir a API. Preservar os volumes existentes; nunca usar `down -v`. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo do PostgreSQL inclui essa tabela. Não apagá-la nem executar downgrade para contornar erros: isso removeria a proteção de tentativas já processadas.
+Conferir o commit exibido com a versão aprovada. A v0.1.25 altera API/web e acrescenta tabelas clínicas; mantém a troca das seis imagens para cobrir versões anteriores. A versão principal do PostgreSQL permanece 16. Com API e gateway parados e backup conferido, recriar banco/antivírus e aguardar saúde antes de subir a API. Preservar os volumes existentes; nunca usar `down -v`. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo inclui os comprovantes cadastrais e clínicos. Não apagá-los nem executar downgrade: isso removeria histórico e proteção de tentativas já processadas.
 
 ```powershell
 docker @composeArgs up -d --no-deps --force-recreate --wait --wait-timeout 180 db clamav
@@ -92,6 +92,8 @@ Os proxies são recriados para resolver o endereço da API substituída. A parti
 Manter a manutenção, preservar código/configuração/volumes e a cópia anterior. Registrar a etapa e o erro sem segredos. Acionar o suporte para avaliar se a falha é de aplicação, infraestrutura ou migração. Não repetir comandos de escrita indiscriminadamente, não reverter código supondo que isso reverta o banco e não restaurar uma cópia antiga sobre registros novos.
 
 A recuperação validada usa ambiente isolado. A decisão de substituir produção e tratar registros posteriores ao backup é assistida; não há restauração destrutiva automática neste procedimento.
+
+Com prontuários gravados, a migração 0026 recusa downgrade destrutivo. Não tentar contornar a proteção nem voltar à imagem v0.1.24 sobre o banco atualizado. Recuperar uma cópia anterior ao prontuário também remove, nessa cópia, tudo o que foi registrado depois; preservar o estado atual e analisar a recuperação com o suporte.
 
 ## Evidências e próximo passo
 

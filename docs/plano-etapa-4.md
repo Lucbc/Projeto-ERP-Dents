@@ -2,6 +2,8 @@
 
 ## Estado atual — 29/10/2026
 
+**4C.3 em consolidação:** [v0.1.25](./ATUALIZACAO-PRONTUARIO-V25.md) preparada com a integração da branch de manutenção, guias e cadastros novamente validados. Publicar tag após conferir o verificador de avanço a partir da v0.1.24. Aplicação e scripts operacionais continuam no código aprovado pelo CI `40879673431`; somente histórico Git e documentação mudaram.
+
 [4C.2 concluída](./homologacao-etapa-4C-2.md): backup completo Windows, restauração de banco/arquivos/configuração/TLS e retomada por API/Chrome aprovados; CI `40879673431` aprovado no código `4eb6ef5` (517 frontend/368 backend, builds/HTTP e seis imagens sem achados). **Próximo 4C.3:** integração da branch da instalação v0.1.24, consolidação dos guias e preparação da próxima versão. [Guia do prontuário](./PRONTUARIO-CLINICO.md) pronto para o pacote futuro. Ainda não há nova tag de instalação.
 
 [4C.1 concluída](./homologacao-etapa-4C-1.md): migração isolada da instalação v0.1.24, preservação de tabelas, dump/restauração e retomada clínica pela API aprovados. **4C.2 pendente:** backup operacional completo com exames e navegador restaurado. Ainda não ampliar instalação nem considerar toda a fase 4C concluída.

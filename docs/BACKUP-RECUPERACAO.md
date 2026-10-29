@@ -2,7 +2,7 @@
 
 ## Estado em 29/10/2026
 
-O [aceite 4C.2](./homologacao-etapa-4C-2.md) também comprovou backup/restauração completos com rascunho, evolução finalizada, adendo e recibos clínicos, usando banco/volumes privados. Login, exames antigos/novos, Chrome e persistência após reinício passaram. A instalação liberada continua v0.1.24; a incorporação do prontuário ao pacote depende da consolidação da versão e dos guias. Os comandos de backup da clínica abaixo não mudaram.
+O [aceite 4C.2](./homologacao-etapa-4C-2.md) também comprovou backup/restauração completos com rascunho, evolução finalizada, adendo e recibos clínicos, usando banco/volumes privados. Login, exames antigos/novos, Chrome e persistência após reinício passaram. A [instalação v0.1.25](./ATUALIZACAO-PRONTUARIO-V25.md) inclui esse conjunto; o acesso clínico começa negado. Os comandos de backup da clínica abaixo não mudaram. Após a migração 0026, não tentar downgrade ou restauração sobre os dados atuais para contornar falhas; seguir recuperação assistida em destino separado.
 
 Backup assistido implementado; restauração de banco/exames e funcionamento da aplicação recuperada comprovados com dados fictícios em `erp-dents-homolog`. API/frontend privados usaram banco/volume restaurados, configuração de autenticação e certificados do backup, com endereço/porta de teste. Login, cadastro/edição, exames e reinício passaram. **Isso ainda não é uma instalação em outro computador nem um roteiro de troca de produção aprovado.**
 

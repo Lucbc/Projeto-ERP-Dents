@@ -1,6 +1,6 @@
 # Instalação na clínica — servidor Windows
 
-Atualizado em 28/10/2026. Dados serão cadastrados do zero, em outro computador Windows.
+Atualizado em 29/10/2026. Dados serão cadastrados do zero, em outro computador Windows.
 
 ## Como será o uso
 
@@ -8,9 +8,11 @@ O servidor fica ligado e concentra o programa, banco e exames. Cada estação ab
 
 O sistema apresenta horários no fuso de São Paulo, inclusive quando uma estação está configurada em outro fuso. Não é necessário configurar o fuso dentro do programa. Mantenha data e hora do Windows sincronizadas automaticamente.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.24`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.25`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
+
+A v0.1.25 inclui a migração 0026 e o prontuário, inicialmente sem acesso em todos os perfis. Para começar os cadastros, não é necessário habilitá-lo. Consulte as [notas do pacote](./ATUALIZACAO-PRONTUARIO-V25.md); quem já possui instalação deve seguir o roteiro de atualização, sem recriar configuração ou volumes.
 
 Informação provisória do responsável: Windows 10 Home ou 11 Home, possivelmente 16 GB de RAM; confirmar no computador antes de instalar. Abrir `winver` para conferir edição/versão e **Configurações → Sistema → Sobre** para RAM/processador. A edição Home admite containers Linux, que são os utilizados pelo ERP; não comprar uma atualização para Pro apenas por esse motivo. A versão/build do Windows, WSL e virtualização ainda precisam atender aos requisitos oficiais abaixo. Não considerar qualquer Windows 10 automaticamente compatível ou ainda suportado.
 
@@ -38,7 +40,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.24
+git checkout piloto-cadastros-v0.1.25
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1

@@ -1,6 +1,6 @@
 # Prontuário clínico — guia de uso
 
-**Preparação para a próxima versão.** O fluxo está implementado e homologado no desenvolvimento; não integra a instalação `piloto-cadastros-v0.1.24`. Usar este guia após a liberação do pacote que inclua o prontuário e a configuração dos acessos pelo responsável.
+**Incluído na v0.1.25, com acesso inicialmente negado.** O início dos cadastros não depende de habilitar o prontuário. Usar este guia quando o responsável decidir iniciar o fluxo clínico e configurar os acessos. Conferir as [notas da versão](./ATUALIZACAO-PRONTUARIO-V25.md).
 
 ## Acesso
 
