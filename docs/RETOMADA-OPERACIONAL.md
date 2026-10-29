@@ -2,6 +2,8 @@
 
 ## Estado atual — 29/10/2026
 
+**6A concluída:** [matriz de evidências e lacunas](./homologacao-etapa-6A.md). Próximo: 6B.1, medir carga/uso simultâneo de cadastros, agenda e leitura clínica em ambiente privado. Depois, usabilidade e financeiro com perfil restrito. Estimativa de usuários/pacientes pendente, baseline provisória documentada. Instalação v0.1.25 e prioridade P3 preservadas. Os próximos passos anteriores abaixo são históricos.
+
 Primeiro fluxo clínico 4A–4C concluído, incluindo migração, permissões, interface e recuperação completa. Pacote [v0.1.25 publicado](./ATUALIZACAO-PRONTUARIO-V25.md), cadastros novamente homologados e pronto para instalação assistida; acesso clínico inicialmente negado. P3 físico continua prioritário quando houver dados do servidor. Enquanto aguarda, próxima etapa 6A: consolidar matriz final de homologação/carga/usabilidade sem repetir os aceites já aprovados nem iniciar novos módulos. As próximas ações abaixo são históricas.
 
 Decisões da etapa 4 recebidas: evolução por consulta com rascunho/finalização/adendos e leitura por permissionamento. [Contrato 4A](./plano-etapa-4.md) definido; próximo 4A.1, persistência/autorização com testes isolados. As perguntas pendentes abaixo são históricas.
