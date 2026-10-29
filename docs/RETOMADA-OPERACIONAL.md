@@ -1,6 +1,8 @@
 # Retomada da homologação operacional — 23/10/2026
 
-## Estado atual — 27/10/2026
+## Estado atual — 29/10/2026
+
+Primeiro fluxo clínico 4A–4C concluído, incluindo migração, permissões, interface e recuperação completa. Pacote [v0.1.25 publicado](./ATUALIZACAO-PRONTUARIO-V25.md), cadastros novamente homologados e pronto para instalação assistida; acesso clínico inicialmente negado. P3 físico continua prioritário quando houver dados do servidor. Enquanto aguarda, próxima etapa 6A: consolidar matriz final de homologação/carga/usabilidade sem repetir os aceites já aprovados nem iniciar novos módulos. As próximas ações abaixo são históricas.
 
 Decisões da etapa 4 recebidas: evolução por consulta com rascunho/finalização/adendos e leitura por permissionamento. [Contrato 4A](./plano-etapa-4.md) definido; próximo 4A.1, persistência/autorização com testes isolados. As perguntas pendentes abaixo são históricas.
 

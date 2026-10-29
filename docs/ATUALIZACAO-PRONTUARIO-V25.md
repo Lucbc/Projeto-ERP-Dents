@@ -43,6 +43,8 @@ O [backup completo](./BACKUP-RECUPERACAO.md) inclui banco, exames, configuraçã
 | Migração | [4C.1](./homologacao-etapa-4C-1.md): imagem v0.1.24/0025 com dados fictícios migrou para 0026, preservando todas as linhas anteriores; dump/restauração, gatilhos e recuperação clínica por API aprovados |
 | Backup completo | [4C.2](./homologacao-etapa-4C-2.md): script Windows real, exames/configuração/TLS/manifesto, banco e arquivos idênticos, login, Chrome, edição e reinício restaurados aprovados |
 | Cadastros no pacote | Chrome/API/PostgreSQL aprovados novamente: CPF, nascimento, documentos legados, permissões, busca, conflito, reabertura e RG preservados. Log local `.data/pilot-v25-registration.log` |
-| Continuidade Git | Merge da manutenção v0.1.24 sem alteração da árvore de arquivos; ancestralidade confirmada. Verificação da tag pelo script será registrada ao publicar |
+| Continuidade Git | Merge `c021b1e` sem alteração da árvore de arquivos; ancestralidade confirmada. `check-update-version.ps1` aprovou checkout limpo v0.1.24 (`aedbde0`) → tag v0.1.25 (`505528f`) |
 
 Nenhum container principal foi recriado para este pacote. Os aceites usam somente recursos e dados fictícios de homologação. A edição/recursos do outro computador Windows e a rede local ainda precisam ser confirmados na instalação física.
+
+**Publicação conferida:** tag remota `piloto-cadastros-v0.1.25` aponta para `505528f45216202e1005213aad33c6150e5b49a5`. A consolidação documental posterior em main não move a tag nem altera aplicação, imagens ou scripts validados.
