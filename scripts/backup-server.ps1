@@ -1,6 +1,7 @@
 param(
     [Parameter(Mandatory = $true)][string]$Destination,
-    [ValidateSet('prod', 'homolog')][string]$Environment = 'prod'
+    [ValidateSet('prod', 'homolog')][string]$Environment = 'prod',
+    [string]$HomologFixture
 )
 $ErrorActionPreference = 'Stop'
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) { throw 'Este comando requer Windows para proteger o backup.' }
@@ -11,6 +12,20 @@ $envFile = Join-Path $root '.env'
 if ($Environment -eq 'homolog') {
     $composeFile = Join-Path $root 'docker-compose.homolog.yml'
     $envFile = Join-Path $root '.env.homolog'
+}
+$fixture = $null
+if ($HomologFixture) {
+    if ($Environment -ne 'homolog') { throw 'Fixture permitida somente em homologacao.' }
+    $fixturePath = (Resolve-Path -LiteralPath $HomologFixture).Path
+    $fixtureRoot = [IO.Path]::GetFullPath((Join-Path $root '.data/homolog')) + [IO.Path]::DirectorySeparatorChar
+    if (-not $fixturePath.StartsWith($fixtureRoot, [StringComparison]::OrdinalIgnoreCase)) { throw 'Fixture fora da homologacao local.' }
+    $fixture = Get-Content -LiteralPath $fixturePath -Raw | ConvertFrom-Json
+    if ($fixture.operation -notmatch '^[a-f0-9]{32}$') { throw 'Identificador de fixture invalido.' }
+    $fixturePrefix = 'erp-dents-homolog-full-' + $fixture.operation
+    if ($fixture.api -ne ($fixturePrefix + '-api') -or $fixture.edge -ne ($fixturePrefix + '-web') -or
+        $fixture.database -ne ('clinical_full_' + $fixture.operation) -or
+        $fixture.examVolume -ne ($fixturePrefix + '-exams')) { throw 'Destinos temporarios de fixture invalidos.' }
+    $envFile = Join-Path (Split-Path -Parent $fixturePath) 'server.env'
 }
 function Invoke-BackupDocker {
     param([string[]]$Arguments)
@@ -51,9 +66,21 @@ $target = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPat
 if (Test-Path -LiteralPath $target) { throw 'Destino existente preservado. Escolha uma pasta nova para cada backup.' }
 if (-not (Test-Path -LiteralPath (Split-Path -Parent $target) -PathType Container)) { throw 'A pasta pai do destino deve existir.' }
 if (-not (Test-Path -LiteralPath $envFile -PathType Leaf)) { throw 'Configuracao local ausente.' }
-$db = Invoke-BackupDocker ($compose + @('ps', '-q', 'db'))
-$api = Invoke-BackupDocker ($compose + @('ps', '-q', 'api'))
-$edge = Invoke-BackupDocker ($compose + @('ps', '-q', 'edge'))
+if ($fixture) {
+    $db = Invoke-BackupDocker @('inspect', '--format', '{{.Id}}', 'erp-dents-homolog-db-1')
+    $api = Invoke-BackupDocker @('inspect', '--format', '{{.Id}}', $fixture.api)
+    $edge = Invoke-BackupDocker @('inspect', '--format', '{{.Id}}', $fixture.edge)
+    foreach ($id in @($api, $edge)) {
+        if ((Invoke-BackupDocker @('inspect', '--format', '{{index .Config.Labels "erp.homolog.fixture"}}', $id)) -ne $fixture.operation) { throw 'Container nao pertence a fixture.' }
+    }
+    $fixtureApiEnv = (Invoke-BackupDocker @('inspect', '--format', '{{json .Config.Env}}', $api)) | ConvertFrom-Json
+    $fixtureUrl = @($fixtureApiEnv | Where-Object { $_.StartsWith('DATABASE_URL=') })
+    if ($fixtureUrl.Count -ne 1 -or ([Uri]$fixtureUrl[0].Substring(13)).AbsolutePath -ne ('/' + $fixture.database)) { throw 'Banco da API difere da fixture.' }
+} else {
+    $db = Invoke-BackupDocker ($compose + @('ps', '-q', 'db'))
+    $api = Invoke-BackupDocker ($compose + @('ps', '-q', 'api'))
+    $edge = Invoke-BackupDocker ($compose + @('ps', '-q', 'edge'))
+}
 foreach ($id in @($db, $api, $edge)) {
     if ($id -notmatch '^[a-f0-9]{12,64}$') { throw 'Banco, API e HTTPS devem estar em execucao antes do backup.' }
     $label = Invoke-BackupDocker @('inspect', '--format', '{{index .Config.Labels "com.docker.compose.project"}}', $id)
@@ -65,7 +92,10 @@ $dbVolume = @($dbMounts | Where-Object { $_.Destination -eq '/var/lib/postgresql
 if ($dbVolume.Count -ne 1 -or $dbVolume[0].Name -ne ($project + '_postgres_data')) { throw 'Volume de banco inesperado.' }
 if ((Invoke-BackupDocker @('volume', 'inspect', '--format', '{{index .Labels "com.docker.compose.project"}}', $dbVolume[0].Name)) -ne $project) { throw 'Volume de banco pertence a outro projeto.' }
 $examMount = @($mounts | Where-Object { $_.Type -eq 'volume' })
-if ($examMount.Count -ne 1 -or $examMount[0].Name -ne ($project + '_exams_data')) { throw 'Volume de exames inesperado.' }
+$expectedExamVolume = $project + '_exams_data'
+if ($fixture) { $expectedExamVolume = $fixture.examVolume }
+if ($examMount.Count -ne 1 -or $examMount[0].Name -ne $expectedExamVolume) { throw 'Volume de exames inesperado.' }
+if ($fixture -and ($examMount[0].Destination -ne '/data/exams' -or 'EXAMS_BASE_PATH=/data/exams' -notin $fixtureApiEnv)) { throw 'Montagem de exames da fixture difere da instalacao.' }
 $examVolume = $examMount[0].Name
 $volumeProject = Invoke-BackupDocker @('volume', 'inspect', '--format', '{{index .Labels "com.docker.compose.project"}}', $examVolume)
 if ($volumeProject -ne $project) { throw 'Volume de exames pertence a outro projeto.' }
@@ -102,11 +132,16 @@ try {
     [IO.File]::WriteAllText((Join-Path $target 'INCOMPLETE'), 'Do not restore: backup has not completed.')
     Write-Host 'Iniciando manutencao: gravacoes pela API ficarao indisponiveis durante a copia.'
     $maintenance = $true
-    $null = Invoke-BackupDocker ($compose + @('stop', '-t', '60', 'api'))
+    if ($fixture) { $null = Invoke-BackupDocker @('stop', '-t', '60', $api) }
+    else { $null = Invoke-BackupDocker ($compose + @('stop', '-t', '60', 'api')) }
     if ((Invoke-BackupDocker @('inspect', '--format', '{{.State.Running}}', $api)) -ne 'false') { throw 'API ainda em execucao.' }
     # Shell receives no secrets as command arguments: credentials are expanded
     # inside the existing database container. Binary dump is transferred by cp.
-    $null = Invoke-BackupDocker @('exec', $db, 'sh', '-c', 'umask 077; pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$1"', 'sh', $dbDump)
+    if ($fixture) {
+        $null = Invoke-BackupDocker @('exec', $db, 'sh', '-c', 'umask 077; pg_dump -U "$POSTGRES_USER" -d "$2" -Fc -f "$1"', 'sh', $dbDump, $fixture.database)
+    } else {
+        $null = Invoke-BackupDocker @('exec', $db, 'sh', '-c', 'umask 077; pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc -f "$1"', 'sh', $dbDump)
+    }
     $null = Invoke-BackupDocker @('cp', ($db + ':' + $dbDump), (Join-Path $target 'database.dump'))
     $archiveCode = 'import tarfile; t=tarfile.open("/tmp/exams.tar","w"); t.add("/source",arcname="exams"); t.close()'
     $null = Invoke-BackupDocker @('create', '--name', $helper, '--label', ('com.docker.compose.project=' + $project), '--network', 'none', '--user', '0:0', '--mount', ('type=volume,src=' + $examVolume + ',dst=/source,readonly'), $archiveImage, 'python', '-c', $archiveCode)
@@ -140,7 +175,8 @@ try {
     # Always attempt to reopen the service, including after failed copying.
     if ($maintenance) {
         try {
-            $null = Invoke-BackupDocker ($compose + @('start', 'api'))
+            if ($fixture) { $null = Invoke-BackupDocker @('start', $api) }
+            else { $null = Invoke-BackupDocker ($compose + @('start', 'api')) }
             Write-Host 'API reiniciada; confira /health e login antes de reabrir o atendimento.'
         } catch { Write-Warning 'API nao reiniciou. Mantenha a manutencao e contate o suporte.'; throw }
     }
