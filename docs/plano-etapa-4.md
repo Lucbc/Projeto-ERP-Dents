@@ -2,7 +2,7 @@
 
 ## Estado atual — 28/10/2026
 
-[4B.1 implementada e aceita localmente](./homologacao-etapa-4B-1.md): leitura paginada do prontuário por perfil, contexto atual em Consulta, contexto finalizado e adendos preservados. 508 testes frontend e Chrome/API/SQL aprovados; CI pendente. Próximo 4B.2: escrita do atendimento. Instalação permanece v0.1.24; não considerar o percurso de prontuário completo.
+[4B.1 concluída](./homologacao-etapa-4B-1.md): leitura paginada do prontuário por perfil, contexto atual em Consulta, contexto finalizado e adendos preservados. Chrome/API/SQL e CI `40748916671` aprovados no código `530f778`: 508 frontend/368 backend, builds/HTTP e seis imagens sem achados. Próximo 4B.2: escrita do atendimento. Instalação permanece v0.1.24; não considerar o percurso de prontuário completo.
 
 [4A.2 concluída](./homologacao-etapa-4A-2.md): API clínica e configuração explícita por perfil, testes de domínio/SQL/HTTP/componentes/Chrome aprovados. CI `40706119671`, código `c9a0769`, aprovado com 499 frontend/368 backend, builds/HTTP e seis imagens sem achados. Próximo funcional: 4B, percurso de atendimento pela interface. Instalação permanece v0.1.24 sem migração clínica; guia de instalação não muda nesta entrega.
 

@@ -13,7 +13,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
 
     patient = call('POST', '/api/patients', {'full_name': 'Fictitious Clinical Reader Patient',
                    'allergies': 'Fictitious historical allergy', 'medical_history': 'Fictitious historical context'}, 201)
-    other = call('POST', '/api/patients', {'full_name': 'Fictitious Empty History Patient'}, 201)
+    call('POST', '/api/patients', {'full_name': 'Fictitious Empty History Patient'}, 201)
     dentist = call('POST', '/api/dentists', {'full_name': 'Fictitious Reader Author', 'availability': [
         {'day_of_week': 'monday', 'start_time': '10:00', 'end_time': '12:00'}]}, 201)
     author_email = 'clinical-author-ui@example.com'
@@ -46,7 +46,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     before = snapshot()
     browser(request, email, password, token, container, ready, passed, sql, schema,
             browser_script='smoke_clinical_reader_browser_homolog.cjs', browser_input={
-                'patientId': patient['id'], 'otherPatientId': other['id'], 'readerEmail': reader_email, 'authorEmail': author_email,
+                'patientId': patient['id'], 'readerEmail': reader_email, 'authorEmail': author_email,
             })
     assert snapshot() == before
     assert sql(f'SELECT count(*) FROM "{schema}".clinical_records') == '11'

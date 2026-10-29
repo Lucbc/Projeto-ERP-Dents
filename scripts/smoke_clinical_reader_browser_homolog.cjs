@@ -1,4 +1,4 @@
-const fs = require('node:fs'), assert = require('node:assert/strict');
+const fs = require('node:fs'), path = require('node:path'), assert = require('node:assert/strict');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 let stage = 'start';
 (async () => {
@@ -42,13 +42,16 @@ let stage = 'start';
     await reader.getByText('Fictitious original evolution', { exact: true }).waitFor();
     await reader.getByText('Fictitious historical allergy', { exact: true }).waitFor();
     await reader.getByText('Fictitious correction', { exact: true }).waitFor();
+    await reader.screenshot({ path: path.resolve(__dirname, '../.data/homolog/clinical-reader-history.png'), fullPage: true });
     assert.equal(await reader.getByRole('textbox').count(), 0);
     assert.equal(await reader.getByRole('button', { name: /Salvar|Finalizar|Excluir/ }).count(), 0);
     stage = 'different patient and reload';
-    await reader.goto('https://localhost:18444/patients/' + input.otherPatientId + '/clinical-records');
+    await reader.getByRole('link', { name: 'Voltar aos pacientes', exact: true }).click();
+    await reader.getByRole('row').filter({ hasText: 'Fictitious Empty History Patient' }).getByRole('link', { name: 'Prontuário', exact: true }).click();
     await reader.getByText('Nenhuma evolução registrada para este paciente.', { exact: true }).waitFor();
     assert.equal(await reader.getByText('Fictitious original evolution', { exact: true }).count(), 0);
-    await reader.goto('https://localhost:18444' + route);
+    await reader.getByRole('link', { name: 'Voltar aos pacientes', exact: true }).click();
+    await reader.getByRole('row').filter({ hasText: 'Fictitious Clinical Reader Patient' }).getByRole('link', { name: 'Prontuário', exact: true }).click();
     await reader.getByText('Exibindo 1 a 10 de 11 evoluções.', { exact: true }).waitFor();
     await reader.reload(); await reader.getByText('Fictitious current allergy', { exact: true }).waitFor();
     stage = 'clinical revocation';
