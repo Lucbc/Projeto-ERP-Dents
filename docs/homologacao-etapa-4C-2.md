@@ -2,7 +2,7 @@
 
 ## Escopo e estado
 
-Aceite local aprovado em 29/10/2026, base `8cf9e43`; CI remoto pendente. Complementa o aceite de migração/banco da [4C.1](./homologacao-etapa-4C-1.md) com o script Windows de backup, arquivos de exames, configuração, TLS e acesso à aplicação restaurada. Dados exclusivamente fictícios em `erp-dents-homolog`; containers e volumes principais preservados. A instalação permanece v0.1.24 até consolidar a liberação e os guias.
+Concluída em 29/10/2026, base `8cf9e43`, código `4eb6ef5`; aceite local e CI remoto aprovados. Complementa o aceite de migração/banco da [4C.1](./homologacao-etapa-4C-1.md) com o script Windows de backup, arquivos de exames, configuração, TLS e acesso à aplicação restaurada. Dados exclusivamente fictícios em `erp-dents-homolog`; containers e volumes principais preservados. A instalação permanece v0.1.24 até consolidar a liberação e os guias.
 
 ## Mudanças
 
@@ -25,6 +25,8 @@ Aceite local aprovado em 29/10/2026, base `8cf9e43`; CI remoto pendente. Complem
 
 Todos os critérios acima passaram na execução final. A captura desktop do editor restaurado foi inspecionada: identificação do paciente/consulta, alergia, autoria e rascunho salvo legíveis. A conferência por API após reinício confirmou o texto gravado no Chrome e os bytes do novo exame. A comparação SQL é independente da validação de interface. O modo padrão de produção não foi executado sobre os containers principais; seu caminho de Compose foi preservado na revisão do diff. O teste Windows exercita o fluxo de backup com destinos privados e não depende do CI Linux para provar esse comportamento.
 
+[CI 40879673431](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/40879673431) aprovado no código `4eb6ef5`: 517 testes frontend, 368 backend em 838,833 s, builds e regressões HTTP. Auditoria das imagens `api`, `web`, `gateway`, `edge`, `db` e `clamav`: `{}`; base de vulnerabilidades atualizada em 29/10/2026 às 13:09:46 UTC. Log local `.data/clinical-full-recovery-ci.log`. A consolidação posterior altera somente documentação.
+
 ## Evidências e reprodução
 
 Log local `.data/clinical-full-recovery.log`, resumo `.data/homolog/last-clinical-full-recovery.json` e captura `.data/homolog/clinical-full-recovery.png`. Backups e configurações efêmeras ficam na pasta protegida `.data/homolog/full-recovery-<identificador>`. Os volumes de teste são mantidos, nunca removidos para contornar erros. Não enviar essas pastas ou backups ao Git.
@@ -35,4 +37,10 @@ A primeira tentativa revelou duas diferenças na preparação do teste: nome DNS
 
 ## Próximo passo
 
+Guia de uso preparado em [Prontuário clínico](./PRONTUARIO-CLINICO.md), identificado como destinado à próxima versão. O guia de backup registra o ensaio privado; os dois comandos ainda antigos no roteiro de atualização foram alinhados à v0.1.24 já liberada. Nenhuma dessas mudanças publica uma nova versão de instalação.
+
 Consolidar a liberação de instalação após os aceites 4C.1/4C.2: atualizar guias de atualização/recuperação para a migração 0026, explicar a concessão explícita de acesso clínico e a preservação do original por adendos, preparar a versão e verificar o pacote. Não orientar downgrade destrutivo com prontuários existentes. A instalação física continua prioritária quando chegarem os dados do servidor.
+
+**Retomada do pacote (4C.3):** `git merge-base --is-ancestor piloto-cadastros-v0.1.24 HEAD` retornou falso: a manutenção foi publicada em `release/pilot-v0.1.24` (`220117f`/`aedbde0`) separada da `main`. O verificador de atualização exige ancestralidade. Incorporar essa branch por merge revisado, preservando os módulos clínicos e conferindo dependências/guias, antes de criar a próxima tag; não contornar o verificador nem usar force push. Conferir a atualização a partir da tag instalada. Essa integração ainda não foi executada nesta subetapa.
+
+Prévia sem alterar a árvore de trabalho (`git merge-tree --write-tree --name-only main release/pilot-v0.1.24`) encontrou conflito apenas em `docs/PLANO-DE-EXECUCAO.md`; conferir novamente ao integrar e preservar o ponto de retomada mais recente junto ao histórico da manutenção. A prévia não substitui merge, validação ou publicação.

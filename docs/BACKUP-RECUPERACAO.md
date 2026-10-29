@@ -1,6 +1,8 @@
 # Backup e recuperação — servidor Windows
 
-## Estado em 15/10/2026
+## Estado em 29/10/2026
+
+O [aceite 4C.2](./homologacao-etapa-4C-2.md) também comprovou backup/restauração completos com rascunho, evolução finalizada, adendo e recibos clínicos, usando banco/volumes privados. Login, exames antigos/novos, Chrome e persistência após reinício passaram. A instalação liberada continua v0.1.24; a incorporação do prontuário ao pacote depende da consolidação da versão e dos guias. Os comandos de backup da clínica abaixo não mudaram.
 
 Backup assistido implementado; restauração de banco/exames e funcionamento da aplicação recuperada comprovados com dados fictícios em `erp-dents-homolog`. API/frontend privados usaram banco/volume restaurados, configuração de autenticação e certificados do backup, com endereço/porta de teste. Login, cadastro/edição, exames e reinício passaram. **Isso ainda não é uma instalação em outro computador nem um roteiro de troca de produção aprovado.**
 
@@ -54,6 +56,8 @@ Recomendação operacional para a digitação inicial: gerar backup local ao fin
 **Limite dessa frequência:** se o servidor/disco for perdido, a recuperação pela nuvem alcança somente o último envio concluído. Com envios semanais, podem faltar até cerca de sete dias de novos registros — e mais se o operador esquecer um envio. Backup diário no mesmo computador não elimina esse risco. Durante a digitação intensa, preferir também envio diário à nuvem ou outra cópia externa diária, se a clínica puder ajustar a rotina.
 
 ## Ensaios de desenvolvimento — exclusivamente fictícios
+
+Para o conjunto clínico, o harness `python scripts/smoke_clinical_full_recovery_homolog.py` prepara origem/destino privados e executa o script Windows com `-HomologFixture`. Esse parâmetro é restrito a testes locais de homologação e rejeita produção/containers principais; não deve ser acrescentado aos comandos da clínica. Ver [pré-requisitos, evidências e limites](./homologacao-etapa-4C-2.md). Os comandos históricos abaixo atuam sobre os dados fictícios principais de homologação e podem interromper sua API; não são o ensaio privado da 4C.2.
 
 Na raiz do projeto, com Docker de homologação aberto:
 

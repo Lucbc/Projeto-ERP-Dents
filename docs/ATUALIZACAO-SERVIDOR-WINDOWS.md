@@ -22,7 +22,7 @@ O suporte pode executar `scripts/check-update-version.ps1` de uma cópia das fer
 Exemplo, substituindo a tag pelo destino aprovado e o caminho pela instalação real:
 
 ```powershell
-.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.21'
+.\scripts\check-update-version.ps1 -Repository 'C:\ERP-Dents' -TargetTag 'piloto-cadastros-v0.1.24'
 ```
 
 O comando exige histórico completo, árvore de trabalho limpa, tag local no formato do piloto, destino igual ou descendente do commit atual e presença dos arquivos básicos de implantação. Exibe somente identificadores Git e mensagens de estado. Não lê `.env`, não faz fetch/checkout e não chama Docker.
@@ -62,7 +62,7 @@ Substituir data/unidade. Conferir a cópia antes de seguir. Se a imagem original
 ```powershell
 docker @composeArgs stop -t 60 api
 if ($LASTEXITCODE -ne 0) { throw 'API ainda nao confirmada como parada.' }
-git checkout --detach piloto-cadastros-v0.1.21
+git checkout --detach piloto-cadastros-v0.1.24
 if ($LASTEXITCODE -ne 0) { throw 'Troca de versao falhou; manter manutencao.' }
 git rev-parse HEAD
 docker @composeArgs config --quiet
@@ -71,7 +71,7 @@ docker @composeArgs build api web gateway edge db clamav
 if ($LASTEXITCODE -ne 0) { throw 'Construcao falhou; manter manutencao.' }
 ```
 
-Conferir o commit exibido com a versão aprovada. Para v0.1.21, o roteiro mantém a troca das seis imagens para cobrir versões anteriores; frente à v0.1.20, mudaram web/gateway/edge/clamav. A versão principal do PostgreSQL permanece 16. Com API e gateway parados e backup conferido, recriar banco/antivírus e aguardar saúde antes de subir a API. Preservar os volumes existentes; nunca usar `down -v`. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo do PostgreSQL inclui essa tabela. Não apagá-la nem executar downgrade para contornar erros: isso removeria a proteção de tentativas já processadas.
+Conferir o commit exibido com a versão aprovada. Para v0.1.24, o roteiro mantém a troca das seis imagens para cobrir versões anteriores; frente à v0.1.23, mudou a dependência dnspython da API. A versão principal do PostgreSQL permanece 16. Com API e gateway parados e backup conferido, recriar banco/antivírus e aguardar saúde antes de subir a API. Preservar os volumes existentes; nunca usar `down -v`. Atualizações partindo da v0.1.10 ou anterior também recebem a migração 0025 dos comprovantes. O backup completo do PostgreSQL inclui essa tabela. Não apagá-la nem executar downgrade para contornar erros: isso removeria a proteção de tentativas já processadas.
 
 ```powershell
 docker @composeArgs up -d --no-deps --force-recreate --wait --wait-timeout 180 db clamav
