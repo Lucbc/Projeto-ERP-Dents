@@ -1,6 +1,8 @@
 # Etapa 4 — atendimento e prontuário
 
-## Estado atual — 28/10/2026
+## Estado atual — 29/10/2026
+
+[4B.2 concluída](./homologacao-etapa-4B-2.md): escrita de rascunho, reabertura, finalização e adendo, autoria/permissões, conflito e recuperação exata. Chrome/API/SQL e CI `40799671459` aprovados no produto `587f994`: 517 frontend/368 backend, builds/HTTP e seis imagens sem achados. **Próximo 4C:** ensaio isolado de atualização e recuperação, incluindo registros clínicos, antes de ampliar a instalação v0.1.24. O roteiro técnico está no relatório; os guias atuais continuam válidos para o piloto de cadastros.
 
 [4B.1 concluída](./homologacao-etapa-4B-1.md): leitura paginada do prontuário por perfil, contexto atual em Consulta, contexto finalizado e adendos preservados. Chrome/API/SQL e CI `40748916671` aprovados no código `530f778`: 508 frontend/368 backend, builds/HTTP e seis imagens sem achados. Próximo 4B.2: escrita do atendimento. Instalação permanece v0.1.24; não considerar o percurso de prontuário completo.
 
