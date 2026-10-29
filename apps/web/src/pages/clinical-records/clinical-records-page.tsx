@@ -13,8 +13,10 @@ import { patientService } from "@/lib/services";
 import { formatDate, formatDateTime } from "@/lib/datetime";
 import type { ClinicalRecord } from "@/types/clinical-records";
 import { ClinicalContextView } from "./clinical-context";
+import { ClinicalEditor, type ClinicalTarget } from "./clinical-editor";
+import { ClinicalAppointmentPicker } from "./clinical-appointment-picker";
 
-function RecordView({ record }: { record: ClinicalRecord }) {
+function RecordView({ record, onEdit }: { record: ClinicalRecord; onEdit?: () => void }) {
   return <article aria-label={`Evolução de ${record.author_name}`} className="space-y-3 rounded-md border p-4">
     <header>
       <h3 className="font-semibold">{record.finalized_at ? "Evolução finalizada" : "Rascunho — ainda não finalizado"}</h3>
@@ -32,12 +34,14 @@ function RecordView({ record }: { record: ClinicalRecord }) {
         <p className="whitespace-pre-wrap break-words">{item.text}</p>
       </div>)}
     </section>}
+    {onEdit && <Button variant="outline" onClick={onEdit}>{record.finalized_at ? "Adicionar adendo" : "Editar rascunho"}</Button>}
   </article>;
 }
 
-function HistoryPage({ patientId, userId, offset, onDenied, setOffset }: {
-  patientId: string; userId: string; offset: number; onDenied: () => void; setOffset: (offset: number) => void;
+function HistoryPage({ patientId, userId, offset, onDenied, setOffset, onEdit }: {
+  patientId: string; userId: string; offset: number; onDenied: () => void; setOffset: (offset: number) => void; onEdit?: (target: ClinicalTarget) => void;
 }) {
+  const { user } = useAuth();
   const query = useLiveQuery(["clinical-records", userId, patientId, offset],
     signal => clinicalRecordService.list(patientId, offset, signal), { exactOnDenied: true, gcTime: 0 });
   useEffect(() => { if (query.accessDenied) onDenied(); }, [query.accessDenied, onDenied]);
@@ -48,7 +52,9 @@ function HistoryPage({ patientId, userId, offset, onDenied, setOffset }: {
     {query.data && <>
       <p className="text-sm">{query.data.total === 0 ? "Nenhuma evolução registrada para este paciente." :
         `Exibindo ${offset + (query.data.items.length ? 1 : 0)} a ${offset + query.data.items.length} de ${query.data.total} evoluções.`}</p>
-      {query.data.items.map(record => <RecordView key={record.id} record={record} />)}
+      {query.data.items.map(record => <RecordView key={record.id} record={record}
+        onEdit={onEdit && record.author_id === userId && record.dentist_id === user?.dentist_id
+          ? () => onEdit({ kind: "record", id: record.id }) : undefined} />)}
     </>}
     <div className="flex gap-3">
       <Button variant="outline" disabled={offset === 0 || query.isFetching} onClick={() => setOffset(Math.max(0, offset - 10))}>Evoluções anteriores na lista</Button>
@@ -73,9 +79,12 @@ function PatientContext({ patientId, userId }: { patientId: string; userId: stri
 
 function ClinicalReader({ patientId, userId }: { patientId: string; userId: string }) {
   const { can } = usePermissions();
+  const { user } = useAuth();
   const client = useQueryClient();
   const [denied, setDenied] = useState(false);
   const [offset, setOffset] = useState(0);
+  const [target, setTarget] = useState<ClinicalTarget | null>(null);
+  const author = user?.role === "dentist" && !!user.dentist_id;
   const onDenied = useCallback(() => setDenied(true), []);
   useEffect(() => () => {
     for (const key of ["clinical-records", "clinical-patient-context"]) {
@@ -95,7 +104,13 @@ function ClinicalReader({ patientId, userId }: { patientId: string; userId: stri
       {can("patients", "view") ? <PatientContext key={patientId} patientId={patientId} userId={userId} />
         : <p role="status">Sem acesso ao cadastro deste paciente. As evoluções e o contexto registrado na finalização seguem a permissão clínica.</p>}
     </Card>
-    <HistoryPage key={offset} patientId={patientId} userId={userId} offset={offset} setOffset={setOffset} onDenied={onDenied} />
+    {target ? <ClinicalEditor key={`${userId}:${user?.dentist_id}:${target.kind}:${target.id}`} patientId={patientId} target={target}
+      onClose={() => setTarget(null)} onDenied={onDenied} /> : <>
+      {author && (can("clinical_records", "create") || can("clinical_records", "update")) && can("appointments", "view") &&
+        <ClinicalAppointmentPicker patientId={patientId} dentistId={user!.dentist_id!} onSelect={setTarget} />}
+      <HistoryPage key={offset} patientId={patientId} userId={userId} offset={offset} setOffset={setOffset} onDenied={onDenied}
+        onEdit={author && can("clinical_records", "update") ? setTarget : undefined} />
+    </>}
     {can("patients", "view") && <Link to="/patients" className="underline">Voltar aos pacientes</Link>}
   </div>;
 }

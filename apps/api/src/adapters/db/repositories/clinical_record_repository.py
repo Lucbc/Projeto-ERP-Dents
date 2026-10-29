@@ -75,6 +75,14 @@ class SqlAlchemyClinicalRecordRepository:
             self._authorize(users, actor_id, session_id, 'view')
             return self._load(record_id)
 
+    def get_for_appointment(self, appointment_id, *, actor_id, session_id):
+        users = SqlAlchemyUserRepository(self.session)
+        with users.administration_lock():
+            self._authorize(users, actor_id, session_id, 'view')
+            record_id = self.session.scalar(sql('SELECT id FROM clinical_records WHERE appointment_id=:id'),
+                                            {'id': appointment_id})
+            return self._load(record_id) if record_id is not None else None
+
     def list_for_patient(self, patient_id, *, actor_id, session_id, limit=20, offset=0):
         if type(limit) is not int or not 1 <= limit <= 100 or type(offset) is not int or offset < 0:
             raise ValidationError('Paginação clínica inválida.')
@@ -87,7 +95,8 @@ class SqlAlchemyClinicalRecordRepository:
                 ORDER BY created_at DESC,id DESC LIMIT :limit OFFSET :offset'''), params).all()
             return {'items': [self._load(item) for item in ids], 'total': total}
 
-    def execute(self, action, target_id, *, actor_id, session_id, key, version=None, text=None, reason=None):
+    def execute(self, action, target_id, *, actor_id, session_id, key, version=None, text=None, reason=None,
+                expected_patient_id=None, appointment_version=None):
         """Target is appointment on create, record otherwise. Commit receipt + result together.
 
         Caller supplies authenticated identity/session only. Permissions, author,
@@ -105,6 +114,10 @@ class SqlAlchemyClinicalRecordRepository:
         if action == 'finalize' and (text is not None or reason is not None):
             raise ValidationError('A finalização utiliza o rascunho salvo.')
         payload = dict(action=action, target_id=target_id, version=version, text=text, reason=reason)
+        if expected_patient_id is not None or appointment_version is not None:
+            if action != 'create' or not isinstance(expected_patient_id, UUID) or type(appointment_version) is not int or appointment_version < 1:
+                raise ValidationError('Informe paciente e versão da consulta selecionada.')
+            payload.update(expected_patient_id=expected_patient_id, appointment_version=appointment_version)
         digest = hashlib.sha256(_json(payload).encode()).hexdigest()
         users = SqlAlchemyUserRepository(self.session)
         try:
@@ -126,6 +139,8 @@ class SqlAlchemyClinicalRecordRepository:
                     visit = SqlAlchemyAppointmentRepository(self.session).get(target_id)
                     if visit is None:
                         raise NotFoundError('Consulta não encontrada.')
+                    if expected_patient_id is not None and (visit.patient_id != expected_patient_id or visit.version != appointment_version):
+                        raise ConflictError('A consulta selecionada foi alterada. Confira o paciente, dentista e horário antes de continuar.', code='stale_appointment')
                     now = self.session.scalar(sql('SELECT clock_timestamp()'))
                     result = create_draft(uuid4(), visit, actor, grants, text, now)
                     self.session.execute(sql('''INSERT INTO clinical_records

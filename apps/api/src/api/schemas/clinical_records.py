@@ -13,9 +13,14 @@ class ClinicalDraftRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     key: UUID
     text: ClinicalText
+    expected_patient_id: UUID | None = None
+    appointment_version: Version | None = None
 
 
-class ClinicalSaveRequest(ClinicalDraftRequest):
+class ClinicalSaveRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    key: UUID
+    text: ClinicalText
     version: Version
 
 

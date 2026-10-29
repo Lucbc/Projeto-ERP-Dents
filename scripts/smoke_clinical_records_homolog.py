@@ -31,11 +31,18 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
                       'start_at': f'2030-01-{day}T13:00:00Z', 'end_at': f'2030-01-{day}T14:00:00Z'}, 201))
     listing = '/api/clinical-records?patient_id=' + patient['id']
     create_path = '/api/clinical-records/from-appointment/' + visits[0]['id']
-    draft = {'key': str(uuid4()), 'text': 'Fictitious clinical draft'}
+    draft = {'key': str(uuid4()), 'text': 'Fictitious clinical draft',
+             'expected_patient_id': patient['id'], 'appointment_version': visits[0]['version']}
     call('GET', listing, status=403)
     call('POST', create_path, draft, 403, session)
     grant('dentist', True, True, True)
+    assert call('GET', create_path, session=session) is None
+    call('POST', create_path, {**draft, 'expected_patient_id': other['id']}, 409, session)
+    call('POST', create_path, {**draft, 'appointment_version': visits[0]['version'] + 1}, 409, session)
+    assert sql(f'SELECT count(*) FROM "{schema}".clinical_records') == '0'
+    assert sql(f'SELECT count(*) FROM "{schema}".clinical_operations') == '0'
     created = call('POST', create_path, draft, 201, session)
+    assert call('GET', create_path, session=session) == created
     endpoint = '/api/clinical-records/' + created['id']
     assert created['author_id'] == user['id'] and created['version'] == 1 and created['context'] is None
     assert call('POST', create_path, draft, 201, session) == created
@@ -90,6 +97,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     call('GET', endpoint, status=403)
     grant('dentist', False)
     call('GET', listing, status=403, session=session)
+    call('GET', create_path, status=403, session=session)
     call('POST', create_path, draft, 403, session)
     grant('dentist', True, True, True)
     passed('HTTP: patient-filtered pagination, admin explicit read only, immediate grant revocation including receipts')

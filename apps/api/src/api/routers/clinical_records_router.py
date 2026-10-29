@@ -35,6 +35,12 @@ def get_record(record_id: UUID, auth=Depends(access)):
     return repository.get(record_id, **identity)
 
 
+@router.get('/from-appointment/{appointment_id}', response_model=ClinicalRecordResponse | None)
+def get_appointment_record(appointment_id: UUID, auth=Depends(access)):
+    repository, identity = auth
+    return repository.get_for_appointment(appointment_id, **identity)
+
+
 @router.post('/from-appointment/{appointment_id}', response_model=ClinicalRecordResponse, status_code=201)
 def create_record(appointment_id: UUID, payload: ClinicalDraftRequest, auth=Depends(access)):
     repository, identity = auth
