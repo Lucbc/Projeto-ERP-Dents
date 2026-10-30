@@ -26,7 +26,7 @@ const failure=(status:number)=>new AxiosError("failure","ERR_BAD_RESPONSE",undef
   {status,statusText:"Error",data:{detail:"Consulta alterada.",code:"stale_version"},headers:{},config:{} as never});
 function setup(Page: typeof AppointmentsPage) {
   const list=vi.spyOn(appointmentService,"list").mockResolvedValue([appointment]);
-  vi.spyOn(patientService,"listAll").mockResolvedValue({items:[{id:appointment.patient_id,full_name:appointment.patient_name,active:true} as Patient],total:1});
+  vi.spyOn(patientService,"list").mockResolvedValue({items:[{id:appointment.patient_id,full_name:appointment.patient_name,active:true} as Patient],total:1});
   vi.spyOn(dentistService,"listAll").mockResolvedValue({items:[{id:appointment.dentist_id,full_name:appointment.dentist_name,active:true} as Dentist],total:1});
   vi.spyOn(procedureService,"listAll").mockResolvedValue({items:[],total:0});
   const confirm=vi.spyOn(window,"confirm").mockReturnValue(true);

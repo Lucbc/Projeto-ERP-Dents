@@ -29,7 +29,8 @@ beforeEach(()=>{
   vi.useFakeTimers();onlineManager.setOnline(true);denied="";
   client=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:15000,refetchOnWindowFocus:false}}});
   vi.spyOn(appointmentService,"list").mockResolvedValue([visit]);
-  vi.spyOn(patientService,"listAll").mockResolvedValue({items:[patient],total:1});
+  vi.spyOn(patientService,"list").mockResolvedValue({items:[patient],total:1});
+  vi.spyOn(patientService,"get").mockRejectedValue(failure(404));
   vi.spyOn(dentistService,"listAll").mockResolvedValue({items:[dentist],total:1});
   vi.spyOn(procedureService,"listAll").mockResolvedValue({items:[procedure],total:1});
 });
@@ -74,10 +75,10 @@ it.each([503,403])("blocks partial preparation on %s and recovers without changi
 
 it("identifies missing links without selecting another record and allows conscious removal of absent procedures",async()=>{
   render(tree());await tick();await open("Editar");
-  vi.mocked(patientService.listAll).mockResolvedValue({items:[],total:0});vi.mocked(procedureService.listAll).mockResolvedValue({items:[],total:0});
+  vi.mocked(patientService.list).mockResolvedValue({items:[],total:0});vi.mocked(procedureService.listAll).mockResolvedValue({items:[],total:0});
   fireEvent.click(button("Atualizar cadastros do formulário"));await tick();expect(field("patient_id").value).toBe(patient.id);expect(button("Salvar").disabled).toBe(true);
   expect(screen.getByRole("checkbox").closest("label")?.textContent).toContain(procedure.id);
-  fireEvent.click(screen.getByRole("checkbox"));await tick();vi.mocked(patientService.listAll).mockResolvedValue({items:[patient],total:1});
+  fireEvent.click(screen.getByRole("checkbox"));await tick();vi.mocked(patientService.list).mockResolvedValue({items:[patient],total:1});
   fireEvent.click(button("Atualizar cadastros do formulário"));await tick();expect(button("Salvar").disabled).toBe(false);
 });
 
@@ -92,7 +93,7 @@ it("cancels preparation on close/unmount and ignores the old result after reopen
 
 it("clears independently denied copies, reloads after grant and retains snapshots across global suspension",async()=>{
   const view=render(tree());await tick();await open("Editar");change("notes","Fictitious retained");
-  view.rerender(tree(true));await tick();expect(button("Salvar").disabled).toBe(true);view.rerender(tree());await tick();expect(patientService.listAll).toHaveBeenCalledTimes(2);
+  view.rerender(tree(true));await tick();expect(button("Salvar").disabled).toBe(true);view.rerender(tree());await tick();expect(patientService.list).toHaveBeenCalledTimes(2);
   denied="procedures";view.rerender(tree());await tick();expect(button("Salvar").disabled).toBe(true);expect(screen.queryByText(procedure.name,{selector:"td"})).toBeNull();expect(field("patient_id").value).toBe(patient.id);
   denied="";view.rerender(tree());await tick();expect(button("Salvar").disabled).toBe(false);expect(field("notes").value).toBe("Fictitious retained");
 });
@@ -109,11 +110,11 @@ it("ignores explicit version reload completing after unmount",async()=>{
   const get=vi.spyOn(appointmentService,"get").mockImplementation(()=>new Promise(done=>finish=done));const view=render(tree());await tick();await open("Editar");
   fireEvent.click(button("Salvar"));await tick();fireEvent.click(button("Descartar rascunho e carregar atual"));await tick();view.unmount();
   expect(get.mock.calls[0][1]?.aborted).toBe(true);
-  await act(async()=>finish({...visit,version:9}));await tick();expect(patientService.listAll).toHaveBeenCalledTimes(2);
+  await act(async()=>finish({...visit,version:9}));await tick();expect(patientService.list).toHaveBeenCalledTimes(2);
 });
 
 it.each([patientService,procedureService])("propagates pagination signal and rejects partial failure/cancellation",async service=>{
-  vi.mocked(service.listAll).mockRestore();const controller=new AbortController();
+  if (vi.isMockFunction(service.list)) vi.mocked(service.list).mockRestore();if (vi.isMockFunction(service.listAll)) vi.mocked(service.listAll).mockRestore();const controller=new AbortController();
   const get=vi.spyOn(api,"get").mockResolvedValueOnce({data:{items:Array(200).fill({id:"fictitious"}),total:201}}).mockRejectedValueOnce(failure(503));
   await expect(service.listAll({},controller.signal)).rejects.toThrow();expect(get.mock.calls.map(call=>call[1])).toEqual([0,200].map(offset=>({params:{limit:200,offset},signal:controller.signal})));
   get.mockClear().mockImplementationOnce(async()=>{controller.abort();return {data:{items:Array(200).fill({id:"fictitious"}),total:201}};});

@@ -111,6 +111,7 @@ let stage = 'start';
       await page.locator('[name=start_at]').waitFor();
       const index = cases.indexOf(c), patient = input.creations[index];
       for (const [field, label] of [['patient_id', patient.full_name], ['dentist_id', input.dentistName]]) {
+        if (field === 'patient_id') { await page.locator('[name=patient_id]').selectOption(patient.id); continue; }
         const group = page.locator('select[name=' + field + ']').locator('..');
         await group.locator('input').fill(label);
         await group.getByRole('button', { name: label, exact: true }).click();

@@ -107,7 +107,7 @@ describe.each([
 it("catalog refresh/denial does not change the real agenda form references, selected procedure or entered end time", async () => {
   vi.spyOn(procedureService, "list").mockResolvedValue({ items: [item], total: 1 });
   vi.spyOn(procedureService, "listAll").mockResolvedValue({ items: [item], total: 1 });
-  vi.spyOn(patientService, "listAll").mockResolvedValue({ items: [], total: 0 }); vi.spyOn(dentistService, "listAll").mockResolvedValue({ items: [], total: 0 });
+  vi.spyOn(patientService, "list").mockResolvedValue({ items: [], total: 0 }); vi.spyOn(dentistService, "listAll").mockResolvedValue({ items: [], total: 0 });
   vi.spyOn(appointmentService, "list").mockResolvedValue([]);
   render(<QueryClientProvider client={client}><ToastProvider><div data-testid="catalog"><ProceduresPage /></div><div data-testid="agenda"><AppointmentsPage /></div></ToastProvider></QueryClientProvider>);
   await tick(); const agenda = within(screen.getByTestId("agenda")); fireEvent.click(agenda.getByRole("button", { name: "Nova", exact: true })); await tick();

@@ -24,6 +24,7 @@ import { appointmentDeletionConfirmation, appointmentDeletionError } from "@/lib
 import { getApiErrorMessage } from "@/lib/api";
 import { appointmentStatusOptions } from "@/lib/labels";
 import { appointmentService, dentistService } from "@/lib/services";
+import { PatientPicker } from "./patient-picker";
 import { useAppointmentReferences } from "./use-appointment-references";
 import { useActionOptions } from "@/hooks/use-action-options";
 import type { Appointment, Procedure } from "@/types";
@@ -192,7 +193,20 @@ export function CalendarPage() {
   const deleteReview = editingAppointment ? deleteReviews[editingAppointment.id] ?? null : null;
   const [manualEndOverride, setManualEndOverride] = useState(false);
   const [referenceAction, setReferenceAction] = useState(0);
-  const references = useAppointmentReferences(openModal ? referenceAction : null);
+  const form = useForm<z.input<typeof appointmentSchema>, unknown, AppointmentForm>({
+    resolver: zodResolver(appointmentSchema),
+    defaultValues: {
+      patient_id: "",
+      dentist_id: "",
+      procedure_ids: [],
+      start_at: "",
+      end_at: "",
+      status: "scheduled",
+      notes: "",
+    },
+  });
+
+  const references = useAppointmentReferences(openModal ? referenceAction : null, form.watch("patient_id"));
   const gridDentists = useActionOptions(0, can("dentists", "view"), readGridDentists);
   const mounted = useRef(false);
   const pendingReload = useRef<AbortController>();
@@ -207,18 +221,7 @@ export function CalendarPage() {
 
   const { from: rangeFrom, to: rangeTo } = clinicMonthWindow(currentDate, 2);
 
-  const form = useForm<z.input<typeof appointmentSchema>, unknown, AppointmentForm>({
-    resolver: zodResolver(appointmentSchema),
-    defaultValues: {
-      patient_id: "",
-      dentist_id: "",
-      procedure_ids: [],
-      start_at: "",
-      end_at: "",
-      status: "scheduled",
-      notes: "",
-    },
-  });
+
 
   const appointmentsQuery = useLiveQuery(
     ["appointments", "calendar", rangeFrom, rangeTo],
@@ -589,15 +592,8 @@ export function CalendarPage() {
           )}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Paciente *</label>
-            <Select {...form.register("patient_id")}>
-              <option value="">Selecione</option>
-              {missingPatient && <option value={selectedPatient}>Paciente selecionado indisponível</option>}
-              {patients.map((patient) => (
-                <option key={patient.id} value={patient.id}>
-                  {`${patient.full_name}${patient.active === false ? " (inativo)" : ""}`}
-                </option>
-              ))}
-            </Select>
+            <PatientPicker key={referenceAction} source={references.patients} value={selectedPatient} name="patient_id"
+              onChange={id => form.setValue("patient_id", id, { shouldDirty: true, shouldValidate: true })} />
             {form.formState.errors.patient_id && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.patient_id.message}</p>
             )}

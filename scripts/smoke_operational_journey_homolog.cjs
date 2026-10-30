@@ -61,6 +61,7 @@ process.on('unhandledRejection', () => { console.error('Operational journey fail
     await page.goto(origin+'/appointments');
     await page.getByRole('button',{name:'Nova',exact:true}).click();
     for (const [field,label] of [['patient_id',patient.full_name],['dentist_id',dentist.full_name]]) {
+      if (field==='patient_id') { await page.locator('[name=patient_id]').selectOption(patient.id); continue; }
       const group=page.locator('select[name='+field+']').locator('..');
       await group.locator('input').fill(label); await group.getByRole('button',{name:label,exact:true}).click();
     }

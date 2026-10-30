@@ -25,6 +25,7 @@ import { appointmentDeletionConfirmation } from "@/lib/appointment-deletion";
 import { getApiErrorMessage } from "@/lib/api";
 import { appointmentStatusLabels, appointmentStatusOptions } from "@/lib/labels";
 import { appointmentService } from "@/lib/services";
+import { PatientPicker } from "./patient-picker";
 import { useAppointmentReferences } from "./use-appointment-references";
 import type { Appointment, Procedure } from "@/types";
 
@@ -78,19 +79,6 @@ export function AppointmentsPage() {
   const [editConflict, setEditConflict] = useState(false);
   const [manualEndOverride, setManualEndOverride] = useState(false);
   const [referenceAction, setReferenceAction] = useState(0);
-  const references = useAppointmentReferences(openModal ? referenceAction : null);
-  const pageReferences = useAppointmentReferences(0);
-  const mounted = useRef(false);
-  const pendingReload = useRef<AbortController>();
-  const actionScope = useRef({ openModal, referenceAction });
-  actionScope.current = { openModal, referenceAction };
-  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
-  useEffect(() => () => { pendingReload.current?.abort(); pendingReload.current = undefined; }, [openModal, referenceAction]);
-  // A denied form read must also remove the page's previously authorized copy.
-  useEffect(() => { if (references.patients.status === "denied") pageReferences.patients.deny(); }, [references.patients.status, pageReferences.patients.deny]);
-  useEffect(() => { if (references.dentists.status === "denied") pageReferences.dentists.deny(); }, [references.dentists.status, pageReferences.dentists.deny]);
-  useEffect(() => { if (references.procedures.status === "denied") pageReferences.procedures.deny(); }, [references.procedures.status, pageReferences.procedures.deny]);
-
   const form = useForm<z.input<typeof appointmentSchema>, unknown, AppointmentForm>({
     resolver: zodResolver(appointmentSchema),
     defaultValues: {
@@ -103,6 +91,21 @@ export function AppointmentsPage() {
       notes: "",
     },
   });
+
+  const references = useAppointmentReferences(openModal ? referenceAction : null, form.watch("patient_id"));
+  const pageReferences = useAppointmentReferences(0, patientFilter);
+  const mounted = useRef(false);
+  const pendingReload = useRef<AbortController>();
+  const actionScope = useRef({ openModal, referenceAction });
+  actionScope.current = { openModal, referenceAction };
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+  useEffect(() => () => { pendingReload.current?.abort(); pendingReload.current = undefined; }, [openModal, referenceAction]);
+  // A denied form read must also remove the page's previously authorized copy.
+  useEffect(() => { if (references.patients.status === "denied") pageReferences.patients.deny(); }, [references.patients.status, pageReferences.patients.deny]);
+  useEffect(() => { if (references.dentists.status === "denied") pageReferences.dentists.deny(); }, [references.dentists.status, pageReferences.dentists.deny]);
+  useEffect(() => { if (references.procedures.status === "denied") pageReferences.procedures.deny(); }, [references.procedures.status, pageReferences.procedures.deny]);
+
+
 
   const appointmentsQuery = useLiveQuery(
     ["appointments", fromDate, toDate, dentistFilter, patientFilter],
@@ -333,15 +336,8 @@ export function AppointmentsPage() {
             ))}
           </Select>
 
-          <Select value={patientFilter} onChange={(event) => setPatientFilter(event.target.value)}>
-            <option value="">Todos pacientes</option>
-            {patientFilter && !pageReferences.patients.items.some(item => item.id === patientFilter) && <option value={patientFilter}>Paciente selecionado indisponível</option>}
-            {pageReferences.patients.items.map((patient) => (
-              <option key={patient.id} value={patient.id}>
-                {patient.full_name}
-              </option>
-            ))}
-          </Select>
+          <PatientPicker source={pageReferences.patients} value={patientFilter} onChange={setPatientFilter}
+            emptyLabel="Todos os pacientes" labelText="Paciente do filtro" />
 
           {canCreate && <Button onClick={onNew}>Nova</Button>}
         </div>
@@ -441,15 +437,8 @@ export function AppointmentsPage() {
           )}
           <div>
             <label className="mb-1 block text-sm font-semibold text-slate-700">Paciente *</label>
-            <Select {...form.register("patient_id")}>
-              <option value="">Selecione</option>
-              {missingPatient && <option value={selectedPatient}>Paciente selecionado indisponível</option>}
-              {patients.map((patient) => (
-                <option key={patient.id} value={patient.id}>
-                  {`${patient.full_name}${patient.active === false ? " (inativo)" : ""}`}
-                </option>
-              ))}
-            </Select>
+            <PatientPicker key={referenceAction} source={references.patients} value={selectedPatient} name="patient_id"
+              onChange={id => form.setValue("patient_id", id, { shouldDirty: true, shouldValidate: true })} />
             {form.formState.errors.patient_id && (
               <p className="mt-1 text-xs text-red-600">{form.formState.errors.patient_id.message}</p>
             )}

@@ -7,9 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta, datetime, timezone
 from threading import Barrier, Event, Lock
 from time import monotonic
-from uuid import UUID, uuid4
+from uuid import uuid4
 import argparse
-import hashlib
 import json
 import math
 import subprocess
@@ -33,7 +32,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     samples, resource_samples, results = [], [], []
     guard = Lock()
     report = {'revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
-              'quick': ARGS.quick, 'started_utc': datetime.now(timezone.utc).isoformat(),
+              'quick': ARGS.quick, 'bounded_patients': ARGS.bounded_patients, 'started_utc': datetime.now(timezone.utc).isoformat(),
               'scenarios': results, 'checks': [], 'transport': 'HTTP localhost private API; Chrome uses TLS proxy'}
     for image in ('api', 'web'):
         report[image + '_image'] = json.loads(docker('image', 'inspect', 'erp-dents-homolog-' + image).stdout)[0]['Id']
@@ -85,6 +84,9 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
             matrix['permissions'][resource]['view'] = True
         matrix['permissions']['patients'].update(create=True, update=True)
         matrix['permissions']['appointments']['create'] = True
+        if ARGS.bounded_patients:
+            matrix['permissions']['appointments']['update'] = True
+            matrix['permissions']['calendar']['view'] = True
         matrix['permissions']['clinical_records'].update(create=role == 'dentist', update=role == 'dentist')
         fixture('PUT', '/api/permissions/' + role, matrix)
     for login in accounts:
@@ -100,7 +102,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     # 300 nonoverlapping Monday appointments across 30 weeks, 10/day.
     sql(f'''INSERT INTO "{schema}".appointments
         (id, patient_id, dentist_id, start_at, end_at, status, created_at, updated_at, version)
-        SELECT md5('load-visit-'||g)::uuid, '{patient['id']}', '{dentist['id']}',
+        SELECT ('10000000-0000-4000-8000-'||lpad(g::text,12,'0'))::uuid, '{patient['id']}', '{dentist['id']}',
           date_trunc('week', now()) + (g/10-15)*interval '7 days' + (g%10)*interval '30 minutes' + interval '11 hours',
           date_trunc('week', now()) + (g/10-15)*interval '7 days' + (g%10)*interval '30 minutes' + interval '11 hours 30 minutes',
           'scheduled', now(), now(), 1 FROM generate_series(0,299) g''')
@@ -111,7 +113,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     def grow(target):
         nonlocal current_count
         sql(f'''INSERT INTO "{schema}".patients (id,full_name,active,created_at,updated_at,version,medical_history)
-            SELECT md5('load-patient-'||g)::uuid,'Fictitious Load '||lpad(g::text,5,'0'),true,
+            SELECT ('00000000-0000-4000-8000-'||lpad(g::text,12,'0'))::uuid,'Fictitious Load '||lpad(g::text,5,'0'),true,
               now()-interval '1 day',now(),1,repeat('Synthetic context. ',30)
             FROM generate_series({current_count},{target-1}) g''')
         current_count = target
@@ -137,12 +139,13 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         start = monotonic()
         offset, size = 0, 0
         while True:
-            page, _ = call('GET', f'/api/patients?limit=200&offset={offset}', session=session,
+            limit = 20 if ARGS.bounded_patients else 200
+            page, _ = call('GET', f'/api/patients?limit={limit}&offset={offset}', session=session,
                            label='patient_reference_page', phase=phase)
             size += len(page['items'])
-            if size >= page['total']: break
+            if ARGS.bounded_patients or size >= page['total']: break
             offset += 200
-        assert size == current_count
+        assert size == (min(current_count,20) if ARGS.bounded_patients else current_count)
         for route in ('dentists', 'procedures'):
             call('GET', '/api/'+route+'?limit=200&offset=0', session=session, label='catalog_reference', phase=phase)
         with guard: samples.append((phase, 'reference_full_action', (monotonic()-start)*1000, 200, 0))
@@ -168,7 +171,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         call('GET', '/api/patients/'+patient['id'], session=session, label='patient_detail', phase=phase)
         # One deliberate save/minute/operator, different records except explicit races below.
         if cycle % 4 == 0:
-            own_id = str(UUID(hashlib.md5(f'load-patient-{index+1}'.encode()).hexdigest()))
+            own_id = f'00000000-0000-4000-8000-{index+1:012d}'
             current, _ = call('GET', '/api/patients/'+own_id, session=session, label='edit_read', phase=phase)
             updated, _ = call('PUT', '/api/patients/'+own_id, {'version': current['version'], 'notes': 'Fictitious load save'},
                               session=session, label='patient_save', phase=phase)
@@ -269,14 +272,18 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         try:
             browser(request,email,password,token,container,ready,passed,sql,schema,
                 browser_script='measure_concurrent_usage_homolog.cjs',
-                browser_input={'readerEmail': accounts[9], 'patientId': patient['id']})
+                browser_input={'readerEmail': accounts[9], 'patientId': patient['id'], 'boundedPatients': ARGS.bounded_patients})
         finally:
             stop.set()
             background.result()
     report['browser_background'] = summarize('browser-background')
     report['browser'] = json.loads((smoke.STATE/'last-concurrent-usage-browser.json').read_text(encoding='utf8'))
+    if ARGS.bounded_patients:
+        assert sql(f'''SELECT count(*) FROM "{schema}".appointments WHERE
+            patient_id='00000000-0000-4000-8000-000000000001' AND version=2 AND notes='Fictitious verified picker edit' ''') == '1'
+        record_check('SQL: browser-created appointment retains out-of-page patient after calendar edit')
     for index, total in enumerate(updates):
-        assert sql(f'''SELECT version FROM "{schema}".patients WHERE id=md5('load-patient-{index+1}')::uuid''') == str(total+1)
+        assert sql(f'''SELECT version FROM "{schema}".patients WHERE id='00000000-0000-4000-8000-{index+1:012d}' ''') == str(total+1)
     assert sql(f'''SELECT version FROM "{schema}".clinical_records WHERE id='{records[0]['id']}' ''') == str(records[0]['version'])
     assert sql(f'SELECT count(*) FROM "{schema}".clinical_records') == '10'
     assert sql(f'SELECT count(*) FROM "{schema}".clinical_operations') == str(10+records[0]['version']-1)
@@ -290,6 +297,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--quick', action='store_true')
+    parser.add_argument('--bounded-patients', action='store_true', help='Use the new 20-result appointment picker workload')
     ARGS = parser.parse_args()
     ARGS.warmup, ARGS.duration, ARGS.interval = (0, 1, 1) if ARGS.quick else (60, 300, 15)
     main(verify, 'last-concurrent-usage.json', extra_env={'PUBLIC_ORIGIN': 'https://localhost:18444'}, verify_user_deletion=False)

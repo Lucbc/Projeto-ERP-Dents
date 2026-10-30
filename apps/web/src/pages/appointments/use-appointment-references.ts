@@ -1,14 +1,14 @@
 import { useActionOptions } from "@/hooks/use-action-options";
 import { usePermissions } from "@/hooks/use-permissions";
-import { dentistService, patientService, procedureService } from "@/lib/services";
+import { dentistService, procedureService } from "@/lib/services";
+import { usePatientReferences } from "./use-patient-references";
 
-const readPatients = (signal: AbortSignal) => patientService.listAll({}, signal);
 const readDentists = (signal: AbortSignal) => dentistService.listAll({}, signal);
 const readProcedures = (signal: AbortSignal) => procedureService.listAll({}, signal);
 
-export function useAppointmentReferences(action: number | null) {
+export function useAppointmentReferences(action: number | null, selectedPatient = "") {
   const { can } = usePermissions();
-  const patients = useActionOptions(action, can("patients", "view"), readPatients);
+  const patients = usePatientReferences(action, selectedPatient, can("patients", "view"));
   const dentists = useActionOptions(action, can("dentists", "view"), readDentists);
   const procedures = useActionOptions(action, can("procedures", "view"), readProcedures);
   const sources = [patients, dentists, procedures];

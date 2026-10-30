@@ -56,7 +56,7 @@ it("an older toast timer cannot remove a newer notification", () => {
 it("calendar distinguishes loading/failure from an empty schedule and recovers", async () => {
   let reject!: (error: unknown) => void;
   vi.spyOn(appointmentService, "list").mockImplementationOnce(() => new Promise((_, no) => { reject = no; })).mockResolvedValue([]);
-  vi.spyOn(patientService, "listAll").mockResolvedValue({ items: [], total: 0 });
+  vi.spyOn(patientService, "list").mockResolvedValue({ items: [], total: 0 });
   vi.spyOn(dentistService, "listAll").mockResolvedValue({ items: [], total: 0 });
   vi.spyOn(procedureService, "listAll").mockRejectedValueOnce(failure(503, {})).mockResolvedValue({ items: [], total: 0 });
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

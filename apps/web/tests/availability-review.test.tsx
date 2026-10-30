@@ -28,7 +28,7 @@ it.each([["lista",AppointmentsPage,"Editar",false],["calendário",CalendarPage,"
       patient_name:"Fictitious Patient",dentist_name:"Fictitious Dentist",start_at:"2030-01-07T13:00:00Z",
       end_at:"2030-01-07T14:00:00Z",status:"scheduled",notes:"Original",procedure_ids:[procedureId]} as Appointment;
     vi.spyOn(appointmentService,"list").mockResolvedValue([appointment]);
-    vi.spyOn(patientService,"listAll").mockResolvedValue({items:[{id:patientId,full_name:"Fictitious Patient",active:true} as Patient],total:1});
+    vi.spyOn(patientService,"list").mockResolvedValue({items:[{id:patientId,full_name:"Fictitious Patient",active:true} as Patient],total:1});
     vi.spyOn(dentistService,"listAll").mockResolvedValue({items:[{id:dentistId,full_name:"Fictitious Dentist",active:true} as Dentist],total:1});
     vi.spyOn(procedureService,"listAll").mockResolvedValue({items:[{id:procedureId,name:"Fictitious Procedure",active:true,duration_minutes:15} as Procedure],total:1});
     const failure=(status:number)=>new AxiosError("failure","ERR_BAD_RESPONSE",undefined,undefined,
