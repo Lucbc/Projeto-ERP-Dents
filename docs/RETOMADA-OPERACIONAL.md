@@ -2,6 +2,8 @@
 
 ## Estado atual — 29/10/2026
 
+**6B.1 concluída:** [carga de até dez operadores/5.000 pacientes](./homologacao-etapa-6B-1.md), sem falhas inesperadas e com integridade API/SQL/Chrome verificada no escopo documentado. Gargalo confirmado na abertura de referências da agenda: 25 páginas/5,48 MB por operador. Próximo **6B.2: busca limitada no servidor para selecionar pacientes**, preservando seleção/rascunho/permissões; depois 6C. Instalação v0.1.25 e prioridade física P3 preservadas. Os próximos passos abaixo são históricos.
+
 **6A concluída:** [matriz de evidências e lacunas](./homologacao-etapa-6A.md). Próximo: 6B.1, medir carga/uso simultâneo de cadastros, agenda e leitura clínica em ambiente privado. Depois, usabilidade e financeiro com perfil restrito. Dimensionamento recebido: até 10 usuários simultâneos e aproximadamente 5.000 pacientes; ensaio ainda pendente. Instalação v0.1.25 e prioridade P3 preservadas. Os próximos passos anteriores abaixo são históricos.
 
 Primeiro fluxo clínico 4A–4C concluído, incluindo migração, permissões, interface e recuperação completa. Pacote [v0.1.25 publicado](./ATUALIZACAO-PRONTUARIO-V25.md), cadastros novamente homologados e pronto para instalação assistida; acesso clínico inicialmente negado. P3 físico continua prioritário quando houver dados do servidor. Enquanto aguarda, próxima etapa 6A: consolidar matriz final de homologação/carga/usabilidade sem repetir os aceites já aprovados nem iniciar novos módulos. As próximas ações abaixo são históricas.
