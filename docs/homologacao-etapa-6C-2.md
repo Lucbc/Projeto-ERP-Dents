@@ -14,8 +14,10 @@ Referência técnica: [diálogo HTML/MDN](https://developer.mozilla.org/en-US/do
 
 - **Chrome:** aceitação de foco inicial, 65 Tab, oito Shift+Tab, retorno ao botão de origem, Escape, campo inválido sem POST e rascunho preservado após 422. Escape e botão fechar não encerraram uma gravação pendente. Captura desktop inspecionada. Logs locais `.data/usability-diagnosis.log` e `.data/usability-acceptance-final.log`; métricas sem dados pessoais em `.data/homolog/usability-keyboard*.json`.
 - **HTTP/SQL:** paciente ausente da página inicial de 100 encontrado e aberto por teclado na Consulta; os 101 registros permaneceram com versão 1, sem gravação causada pelo teste de erro. Bootstrap/reinício e limpeza privados aprovados, volumes principais preservados.
-- **Componentes:** três testes de ciclo de vida, título, fechamento condicionado e interação interna aprovados. O shim de `dialog` no jsdom somente permite testar ciclo de vida; não simula nem comprova confinamento de foco. Suíte completa final em execução; teste legado atualizado para o novo nome acessível do botão.
-- **Regressões/CI:** em execução; instalação permanece v0.1.26 até aprovação e consolidação de novo pacote.
+- **Componentes:** três testes de ciclo de vida, título, fechamento condicionado e interação interna aprovados. O shim de `dialog` no jsdom somente permite testar ciclo de vida; não simula nem comprova confinamento de foco. Suíte completa final: **526/526 em 54 arquivos** aprovada; teste legado atualizado para o novo nome acessível do botão.
+- **Regressões Chrome/API/SQL:** cadastros, financeiro restrito, descarte de rascunhos, calendário, exclusão/isolamento de exames e escrita clínica aprovados. Capturas e downloads de exames, conflitos, permissões, horários e persistência mantidos. Logs locais `.data/modal-registration.log`, `.data/modal-billing.log`, `.data/modal-patient_unsaved.log`, `.data/modal-calendar_references_browser.log`, `.data/modal-exam_deletion_browser.log`, `.data/modal-exam_isolation_browser.log`, `.data/modal-clinical-writer.log`.
+- **Build final:** imagem web reconstruída após o patch de dependência; artefatos de navegador mantiveram os mesmos nomes com hash. Aceite Chrome/SQL de teclado/busca repetido nessa imagem (`.data/usability-patched.log`) e aprovado.
+- **CI:** [42047559900](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42047559900), código `f336aec`, passou nos testes, mas falhou na auditoria das imagens por libexpat. Instalação permanece v0.1.26 até aprovação e consolidação do pacote.
 
 ## Limites e retomada
 
@@ -24,3 +26,5 @@ Não certifica acessibilidade completa, leitor de tela ou todos os campos/erros 
 ## Ajuste de dependência durante o CI
 
 O CI `42047015437` interrompeu na auditoria npm por [GHSA-mrwp-f3q8-3g9p](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p). Lockfile atualizado somente de follow-redirects 1.16.1 para 1.16.2; auditoria npm local passou sem achados. O aviso descreve uso Node com arrays de outro contexto; não foi demonstrada exploração no ERP e o próprio aviso não reproduz o caso no Axios 1.20.0. Novo CI e build necessários antes de liberar o pacote.
+
+A auditoria local e o CI `42047559900` identificaram três alertas HIGH de libexpat 2.9.0-r0 (CVE-2026-113351, CVE-2026-117610, CVE-2026-118370). Os dois Dockerfiles agora fixam 2.10.0-r0; web/gateway/edge reconstruídos sem alterar configuração ou volumes. Repetir auditoria e CI dessa revisão antes da publicação.

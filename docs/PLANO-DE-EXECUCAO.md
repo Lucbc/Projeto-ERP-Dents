@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 05/11/2026
 
+**6C.2 — regressões aprovadas, imagens em validação:** 526 testes locais e Chrome/API/SQL de teclado, cadastros, agenda, financeiro, exames e prontuário aprovados. CI `42047559900` passou nos testes e parou na auditoria por três alertas HIGH de libexpat 2.9.0-r0. Dockerfiles atualizados para 2.10.0-r0; web/gateway/edge reconstruídos. Próximo: auditoria local, CI da correção, fumaça das imagens finais e publicação v0.1.27 com guias. Não repetir revisão funcional completa nem mover v0.1.26. Arquivos de instalação preparados localmente; tag nova ainda não publicada.
+
 **6C.2 — correção em validação:** Chrome confirmou foco/ciclo/restauração/Escape e preservação de rascunho; busca fora de 100 e SQL aprovados. Produto `998519b`; CI `42047015437` parou na auditoria npm. Corrigir lock de follow-redirects 1.16.1 → 1.16.2 (auditoria local limpa), repetir build/CI e concluir regressões antes da v0.1.27. Não publicar tag antes do aceite. Instalação permanece v0.1.26; detalhes no [relatório 6C.2](./homologacao-etapa-6C-2.md).
 
 **Início 6C.2 — base `5c02850`:** reproduzir em Chrome privado foco inicial, Tab/Shift+Tab, fechamento/restauração e erro de cadastro; conferir busca/abertura de paciente ausente da primeira página de 100 na Consulta, com SQL de preservação. Registrar diagnóstico antes de alterar componente compartilhado. Instalação v0.1.26 e odontograma futuro preservados.
