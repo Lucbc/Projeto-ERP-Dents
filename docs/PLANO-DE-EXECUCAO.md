@@ -14,7 +14,9 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
-## Ponto de retomada — 30/10/2026
+## Ponto de retomada — 05/11/2026
+
+**6B.2 — aceites concluídos, publicação final:** produto `f17b15f`, [CI 41055766576](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/41055766576) aprovado em 30/10: 523 frontend, 368 backend, builds/HTTP e seis imagens sem achados. Chrome/API/SQL de cadastros, referências de lista/calendário, quatro fusos e percurso até pagamento aprovados; volumes/containers principais preservados. Guias e [notas v0.1.26](./ATUALIZACAO-AGENDA-V26.md) consolidados em 05/11, sem migração nova. Próximo imediato: commit documental/tag, verificador no checkout limpo v0.1.25, push e igualdade remota; depois **6C, usabilidade/perfil financeiro restrito**, sem repetir carga sustentada. P3 físico prioritário. Odontograma ainda não implementado; pergunta do usuário respondida em 05/11, sem alterar a prioridade acordada. Este ponto substitui pendências históricas abaixo.
 
 **6B.2 — implementação e aceite ampliado aprovados; regressões/CI pendentes:** seleção paginada de pacientes pronta, 523 testes frontend e build aprovados. Chrome/API/SQL com 5.000 registros fictícios confirmou busca fora da primeira página, criação, edição no calendário, filtro, conflitos e preservação dos dados principais. Carga inicial de pacientes caiu de aproximadamente 5,48 MB para 21,94 KB por operador; ensaio atual rápido, sem equivalência às janelas sustentadas de 6B.1. Próximo imediato: regressões integradas de cadastros/referências/fusos, CI no GitHub e publicação v0.1.26 com guias atualizados. Instalação ainda v0.1.25; não considerar etapa encerrada até esses aceites. [Evidências](./homologacao-etapa-6B-2.md).
 
@@ -350,7 +352,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | 3A/3B e percurso operacional concluídos; R21 residual e cobertura visual histórica/multidia na fila | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Primeiro recorte clínico 4A–4C concluído e incluído na v0.1.25; cobrança/parcelamento ampliados fora desse recorte | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Piloto v0.1.25 liberado para instalação assistida; P3 físico aguarda dados do servidor | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
-| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B.1 concluídas; próxima 6B.2: reduzir carregamento de pacientes da agenda; depois 6C | Critérios da revisão atendidos e limitações aceitas explicitamente |
+| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B.1/6B.2 aceites aprovados; publicação v0.1.26 e depois 6C | Critérios da revisão atendidos e limitações aceitas explicitamente |
 
 Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. Funcionalidades de prontuário, parcelamento e instalação final terão decisões próprias antes da implementação.
 
