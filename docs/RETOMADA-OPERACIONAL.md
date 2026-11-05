@@ -2,7 +2,7 @@
 
 ## Estado atual — 05/11/2026
 
-**6B.2 aprovada:** busca paginada de pacientes na agenda, 523 frontend/368 backend e CI `41055766576` aprovados, regressões Chrome/API/SQL concluídas. [Relatório](./homologacao-etapa-6B-2.md) e [pacote v0.1.26](./ATUALIZACAO-AGENDA-V26.md). Finalizar publicação/verificação Git conforme o plano; depois 6C: percurso financeiro com operador sem privilégios administrativos e usabilidade por teclado. P3 físico prioritário quando chegarem os dados. Odontograma não está implementado. Os próximos passos abaixo são históricos.
+**6B.2 aprovada:** busca paginada de pacientes na agenda, 523 frontend/368 backend e CI `41055766576` aprovados, regressões Chrome/API/SQL concluídas. [Relatório](./homologacao-etapa-6B-2.md) e [pacote v0.1.26](./ATUALIZACAO-AGENDA-V26.md). Tag v0.1.26 publicada em `f7e4678`, verificador v0.1.25 → v0.1.26 e hashes remotos aprovados. Próximo 6C.1: percurso financeiro com operador sem privilégios administrativos e usabilidade por teclado. P3 físico prioritário quando chegarem os dados. Odontograma não está implementado. Os próximos passos abaixo são históricos.
 
 **6B.1 concluída:** [carga de até dez operadores/5.000 pacientes](./homologacao-etapa-6B-1.md), sem falhas inesperadas e com integridade API/SQL/Chrome verificada no escopo documentado. Gargalo confirmado na abertura de referências da agenda: 25 páginas/5,48 MB por operador. Próximo **6B.2: busca limitada no servidor para selecionar pacientes**, preservando seleção/rascunho/permissões; depois 6C. Instalação v0.1.25 e prioridade física P3 preservadas. Os próximos passos abaixo são históricos.
 

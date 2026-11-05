@@ -23,3 +23,5 @@ A entrada em uso continua liberada no escopo dos cadastros após o checklist fí
 Consultar [6B.2](./homologacao-etapa-6B-2.md) para componentes, Chrome, API, SQL e CI. Migração e recuperação de 0026 já foram verificadas em [4C.1](./homologacao-etapa-4C-1.md) e [4C.2](./homologacao-etapa-4C-2.md); não houve alteração nesses mecanismos nesta versão.
 
 Todos os ensaios locais usam dados fictícios e recursos privados de `erp-dents-homolog`. A instalação física e o teste de uma segunda estação na clínica continuam pendentes. Próxima melhoria do plano: 6C, usabilidade e financeiro com perfil restrito; instalação física P3 tem prioridade quando chegarem os dados do servidor.
+
+**Publicação conferida:** tag remota `piloto-cadastros-v0.1.26` = `f7e4678ff4dc6968a7b773f4a47924e97d9dfeaa`. O verificador Git aprovou o avanço do checkout limpo v0.1.25. A documentação posterior em main não altera o produto validado nem move a tag.
