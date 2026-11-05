@@ -35,7 +35,7 @@ let stage = 'start';
     await open(); await name().fill('Fictitious Unsaved Patient');
     for(const close of [
       ()=>page.getByRole('button',{name:'Cancelar',exact:true}).click(),
-      ()=>page.getByRole('button',{name:'x',exact:true}).click(),
+      ()=>page.getByRole('button',{name:'Fechar janela',exact:true}).click(),
       ()=>page.mouse.click(2,2),
     ]) {
       const before=dialogs; await close();

@@ -29,7 +29,7 @@ it("asks before discarding a new draft and preserves it when closing is declined
   window.dispatchEvent(leaving);
   expect(leaving.defaultPrevented).toBe(true);
   confirm.mockReturnValue(true);
-  fireEvent.click(screen.getByRole("button",{name:"x",exact:true}));
+  fireEvent.click(screen.getByRole("button",{name:"Fechar janela",exact:true}));
   expect(name()).toBeNull();
   const closed = new Event("beforeunload",{cancelable:true});
   window.dispatchEvent(closed);

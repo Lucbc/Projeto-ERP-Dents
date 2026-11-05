@@ -54,7 +54,7 @@ it("offers only raster image previews and releases the image URL on close", asyn
   expect(blobs[0].type).toBe("image/png");
   expect(open).not.toHaveBeenCalled();
   expect(screen.getAllByRole("button", { name: "Visualizar imagem" })).toHaveLength(1);
-  fireEvent.click(screen.getByRole("button", { name: "x" }));
+  fireEvent.click(screen.getByRole("button", { name: "Fechar janela" }));
   await waitFor(() => expect(revoked).toContain("blob:test-image"));
 });
 

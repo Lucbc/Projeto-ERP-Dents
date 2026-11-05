@@ -36,7 +36,7 @@ process.on('unhandledRejection',()=>{console.error('Exam deletion browser failed
   assert.deepEqual(fs.readFileSync(await saved.path()),png);
   stage='image preview';await row(first,'first-fictitious.png').getByRole('button',{name:'Visualizar imagem'}).click();
   await first.getByRole('img',{name:'first-fictitious.png'}).waitFor();
-  await first.getByRole('button',{name:'x',exact:true}).click();
+  await first.getByRole('button',{name:'Fechar janela',exact:true}).click();
   stage='draft and stale confirmation';
   // Keep an intentional stale-read window to exercise real DELETE/download 404,
   // even when automatic reads would otherwise remove the target first.

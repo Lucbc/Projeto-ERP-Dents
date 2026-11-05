@@ -36,7 +36,7 @@ process.on('unhandledRejection',()=>{console.error('Exam deletion browser failed
   assert.deepEqual(fs.readFileSync(await saved.path()),png);
   stage='image preview';await row(first,'first-fictitious.png').getByRole('button',{name:'Visualizar imagem'}).click();
   await first.getByRole('img',{name:'first-fictitious.png'}).waitFor();
-  await first.getByRole('button',{name:'x',exact:true}).click();
+  await first.getByRole('button',{name:'Fechar janela',exact:true}).click();
   stage='second patient fixture';
   const otherPatient=await first.evaluate(async headers=>{
    const result=await fetch('/api/patients',{method:'POST',headers,body:JSON.stringify({full_name:'Fictitious isolation B'})});
