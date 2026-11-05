@@ -20,3 +20,7 @@ Referência técnica: [diálogo HTML/MDN](https://developer.mozilla.org/en-US/do
 ## Limites e retomada
 
 Não certifica acessibilidade completa, leitor de tela ou todos os campos/erros do ERP. Próximo imediato: finalizar suíte, regressões de cadastros/agenda/financeiro/exames, CI e pacote com guias. Preservar prioridade P3 físico e odontograma mapeado para depois. Sem alterar regras clínicas/financeiras nesta correção compartilhada.
+
+## Ajuste de dependência durante o CI
+
+O CI `42047015437` interrompeu na auditoria npm por [GHSA-mrwp-f3q8-3g9p](https://github.com/advisories/GHSA-mrwp-f3q8-3g9p). Lockfile atualizado somente de follow-redirects 1.16.1 para 1.16.2; auditoria npm local passou sem achados. O aviso descreve uso Node com arrays de outro contexto; não foi demonstrada exploração no ERP e o próprio aviso não reproduz o caso no Axios 1.20.0. Novo CI e build necessários antes de liberar o pacote.
