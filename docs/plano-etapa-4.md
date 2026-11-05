@@ -95,3 +95,7 @@ Se a clínica escolher outra prioridade, reescrever este recorte antes de implem
 Inspeção de tela, rotas, casos de uso, entidades, schemas, modelos/FKs e permissões. Links locais e `git diff --check` verificados. Nenhum teste novo de API, banco ou navegador, nenhuma migração/rebuild/reinício; CI funcional anterior permanece identificado no percurso operacional. Sem nova tag: v0.1.23 continua liberada apenas para cadastros.
 
 Próximo: registrar as respostas e fechar o contrato da primeira entrega. Até lá, não iniciar escrita de prontuário nem alterar permissões dos dados existentes. Instalação física P3 continua prioritária quando chegarem os dados do servidor.
+
+## Odontograma futuro — 05/11/2026
+
+Por solicitação do usuário, o [odontograma está mapeado para implementação posterior](./PLANO-ODONTOGRAMA.md): seleção de dente, múltiplos eventos com procedimento/data e várias cores por dente. Ainda não implementado; representação clínica, histórico/correções e permissões serão definidos no recorte próprio. Não altera o escopo já entregue de evolução por consulta.

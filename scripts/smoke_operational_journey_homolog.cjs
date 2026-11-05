@@ -87,8 +87,22 @@ process.on('unhandledRejection', () => { console.error('Operational journey fail
     await clinical.api('POST','/api/financial/from-appointment/'+appointment.id,{status:'pending',idempotency_key:require('node:crypto').randomUUID()},403);
     await page.goto(origin+'/financial');
     await page.getByText('Sem permissão para acessar esta página.',{exact:true}).waitFor();
+    let cashier = admin;
+    if (input.restrictedBilling) {
+      stage='restricted cashier preparation';
+      const permissions = (await admin.api('GET','/api/permissions')).items.find(p=>p.role==='coordinator');
+      for (const actions of Object.values(permissions.permissions)) for (const key of Object.keys(actions)) actions[key]=false;
+      for (const resource of ['dashboard','appointments','financial']) permissions.permissions[resource].view=true;
+      permissions.permissions.financial.create=true;
+      permissions.permissions.financial.update=true;
+      await admin.api('PUT','/api/permissions/coordinator',{version:permissions.version,permissions:permissions.permissions});
+      await admin.api('POST','/api/users',{name:'Caixa Restrito Ficticio',email:'cashier-journey@example.com',password:input.password,role:'coordinator'},201);
+      cashier = await session('cashier-journey@example.com','America/Sao_Paulo');
+      assert.notEqual(cashier.identity.session_id,admin.identity.session_id);
+      for (const resource of ['users','permissions','patients']) await cashier.api('GET','/api/'+resource,undefined,403);
+    }
     stage='authorized billing UI';
-    const billing=admin.page;
+    const billing=cashier.page;
     await billing.goto(origin+'/financial');
     await billing.getByRole('button',{name:'Gerar da consulta',exact:true}).click();
     await billing.locator('select[name=appointment_id] option[value="'+appointment.id+'"]').waitFor({state:'attached'});
@@ -111,13 +125,26 @@ process.on('unhandledRejection', () => { console.error('Operational journey fail
     await paymentCard.getByText(/120,00/).waitFor();
     assert.equal(await paymentCard.count(),1);
     await paymentCard.getByText('Paciente: '+patient.full_name,{exact:true}).waitFor();
-    const history=await admin.api('GET','/api/financial/'+entry.id+'/payments');
+    const history=await cashier.api('GET','/api/financial/'+entry.id+'/payments');
     assert.equal(history.length,1); assert.equal(history[0].total_cents,12000);
     assert.equal(history[0].reference_snapshot.patient.name,patient.full_name);
     const current=await admin.api('GET','/api/financial/'+entry.id);
     assert.equal(current.status,'paid'); assert.equal(current.version,entry.version+1);
     assert.equal((await admin.api('GET','/api/financial?appointment_id='+appointment.id)).total,1);
     assert.equal((await reception.api('GET','/api/patients/'+patient.id)).version,patient.version);
+    if (input.restrictedBilling) {
+      stage='restricted cashier negative writes';
+      assert.equal(await billing.getByRole('button',{name:'Estornar registro',exact:true}).count(),0);
+      await cashier.api('DELETE','/api/financial/'+entry.id+'?version='+current.version,undefined,403);
+      await cashier.api('POST','/api/financial/'+entry.id+'/reverse-payment',{
+        version:current.version,payment_id:history[0].id,idempotency_key:require('node:crypto').randomUUID(),reason:'Fictitious forbidden reversal'
+      },403);
+      const preserved=await cashier.api('GET','/api/financial/'+entry.id);
+      assert.equal(preserved.version,current.version); assert.equal(preserved.status,'paid');
+      await billing.getByRole('button',{name:'Fechar',exact:true}).click();
+      assert.equal(await row.getByRole('button',{name:'Excluir',exact:true}).count(),0);
+      console.log('PASS: non-admin cashier generated, settled and read history without patient catalog/admin access; delete/reversal denied in UI and API; paid version preserved.');
+    }
     console.log('PASS: UI patient registration/reopen, booking, independent dentist consultation, denied reception billing/users and dentist generation, authorized generation/payment/history; API links, values, versions and single charge/payment verified.');
   } finally { await browser.close(); }
 })().catch(()=>{console.error('Operational journey failed at stage: '+stage);process.exitCode=1;});

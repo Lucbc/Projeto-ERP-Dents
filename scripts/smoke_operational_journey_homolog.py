@@ -4,10 +4,11 @@ from smoke_bootstrap_homolog import main
 from smoke_financial_history_browser_homolog import verify as browser
 
 
-def verify(*args):
+def verify(*args, restricted_billing=False):
     sql, schema = args[7:9]
     day = (datetime.now(timezone.utc) + timedelta(days=2)).date().isoformat()
-    browser(*args, browser_script='smoke_operational_journey_homolog.cjs', browser_input={'day': day})
+    browser(*args, browser_script='smoke_operational_journey_homolog.cjs',
+            browser_input={'day': day, 'restrictedBilling': restricted_billing})
     assert sql(f'''SELECT count(*) FROM "{schema}".patients p
         JOIN "{schema}".appointments a ON a.patient_id=p.id
         JOIN "{schema}".financial_entries f ON f.appointment_id=a.id AND f.patient_id=p.id
@@ -20,6 +21,13 @@ def verify(*args):
           AND pay.amount_cents=12000''') == '1'
     assert sql(f'SELECT count(*) FROM "{schema}".financial_entries') == '1'
     assert sql(f'SELECT count(*) FROM "{schema}".financial_payments') == '1'
+    if restricted_billing:
+        assert sql(f'''SELECT count(*) FROM "{schema}".financial_payments p
+            JOIN "{schema}".users u ON u.id=p.actor_id
+            WHERE u.role='coordinator' AND u.email='cashier-journey@example.com'
+              AND p.actor_name='Caixa Restrito Ficticio' ''') == '1'
+        assert sql(f'SELECT count(*) FROM "{schema}".financial_reversals') == '0'
+        args[6]('SQL: payment authored by restricted coordinator; no reversal or duplicate after denied writes')
     args[6]('SQL: same fictional patient/appointment/charge/payment, clinical instants, versions, amount, due date and no duplicates')
 
 
