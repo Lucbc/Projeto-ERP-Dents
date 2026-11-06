@@ -248,10 +248,10 @@ class PermissionAuthorizationTests(unittest.TestCase):
                             waiting.set()
                         repo, method = (permissions, 'save') if revoke else (users, 'update')
                         original = getattr(repo, method)
-                        def hook(*args):
+                        def hook(*args, **kwargs):
                             ready.set()
                             self.assertTrue(release.wait(10))
-                            return original(*args)
+                            return original(*args, **kwargs)
                         def run():
                             if revoke:
                                 return update_fixture(uc, UserRole.coordinator, denied, actor_id=self.admin.id, session_id=self.session_id)
