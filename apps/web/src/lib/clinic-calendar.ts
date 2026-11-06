@@ -13,6 +13,16 @@ export const clinicCalendarLocalizer = luxonLocalizer({
 }, { firstDayOfWeek: 1 });
 // All arithmetic already uses clinical days; RBC's host-offset correction would shorten multi-day events.
 clinicCalendarLocalizer.segmentOffset = 0;
+// Luxon already measures elapsed minutes in the clinic zone. The inherited
+// Date-based fallback adds the workstation's DST change a second time.
+clinicCalendarLocalizer.getDstOffset = () => 0;
+
+export function clinicEventTimeRange({ start, end }: { start: Date; end: Date }): string {
+  const from = clinicalDate(start), to = clinicalDate(end);
+  // Repeated wall-clock hours can be identical despite distinct instants.
+  const format = from.offset === to.offset ? "HH:mm" : "HH:mm 'UTC'ZZ";
+  return `${from.toFormat(format)} – ${to.toFormat(format)}`;
+}
 
 export function clinicDayRange(day: string): { from: string; to: string } {
   const start = DateTime.fromISO(day, { zone: CLINIC_TIME_ZONE }).startOf("day");

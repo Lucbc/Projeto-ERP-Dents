@@ -1,8 +1,28 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { SlotInfo } from "react-big-calendar";
-import { clinicCalendarLocalizer, clinicDayRange, clinicSelection } from "../src/lib/clinic-calendar";
+import { clinicCalendarLocalizer, clinicDayRange, clinicEventTimeRange, clinicSelection } from "../src/lib/clinic-calendar";
 import { clinicIntervalIsPositive, suggestedClinicEnd } from "../src/lib/clinic-time";
 import { formatDateTime, formatTime, fromInputDateTime } from "../src/lib/datetime";
+
+it("does not add the workstation DST correction to clinical elapsed minutes", () => {
+  // Model New York's offset change on the same date as Sao Paulo's 2018 change.
+  const offset = vi.spyOn(Date.prototype, "getTimezoneOffset").mockImplementation(function (this: Date) {
+    return this.getTime() < Date.parse("2018-11-04T06:00:00Z") ? 240 : 300;
+  });
+  try {
+    const start = new Date("2018-11-04T03:00:00Z");
+    const event = new Date("2018-11-04T12:00:00Z");
+    expect(clinicCalendarLocalizer.diff(start, event, "minutes") + clinicCalendarLocalizer.getDstOffset(start, event)).toBe(540);
+  } finally { offset.mockRestore(); }
+});
+
+it.each([
+  ["2019-02-17T01:30:00Z", "2019-02-17T02:30:00Z", "23:30 UTC-02:00 – 23:30 UTC-03:00"],
+  ["2018-11-04T02:30:00Z", "2018-11-04T03:30:00Z", "23:30 UTC-03:00 – 01:30 UTC-02:00"],
+  ["2020-01-07T13:00:00Z", "2020-01-07T14:00:00Z", "10:00 – 11:00"],
+])("distinguishes historical clock changes for %s", (start, end, expected) => {
+  expect(clinicEventTimeRange({ start: new Date(start), end: new Date(end) })).toBe(expected);
+});
 
 it.each([
   ["2020-01-07", "2020-01-07T03:00:00.000Z", "2020-01-08T02:59:59.999999Z", 24],

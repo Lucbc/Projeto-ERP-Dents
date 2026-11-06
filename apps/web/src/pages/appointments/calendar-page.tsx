@@ -1,4 +1,4 @@
-import { clinicalDate, clinicCalendarLocalizer, clinicMonthWindow, clinicSelection } from "@/lib/clinic-calendar";
+import { clinicalDate, clinicCalendarLocalizer, clinicEventTimeRange, clinicMonthWindow, clinicSelection } from "@/lib/clinic-calendar";
 import { clinicIntervalIsPositive, clinicTimeError, resolveClinicInput, suggestedClinicEnd } from "@/lib/clinic-time";
 import { AvailabilityReview, useAvailabilityReview } from "@/hooks/use-availability-review";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -533,6 +533,7 @@ export function CalendarPage() {
             endAccessor="end"
             culture="pt-BR"
             messages={calendarMessages}
+            formats={{ eventTimeRangeFormat: clinicEventTimeRange }}
             views={[Views.DAY, Views.WEEK, Views.MONTH]}
             toolbar={false}
             view={currentView}
@@ -577,6 +578,9 @@ export function CalendarPage() {
           <Button variant="outline" disabled={isSubmitting || references.loading} onClick={() => void references.reload()}>Atualizar cadastros do formulário</Button>
         </div>
         <AvailabilityReview review={availabilityReview} />
+        {editingAppointment && clinicalDate(new Date(editingAppointment.start_at)).offset !== clinicalDate(new Date(editingAppointment.end_at)).offset && (
+          <p className="mb-3 text-sm">Horário original com mudança de fuso: {clinicEventTimeRange({ start: new Date(editingAppointment.start_at), end: new Date(editingAppointment.end_at) })}. Os horários originais serão preservados se os campos não forem alterados.</p>
+        )}
         <fieldset disabled={isSubmitting || !references.ready}>
         <form className="grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onSubmit)}>
           {(editConflict || deleteReview) && editingAppointment && (

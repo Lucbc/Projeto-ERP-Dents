@@ -52,6 +52,7 @@ let stage = 'start';
           }
           await event.first().click();
           await page.locator('[name=start_at]').waitFor();
+          if (fixture.key === 'long-day') await page.getByText(/Horário original com mudança de fuso: 23:30 UTC-02:00 – 23:30 UTC-03:00/).waitFor();
           assert.equal(await page.locator('[name=start_at]').inputValue(), fixture.localStart);
           assert.equal(await page.locator('[name=end_at]').inputValue(), fixture.localEnd);
           await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
@@ -74,6 +75,21 @@ let stage = 'start';
             assert.ok(Math.abs(await event.first().evaluate(n => parseFloat(n.parentElement.style.flexBasis)) - 100 / 7) < 0.001);
             await page.getByRole('button', { name: 'Hoje', exact: true }).click();
             await event.first().waitFor();
+          }
+          if (fixture.key !== 'multiday' && mode === 'day') {
+            stage = zone + ' ' + fixture.key + ' select 12h';
+            // Select using the visible clinical clock label, not host date arithmetic.
+            const group = page.locator('.rbc-time-gutter .rbc-timeslot-group').filter({ hasText: '12:00' });
+            const timeBox = await group.boundingBox();
+            const dayBox = await page.locator('.rbc-day-slot').boundingBox();
+            assert.ok(timeBox && dayBox);
+            await page.locator('.rbc-time-content').evaluate(n => { n.scrollTop = 350; });
+            const label = await group.boundingBox();
+            await page.mouse.click(dayBox.x + dayBox.width / 2, label.y + 5);
+            await page.locator('[name=start_at]').waitFor();
+            assert.equal(await page.locator('[name=start_at]').inputValue(), fixture.localStart.slice(0, 10) + 'T12:00');
+            assert.equal(await page.locator('[name=end_at]').inputValue(), fixture.localStart.slice(0, 10) + 'T12:30');
+            await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
           }
         }
       }
