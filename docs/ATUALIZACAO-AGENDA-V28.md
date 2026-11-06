@@ -1,6 +1,6 @@
 # v0.1.28 — posição dos eventos históricos na agenda
 
-Consolidação em 06/11/2026. [CI 42223686843](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42223686843) aprovado: produto `aa7c8a6`, 530 frontend, 368 backend (567,658 s), builds/HTTP e seis imagens sem achados. Publicação Git em fechamento.
+Consolidação em 06/11/2026. [CI 42223686843](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42223686843) aprovado: produto `aa7c8a6`, 530 frontend, 368 backend (567,658 s), builds/HTTP e seis imagens sem achados. Publicação Git concluída.
 
 ## Mudança
 
@@ -19,3 +19,5 @@ Partindo de versões anteriores à v0.1.25, consultar também as [notas da migra
 ## Aceites e limites
 
 [Relatório 6D.2.2](./homologacao-etapa-6D-2-2.md) separa componentes, Chrome, API e SQL. Instalação assistida para cadastros continua condicionada ao checklist físico. O aceite visual histórico não autoriza criar consultas fora da disponibilidade nem selecionar uma ocorrência arbitrária da hora repetida; entradas ambíguas continuam sendo recusadas. Não houve novo ensaio de instalação Windows nesta entrega.
+
+**Publicação concluída em 06/11/2026:** tag `piloto-cadastros-v0.1.28` = `f6678f48c66ace0adf55a8c993be8f0892b62e51`, publicada e conferida no remoto. Verificador aprovou avanço do checkout limpo v0.1.27. Código de aplicação/scripts/imagens/Compose idêntico ao `aa7c8a6` aprovado no CI. Guias atualizados, instalação assistida para cadastros disponível após checklist físico. **Próximo: 6D.3.1, trilha de alterações de usuários/permissões**, conforme inventário; não repetir 6D.2 sem nova falha. P3 físico prioritário, odontograma posterior.

@@ -1,6 +1,6 @@
 # 6D.2.2 — compensação de fuso na agenda
 
-Início e conclusão dos aceites: 06/11/2026, base `1c487b3`. **Aprovada no recorte descrito; v0.1.28 em publicação.**
+Início e conclusão dos aceites: 06/11/2026, base `1c487b3`. **Aprovada no recorte descrito; v0.1.28 publicada.**
 
 ## Mudança
 
@@ -16,8 +16,10 @@ Início e conclusão dos aceites: 06/11/2026, base `1c487b3`. **Aprovada no reco
 - **Regressões Chrome/API/SQL aprovadas:** referências/conflitos de agenda, permissões 403, versão/disponibilidade 409, duração/rascunhos e seleção real por mouse; cadastros com CPF/nascimento/documentos históricos, busca, conflito, reabertura e limpeza explícita. Logs `.data/calendar-fix-calendar_references_browser.log` e `.data/calendar-fix-registration_pilot.log`. Bootstrap/reinício/limpeza privados aprovados.
 - **[CI 42223686843](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42223686843) aprovado: produto `aa7c8a6`, 530 frontend, 368 backend (567,658 s), builds/HTTP e seis imagens sem achados.** Log local `.data/calendar-ci-approved.log`.
 - Scripts integrados usam somente recursos privados de `erp-dents-homolog` e dados fictícios; não reiniciar containers principais ou remover volumes.
-- Aceites concluídos; tag/guias v0.1.28 em publicação. Histórico do diagnóstico em [6D.2.1](./diagnostico-etapa-6D-2.md).
+- Aceites concluídos; tag/guias v0.1.28 publicada. Histórico do diagnóstico em [6D.2.1](./diagnostico-etapa-6D-2.md).
 
 ## Limites
 
 Fixtures históricas são preparadas por SQL privado; não ampliam a regra de disponibilidade nem autorizam criação de atendimentos multidia. A seleção validada nos dias históricos é a faixa de 12h; não há escolha explícita entre as duas ocorrências de uma hora repetida em novos agendamentos. A validação existente continua recusando novos horários ambíguos/inexistentes, preservando instantes originais ao editar outros campos. Não houve novo ensaio de instalação física, que continua dependente do checklist da clínica.
+
+**Publicação concluída em 06/11/2026:** tag `piloto-cadastros-v0.1.28` = `f6678f48c66ace0adf55a8c993be8f0892b62e51`, publicada e conferida no remoto. Verificador aprovou avanço do checkout limpo v0.1.27. Código de aplicação/scripts/imagens/Compose idêntico ao `aa7c8a6` aprovado no CI. Guias atualizados, instalação assistida para cadastros disponível após checklist físico. **Próximo: 6D.3.1, trilha de alterações de usuários/permissões**, conforme inventário; não repetir 6D.2 sem nova falha. P3 físico prioritário, odontograma posterior.
