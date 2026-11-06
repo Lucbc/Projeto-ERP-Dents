@@ -341,6 +341,8 @@ Os registros parciais e o diagnóstico abaixo são históricos. Capacidade, inst
 
 ### R20 — P2 — Datas sem horário são tratadas como instantes UTC
 
+**Atualização 06/11/2026:** [6D.2.2](./homologacao-etapa-6D-2-2.md) corrigiu compensação de fuso da estação e distinguiu offsets históricos. Chrome/API/SQL em quatro fusos, seleção de 12h, eventos multidia e regressões aprovados, incluindo CI. Limites de criação/horas ambíguas permanecem explícitos; não há reescrita de instantes históricos.
+
 **Atualização em 27/10/2026: corrigido no escopo original.** [Matriz 3B.5](./homologacao-etapa-3B-5.md) reúne evidências por camada, versões e limitações. O diagnóstico abaixo é histórico; cobertura visual ampliada de eventos históricos/multidia e aceite operacional completo permanecem separados.
 
 **Reproduzido.** [datetime.ts](../apps/web/src/lib/datetime.ts#L6): `new Date('2000-01-15').toLocaleDateString('pt-BR')` resulta em `14/01/2000` no fuso de São Paulo. Isso afeta nascimento na lista de pacientes e em Consulta. A tabela financeira já usa uma conversão diferente, evidenciando a inconsistência.
@@ -466,6 +468,8 @@ O backend confia no nome e MIME informado pelo upload; não restringe conteúdo.
 **Correção:** limite configurável por arquivo/requisição e quota, leitura por blocos, validação antecipada de tamanho e execução do trabalho bloqueante fora do event loop. Validar espaço livre, devolver 413 quando necessário e implementar progresso/cancelamento. Alinhar limites no proxy e na API. Limites devem ser definidos a partir dos exames realmente utilizados; radiografias e arquivos 3D podem ter necessidades diferentes.
 
 ### R32 — P1 — Governança de dados e auditoria precisam ser desenhadas
+
+**Inventário atualizado em 06/11/2026:** autoria financeira/clínica e recibos de criação já existem. [Matriz de lacunas e próximo recorte administrativo](./PLANO-AUDITORIA.md), por inspeção estática, diferencia essas proteções de auditoria geral de alterações/acessos. R32 continua aberto; o diagnóstico original abaixo não descreve sozinho o estado atual.
 
 **Lacuna de produto/operação.** Não há modelo de autoria de alterações, auditoria de acesso clínico/download, motivo de exclusão, retenção, exportação controlada de prontuário ou registro de incidentes.
 
