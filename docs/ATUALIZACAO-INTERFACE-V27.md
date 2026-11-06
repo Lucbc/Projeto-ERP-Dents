@@ -24,3 +24,5 @@ Na conferência, abrir/fechar um cadastro, testar Tab/Shift+Tab e confirmar que 
 [6C.2](./homologacao-etapa-6C-2.md) separa testes de componentes, Chrome, HTTP e SQL. O diagnóstico de foco foi reproduzido antes da correção. Não é certificação integral de acessibilidade ou teste físico da rede da clínica.
 
 Odontograma segue no [planejamento posterior](./PLANO-ODONTOGRAMA.md). P3 físico tem prioridade quando os dados do servidor estiverem disponíveis.
+
+**Publicação concluída em 06/11/2026:** tag `piloto-cadastros-v0.1.27` = `7e9ecec32311b801d32dd6ae44637c28f61d58b3`, publicada e conferida no remoto. Verificador aprovou avanço do checkout limpo v0.1.26; aplicação/imagens/Compose preservam o código aprovado no CI `e4ec7e7`. Próxima etapa: 6D.2 (agenda histórica/multidia), sem repetir 6C.2. Instalação assistida para cadastros disponível após checklist físico da clínica.

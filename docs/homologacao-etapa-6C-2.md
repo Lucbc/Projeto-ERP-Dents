@@ -21,7 +21,7 @@ Referência técnica: [diálogo HTML/MDN](https://developer.mozilla.org/en-US/do
 
 ## Limites e retomada
 
-Não certifica acessibilidade completa, leitor de tela ou todos os campos/erros do ERP. Suíte e regressões locais concluídas; CI aprovado; pacote/guias v0.1.27 em publicação final. O diagnóstico adicional 6D.1 está no relatório próprio; depois, cobertura histórica/multidia da agenda. Preservar prioridade P3 físico e odontograma mapeado para depois. Sem alterar regras clínicas/financeiras nesta correção compartilhada.
+Não certifica acessibilidade completa, leitor de tela ou todos os campos/erros do ERP. Suíte e regressões locais concluídas; CI aprovado; pacote/guias v0.1.27 publicados. O diagnóstico adicional 6D.1 está no relatório próprio; depois, cobertura histórica/multidia da agenda. Preservar prioridade P3 físico e odontograma mapeado para depois. Sem alterar regras clínicas/financeiras nesta correção compartilhada.
 
 ## Ajuste de dependência durante o CI
 
@@ -32,3 +32,5 @@ A auditoria local e o CI `42047559900` identificaram três alertas HIGH de libex
 Auditoria local após reconstrução: seis imagens sem achados (`.data/modal-images-fixed.log`). Ensaio adicional de instalação nova interrompido antes dos containers: `configure-server.ps1` falhou em `Set-Acl` por relação de confiança deste Windows com o domínio. Não houve bypass de ACL, alteração de domínio ou configuração de produção. Os preparadores não mudaram; esse ensaio adicional não será declarado aprovado. Fumaça da imagem web final e CI da revisão `e4ec7e7` permanecem como aceites separados; P3 físico ainda exige seu checklist.
 
 Cadastros Chrome/API/SQL passaram novamente na imagem final com libexpat 2.10.0-r0 (`.data/modal-registration-runtime-final.log`). CI final também verifica o conjunto completo de serviços e proxies. Não houve reinício dos containers principais ou remoção de volumes.
+
+**Publicação concluída em 06/11/2026:** tag `piloto-cadastros-v0.1.27` = `7e9ecec32311b801d32dd6ae44637c28f61d58b3`, publicada e conferida no remoto. Verificador aprovou avanço do checkout limpo v0.1.26; aplicação/imagens/Compose preservam o código aprovado no CI `e4ec7e7`. Próxima etapa: 6D.2 (agenda histórica/multidia), sem repetir 6C.2. Instalação assistida para cadastros disponível após checklist físico da clínica.

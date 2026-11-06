@@ -1,6 +1,8 @@
 # Retomada da homologação operacional — 23/10/2026
 
-**6C.2 concluída — 06/11/2026:** CI 42093636149 aprovado no código e4ec7e7: 526 frontend, 368 backend (692,219 s), builds/HTTP e seis imagens sem achados. Chrome/API/SQL aprovados. Guias v0.1.27 preparados, sem nova migração; falta somente publicar e conferir tag/main. Ensaio adicional de instalação nova neste computador limitado pela confiança Windows/domínio em Set-Acl, sem contornar ACL. Diagnóstico 6D.1 concluído no recorte documentado, sem correção adicional de produto necessária. Próximo: **6D.2, cobertura visual da agenda histórica/multidia**. P3 físico prioritário quando chegarem os dados do servidor; odontograma mapeado para depois. Este checkpoint substitui pendências históricas abaixo.
+**Publicação concluída em 06/11/2026:** tag `piloto-cadastros-v0.1.27` = `7e9ecec32311b801d32dd6ae44637c28f61d58b3`, publicada e conferida no remoto. Verificador aprovou avanço do checkout limpo v0.1.26; aplicação/imagens/Compose preservam o código aprovado no CI `e4ec7e7`. Próxima etapa: 6D.2 (agenda histórica/multidia), sem repetir 6C.2. Instalação assistida para cadastros disponível após checklist físico da clínica.
+
+**6C.2 concluída — 06/11/2026:** CI 42093636149 aprovado no código e4ec7e7: 526 frontend, 368 backend (692,219 s), builds/HTTP e seis imagens sem achados. Chrome/API/SQL aprovados. Guias v0.1.27 preparados, sem nova migração; publicação concluída conforme registro acima. Ensaio adicional de instalação nova neste computador limitado pela confiança Windows/domínio em Set-Acl, sem contornar ACL. Diagnóstico 6D.1 concluído no recorte documentado, sem correção adicional de produto necessária. Próximo: **6D.2, cobertura visual da agenda histórica/multidia**. P3 físico prioritário quando chegarem os dados do servidor; odontograma mapeado para depois. Este checkpoint substitui pendências históricas abaixo.
 
 ## Estado atual — 05/11/2026
 
