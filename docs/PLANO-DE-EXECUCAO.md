@@ -14,7 +14,9 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
-## Ponto de retomada — 05/11/2026
+## Ponto de retomada — 06/11/2026
+
+**6C.2 concluída — 06/11/2026:** CI 42093636149 aprovado no código e4ec7e7: 526 frontend, 368 backend (692,219 s), builds/HTTP e seis imagens sem achados. Chrome/API/SQL aprovados. Guias v0.1.27 preparados, sem nova migração; falta somente publicar e conferir tag/main. Ensaio adicional de instalação nova neste computador limitado pela confiança Windows/domínio em Set-Acl, sem contornar ACL. Diagnóstico 6D.1 concluído no recorte documentado, sem correção adicional de produto necessária. Próximo: **6D.2, cobertura visual da agenda histórica/multidia**. P3 físico prioritário quando chegarem os dados do servidor; odontograma mapeado para depois. Este checkpoint substitui pendências históricas abaixo.
 
 **6D.1 — diagnóstico concluído no recorte de nomes/flags:** [HTTP/SQL](./diagnostico-etapa-6D-1.md) confirmou null de nome → 400 e active → 422 em pacientes/dentistas/procedimentos/especialidades, sem alterar linhas. Omissão e limpeza opcional funcionam. Achado histórico 500 não se reproduziu; não corrigir produto sem necessidade demonstrada. R21 global permanece delimitado. Após publicar 6C.2/v0.1.27, próximo **6D.2: cobertura visual de agenda histórica/multidia**, reproduzindo limites antes de propor mudanças. P3 físico prioritário; odontograma continua mapeado para depois.
 
@@ -368,7 +370,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | 3A/3B e percurso operacional concluídos; R21 residual e cobertura visual histórica/multidia na fila | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Primeiro recorte clínico 4A–4C concluído e incluído na v0.1.25; cobrança/parcelamento ampliados fora desse recorte | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Piloto v0.1.25 liberado para instalação assistida; P3 físico aguarda dados do servidor | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
-| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C.1 concluídas, v0.1.26 publicada; próxima 6C.2 | Critérios da revisão atendidos e limitações aceitas explicitamente |
+| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C e diagnóstico 6D.1 concluídos; v0.1.27 em publicação; próxima 6D.2 | Critérios da revisão atendidos e limitações aceitas explicitamente |
 
 Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. Funcionalidades de prontuário, parcelamento e instalação final terão decisões próprias antes da implementação.
 

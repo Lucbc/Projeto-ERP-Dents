@@ -8,11 +8,11 @@ O servidor fica ligado e concentra o programa, banco e exames. Cada estação ab
 
 O sistema apresenta horários no fuso de São Paulo, inclusive quando uma estação está configurada em outro fuso. Não é necessário configurar o fuso dentro do programa. Mantenha data e hora do Windows sincronizadas automaticamente.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.26`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.27`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
-A v0.1.26 acrescenta busca paginada de pacientes na agenda e mantém a migração 0026 e o prontuário da v0.1.25, inicialmente sem acesso em todos os perfis. Para começar os cadastros, não é necessário habilitá-lo. Consulte as [notas do pacote](./ATUALIZACAO-AGENDA-V26.md); quem já possui instalação deve seguir o roteiro de atualização, sem recriar configuração ou volumes.
+A v0.1.27 corrige navegação por teclado nas janelas, atualiza dependências e mantém a busca paginada de pacientes na agenda e mantém a migração 0026 e o prontuário da v0.1.25, inicialmente sem acesso em todos os perfis. Para começar os cadastros, não é necessário habilitá-lo. Consulte as [notas do pacote](./ATUALIZACAO-INTERFACE-V27.md); quem já possui instalação deve seguir o roteiro de atualização, sem recriar configuração ou volumes.
 
 Informação provisória do responsável: Windows 10 Home ou 11 Home, possivelmente 16 GB de RAM; confirmar no computador antes de instalar. Abrir `winver` para conferir edição/versão e **Configurações → Sistema → Sobre** para RAM/processador. A edição Home admite containers Linux, que são os utilizados pelo ERP; não comprar uma atualização para Pro apenas por esse motivo. A versão/build do Windows, WSL e virtualização ainda precisam atender aos requisitos oficiais abaixo. Não considerar qualquer Windows 10 automaticamente compatível ou ainda suportado.
 
@@ -40,7 +40,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.26
+git checkout piloto-cadastros-v0.1.27
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1
@@ -60,7 +60,7 @@ Para uma instalação nova, não é mais necessário copiar o arquivo de exemplo
 
 O comando cria `.env` na raiz do projeto com senha de banco, chave de sessão e código de ativação independentes, sem mostrá-los. Configura conexão interna com `db`, origem HTTPS, porta (443 por padrão), exames e fuso `America/Sao_Paulo`. Para outra porta, incluí-la na URL, por exemplo `https://erp.clinica.local:8443`. Usar nome DNS ou IPv4; IPv6 não é aceito por este preparador.
 
-O arquivo fica acessível à conta Windows que executou o comando, SYSTEM e administradores. Executar o Docker/Compose com essa conta autorizada. O preparador exige um destino que permita aplicar essas permissões; uma falha de proteção interrompe a criação. Não publica o arquivo nem inicia containers.
+O arquivo fica acessível à conta Windows que executou o comando, SYSTEM e administradores. Executar o Docker/Compose com essa conta autorizada. O preparador exige um destino que permita aplicar essas permissões; uma falha de proteção interrompe a criação. Não publica o arquivo nem inicia containers. Se `Set-Acl` informar falha na relação de confiança com o domínio, interromper a preparação e solicitar ao suporte a correção do vínculo/conta do Windows. Não retirar a proteção do arquivo nem contornar a falha concedendo acesso geral.
 
 **Se `.env` já existir, o comando interrompe sem alterar nada.** Isso também vale para arquivo vazio ou parcialmente preparado. O suporte deve inspecioná-lo localmente e ajustar apenas o necessário; não apagar configurações de uma instalação existente nem gerar novas chaves a cada atualização. Não compartilhar seu conteúdo em logs, prints ou Git.
 

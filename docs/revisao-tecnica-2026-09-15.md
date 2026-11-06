@@ -351,6 +351,8 @@ Além disso, o vencimento padrão usa `new Date().toISOString().slice(0, 10)` em
 
 ### R21 — P2 — Schemas aceitam `null` que os casos de uso não suportam
 
+**Atualização em 05/11/2026 — recorte residual verificado:** [6D.1](./diagnostico-etapa-6D-1.md) confirmou nomes nulos → 400 e flags `active` nulas → 422 em pacientes/dentistas/procedimentos/especialidades, com linhas SQL preservadas. Omissão e limpeza opcional funcionam; o 500 histórico não se reproduziu nesses campos. Usuários já possuem guarda de null no caso de uso, identificada por inspeção, sem novo aceite HTTP neste recorte. Consultas já foram tratadas em 3B.4B. R21 não está encerrado para todos os campos; o diagnóstico original abaixo é histórico.
+
 **Reproduzido.** [schemas.py](../apps/api/src/api/schemas/schemas.py), [user_use_cases.py](../apps/api/src/core/use_cases/user_use_cases.py#L46), [appointment_use_cases.py](../apps/api/src/core/use_cases/appointment_use_cases.py#L75).
 
 `UserUpdateRequest(email=None)` é válido no schema, mas provoca `AttributeError` no `.lower()`. `AppointmentUpdateRequest(start_at=None)` chega à comparação de datas e causa `TypeError`. Flags obrigatórias também aceitam `null` no schema e podem violar `NOT NULL`. Datas sem timezone ou com mistura de datas com/sem offset não são normalizadas de forma consistente.

@@ -1,5 +1,7 @@
 # Retomada da homologação operacional — 23/10/2026
 
+**6C.2 concluída — 06/11/2026:** CI 42093636149 aprovado no código e4ec7e7: 526 frontend, 368 backend (692,219 s), builds/HTTP e seis imagens sem achados. Chrome/API/SQL aprovados. Guias v0.1.27 preparados, sem nova migração; falta somente publicar e conferir tag/main. Ensaio adicional de instalação nova neste computador limitado pela confiança Windows/domínio em Set-Acl, sem contornar ACL. Diagnóstico 6D.1 concluído no recorte documentado, sem correção adicional de produto necessária. Próximo: **6D.2, cobertura visual da agenda histórica/multidia**. P3 físico prioritário quando chegarem os dados do servidor; odontograma mapeado para depois. Este checkpoint substitui pendências históricas abaixo.
+
 ## Estado atual — 05/11/2026
 
 **6C.1 concluída:** [financeiro por operador restrito](./homologacao-etapa-6C-1.md) aprovado em Chrome/HTTP/SQL, incluindo autoria e negações reais. Próximo **6C.2**, teclado/foco/erros e busca fora dos primeiros 100 na Consulta. Aplicação, instalação v0.1.26 e guias preservados. [Odontograma mapeado para depois](./PLANO-ODONTOGRAMA.md), ainda não implementado. P3 físico prioritário; detalhes no ponto atual do plano.
