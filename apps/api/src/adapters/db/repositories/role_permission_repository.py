@@ -10,6 +10,7 @@ from src.adapters.db.models.models import RolePermissionModel
 from src.core.domain.entities import RolePermission, UserRole
 from src.core.domain.exceptions import ConflictError
 from src.core.ports.repositories import RolePermissionRepository
+from .administrative_audit import record_permission_event
 
 
 class SqlAlchemyRolePermissionRepository(RolePermissionRepository):
@@ -24,8 +25,9 @@ class SqlAlchemyRolePermissionRepository(RolePermissionRepository):
         items = self.session.scalars(select(RolePermissionModel).order_by(RolePermissionModel.role.asc())).all()
         return [self._to_entity(item) for item in items]
 
-    def save(self, role: UserRole, permissions: dict[str, dict[str, bool]], version: int) -> RolePermission:
+    def save(self, role: UserRole, permissions: dict[str, dict[str, bool]], version: int, *, actor_id=None) -> RolePermission:
         try:
+            before = self.get_by_role(role) if actor_id is not None else None
             if version == 0:
                 stmt = insert(RolePermissionModel).values(role=role, permissions=permissions, version=1).on_conflict_do_nothing(
                     index_elements=[RolePermissionModel.role])
@@ -38,6 +40,8 @@ class SqlAlchemyRolePermissionRepository(RolePermissionRepository):
                 raise ConflictError('As permissões foram alteradas. Carregue a versão atual e revise antes de salvar.',
                                     code='stale_version')
             result = self._to_entity(item)
+            if actor_id is not None:
+                record_permission_event(self.session, actor_id, role, before, result)
             self.session.commit()
             return result
         except Exception:

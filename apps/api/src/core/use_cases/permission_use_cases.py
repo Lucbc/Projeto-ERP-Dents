@@ -52,7 +52,7 @@ class PermissionUseCases:
 
             self._validate_resources(permissions)
             normalized = normalize_permissions(role, permissions)
-            return self.repository.save(role, normalized, version)
+            return self.repository.save(role, normalized, version, actor_id=actor.id)
 
     def _validate_resources(self, permissions: dict[str, dict[str, bool]]) -> None:
         invalid_resources = sorted(resource for resource in permissions.keys() if resource not in PERMISSION_RESOURCES)

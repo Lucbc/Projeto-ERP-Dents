@@ -9,6 +9,7 @@ from src.core.domain.exceptions import ConflictError
 from src.core.user_version import check_user_version
 from src.core.domain.entities import User, UserRole
 from src.core.ports.repositories import UserRepository
+from .administrative_audit import record_user_event
 
 
 class SqlAlchemyUserRepository(UserRepository):
@@ -99,14 +100,17 @@ class SqlAlchemyUserRepository(UserRepository):
         item = self.session.scalar(select(UserModel).where(UserModel.email == email))
         return self._to_entity(item) if item else None
 
-    def create(self, data: dict) -> User:
+    def create(self, data: dict, *, actor_id=None) -> User:
         item = UserModel(**data)
         self.session.add(item)
+        if actor_id is not None:
+            self.session.flush()
+            record_user_event(self.session, actor_id, 'user.created', after=self._to_entity(item))
         self.session.commit()
         self.session.refresh(item)
         return self._to_entity(item)
 
-    def update(self, user_id, data: dict, version: int):
+    def update(self, user_id, data: dict, version: int, *, actor_id=None):
         with self.administration_lock():
             current = self.get(user_id)
             if current is None:
@@ -121,16 +125,22 @@ class SqlAlchemyUserRepository(UserRepository):
                    for key in ('password_hash', 'is_active', 'role', 'dentist_id', 'email')):
                 self.session.execute(delete(AuthSessionModel).where(AuthSessionModel.user_id == user_id))
             result = self._to_entity(item)
+            if actor_id is not None:
+                record_user_event(self.session, actor_id,
+                                  'user.password_reset' if 'password_hash' in values else 'user.updated',
+                                  before=current, after=result)
             self.session.commit()
             return result
 
-    def delete(self, user_id, version: int) -> bool:
+    def delete(self, user_id, version: int, *, actor_id=None) -> bool:
         with self.administration_lock():
             current = self.get(user_id)
             if current is None:
                 return False
             check_user_version(current, version)
             self.session.execute(delete(UserModel).where(UserModel.id == user_id, UserModel.version == version))
+            if actor_id is not None:
+                record_user_event(self.session, actor_id, 'user.deleted', before=current)
             self.session.commit()
             return True
 

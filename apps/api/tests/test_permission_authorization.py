@@ -123,10 +123,10 @@ class PermissionAuthorizationTests(unittest.TestCase):
                     with Session(self.engine) as db:
                         _, repo, uc = self.cases(db)
                         original = repo.save
-                        def held(*args):
+                        def held(*args, **kwargs):
                             ready.set()
                             self.assertTrue(release.wait(10))
-                            return original(*args)
+                            return original(*args, **kwargs)
                         with patch.object(repo, 'save', held):
                             return update_fixture(uc, UserRole.reception, self.changed(), actor_id=actor.id, session_id=sid)
 
@@ -212,7 +212,7 @@ class PermissionAuthorizationTests(unittest.TestCase):
         before = self.matrix()
         with Session(self.engine) as db:
             _, repo, uc = self.cases(db)
-            def failing(role, matrix, version):
+            def failing(role, matrix, version, **kwargs):
                 db.get(RolePermissionModel, role).permissions = matrix
                 db.flush()
                 raise RuntimeError('Fictitious failure after flush')

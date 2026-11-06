@@ -71,7 +71,7 @@ class UserUseCases:
                 "role": role, "dentist_id": self._normalize_dentist_id(role, data.get("dentist_id")),
                 "password_hash": self.auth_service.hash_password(data["password"]),
                 "is_active": data.get("is_active", True),
-            })
+            }, actor_id=actor.id)
 
     def update(self, user_id: UUID, data: dict, *, actor_id: UUID, session_id: UUID) -> User:
         with self._authorize(actor_id, session_id, "update") as actor:
@@ -97,7 +97,7 @@ class UserUseCases:
             data["role"] = role
             dentist_id = data["dentist_id"] if "dentist_id" in data else current.dentist_id
             data["dentist_id"] = self._normalize_dentist_id(role, dentist_id)
-            user = self.user_repository.update(user_id, data, data['version'])
+            user = self.user_repository.update(user_id, data, data['version'], actor_id=actor.id)
             if user is None:
                 raise NotFoundError("Usuário não encontrado.")
             return user
@@ -110,7 +110,7 @@ class UserUseCases:
             validate_new_password(new_password)
             user = self.user_repository.update(user_id, {
                 "password_hash": self.auth_service.hash_password(new_password),
-            }, version)
+            }, version, actor_id=actor.id)
             if user is None:
                 raise NotFoundError("Usuário não encontrado.")
             return user
@@ -121,7 +121,7 @@ class UserUseCases:
             self._protect_admin(actor, current.role)
             check_user_version(current, version)
             self._protect_last_admin(current, None, False)
-            if not self.user_repository.delete(user_id, version):
+            if not self.user_repository.delete(user_id, version, actor_id=actor.id):
                 raise NotFoundError("Usuário não encontrado.")
 
     def _normalize_dentist_id(self, role: UserRole, dentist_id: UUID | None) -> UUID | None:
