@@ -8,6 +8,8 @@ Each test creates and drops only its own randomly named schema, never public.
 from concurrent.futures import ThreadPoolExecutor
 import os
 import re
+import subprocess
+import sys
 import threading
 import time
 import unittest
@@ -18,7 +20,6 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
-from src.adapters.db.models.base import Base
 from src.adapters.db.models.models import UserModel
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
 from src.adapters.db.repositories.role_permission_repository import SqlAlchemyRolePermissionRepository
@@ -40,12 +41,15 @@ class UserAdministrationTests(unittest.TestCase):
         if url.database != "erp_dents_homolog":
             self.fail("Tests require the erp_dents_homolog database")
         self.schema = "test_users_" + uuid4().hex
-        self.root = create_engine(url)
+        self.root = create_engine(url, hide_parameters=True)
         with self.root.begin() as db:
             db.execute(text(f'CREATE SCHEMA "{self.schema}"'))
-        self.engine = create_engine(url, connect_args={"options": f"-csearch_path={self.schema}"})
+        self.engine = create_engine(url, hide_parameters=True, connect_args={"options": f"-csearch_path={self.schema}"})
         self.addCleanup(self.dispose_schema)
-        Base.metadata.create_all(self.engine)
+        # Include migration-owned tables/triggers, just like the running API.
+        migrated = subprocess.run([sys.executable, '-m', 'alembic', 'upgrade', 'head'],
+                                  env={**os.environ, 'PGOPTIONS': '-csearch_path=' + self.schema}, capture_output=True)
+        self.assertEqual(migrated.returncode, 0, 'Isolated administration migration failed')
         self.db = Session(self.engine, expire_on_commit=False)
         self.addCleanup(self.db.close)
         self.repo = SqlAlchemyUserRepository(self.db)
