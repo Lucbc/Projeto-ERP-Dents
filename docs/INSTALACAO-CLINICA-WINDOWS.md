@@ -1,6 +1,10 @@
 # Instalação na clínica — servidor Windows
 
-Atualizado em 06/11/2026. Dados serão cadastrados do zero, em outro computador Windows.
+Atualizado em 07/11/2026. Dados serão cadastrados do zero, em outro computador Windows.
+
+## Pendência de instalação nova — 07/11/2026
+
+A construção da imagem da API da v0.1.28 foi reproduzida com falha: o repositório Alpine deixou de fornecer `zlib=1.3.2-r1`. A correção para `1.4-r0` passou nos builds, testes e segurança do CI 42401571437 no desenvolvimento, mas ainda não foi publicada em uma tag de instalação. **Aguardar uma tag corrigida e homologada antes de executar uma instalação nova.** Não usar o HEAD de desenvolvimento como substituto: ele contém a auditoria administrativa ainda parcial e a migração 0027. Instalações com imagens já construídas não precisam ser apagadas; preservar configuração, banco, exames e backups. Esta pendência prevalece sobre a liberação histórica descrita abaixo. A próxima publicação deve atualizar os comandos deste roteiro.
 
 ## Como será o uso
 

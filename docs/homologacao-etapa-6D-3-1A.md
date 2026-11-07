@@ -1,6 +1,6 @@
 # 6D.3.1A — gravação da auditoria administrativa
 
-Início: 06/11/2026, base `29953bd`. **Em validação; instalação permanece v0.1.28.** Esta é a fundação de gravação, sem endpoint/tela de leitura. A entrega completa inclui a consulta protegida, migração/recuperação e aceite de interface em subetapas posteriores.
+Início: 06/11/2026, base `29953bd`. **Gravação concluída em 07/11/2026; nenhuma tag nova publicada.** Esta é a fundação de gravação, sem endpoint/tela de leitura. A entrega completa inclui a consulta protegida, migração/recuperação e aceite de interface em subetapas posteriores.
 
 ## Contrato implementado
 
@@ -18,7 +18,13 @@ Início: 06/11/2026, base `29953bd`. **Em validação; instalação permanece v0
 - **Interface:** não alterada nem homologada para consultar auditoria; a tela não existe nesta subetapa. Não apresentar os testes de API/banco como aceite Chrome.
 - **Regressões:** 16 testes de administração aprovados (60,882 s) e 21 de permissões (91,336 s), incluindo concorrência, revogação, versões e rollback. O primeiro grupo ainda criava tabelas somente pelo ORM; foi atualizado para migrar o esquema privado real. Hooks dos testes de concorrência foram adaptados para encaminhar `actor_id`. As execuções anteriores acusaram esses problemas de preparação; não foram tratadas como aceites. Logs finais `.data/audit-user-administration-final.log` e `.data/audit-permission-final.log`.
 - **Chrome/API/SQL de cadastros aprovado:** CPF/nascimento, históricos, permissões, busca, conflitos, reabertura e RG/limpeza explícita. `.data/audit-registration.log`. Isso verifica preservação do piloto; não é aceite visual de uma tela de auditoria.
-- **CI pendente:** [42273451399](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42273451399), código `7abe368`. Execuções `42273055381`/`42273269384` canceladas para incorporar os ajustes dos testes. Pacote de instalação permanece inalterado.
+- **CI aprovado em 07/11:** a execução [42273451399](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42273451399) passou nos 530 testes frontend e parou no build, antes do backend: `zlib=1.3.2-r1` indisponível. Reprodução descartável confirmou `1.4-r0` disponível. Pin atualizado nas cinco definições Docker em `de130e1`; seis imagens reconstruídas localmente, sem reiniciar serviços/volumes principais. Novo [CI 42401571437](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42401571437) aprovado em `de130e1`: 530 testes frontend, 375 backend (778,504 s), fluxos HTTP incluindo a nova auditoria e seis imagens sem achados. Execução completa em aproximadamente 24 minutos; log local `.data/audit-zlib-ci-final.log`. Execuções `42273055381`/`42273269384` canceladas para incorporar os ajustes dos testes. A instalação nova da v0.1.28 também precisa da correção de build, registrada no roteiro; nenhuma tag nova publicada.
+
+## Revalidação das imagens — 07/11/2026
+
+- Build das seis imagens com `zlib=1.4-r0` aprovado (`.data/audit-zlib-build.log`). Nenhum serviço principal foi reiniciado e nenhum volume removido.
+- Scanner local retornou zero achados nas seis imagens (`.data/audit-zlib-security.log`), base de vulnerabilidades atualizada em 07/11/2026 às 12:52 UTC. Resultado limitado à base consultada; não é garantia de ausência de vulnerabilidades desconhecidas.
+- Cadastros novamente aprovados em Chrome/API/SQL com as imagens reconstruídas (`.data/audit-zlib-registration.log`): inicialização, sessão, CPF, nascimento, documentos históricos, permissões, conflitos, reabertura e RG. Esquema/API temporários removidos, dados e volumes originais preservados.
 
 ## Próximo passo
 

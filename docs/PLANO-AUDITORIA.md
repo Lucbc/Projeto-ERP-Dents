@@ -2,6 +2,20 @@
 
 Inventário estático em 06/11/2026, durante a validação de 6D.2.2. **Não é implementação, aceite HTTP/SQL ou certificação de conformidade.** R32 continua aberto. Não altera a liberação de cadastros nem substitui o checklist físico da clínica.
 
+## Progresso em 07/11/2026
+
+A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [contrato, evidências e limites](./homologacao-etapa-6D-3-1A.md). A linha de usuários/permissões abaixo descreve o inventário anterior; agora os caminhos administrativos autenticados gravam eventos na mesma transação. Ainda não existe consulta/tela desse histórico. R32 permanece aberto.
+
+## Desenho para 6D.3.1B — ainda não implementado
+
+- Recurso `administrative_audit`, somente ação `view`. Proposta coerente com a administração atual: administrador ativo pode consultar; demais perfis começam sem acesso e dependem de concessão explícita. `create/update/delete` devem ser sempre falsos para esse recurso, inclusive no normalizador e na interface; a gravação é interna às operações administrativas, não uma API de edição do histórico.
+- Revalidar conta, sessão e concessão dentro da mesma proteção de concorrência usada pelas alterações administrativas, antes de ler os eventos. Testar revogação concluída enquanto uma leitura aguarda o bloqueio. A permissão de prontuário continua independente.
+- Consulta com limites (padrão 25, máximo 100), ordem `occurred_at DESC, id DESC`, filtros opcionais de ação/ator/alvo/perfil e intervalo de tempo com fuso explícito. Usar cursor pela última chave retornada para evitar deslocamento de páginas por novas inserções; não prometer uma fotografia imutável entre requisições. Validar combinações, UUIDs, datas e cursor no servidor; parâmetros SQL vinculados.
+- Exibir data/hora clínica, ação traduzida, IDs de ator/alvo, versões e campos/concessões alteradas. Se nomes atuais forem adicionados à apresentação, identificá-los como atuais e preservar o ID quando a conta não existir; nunca inventar nome histórico nem exigir acesso à lista completa de usuários para consultar o histórico autorizado.
+- Tela somente leitura, sem exportação nesta subetapa; filtros, próxima página, recarregar, vazio/erro/carregamento explícitos. Revogação/401/403 limpa ou oculta conteúdo e cache; erro de rede não deve parecer histórico vazio. Não guardar respostas em armazenamento persistente do navegador.
+- Aceites separados: normalização/componentes; PostgreSQL e concorrência; HTTP 401/403/filtros/paginação; Chrome com administrador, operador concedido e operador negado. Verificar eventos após exclusão de contas e ausência de credenciais na resposta. Banco e API não substituem o aceite visual.
+- Depois da consulta, antes de nova tag: migração de base 0026 com cadastros existentes, backup/restauração dos eventos e cadastros, atualização do harness que ainda espera 0026 e guias. A correção do build zlib também precisa integrar o pacote instalável, sem antecipar a migração parcial.
+
 ## O que já existe e o que falta
 
 | Área | Evidência no código | Limite atual |

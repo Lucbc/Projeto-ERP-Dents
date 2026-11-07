@@ -16,7 +16,7 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 07/11/2026
 
-**6D.3.1A — CI bloqueado no build, correção em validação:** CI 42273451399 parou antes dos testes backend: zlib 1.3.2-r1 indisponível no repositório Alpine da API. Reprodução em contêiner descartável sem volumes confirmou disponibilidade de 1.4-r0 e instalação bem-sucedida. Atualizar o pin nas cinco definições Docker, reconstruir e executar CI completo antes de concluir a subetapa. Não houve perda de dados nem falha funcional comprovada nos testes locais da auditoria. Instalação segue v0.1.28, sem publicar migração parcial; a próxima versão deve incorporar também a correção do build. Próximo imediato: CI, segurança das seis imagens e fechamento documental; depois 6D.3.1B.
+**6D.3.1A concluída — gravação administrativa:** produto `de130e1`; [CI 42401571437](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42401571437) aprovado: 530 frontend, 375 backend (778,504 s), fluxos HTTP e seis imagens sem achados. Autoria, transação/rollback, concorrência, preservação após exclusão e ausência de credenciais verificados; [relatório e limites](./homologacao-etapa-6D-3-1A.md). O CI anterior falhou no build por zlib indisponível; pin 1.4-r0 corrigido nas cinco definições Docker, com builds/scanner e cadastros Chrome/API/SQL locais aprovados. Sem reinício/remoção de volumes principais. **Próximo: 6D.3.1B, consulta protegida e UI**, conforme [desenho](./PLANO-AUDITORIA.md); depois recuperação/migração e nova tag. Instalação nova v0.1.28 precisa aguardar pacote corrigido; roteiro atualizado, não instalar HEAD parcial com 0027. Se a instalação física for antecipada, publicar correção isolada do build sobre a tag estável, sem antecipar o módulo incompleto. P3 físico prioritário, odontograma posterior.
 
 ## Ponto de retomada — 06/11/2026
 
@@ -392,7 +392,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | 3A/3B e percurso operacional concluídos; R21 residual e cobertura visual histórica/multidia na fila | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Primeiro recorte clínico 4A–4C concluído e incluído na v0.1.25; cobrança/parcelamento ampliados fora desse recorte | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Piloto v0.1.25 liberado para instalação assistida; P3 físico aguarda dados do servidor | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
-| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C/6D.1/6D.2 concluídos nos recortes documentados; v0.1.28 publicada; próxima 6D.3.1 | Critérios da revisão atendidos e limitações aceitas explicitamente |
+| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C/6D.1/6D.2/6D.3.1A concluídos nos recortes documentados; próxima 6D.3.1B; instalação nova aguarda tag com build corrigido | Critérios da revisão atendidos e limitações aceitas explicitamente |
 
 Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. Funcionalidades de prontuário, parcelamento e instalação final terão decisões próprias antes da implementação.
 
