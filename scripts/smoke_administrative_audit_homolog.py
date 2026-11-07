@@ -62,6 +62,38 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     assert permission['permission_changes'] == [dict(resource='patients', action='delete', before=old_grant, after=not old_grant)]
     encoded = json.dumps(before)
     assert all(value not in encoded for value in (password, email, backup['email'], target['email'], 'Fictitious', 'password_hash')), 'Audit contains forbidden values'
+    # Read-only API: deleted targets remain queryable, grants are live, filters are bounded.
+    from urllib.parse import urlencode
+    endpoint = '/api/administrative-audit'
+    expect('GET', endpoint, status=401, session=None)
+    first = expect('GET', endpoint + '?' + urlencode({'target_user_id': target['id'], 'limit': 2}))
+    second = expect('GET', endpoint + '?' + urlencode({'target_user_id': target['id'], 'limit': 2, 'cursor': first['next_cursor']}))
+    assert [e['action'] for e in first['items'] + second['items']] == [
+        'user.deleted', 'user.password_reset', 'user.updated', 'user.created']
+    assert second['next_cursor'] is None
+    filtered = expect('GET', endpoint + '?' + urlencode({'author_id': backup['id'], 'action': 'user.updated'}))
+    assert len(filtered['items']) == 1 and filtered['items'][0]['target_user_id'] == target['id']
+    for query in ('limit=101', 'action=invalid', 'author_id=invalid'):
+        expect('GET', endpoint + '?' + query, status=422)
+    for query in ('cursor=!', 'since=2026-01-01T00:00:00', 'since=2026-01-02T00:00:00Z&until=2026-01-01T00:00:00Z'):
+        expect('GET', endpoint + '?' + query, status=400)
+    reader = expect('POST', '/api/users', {'name': 'Fictitious Audit Reader', 'email': 'audit-reader@example.com',
+                    'role': 'reception', 'password': password}, 201)
+    reader_session = expect('POST', '/api/auth/login', {'email': reader['email'], 'password': password}, session=None)['session']
+    expect('GET', endpoint, status=403, session=reader_session)
+    for grant in (True, False):
+        matrix = next(item for item in expect('GET', '/api/permissions')['items'] if item['role'] == 'reception')
+        matrix['permissions']['administrative_audit'] = dict(view=grant, create=True, update=True, delete=True)
+        saved = expect('PUT', '/api/permissions/reception', matrix)
+        assert saved['permissions']['administrative_audit'] == dict(view=grant, create=False, update=False, delete=False)
+        snapshot = events()
+        result = expect('GET', endpoint, status=200 if grant else 403, session=reader_session)
+        assert events() == snapshot, 'Read request changed audit history'
+        if grant:
+            encoded = json.dumps(result)
+            assert all(value not in encoded for value in (password, reader['email'], 'Fictitious', 'password_hash')), 'Read leaked private values'
+    expect('POST', endpoint, {}, 405)
+    passed('Audit reads: anonymous/denied/granted/revoked access, deleted-target pagination, actor/action filters, invalid input and read-only metadata verified over HTTP/SQL')
     passed('HTTP/SQL: two administrators attributed correctly; denied/stale operations create no event; failed audit rolls back user and sessions; reset revokes sessions; deletion preserves metadata; exact permission delta and no secret/personal values')
 
 

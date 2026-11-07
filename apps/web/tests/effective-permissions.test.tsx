@@ -152,3 +152,22 @@ it("requires an explicit provider instead of silently adding another reader", ()
   expect(() => render(<Consumer id={0} />)).toThrow(/requires EffectivePermissionsProvider/);
   expect(permissionService.me).not.toHaveBeenCalled(); log.mockRestore();
 });
+
+function AuditConsumer() {
+  const access = useEffectivePermissions();
+  return <span data-testid="audit">{(["view", "create", "update", "delete"] as const).map(action =>
+    String(access.can("administrative_audit", action))).join(":")}</span>;
+}
+
+it.each<UserRole>(["admin", "coordinator", "dentist", "reception"])("audit is read-only and current for %s", async role => {
+  user = { ...user!, role };
+  vi.mocked(permissionService.me).mockResolvedValue(matrix(true, role));
+  render(<QueryClientProvider client={client}><EffectivePermissionsProvider><AuditConsumer /></EffectivePermissionsProvider></QueryClientProvider>);
+  await tick(); expect(screen.getByTestId("audit").textContent).toBe(role === "admin" ? "true:false:false:false" : "false:false:false:false");
+  vi.mocked(permissionService.me).mockResolvedValue({ ...matrix(true, role), permissions: {
+    administrative_audit: { view: true, create: true, update: true, delete: true },
+  } });
+  await tick(15_005); expect(screen.getByTestId("audit").textContent).toBe("true:false:false:false");
+  vi.mocked(permissionService.me).mockRejectedValue(failure(403));
+  await tick(15_005); expect(screen.getByTestId("audit").textContent).toBe("false:false:false:false");
+});

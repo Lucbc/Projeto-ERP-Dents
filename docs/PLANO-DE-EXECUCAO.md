@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 07/11/2026
 
+**Início 6D.3.1B.1 — base `d5d14a6`:** implementar consulta HTTP paginada/filtrada e permissão somente leitura, revalidada sob bloqueio administrativo. Adaptar matriz de permissões para não perder a concessão ao salvar na interface. Aceites desta subetapa: normalização/frontend, PostgreSQL (incluindo revogação concorrente), HTTP e CI. Tela de histórico/Chrome ficará em B.2; não declarar B completa nem publicar tag antes de recuperação/migração. Instalação nova continua com pendência de pacote corrigido.
+
 **6D.3.1A concluída — gravação administrativa:** produto `de130e1`; [CI 42401571437](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42401571437) aprovado: 530 frontend, 375 backend (778,504 s), fluxos HTTP e seis imagens sem achados. Autoria, transação/rollback, concorrência, preservação após exclusão e ausência de credenciais verificados; [relatório e limites](./homologacao-etapa-6D-3-1A.md). O CI anterior falhou no build por zlib indisponível; pin 1.4-r0 corrigido nas cinco definições Docker, com builds/scanner e cadastros Chrome/API/SQL locais aprovados. Sem reinício/remoção de volumes principais. **Próximo: 6D.3.1B, consulta protegida e UI**, conforme [desenho](./PLANO-AUDITORIA.md); depois recuperação/migração e nova tag. Instalação nova v0.1.28 precisa aguardar pacote corrigido; roteiro atualizado, não instalar HEAD parcial com 0027. Se a instalação física for antecipada, publicar correção isolada do build sobre a tag estável, sem antecipar o módulo incompleto. P3 físico prioritário, odontograma posterior.
 
 ## Ponto de retomada — 06/11/2026

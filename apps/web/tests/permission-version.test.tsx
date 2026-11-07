@@ -116,3 +116,18 @@ it("removes cached matrices when background refresh loses access", async () => {
   await screen.findByText(/Seu acesso à administração/);
   expect(screen.queryByRole("checkbox")).toBeNull();
 });
+
+it("audit grants survive unrelated edits and only read can be selected", async () => {
+  const reception = item("reception");
+  reception.permissions.administrative_audit = { view: true, create: false, update: false, delete: false };
+  setup({ items: [reception] });
+  const update = vi.spyOn(permissionService, "update").mockImplementation(async (role, payload) => ({ role, ...payload, version: 2 }));
+  await open("Recepcao");
+  const box = (action: string) => screen.getByRole("checkbox", { name: `Recepcao: Auditoria administrativa (somente leitura) — ${action}` }) as HTMLInputElement;
+  expect(box("Ver").checked).toBe(true);
+  expect(box("Ver").disabled).toBe(false);
+  for (const action of ["Criar", "Editar", "Excluir"]) expect(box(action).disabled).toBe(true);
+  fireEvent.click(checkbox("Recepcao")); fireEvent.click(save());
+  await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+  expect(update.mock.calls[0][1].permissions.administrative_audit).toEqual({ view: true, create: false, update: false, delete: false });
+});

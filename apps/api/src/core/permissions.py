@@ -21,6 +21,7 @@ PermissionResource: TypeAlias = Literal[
     "financial",
     "financial_reversals",
     "clinical_records",
+    "administrative_audit",
 ]
 PermissionMatrix: TypeAlias = dict[str, dict[str, bool]]
 
@@ -40,6 +41,7 @@ PERMISSION_RESOURCES: tuple[PermissionResource, ...] = (
     "financial",
     "financial_reversals",
     "clinical_records",
+    "administrative_audit",
 )
 
 
@@ -109,6 +111,10 @@ for _matrix in DEFAULT_ROLE_PERMISSIONS.values():
     _matrix['clinical_records'] = _deny_all()
 
 
+for _role, _matrix in DEFAULT_ROLE_PERMISSIONS.items():
+    _matrix['administrative_audit'] = _allow_view_only() if _role == UserRole.admin else _deny_all()
+
+
 def get_default_permissions(role: UserRole) -> PermissionMatrix:
     return deepcopy(DEFAULT_ROLE_PERMISSIONS[role])
 
@@ -129,6 +135,10 @@ def normalize_permissions(role: UserRole, raw_permissions: dict | None) -> Permi
     clinical['delete'] = False
     for action in ('create', 'update'):
         clinical[action] = clinical[action] and clinical['view'] and role == UserRole.dentist
+    normalized['administrative_audit'] = {
+        'view': normalized['administrative_audit']['view'],
+        'create': False, 'update': False, 'delete': False,
+    }
     return normalized
 
 
@@ -138,6 +148,8 @@ def can_access(
     resource: PermissionResource,
     action: PermissionAction,
 ) -> bool:
+    if resource == 'administrative_audit':
+        return action == 'view' and (role == UserRole.admin or permissions.get(resource, {}).get('view') is True)
     if resource == 'clinical_records':
         grants = permissions.get(resource, {})
         return bool(grants.get('view') is True and grants.get(action) is True
