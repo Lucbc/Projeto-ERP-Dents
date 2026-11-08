@@ -14,6 +14,10 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Limites de uso do modelo não são controlados pelo projeto. Não há garantia de impedir uma interrupção; checkpoints persistentes reduzem retrabalho. Não iniciar uma grande migração sem preparar teste e recuperação.
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
+## Ponto de retomada — 08/11/2026
+
+**6D.3.1B.1 concluída — API de consulta e permissão:** produto `267cee5`; [CI 42411551662](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42411551662) aprovado, 535 frontend/380 backend (734,253 s), HTTP e seis imagens sem achados. PostgreSQL validou paginação/filtros e revogação concorrente; Chrome/API/SQL validou concessão, preservação ao editar outra permissão e revogação, com três eventos duráveis. [Relatório](./homologacao-etapa-6D-3-1B.md). **Próximo B.2: tela de histórico, estados/filtros/paginação/cache e aceite Chrome**, consumindo a API já pronta; não repetir B.1 sem nova falha. B global ainda incompleta. Antes de tag: recuperação/migração 0026→0027, cadastros e guias. Instalação nova v0.1.28 aguarda pacote com build corrigido; não instalar HEAD parcial. P3 físico prioritário quando chegarem os dados do servidor; odontograma posterior.
+
 ## Ponto de retomada — 07/11/2026
 
 **Início 6D.3.1B.1 — base `d5d14a6`:** implementar consulta HTTP paginada/filtrada e permissão somente leitura, revalidada sob bloqueio administrativo. Adaptar matriz de permissões para não perder a concessão ao salvar na interface. Aceites desta subetapa: normalização/frontend, PostgreSQL (incluindo revogação concorrente), HTTP e CI. Tela de histórico/Chrome ficará em B.2; não declarar B completa nem publicar tag antes de recuperação/migração. Instalação nova continua com pendência de pacote corrigido.
@@ -394,7 +398,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | 3A/3B e percurso operacional concluídos; R21 residual e cobertura visual histórica/multidia na fila | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Primeiro recorte clínico 4A–4C concluído e incluído na v0.1.25; cobrança/parcelamento ampliados fora desse recorte | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Piloto v0.1.25 liberado para instalação assistida; P3 físico aguarda dados do servidor | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
-| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C/6D.1/6D.2/6D.3.1A concluídos nos recortes documentados; próxima 6D.3.1B; instalação nova aguarda tag com build corrigido | Critérios da revisão atendidos e limitações aceitas explicitamente |
+| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C/6D.1/6D.2/6D.3.1A concluídos nos recortes documentados; 6D.3.1B.1 concluída; próxima B.2; instalação nova aguarda tag com build corrigido | Critérios da revisão atendidos e limitações aceitas explicitamente |
 
 Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. Funcionalidades de prontuário, parcelamento e instalação final terão decisões próprias antes da implementação.
 

@@ -2,7 +2,7 @@
 
 ## B.1 — API e concessão de leitura (início 07/11/2026)
 
-Base `d5d14a6`. Implementada, em validação; B.2 (tela de histórico/Chrome) ainda pendente. Nenhuma tag instalável nesta subetapa.
+Base `d5d14a6`, produto `267cee5`. B.1 concluída em 08/11/2026 após conferência dos resultados; B.2 (tela de histórico/Chrome) ainda pendente. Nenhuma tag instalável nesta subetapa.
 
 ### Contrato
 
@@ -12,13 +12,14 @@ Base `d5d14a6`. Implementada, em validação; B.2 (tela de histórico/Chrome) ai
 - Limite padrão 25, máximo 100. Ordem decrescente por instante/ID; cursor pela última chave, sem contagem total ou promessa de fotografia entre páginas. Filtros por ação, ator (`author_id`), usuário-alvo, perfil e período; usuário/perfil são mutuamente exclusivos. Início inclusivo, fim exclusivo; data/hora com fuso obrigatório. Filtros/cursor não concedem acesso.
 - SQL vincula valores; resposta enumera campos permitidos. Cabeçalho `Cache-Control: no-store`. Sem novas tabelas/migrações além da 0027 já introduzida em A.
 
-### Evidências em andamento
+### Evidências aprovadas
 
 - Cinco testes novos aprovados, 13,013 s: normalização, acesso/revogação/sessão, paginação sob inserção, empate de instante, filtros/intervalos e revogação concorrente real no PostgreSQL privado. `.data/audit-read-tests.log`.
 - HTTP/SQL aprovado: anônimo 401, sem concessão 403, concessão/revogação na sessão existente, conta excluída/paginação/filtros, entradas inválidas e ausência de segredos. POST recusado e leituras não alteram o histórico. `.data/audit-read-http.log`; harness existente ampliado e incluído no CI.
-- Build frontend aprovado; regressão de componentes em execução. Não é aceite Chrome. A interface de consulta ainda não existe.
-- CI completo pendente; registrar execução/resultado antes de concluir B.1.
+- Build frontend e 535 testes de componentes aprovados localmente (`.data/audit-read-web.log`, 169,40 s). Ensaio focado de permissões: 34 testes aprovados.
+- **Chrome/API/SQL:** controles de auditoria permitem apenas leitura; conceder, salvar outra permissão, recarregar e revogar preservam o contrato. Banco confirmou três eventos duráveis e concessão final revogada. `.data/audit-read-chrome.log`; scripts `smoke_audit_permission_browser_homolog.py/.cjs`. Isso homologa a matriz de concessões, não uma tela de histórico, que ainda não existe. API/esquema temporários removidos e dados/volumes principais preservados.
+- **CI aprovado:** [42411551662](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42411551662), produto `267cee5`: 535 frontend, 380 backend (734,253 s), fluxos HTTP e seis imagens sem achados. Resultado conferido em 08/11; execução de 07/11, log `.data/audit-read-ci-final.log`.
 
 ### Pendências e retomada
 
-Concluir testes/CI, depois B.2: tela de consulta, estados/permissão/cache e Chrome. Antes de publicação: recuperação/migração 0026→0027, atualização do harness de recuperação, regressão de cadastros e guias/tag. Instalação nova v0.1.28 continua aguardando pacote com zlib corrigida; não instalar HEAD parcial. Dados/volumes principais preservados.
+Próximo B.2: tela de consulta, estados/permissão/cache e Chrome. Antes de publicação: recuperação/migração 0026→0027, atualização do harness de recuperação, regressão de cadastros e guias/tag. Instalação nova v0.1.28 continua aguardando pacote com zlib corrigida; não instalar HEAD parcial. Dados/volumes principais preservados.
