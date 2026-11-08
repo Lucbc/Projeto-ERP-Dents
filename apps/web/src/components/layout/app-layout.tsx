@@ -56,6 +56,7 @@ const primaryMenu: MenuItem[] = [
 ];
 
 const settingsMenu: MenuItem[] = [
+  { to: "/administrative-audit", label: "Histórico administrativo", icon: ClipboardList, resource: "administrative_audit" },
   { to: "/dentists", label: "Dentistas", icon: Stethoscope, resource: "dentists" },
   { to: "/specialties", label: "Especialidades", icon: Settings2, resource: "specialties" },
   { to: "/procedures", label: "Procedimentos", icon: ClipboardPlus, resource: "procedures" },
@@ -64,6 +65,7 @@ const settingsMenu: MenuItem[] = [
 ];
 
 const titles: Record<string, string> = {
+  "/administrative-audit": "Histórico administrativo",
   "/": "Painel",
   "/patients": "Pacientes",
   "/dentists": "Dentistas",

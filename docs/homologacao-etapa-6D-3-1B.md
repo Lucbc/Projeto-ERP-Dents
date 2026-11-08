@@ -23,3 +23,13 @@ Base `d5d14a6`, produto `267cee5`. B.1 concluída em 08/11/2026 após conferênc
 ### Pendências e retomada
 
 Próximo B.2: tela de consulta, estados/permissão/cache e Chrome. Antes de publicação: recuperação/migração 0026→0027, atualização do harness de recuperação, regressão de cadastros e guias/tag. Instalação nova v0.1.28 continua aguardando pacote com zlib corrigida; não instalar HEAD parcial. Dados/volumes principais preservados.
+
+## B.2 — tela de histórico (início 08/11/2026)
+
+Base `187f665`. Implementada, em validação. Rota `/administrative-audit` e menu seguem a permissão própria, sem exigir administração de usuários. Eventos mostram ação traduzida, instante de São Paulo, IDs preservados, versões e diferenças de campos/concessões; sem edição/exclusão/exportação.
+
+Filtros aplicados explicitamente por ação, responsável, usuário/perfil e intervalo no fuso clínico. Valores inválidos não disparam consulta; mudança de filtro retorna à primeira página. Paginação de 25 por cursor com anterior/próxima; atualização retorna à primeira página. Erro de rede sinaliza dados desatualizados; vazio é distinto de erro. Revogação oculta eventos e remove cache; respostas não são persistidas no navegador.
+
+Cinco testes novos de componentes aprovados: identificação histórica/horário, paginação/filtros, validação, permissão/cache e erro/negação HTTP. Build e imagem web aprovados. Regressão completa e Chrome/API/SQL em andamento; CI pendente. Harness usa 32 eventos sintéticos no esquema privado (não são autoria histórica real), conta fictícia e duas alterações de concessão. Capturas locais somente fictícias em `.data/audit-history-desktop.png` e `.data/audit-history-mobile.png`, fora do Git.
+
+A conclusão B.2 depende desses aceites. Recuperação/migração e publicação continuam pendentes; o roteiro de instalação ainda aponta a necessidade de tag corrigida, sem instalar HEAD parcial.

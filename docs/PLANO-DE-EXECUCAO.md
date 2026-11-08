@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 08/11/2026
 
+**Início B.2 — base `187f665`:** tela somente leitura do histórico, navegação por permissão, filtros e paginação por cursor; preservar identificadores históricos. Validar componentes, build, Chrome/API/SQL com administrador/operador concedido/negado, revogação e erro de rede. Não publicar tag antes de recuperação/migração. Guias de instalação mantêm pendência existente.
+
 **6D.3.1B.1 concluída — API de consulta e permissão:** produto `267cee5`; [CI 42411551662](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42411551662) aprovado, 535 frontend/380 backend (734,253 s), HTTP e seis imagens sem achados. PostgreSQL validou paginação/filtros e revogação concorrente; Chrome/API/SQL validou concessão, preservação ao editar outra permissão e revogação, com três eventos duráveis. [Relatório](./homologacao-etapa-6D-3-1B.md). **Próximo B.2: tela de histórico, estados/filtros/paginação/cache e aceite Chrome**, consumindo a API já pronta; não repetir B.1 sem nova falha. B global ainda incompleta. Antes de tag: recuperação/migração 0026→0027, cadastros e guias. Instalação nova v0.1.28 aguarda pacote com build corrigido; não instalar HEAD parcial. P3 físico prioritário quando chegarem os dados do servidor; odontograma posterior.
 
 ## Ponto de retomada — 07/11/2026

@@ -1,3 +1,4 @@
+import { AdministrativeAuditPage } from "@/pages/administrative-audit/administrative-audit-page";
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider } from "react-router-dom";
 import { useEffect, useState } from "react";
 
@@ -140,6 +141,7 @@ const routes = createRoutesFromElements(<>
                     </ProtectedRoute>
                   }
                 />
+                <Route path="administrative-audit" element={<ProtectedRoute permission={{ resource: "administrative_audit", action: "view" }}><AdministrativeAuditPage /></ProtectedRoute>} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
 </>);
