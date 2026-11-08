@@ -93,14 +93,14 @@ function Reader({ userId }: { userId: string }) {
       <p>Alterações de usuários e permissões. Os IDs preservam a referência mesmo após excluir uma conta; nomes e senhas não são copiados para este histórico.</p>
       <form onSubmit={apply} className="mt-4 space-y-3">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <label>Ação<select className={selectClass} value={draft.action} onChange={e => setDraft({ ...draft, action: e.target.value })}>
+          <div><label htmlFor="audit-action">Ação</label><select id="audit-action" className={selectClass} value={draft.action} onChange={e => setDraft({ ...draft, action: e.target.value })}>
             <option value="">Todas</option>{Object.entries(auditActions).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select></label>
+          </select></div>
           <label>Responsável (ID)<Input value={draft.author_id} onChange={e => setDraft({ ...draft, author_id: e.target.value })} maxLength={36} /></label>
           <label>Usuário afetado (ID)<Input value={draft.target_user_id} onChange={e => setDraft({ ...draft, target_user_id: e.target.value })} maxLength={36} /></label>
-          <label>Perfil afetado<select className={selectClass} value={draft.target_role} onChange={e => setDraft({ ...draft, target_role: e.target.value })}>
+          <div><label htmlFor="audit-role">Perfil afetado</label><select id="audit-role" className={selectClass} value={draft.target_role} onChange={e => setDraft({ ...draft, target_role: e.target.value })}>
             <option value="">Todos</option>{Object.entries(userRoleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select></label>
+          </select></div>
           <label>Desde (São Paulo)<Input type="datetime-local" value={draft.since} onChange={e => setDraft({ ...draft, since: e.target.value })} /></label>
           <label>Até, sem incluir (São Paulo)<Input type="datetime-local" value={draft.until} onChange={e => setDraft({ ...draft, until: e.target.value })} /></label>
         </div>

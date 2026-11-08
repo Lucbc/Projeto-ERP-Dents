@@ -85,3 +85,18 @@ it("distinguishes network error from empty history and clears on HTTP denial", a
   expect(screen.queryByRole("article")).toBeNull();
   expect(client.getQueriesData({ queryKey: ["administrative-audit"] })).toEqual([]);
 });
+
+it("shows empty after applying a filter following a recovered network failure", async () => {
+  render(tree()); await screen.findByRole("article");
+  vi.mocked(administrativeAuditService.list).mockRejectedValue(failure(503));
+  fireEvent.click(screen.getByRole("button", { name: "Atualizar histórico" }));
+  await screen.findByText(/Não foi possível atualizar histórico/);
+  vi.mocked(administrativeAuditService.list).mockResolvedValue({ items: [event], next_cursor: null });
+  fireEvent.click(screen.getByRole("button", { name: "Atualizar histórico" }));
+  await screen.findByText("Atualização automática ativa.");
+  vi.mocked(administrativeAuditService.list).mockResolvedValue({ items: [], next_cursor: null });
+  fireEvent.change(screen.getByLabelText("Ação"), { target: { value: "user.created" } });
+  fireEvent.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+  await screen.findByText("Nenhum evento encontrado para estes filtros.");
+  expect(screen.queryByRole("article")).toBeNull();
+});
