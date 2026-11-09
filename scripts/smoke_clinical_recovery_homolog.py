@@ -1,4 +1,4 @@
-"""4C.1: pilot database upgrade and clinical dump recovery in private databases.
+"""Clinical and administrative audit upgrade/dump recovery in private databases.
 
 Requires erp-dents-homolog-pilot-v24 built from the installation tag and current
 erp-dents-homolog-api. Does not restart main containers or mount any volume.
@@ -68,7 +68,7 @@ def main():
             run('docker', 'rm', '-f', container)
             running = False
 
-    def start(image, database, migrate_only=False):
+    def start(image, database, migrate_only=False, revision="head"):
         nonlocal running
         stop()
         url = urlsplit(original['DATABASE_URL'])
@@ -80,7 +80,7 @@ def main():
             args += ['-e', key]
         args += [image]
         if migrate_only:
-            args += ['alembic', 'upgrade', 'head']
+            args += ['alembic', 'upgrade', revision]
         run(*args, env={**os.environ, **values})
         if migrate_only:
             return
@@ -115,16 +115,30 @@ def main():
                                  'password': password, 'role': 'dentist', 'dentist_id': dentist['id']})
         visits = [create('appointments', {'patient_id': patient['id'], 'dentist_id': dentist['id'],
                    'procedure_ids': [procedure['id']], 'start_at': f'2030-01-{day}T13:00:00Z',
-                   'end_at': f'2030-01-{day}T13:30:00Z'}) for day in ('07', '14')]
+                   'end_at': f'2030-01-{day}T13:30:00Z'}) for day in ('07', '14', '21')]
         financial = call('POST', '/api/financial/from-appointment/' + visits[0]['id'], {}, admin, 201)
         stop()
         before = fingerprint(source)
-        start(current, source, migrate_only=True)
+        start(current, source, migrate_only=True, revision="0026_clinical_records")
         after = fingerprint(source)
         assert all(after[table] == value for table, value in before.items() if table != 'alembic_version')
         assert set(after) - set(before) == {'clinical_records', 'clinical_addenda', 'clinical_operations'}
         assert sql(source, 'SELECT version_num FROM alembic_version') == '0026_clinical_records'
         passed('0025 to 0026 preserves every pre-existing table row; three empty clinical tables added')
+        # SQL-only inherited draft fixture at 0026; not a claim of a pre-upgrade HTTP write.
+        inherited_id = str(uuid4())
+        sql(source, f"""INSERT INTO clinical_records
+            (id,appointment_id,patient_id,dentist_id,author_id,author_name,text,version,created_at,updated_at)
+            VALUES ('{inherited_id}','{visits[2]['id']}','{patient['id']}','{dentist['id']}','{author['id']}',
+                    'Fictitious Recovery Author','Fictitious inherited draft',1,now(),now())""")
+        before_audit = fingerprint(source)
+        start(current, source, migrate_only=True)
+        after_audit = fingerprint(source)
+        assert all(after_audit[table] == value for table, value in before_audit.items() if table != 'alembic_version')
+        assert set(after_audit) - set(before_audit) == {'administrative_audit'}
+        assert sql(source, 'SELECT version_num FROM alembic_version') == '0027_administrative_audit'
+        assert sql(source, 'SELECT count(*) FROM administrative_audit') == '0'
+        passed('0026 to 0027 preserves every existing row including inherited clinical draft, without fabricated events')
         start(current, source)
         listing = '/api/clinical-records?patient_id=' + patient['id']
         call('GET', listing, session=admin, expected=403)
@@ -148,6 +162,15 @@ def main():
         amended = call('POST', endpoint + '/addenda', payload, session)
         assert final['context']['allergies'] == patient['allergies']
         passed('Upgraded API preserves legacy reads, denies clinical access initially and records draft/finalization/addendum')
+        assert call('GET', '/api/clinical-records/' + inherited_id, session=session)['text'] == 'Fictitious inherited draft'
+        disposable = create('users', {'name': 'Fictitious Audit Recovery', 'email': 'audit-recovery@example.com',
+                                      'role': 'reception', 'password': password})
+        call('DELETE', '/api/users/' + disposable['id'] + '?version=1', session=admin, expected=204)
+        audit_page = call('GET', '/api/administrative-audit', session=admin)
+        assert len(audit_page['items']) == 3 and audit_page['next_cursor'] is None
+        assert [item['action'] for item in audit_page['items']] == ['user.deleted','user.created','permissions.updated']
+        call('GET', '/api/administrative-audit', session=session, expected=403)
+        passed('Authenticated permission/create/delete writes persist three events; deleted target remains in audit and denied reader is blocked')
         stop()
         snapshot = fingerprint(source)
         run('docker', 'exec', DB, 'pg_dump', '-U', 'erp_homolog', '-Fc', '-f', archive, source)
@@ -159,15 +182,21 @@ def main():
             "UPDATE clinical_records SET text='Fictitious forbidden rewrite',version=version+1 WHERE finalized_at IS NOT NULL",
             'DELETE FROM clinical_addenda',
             'DELETE FROM clinical_operations',
+            "UPDATE administrative_audit SET action='user.deleted'",
+            'DELETE FROM administrative_audit',
+            'TRUNCATE administrative_audit',
         ):
             rejected = subprocess.run(['docker', 'exec', '-i', DB, 'psql', '-X', '-U', 'erp_homolog',
                 '-d', restored, '-v', 'ON_ERROR_STOP=1'],
                 input=('BEGIN; ' + statement + '; ROLLBACK;').encode(), capture_output=True)
             assert rejected.returncode != 0, 'Restored clinical database guard did not reject mutation'
         assert fingerprint(restored) == snapshot
-        passed('Restored PostgreSQL triggers reject direct final-text rewrite and deletion of addenda/receipts')
+        passed('Restored PostgreSQL guards reject clinical rewrites and administrative event UPDATE/DELETE/TRUNCATE')
         start(current, restored)
         # Reauthenticate against restored accounts, rather than relying on old browser cookies.
+        restored_admin = call('POST', '/api/auth/login', {'email': 'recovery-admin@example.com', 'password': password})['session']
+        assert call('GET', '/api/administrative-audit', session=restored_admin) == audit_page
+        passed('Restored audit API preserves event IDs, actors, deleted target, timestamps, versions and permission differences')
         restored_session = call('POST', '/api/auth/login', {'email': author['email'], 'password': password})['session']
         assert call('GET', endpoint, session=restored_session) == amended
         assert call('GET', '/api/clinical-records/' + pending['id'], session=restored_session) == pending

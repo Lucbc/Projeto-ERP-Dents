@@ -19,6 +19,20 @@ from smoke_backup_restore_homolog import fingerprint
 from smoke_homolog import ROOT, STATE, verify_target
 
 
+def run_protected_powershell(*args):
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', *args], capture_output=True)
+    if result.returncode:
+        # Whitelisted classifications only; never print raw diagnostics/configuration.
+        diagnostic = (result.stdout + result.stderr).decode('utf8', errors='replace').lower()
+        if 'set-acl' in diagnostic and ('confian' in diagnostic or 'trust' in diagnostic):
+            reason = 'Windows/domain trust failure while applying recovery ACL'
+        elif 'set-acl' in diagnostic:
+            reason = 'Windows recovery ACL application failed'
+        else:
+            reason = 'Operational recovery command failed; raw diagnostic withheld'
+        raise RuntimeError(reason)
+
+
 def main():
     verify_target()
     operation = uuid4().hex
@@ -28,13 +42,13 @@ def main():
     directory = STATE / ('full-recovery-' + operation)
     directory.mkdir()
     # Restrict the fixture configuration as well as the backup made by PowerShell.
-    protection = '''$d=Get-Item -LiteralPath $args[0]; $a=New-Object Security.AccessControl.DirectorySecurity;
+    protection = '''$ErrorActionPreference='Stop'; $d=Get-Item -LiteralPath $args[0]; $a=New-Object Security.AccessControl.DirectorySecurity;
 $a.SetAccessRuleProtection($true,$false);
 foreach($s in @([Security.Principal.WindowsIdentity]::GetCurrent().User,(New-Object Security.Principal.SecurityIdentifier('S-1-5-18')),(New-Object Security.Principal.SecurityIdentifier('S-1-5-32-544')))) {
 $a.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($s,'FullControl','ContainerInherit,ObjectInherit','None','Allow'))) }; Set-Acl -LiteralPath $d.FullName -AclObject $a'''
     acl_script = directory / 'protect.ps1'
     acl_script.write_text(protection, encoding='utf8')
-    run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(acl_script), str(directory))
+    run_protected_powershell(str(acl_script), str(directory))
     current = json.loads(run('docker', 'image', 'inspect', PROJECT + '-api'))[0]['Id']
     web_image = json.loads(run('docker', 'image', 'inspect', PROJECT + '-web'))[0]['Id']
     main_api = json.loads(run('docker', 'inspect', PROJECT + '-api-1'))[0]
@@ -128,7 +142,8 @@ $a.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($s,'Ful
         call('PUT', '/api/permissions/dentist', grants, admin)
         author_session = call('POST', '/api/auth/login', {'email': author['email'], 'password': password})['session']
         records = [call('POST', '/api/clinical-records/from-appointment/' + visit['id'],
-            {'key': str(uuid4()), 'text': 'Fictitious recovered draft'}, author_session, 201) for visit in visits]
+            {'key': str(uuid4()), 'text': 'Fictitious recovered draft',
+             'expected_patient_id': patient['id'], 'appointment_version': visit['version']}, author_session, 201) for visit in visits]
         endpoint = '/api/clinical-records/' + records[0]['id']
         call('POST', endpoint + '/finalize', {'key': str(uuid4()), 'version': 1}, author_session)
         attempt = {'key': str(uuid4()), 'version': 2, 'text': 'Fictitious recovered addendum', 'reason': 'Fictitious correction'}
@@ -154,9 +169,13 @@ $a.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($s,'Ful
                 '-HomologFixture', str(fixture_path)], capture_output=True)
             assert denied.returncode != 0 and not (directory / 'denied').exists()
         passed('Fixture mode rejects production environment and main-container identifiers before maintenance')
+        audit_page = call('GET', '/api/administrative-audit', session=admin)
+        assert len(audit_page['items']) == 2 and audit_page['next_cursor'] is None
+        assert [row['action'] for row in audit_page['items']] == ['permissions.updated', 'user.created']
+        call('GET', '/api/administrative-audit', session=author_session, expected=403)
         snapshot = fingerprint(database)
         backup = directory / 'backup'
-        run('powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(ROOT / 'scripts/backup-server.ps1'),
+        run_protected_powershell(str(ROOT / 'scripts/backup-server.ps1'),
             '-Environment', 'homolog', '-Destination', str(backup), '-HomologFixture', str(fixture))
         ready(client)
         manifest = json.loads((backup / 'manifest.json').read_text(encoding='utf8'))
@@ -201,6 +220,10 @@ print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest
         client = start_web(prefix + '-r-web', prefix + '-r-api', backup / 'tls')
         admin = call('POST', '/api/auth/login', {'email': 'full-admin@example.com', 'password': password})['session']
         author_session = call('POST', '/api/auth/login', {'email': author['email'], 'password': password})['session']
+        assert call('GET', '/api/administrative-audit', session=admin) == audit_page
+        call('GET', '/api/administrative-audit', session=author_session, expected=403)
+        assert fingerprint(restored)['administrative_audit'] == snapshot['administrative_audit']
+        passed('Operational backup restores administrative events and read permission boundaries over HTTPS')
         assert call('GET', endpoint, session=author_session) == final
         assert call('POST', endpoint + '/addenda', attempt, author_session) == final
         assert all(fingerprint(restored)[t] == snapshot[t] for t in ('clinical_records', 'clinical_addenda', 'clinical_operations'))

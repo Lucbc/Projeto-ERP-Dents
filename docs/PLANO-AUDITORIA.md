@@ -4,9 +4,9 @@ Inventário estático em 06/11/2026, durante a validação de 6D.2.2. **Não é 
 
 ## Progresso em 08/11/2026
 
-A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [contrato, evidências e limites](./homologacao-etapa-6D-3-1A.md). A linha de usuários/permissões abaixo descreve o inventário anterior; agora os caminhos administrativos autenticados gravam eventos na mesma transação. B.1 também concluída: API paginada/filtrada, permissão somente leitura, revogação concorrente e matriz de concessões homologadas em Chrome/API/SQL; [evidências](./homologacao-etapa-6D-3-1B.md). Falta B.2, a tela de histórico. R32 permanece aberto.
+A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [contrato, evidências e limites](./homologacao-etapa-6D-3-1A.md). A linha de usuários/permissões abaixo descreve o inventário anterior; agora os caminhos administrativos autenticados gravam eventos na mesma transação. B.1 também concluída: API paginada/filtrada, permissão somente leitura, revogação concorrente e matriz de concessões homologadas em Chrome/API/SQL; [evidências](./homologacao-etapa-6D-3-1B.md). B.2 concluída: tela de histórico, filtros/paginação/permissões/cache e Chrome/API/SQL aprovados; CI final com 541 frontend e 380 backend. Migração/dump aprovados; publicação aguarda backup operacional completo, bloqueado neste Windows por confiança/domínio em Set-Acl. R32 permanece aberto.
 
-## Contrato de 6D.3.1B — API concluída, tela pendente
+## Contrato de 6D.3.1B — API e tela concluídas; publicação pendente
 
 - Recurso `administrative_audit`, somente ação `view`. Proposta coerente com a administração atual: administrador ativo pode consultar; demais perfis começam sem acesso e dependem de concessão explícita. `create/update/delete` devem ser sempre falsos para esse recurso, inclusive no normalizador e na interface; a gravação é interna às operações administrativas, não uma API de edição do histórico.
 - Revalidar conta, sessão e concessão dentro da mesma proteção de concorrência usada pelas alterações administrativas, antes de ler os eventos. Testar revogação concluída enquanto uma leitura aguarda o bloqueio. A permissão de prontuário continua independente.

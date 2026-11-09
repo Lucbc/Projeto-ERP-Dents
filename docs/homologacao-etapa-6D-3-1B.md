@@ -2,7 +2,7 @@
 
 ## B.1 — API e concessão de leitura (início 07/11/2026)
 
-Base `d5d14a6`, produto `267cee5`. B.1 concluída em 08/11/2026 após conferência dos resultados; B.2 (tela de histórico/Chrome) ainda pendente. Nenhuma tag instalável nesta subetapa.
+Base `d5d14a6`, produto `267cee5`. B.1 concluída em 08/11/2026 após conferência dos resultados; B.2 também concluída conforme seção abaixo. Nenhuma tag instalável nesta subetapa.
 
 ### Contrato
 
@@ -26,10 +26,26 @@ Próximo B.2: tela de consulta, estados/permissão/cache e Chrome. Antes de publ
 
 ## B.2 — tela de histórico (início 08/11/2026)
 
-Base `187f665`. Implementada, em validação. Rota `/administrative-audit` e menu seguem a permissão própria, sem exigir administração de usuários. Eventos mostram ação traduzida, instante de São Paulo, IDs preservados, versões e diferenças de campos/concessões; sem edição/exclusão/exportação.
+Base `187f665`, produto `73b5b03`. Concluída em 08/11/2026. Rota `/administrative-audit` e menu seguem a permissão própria, sem exigir administração de usuários. Eventos mostram ação traduzida, instante de São Paulo, IDs preservados, versões e diferenças de campos/concessões; sem edição/exclusão/exportação.
 
 Filtros aplicados explicitamente por ação, responsável, usuário/perfil e intervalo no fuso clínico. Valores inválidos não disparam consulta; mudança de filtro retorna à primeira página. Paginação de 25 por cursor com anterior/próxima; atualização retorna à primeira página. Erro de rede sinaliza dados desatualizados; vazio é distinto de erro. Revogação oculta eventos e remove cache; respostas não são persistidas no navegador.
 
-Cinco testes novos de componentes aprovados: identificação histórica/horário, paginação/filtros, validação, permissão/cache e erro/negação HTTP. Build e imagem web aprovados. Regressão completa e Chrome/API/SQL em andamento; CI pendente. Harness usa 32 eventos sintéticos no esquema privado (não são autoria histórica real), conta fictícia e duas alterações de concessão. Capturas locais somente fictícias em `.data/audit-history-desktop.png` e `.data/audit-history-mobile.png`, fora do Git.
+Seis testes novos de componentes aprovados (incluindo recuperação de rede seguida de filtro vazio): identificação histórica/horário, paginação/filtros, validação, permissão/cache e erro/negação HTTP. Build e imagem web aprovados. Primeira regressão completa: 540 testes aprovados; teste adicional e correção focal: seis aprovados (2,32 s). Chrome/API/SQL e CI final aprovados. Harness usa 32 eventos sintéticos no esquema privado (não são autoria histórica real), conta fictícia e duas alterações de concessão. Capturas locais somente fictícias em `.data/audit-history-desktop.png` e `.data/audit-history-mobile.png`, fora do Git.
 
-A conclusão B.2 depende desses aceites. Recuperação/migração e publicação continuam pendentes; o roteiro de instalação ainda aponta a necessidade de tag corrigida, sem instalar HEAD parcial.
+B.2 concluída nos aceites descritos. Migração/dump aprovados; backup operacional e publicação continuam pendentes; o roteiro de instalação ainda aponta a necessidade de tag corrigida, sem instalar HEAD parcial.
+
+### Aceites locais B.2 — 08/11
+
+- Chrome primeiro parou ao localizar o select por nome. A associação explícita label/ID de Ação e Perfil corrigiu o problema em `73b5b03`; o CI anterior `42509292708` foi cancelado para testar a versão final no [CI 42509603594](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42509603594), aprovado: 541 frontend, 380 backend (795,310 s), HTTP e seis imagens sem achados. Log local `.data/audit-ui-ci-final.log`. Não tratar os ensaios interrompidos como aprovados.
+- Chrome final: administrador vê 25+8 eventos em páginas, filtros reduzem corretamente o período clínico mesmo com estação em Nova York, IDs históricos permanecem visíveis; erro 503 mantém aviso e recuperação funciona; resultado vazio explícito. Operador sem concessão não tem menu nem página, autorizado consulta sem administração de usuários e revogação retira eventos. SQL preserva os 32 eventos sintéticos e confirma duas alterações de concessão. `.data/audit-ui-chrome-final.log`.
+- Capturas desktop e 390 px inspecionadas; texto/IDs quebram linha sem rolagem horizontal da página. Isso não é um aceite geral de todas as telas móveis do ERP.
+- Cadastros Chrome/API/SQL aprovados na imagem final: CPF, nascimento, históricos, RG, permissão/conflito/reabertura e inicialização. `.data/audit-ui-registration.log`.
+
+## Recuperação antecipada — 08/11
+
+- Harness `smoke_clinical_recovery_homolog.py` atualizado para migrar 0025→0026, inserir rascunho clínico fictício por SQL, depois 0026→0027. Compara todas as linhas/tabelas existentes e verifica ausência de eventos inventados. Fixture SQL não representa escrita clínica autenticada histórica.
+- Ensaio de banco/API aprovado (`.data/audit-recovery.log`): três eventos reais de concessão/criação/exclusão, usuário excluído ainda representado, leitor negado; dump/restauração com todas as contagens e hashes iguais; proteções restauradas recusam UPDATE/DELETE/TRUNCATE da auditoria. API recupera IDs/atores/alvos/instantes/versões/diferenças e mantém o fluxo clínico. Bancos/arquivo/contêiner temporários removidos, principal preservado.
+- Ensaio operacional `smoke_clinical_full_recovery_homolog.py` adaptado ao contrato atual de criação clínica e à conferência dos eventos/permissões após restauração; execução bloqueada neste computador por confiança Windows/domínio ao aplicar a ACL da pasta de backup. Diagnóstico limitado a categoria segura, sem saída bruta. `.data/audit-full-recovery-final.log`. Não tratar como backup completo aprovado. Nenhuma nova tag publicada.
+
+- Correção no preparador do ensaio: PowerShell usa agora `$ErrorActionPreference='Stop'` também ao proteger a pasta inicial. Antes, erro não terminante de Set-Acl podia permitir continuar a preparação fictícia. Nova execução interrompeu antes de ler configuração do ambiente/criar credenciais/bancos/volumes; pasta mais recente contém somente `protect.ps1`. `.data/audit-recovery-acl-guard.log`. A proteção do script operacional já interrompia em falha e não foi removida. Ensaios anteriores limparam contêineres/bancos privados no finally; seus volumes fictícios permanecem retidos conforme contrato.
+- **Próximo requisito de publicação:** repetir o ensaio operacional completo em Windows com confiança/conta corrigida, preservando ACL, configuração e volumes. O aceite do dump não cobre exames/configuração/TLS. Não corrigir vínculo de domínio automaticamente nem publicar uma nova tag com esse aceite pendente.
