@@ -16,6 +16,10 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 09/11/2026
 
+**6D.3.2A implementada, aceites locais aprovados; CI pendente:** produto `8f9797a`. Sete testes novos PostgreSQL aprovados (120,987 s), bateria inicial de 24 testes aprovada (309,194 s; inclui seis dos novos antes da ampliação), build API e HTTP privado aprovados. Autoria real, rollback, concorrência de versão/CPF, normalização/no-op, preservação após exclusão e imutabilidade verificados. [Relatório](./homologacao-etapa-6D-3-2A.md). [CI 42622060092](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42622060092) em andamento; **próximo imediato: conferir conclusão, resolver eventual falha e fechar A antes de B**. Não repetir aceites locais sem mudança/falha. Sem aceite de interface novo (nenhuma tela implementada); consulta/UI e recuperação de 0028 ainda pendentes. Instalação v0.1.29/0027 preservada, não instalar main parcial. Principais intactos; recursos HTTP privados removidos.
+
+
+
 **Início 6D.3.2A — base `98ea27c`:** implementar gravação de metadados de edição na mesma transação, ator autenticado e migração aditiva 0028. Validar concorrência/rollback/normalização/imutabilidade em PostgreSQL privado e integração HTTP. Sem nova tag antes de consulta/UI/recuperação.
 
 **6D.3.2P — diagnóstico e desenho concluídos, base `9202bd9`:** início: selecionar o recorte de edição de pacientes previsto na auditoria. Inspeção do router/caso de uso/repositório/migração/testes confirmou ausência de autoria durável na edição, incremento de versão inclusive sem mudança e bloqueio de CPF anterior ao UPDATE. [Contrato e aceites](./PLANO-AUDITORIA-PACIENTES.md). Validação exclusivamente estática, sem aceite novo de API/SQL/interface. Nenhum código funcional/migração alterado; v0.1.29 preservada. **Próximo 6D.3.2A:** escrita atômica do histórico de edição, transmissão do ator, migração aditiva e regressões PostgreSQL/HTTP; depois leitura protegida/UI e recuperação antes de nova tag. P3 físico prioritário.

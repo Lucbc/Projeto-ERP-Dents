@@ -47,6 +47,10 @@ Permissão própria em backend/frontend/matriz, API com limites/cursor, estados 
 
 Dump e backup operacional completo devem preservar eventos, restrições, configuração e exames. CI e guias atualizados antes de nova tag. Não substituir v0.1.29 por implementação parcial.
 
-## Limites e retomada
+## Estado da implementação em 09/11
+
+6D.3.2A implementada em `8f9797a`, testes locais de banco/HTTP aprovados, CI pendente. [Resultados e retomada](./homologacao-etapa-6D-3-2A.md). As observações de diagnóstico abaixo descrevem o ponto inicial; leitura/UI/recuperação ainda não implementadas.
+
+## Limites do diagnóstico inicial
 
 Nenhuma trilha nova foi implementada neste diagnóstico. R32 continua aberto; não é requisito adicional para iniciar os cadastros com v0.1.29 após checklist físico. Sem retenção/expurgo/exportação automático ou prazo presumido. Próximo imediato: implementar 6D.3.2A conforme os aceites acima. Odontograma permanece posterior.

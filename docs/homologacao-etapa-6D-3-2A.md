@@ -21,3 +21,10 @@ Somente erp-dents-homolog, esquemas/contêineres privados e dados fictícios. Pr
 ## Retomada
 
 Concluir testes locais e CI antes de declarar A concluída. Depois B: consulta protegida e interface; C: migração/recuperação completa e publicação. O harness de recuperação anterior espera head=0027 e deverá ser ampliado para 0028 em C, não usado como prova da nova migração. Instalação permanece na tag v0.1.29/0027; não instalar main parcial.
+
+## Aceites locais finais — 09/11
+
+- Produto `8f9797a`; sete testes novos aprovados em 120,987 s. A bateria inicial de 24 passou em 309,194 s (inclui seis testes novos antes da ampliação e regressões existentes; não somar como 31 testes distintos).
+- HTTP final aprovado: inicialização concorrente, autoria da sessão apesar de actor_id enviado pelo cliente, escrita anônima/operador negados, CPF inválido 400, stale 409, falha induzida 422 sem alteração/evento, reinício e limpeza do esquema/contêiner privado. Logs das tentativas intermediárias com expectativas incorretas não representam falha corrigida no produto.
+- Sem leitura/tela de histórico de pacientes nesta entrega. Nenhuma homologação Chrome nova alegada.
+- [CI 42622060092](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42622060092) em andamento; resultado completo ainda pendente. Não declarar A concluída antes de conferir CI.
