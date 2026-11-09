@@ -2,11 +2,9 @@
 
 Atualizado em 09/11/2026. Dados serão cadastrados do zero, em outro computador Windows.
 
-## Pendência de instalação nova — 07/11/2026
+## Versão de instalação — 09/11/2026
 
-A construção da imagem da API da v0.1.28 foi reproduzida com falha: o repositório Alpine deixou de fornecer `zlib=1.3.2-r1`. A correção para `1.4-r0` passou nos builds, testes e segurança do CI 42401571437 no desenvolvimento, mas ainda não foi publicada em uma tag de instalação. **Aguardar uma tag corrigida e homologada antes de executar uma instalação nova.** Não usar o HEAD de desenvolvimento como substituto: ele contém a auditoria administrativa e a migração 0027, já validadas em homologação, mas ainda sem tag instalável publicada. Instalações com imagens já construídas não precisam ser apagadas; preservar configuração, banco, exames e backups. Esta pendência prevalece sobre a liberação histórica descrita abaixo. A próxima publicação deve atualizar os comandos deste roteiro.
-
-**Validação adicional em 09/11/2026:** migração/restauração do banco e backup operacional completo aprovados, incluindo exames, configuração, TLS, permissões, Chrome e reinício. A falha de confiança Windows/domínio de 08/11 não se repetiu; nenhuma proteção foi removida ou alteração de domínio realizada. Falta publicar a nova tag e atualizar os comandos abaixo antes de uma instalação nova. O checklist físico da clínica permanece obrigatório. Se a falha de Set-Acl ocorrer no servidor, interromper e solicitar suporte, sem retirar a proteção.
+A v0.1.29 inclui a correção do pacote zlib indisponível no build da v0.1.28 e a auditoria administrativa com migração 0027. CI, cadastros, migração e recuperação operacional completa aprovados. Usar a tag indicada abaixo, preservando configuração, banco, exames e backups nas atualizações. [Notas da versão](./ATUALIZACAO-AUDITORIA-V29.md).
 
 ## Como será o uso
 
@@ -14,11 +12,11 @@ O servidor fica ligado e concentra o programa, banco e exames. Cada estação ab
 
 O sistema apresenta horários no fuso de São Paulo, inclusive quando uma estação está configurada em outro fuso. Não é necessário configurar o fuso dentro do programa. Mantenha data e hora do Windows sincronizadas automaticamente.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.28`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.29`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
-A v0.1.28 corrige o posicionamento histórico da agenda entre fusos de estação e distingue offsets na hora repetida. Mantém busca paginada, navegação por teclado, migração 0026 e o prontuário da v0.1.25, inicialmente sem acesso em todos os perfis. Para começar os cadastros, não é necessário habilitá-lo. Consulte as [notas do pacote](./ATUALIZACAO-AGENDA-V28.md); quem já possui instalação deve seguir o roteiro de atualização, sem recriar configuração ou volumes.
+A v0.1.29 acrescenta histórico administrativo protegido por permissão e migração aditiva 0027, além de corrigir o build. Mantém as melhorias anteriores e o prontuário, inicialmente sem acesso em todos os perfis. Para começar os cadastros, não é necessário habilitar acesso clínico. Consulte as [notas do pacote](./ATUALIZACAO-AUDITORIA-V29.md); instalações existentes seguem o roteiro de atualização, sem recriar configuração ou volumes.
 
 Informação provisória do responsável: Windows 10 Home ou 11 Home, possivelmente 16 GB de RAM; confirmar no computador antes de instalar. Abrir `winver` para conferir edição/versão e **Configurações → Sistema → Sobre** para RAM/processador. A edição Home admite containers Linux, que são os utilizados pelo ERP; não comprar uma atualização para Pro apenas por esse motivo. A versão/build do Windows, WSL e virtualização ainda precisam atender aos requisitos oficiais abaixo. Não considerar qualquer Windows 10 automaticamente compatível ou ainda suportado.
 
@@ -46,7 +44,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.28
+git checkout piloto-cadastros-v0.1.29
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1

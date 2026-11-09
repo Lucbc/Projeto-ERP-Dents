@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 09/11/2026
 
+**Início da publicação v0.1.29 — base `81b8573`:** consolidar auditoria/0027 e build corrigido nas notas/guias; validar avanço Git de checkout limpo v0.1.28 antes de publicar tag. Produto permanece o aprovado no CI `73b5b03`; recuperação operacional aprovada em 09/11.
+
 **Recuperação operacional concluída — 09/11/2026, base `175a27e`:** o bloqueio de Set-Acl não se repetiu; nenhum ajuste de conta/domínio ou relaxamento de ACL foi realizado. Ensaio completo aprovado com backup-server.ps1 real, configuração/TLS/exames, eventos administrativos e permissões via HTTPS, prontuário no Chrome e persistência após reinício. Bancos/contêineres privados removidos, principal preservado; volumes fictícios e backup restrito retidos. [Evidências](./homologacao-etapa-6D-3-1B.md).
 
 **Próximo:** preparar e publicar nova tag instalável com o build corrigido e a auditoria completa; atualizar comandos dos guias e validar o avanço do checkout estável. Nenhuma nova tag foi publicada nesta subetapa. Não repetir CI/aceites aprovados sem mudança de produto. Checklist físico P3 continua obrigatório; odontograma posterior. Este checkpoint substitui o bloqueio histórico abaixo.
