@@ -49,3 +49,17 @@ B.2 concluída nos aceites descritos. Migração/dump aprovados; backup operacio
 
 - Correção no preparador do ensaio: PowerShell usa agora `$ErrorActionPreference='Stop'` também ao proteger a pasta inicial. Antes, erro não terminante de Set-Acl podia permitir continuar a preparação fictícia. Nova execução interrompeu antes de ler configuração do ambiente/criar credenciais/bancos/volumes; pasta mais recente contém somente `protect.ps1`. `.data/audit-recovery-acl-guard.log`. A proteção do script operacional já interrompia em falha e não foi removida. Ensaios anteriores limparam contêineres/bancos privados no finally; seus volumes fictícios permanecem retidos conforme contrato.
 - **Próximo requisito de publicação:** repetir o ensaio operacional completo em Windows com confiança/conta corrigida, preservando ACL, configuração e volumes. O aceite do dump não cobre exames/configuração/TLS. Não corrigir vínculo de domínio automaticamente nem publicar uma nova tag com esse aceite pendente.
+
+
+## Recuperação operacional — aceite de 09/11/2026
+
+Base `175a27e`, sem alteração de produto ou scripts desde os aceites anteriores. Novo teste isolado em pastas vazias confirmou Set-Acl funcionando, herança desativada e três regras. Não foi alterada conta, associação ao domínio ou proteção; a causa da mudança de condição do Windows não foi determinada.
+
+O ensaio `smoke_clinical_full_recovery_homolog.py` concluiu com código zero; log local ignorado `.data/audit-full-recovery-nov09.log`:
+
+- **Backup Windows real:** backup-server.ps1 gerou manifesto, configuração, TLS e arquivos; reiniciou somente a API privada. Guardas recusaram produção e identificadores dos contêineres principais.
+- **Banco/API HTTPS:** restauração preservou eventos administrativos e negação de leitura, contas originais, finalização/adendo e repetição idempotente. Exames antigos e novos conferidos byte a byte.
+- **Chrome:** login restaurado, histórico clínico, texto original/adendo/contexto e edição do rascunho aprovados.
+- **Após reinício:** edição do navegador e exame persistiram; origem permaneceu idêntica. Limpeza removeu bancos/contêineres privados, preservando banco/contêineres principais. Volumes fictícios e backup restrito retidos, sem conteúdo sensível no Git.
+
+Esse aceite substitui o bloqueio operacional de 08/11 para esta versão. Não comprova o ambiente físico da clínica nem explica/corrige o vínculo Windows. Não é necessário repetir o CI de produto, já aprovado em `73b5b03`, por este fechamento documental. Próximo: publicar nova tag instalável, alinhar comandos dos guias e validar o avanço do checkout estável. Nenhuma tag nova nesta subetapa.

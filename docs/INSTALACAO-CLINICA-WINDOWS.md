@@ -1,12 +1,12 @@
 # Instalação na clínica — servidor Windows
 
-Atualizado em 08/11/2026. Dados serão cadastrados do zero, em outro computador Windows.
+Atualizado em 09/11/2026. Dados serão cadastrados do zero, em outro computador Windows.
 
 ## Pendência de instalação nova — 07/11/2026
 
-A construção da imagem da API da v0.1.28 foi reproduzida com falha: o repositório Alpine deixou de fornecer `zlib=1.3.2-r1`. A correção para `1.4-r0` passou nos builds, testes e segurança do CI 42401571437 no desenvolvimento, mas ainda não foi publicada em uma tag de instalação. **Aguardar uma tag corrigida e homologada antes de executar uma instalação nova.** Não usar o HEAD de desenvolvimento como substituto: ele contém a auditoria administrativa e a migração 0027, ainda pendentes do aceite de backup operacional completo para publicação. Instalações com imagens já construídas não precisam ser apagadas; preservar configuração, banco, exames e backups. Esta pendência prevalece sobre a liberação histórica descrita abaixo. A próxima publicação deve atualizar os comandos deste roteiro.
+A construção da imagem da API da v0.1.28 foi reproduzida com falha: o repositório Alpine deixou de fornecer `zlib=1.3.2-r1`. A correção para `1.4-r0` passou nos builds, testes e segurança do CI 42401571437 no desenvolvimento, mas ainda não foi publicada em uma tag de instalação. **Aguardar uma tag corrigida e homologada antes de executar uma instalação nova.** Não usar o HEAD de desenvolvimento como substituto: ele contém a auditoria administrativa e a migração 0027, já validadas em homologação, mas ainda sem tag instalável publicada. Instalações com imagens já construídas não precisam ser apagadas; preservar configuração, banco, exames e backups. Esta pendência prevalece sobre a liberação histórica descrita abaixo. A próxima publicação deve atualizar os comandos deste roteiro.
 
-**Validação adicional em 08/11/2026:** a nova auditoria passou no ensaio de migração/restauração do banco, mas o backup operacional completo neste PC foi bloqueado por confiança Windows/domínio em `Set-Acl`. Isso também exige validação em Windows com conta/vínculo regular antes da nova publicação e da instalação física. O suporte deve corrigir a condição do Windows; não retirar as permissões restritas para continuar. O problema pode afetar tanto a preparação quanto a pasta de backup.
+**Validação adicional em 09/11/2026:** migração/restauração do banco e backup operacional completo aprovados, incluindo exames, configuração, TLS, permissões, Chrome e reinício. A falha de confiança Windows/domínio de 08/11 não se repetiu; nenhuma proteção foi removida ou alteração de domínio realizada. Falta publicar a nova tag e atualizar os comandos abaixo antes de uma instalação nova. O checklist físico da clínica permanece obrigatório. Se a falha de Set-Acl ocorrer no servidor, interromper e solicitar suporte, sem retirar a proteção.
 
 ## Como será o uso
 

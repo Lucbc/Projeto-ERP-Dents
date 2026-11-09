@@ -2,9 +2,9 @@
 
 Inventário estático em 06/11/2026, durante a validação de 6D.2.2. **Não é implementação, aceite HTTP/SQL ou certificação de conformidade.** R32 continua aberto. Não altera a liberação de cadastros nem substitui o checklist físico da clínica.
 
-## Progresso em 08/11/2026
+## Progresso em 09/11/2026
 
-A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [contrato, evidências e limites](./homologacao-etapa-6D-3-1A.md). A linha de usuários/permissões abaixo descreve o inventário anterior; agora os caminhos administrativos autenticados gravam eventos na mesma transação. B.1 também concluída: API paginada/filtrada, permissão somente leitura, revogação concorrente e matriz de concessões homologadas em Chrome/API/SQL; [evidências](./homologacao-etapa-6D-3-1B.md). B.2 concluída: tela de histórico, filtros/paginação/permissões/cache e Chrome/API/SQL aprovados; CI final com 541 frontend e 380 backend. Migração/dump aprovados; publicação aguarda backup operacional completo, bloqueado neste Windows por confiança/domínio em Set-Acl. R32 permanece aberto.
+A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [contrato, evidências e limites](./homologacao-etapa-6D-3-1A.md). A linha de usuários/permissões abaixo descreve o inventário anterior; agora os caminhos administrativos autenticados gravam eventos na mesma transação. B.1 também concluída: API paginada/filtrada, permissão somente leitura, revogação concorrente e matriz de concessões homologadas em Chrome/API/SQL; [evidências](./homologacao-etapa-6D-3-1B.md). B.2 concluída: tela de histórico, filtros/paginação/permissões/cache e Chrome/API/SQL aprovados; CI final com 541 frontend e 380 backend. Migração/dump e backup operacional completo aprovados; em 09/11 o bloqueio Windows não se repetiu, sem alterações de conta/domínio ou ACL. Publicação da nova tag e atualização dos comandos de instalação são o próximo passo. R32 permanece aberto.
 
 ## Contrato de 6D.3.1B — API e tela concluídas; publicação pendente
 
