@@ -49,7 +49,7 @@ Dump e backup operacional completo devem preservar eventos, restrições, config
 
 ## Estado da implementação em 09/11
 
-6D.3.2A implementada em `8f9797a`, testes locais de banco/HTTP aprovados, CI pendente. [Resultados e retomada](./homologacao-etapa-6D-3-2A.md). As observações de diagnóstico abaixo descrevem o ponto inicial; leitura/UI/recuperação ainda não implementadas.
+6D.3.2A concluída em `8f9797a`, banco/HTTP e CI 42622060092 aprovados (541 frontend, 387 backend, seis imagens sem achados). Próximo B.1: consulta e permissão; B.2: tela/Chrome. [Resultados e retomada](./homologacao-etapa-6D-3-2A.md). As observações de diagnóstico abaixo descrevem o ponto inicial; leitura/UI/recuperação ainda não implementadas.
 
 ## Limites do diagnóstico inicial
 

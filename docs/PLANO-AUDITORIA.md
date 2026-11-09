@@ -18,7 +18,7 @@ A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [c
 
 ## Próximo recorte — 6D.3.2
 
-[Diagnóstico e contrato do histórico de edição de pacientes](./PLANO-AUDITORIA-PACIENTES.md), concluídos por inspeção estática em 09/11. Próximo: gravação atômica e aceites PostgreSQL/HTTP; leitura/UI e recuperação nas subetapas seguintes. Sem mudança da instalação v0.1.29.
+[Diagnóstico e contrato do histórico de edição de pacientes](./PLANO-AUDITORIA-PACIENTES.md), concluídos por inspeção estática em 09/11. Gravação atômica concluída, com PostgreSQL/HTTP e CI 42622060092 aprovados. Próximo B.1: consulta e permissão; B.2: tela/Chrome; recuperação antes de nova publicação. Sem mudança da instalação v0.1.29.
 
 ## Inventário anterior à implementação administrativa
 

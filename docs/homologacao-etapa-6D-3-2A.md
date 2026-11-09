@@ -1,6 +1,6 @@
 # 6D.3.2A — gravação do histórico de edição de pacientes
 
-Início em 09/11/2026, base `98ea27c`. Implementação em validação; não declarar subetapa concluída antes dos aceites.
+Início em 09/11/2026, base `98ea27c`. Subetapa concluída após aceites locais e CI, conforme fechamento abaixo.
 
 ## Mudanças
 
@@ -28,3 +28,9 @@ Concluir testes locais e CI antes de declarar A concluída. Depois B: consulta p
 - HTTP final aprovado: inicialização concorrente, autoria da sessão apesar de actor_id enviado pelo cliente, escrita anônima/operador negados, CPF inválido 400, stale 409, falha induzida 422 sem alteração/evento, reinício e limpeza do esquema/contêiner privado. Logs das tentativas intermediárias com expectativas incorretas não representam falha corrigida no produto.
 - Sem leitura/tela de histórico de pacientes nesta entrega. Nenhuma homologação Chrome nova alegada.
 - [CI 42622060092](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42622060092) em andamento; resultado completo ainda pendente. Não declarar A concluída antes de conferir CI.
+
+## Fechamento — 09/11/2026
+
+**6D.3.2A concluída — gravação de edição de pacientes:** produto `8f9797a`; [CI 42622060092](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42622060092) aprovado: 541 frontend, 387 backend (638,991 s), fluxos HTTP e seis imagens sem achados. Aceites locais PostgreSQL/HTTP também aprovados; [relatório](./homologacao-etapa-6D-3-2A.md). **Próximo B.1:** consulta paginada/filtrada com permissão própria patient_audit.view, revalidação de sessão/concessão e matriz de permissões; depois B.2 tela/Chrome. Não repetir A sem nova falha. Recuperação de 0028 e nova tag ficam após B. Instalação permanece v0.1.29/0027; P3 físico prioritário.
+
+Log local ignorado: `.data/patient-audit-ci-final.log`. O resultado final substitui as pendências de CI dos registros anteriores. Sem mudança funcional neste fechamento, sem nova tag e sem alegação de aceite visual da futura tela.
