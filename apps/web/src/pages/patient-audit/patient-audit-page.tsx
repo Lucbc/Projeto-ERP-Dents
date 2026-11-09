@@ -1,0 +1,121 @@
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ErrorState } from "@/components/ui/states";
+import { LiveQueryStatus } from "@/components/ui/live-query-status";
+import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useLiveQuery } from "@/hooks/use-live-query";
+import { patientAuditService, auditActions, type AuditEvent, type AuditFilters } from "@/lib/patient-audit-service";
+import { formatDateTime, fromInputDateTime } from "@/lib/datetime";
+
+const fields: Record<string, string> = {
+  full_name: "Nome completo", preferred_name: "Nome social", birth_date: "Nascimento", cpf: "CPF", rg: "RG",
+  phone: "Telefone", email: "E-mail", address: "Endereço", preferred_contact_method: "Contato preferido",
+  emergency_contact_name: "Contato de emergência", emergency_contact_phone: "Telefone de emergência",
+  insurance_provider: "Convênio", insurance_plan: "Plano", insurance_member_id: "Número do convênio",
+  allergies: "Alergias", medical_history: "Histórico médico", notes: "Observações", active: "Situação ativa",
+};
+const blank = { action: "", author_id: "", patient_id: "", since: "", until: "" };
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function EventView({ event }: { event: AuditEvent }) {
+  return <article aria-label={auditActions[event.action]} className="space-y-2 rounded-md border p-4 break-words">
+    <h2 className="font-semibold">{auditActions[event.action]}</h2>
+    <p>{formatDateTime(event.occurred_at)} · Horário de São Paulo</p>
+    <p>Responsável (ID): {event.actor_id}</p>
+    <p>Paciente (ID): {event.patient_id}</p>
+    <p>Versão anterior: {event.before_version ?? "—"} · Versão posterior: {event.after_version ?? "—"}</p>
+    {event.changed_fields.length > 0 && <p>Campos: {event.changed_fields.map(field => fields[field] ?? field).join(", ")}</p>}
+    {!event.changed_fields.length && <p>Salvamento sem alteração de campos.</p>}
+    <details><summary className="cursor-pointer">Identificador do evento</summary><p>{event.id}</p></details>
+  </article>;
+}
+
+function Results({ userId, filters, cursor, page, previous, next, reset, onDenied }: {
+  userId: string; filters: AuditFilters; cursor: string | null; page: number;
+  previous: () => void; next: (cursor: string) => void; reset: () => void; onDenied: () => void;
+}) {
+  const query = useLiveQuery(["patient-audit", userId, filters, cursor],
+    signal => patientAuditService.list(filters, cursor, signal), { exactOnDenied: true, gcTime: 0 });
+  useEffect(() => { if (query.accessDenied) onDenied(); }, [query.accessDenied, onDenied]);
+  if (query.accessDenied) return <ErrorState message="Seu acesso ao histórico de edição de pacientes foi encerrado." />;
+  return <section aria-label="Edições de pacientes" className="space-y-4">
+    <LiveQueryStatus subject="histórico" query={{ ...query, refresh: () => { if (page > 1) reset(); else query.refresh(); } }} />
+    {query.isPending && query.isFetching && <p role="status">Carregando eventos...</p>}
+    {query.data && <>
+      <p>Página {page} · {query.data.items.length} eventos. Atualizar o histórico retorna à primeira página.</p>
+      {query.data.items.length === 0 && <p>Nenhum evento encontrado para estes filtros.</p>}
+      {query.data.items.map(event => <EventView key={event.id} event={event} />)}
+    </>}
+    <div className="flex gap-3">
+      <Button variant="outline" disabled={page === 1 || query.isFetching} onClick={previous}>Página anterior</Button>
+      <Button variant="outline" disabled={!query.data?.next_cursor || query.isFetching || query.isError || !query.online}
+        onClick={() => { if (query.data?.next_cursor) next(query.data.next_cursor); }}>Próxima página</Button>
+    </div>
+  </section>;
+}
+
+function Reader({ userId }: { userId: string }) {
+  const client = useQueryClient();
+  const [draft, setDraft] = useState(blank);
+  const [filters, setFilters] = useState<AuditFilters>({});
+  const [cursors, setCursors] = useState<(string | null)[]>([null]);
+  const [error, setError] = useState("");
+  const [denied, setDenied] = useState(false);
+  const onDenied = useCallback(() => setDenied(true), []);
+  useEffect(() => {
+    const clear = () => {
+      void client.cancelQueries({ queryKey: ["patient-audit", userId] });
+      client.removeQueries({ queryKey: ["patient-audit", userId] });
+    };
+    if (denied) clear();
+    return clear;
+  }, [client, userId, denied]);
+  if (denied) return <ErrorState message="Seu acesso ao histórico de edição de pacientes foi encerrado. Reabra a página após revisar as permissões." />;
+  const apply = (event: FormEvent) => {
+    event.preventDefault();
+    try {
+      const values = Object.fromEntries(Object.entries(draft).map(([key, value]) => [key, value.trim()]));
+      for (const key of ["author_id", "patient_id"]) if (values[key] && !uuid.test(values[key])) throw new Error("Informe um ID válido de responsável ou paciente.");
+      const since = values.since ? fromInputDateTime(values.since) : undefined;
+      const until = values.until ? fromInputDateTime(values.until) : undefined;
+      if (since && until && Date.parse(since) >= Date.parse(until)) throw new Error("O fim do período deve ser posterior ao início.");
+      setFilters({ ...Object.fromEntries(Object.entries(values).filter(([key, value]) => value && key !== "since" && key !== "until")), since, until } as AuditFilters);
+      setCursors([null]); setError("");
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "Revise os filtros."); }
+  };
+  const cursor = cursors[cursors.length - 1];
+  const selectClass = "w-full rounded-md border bg-background p-2 text-foreground";
+  return <div className="space-y-4">
+    <Card><h1 className="text-xl font-semibold">Histórico de pacientes</h1>
+      <p>Edições de cadastros registradas desde a implantação deste histórico. Os IDs permanecem após exclusões. Exibimos quais campos mudaram, sem copiar seus valores; criações, exclusões e atendimentos clínicos não fazem parte desta lista.</p>
+      <form onSubmit={apply} className="mt-4 space-y-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div><label htmlFor="audit-action">Ação</label><select id="audit-action" className={selectClass} value={draft.action} onChange={e => setDraft({ ...draft, action: e.target.value })}>
+            <option value="">Todas</option>{Object.entries(auditActions).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select></div>
+          <label>Responsável (ID)<Input value={draft.author_id} onChange={e => setDraft({ ...draft, author_id: e.target.value })} maxLength={36} /></label>
+          <label>Paciente (ID)<Input value={draft.patient_id} onChange={e => setDraft({ ...draft, patient_id: e.target.value })} maxLength={36} /></label>
+          <label>Desde (São Paulo)<Input type="datetime-local" value={draft.since} onChange={e => setDraft({ ...draft, since: e.target.value })} /></label>
+          <label>Até, sem incluir (São Paulo)<Input type="datetime-local" value={draft.until} onChange={e => setDraft({ ...draft, until: e.target.value })} /></label>
+        </div>
+        {error && <p role="alert">{error}</p>}
+        <div className="flex gap-3"><Button type="submit">Aplicar filtros</Button>
+          <Button type="button" variant="outline" onClick={() => { setDraft(blank); setFilters({}); setCursors([null]); setError(""); }}>Limpar filtros</Button></div>
+      </form>
+    </Card>
+    <Results key={JSON.stringify([filters, cursor])} userId={userId} filters={filters} cursor={cursor} page={cursors.length}
+      previous={() => setCursors(value => value.slice(0, -1))} next={value => setCursors(old => [...old, value])}
+      reset={() => setCursors([null])} onDenied={onDenied} />
+  </div>;
+}
+
+export function PatientAuditPage() {
+  const { user } = useAuth();
+  const { can } = usePermissions();
+  return user && can("patient_audit", "view") ? <Reader key={user.id} userId={user.id} />
+    : <ErrorState message="Sem permissão para consultar o histórico de edição de pacientes." />;
+}

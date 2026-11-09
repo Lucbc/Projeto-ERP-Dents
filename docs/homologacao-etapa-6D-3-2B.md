@@ -27,3 +27,16 @@ Concluir CI e registrar resultado antes de fechar B.1. B.2 acrescentará tela, f
 ## Ponto de retomada
 
 **6D.3.2B.1 implementada, CI pendente:** produto `51bac6c`; cinco testes PostgreSQL/permissões (20,846 s), 39 frontend focados, builds API/web e HTTP aprovados. Chrome/API/SQL confirmou concessão, preservação ao editar outra permissão e revogação, com três eventos duráveis. [Relatório](./homologacao-etapa-6D-3-2B.md). [CI 42669676184](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42669676184) em andamento. **Próximo imediato:** conferir CI e resolver eventual falha antes de fechar B.1; depois B.2, tela de histórico, estados/filtros/paginação/cache e aceite Chrome. Não repetir testes locais aprovados sem mudança/falha. Instalação v0.1.29/0027 preservada; recuperação 0028 e tag posterior. Principais preservados e recursos privados removidos.
+
+
+## B.2 — tela preparada durante CI de B.1, 09/11
+
+Base `666ba6e`. Para aproveitar a espera do CI, a tela foi implementada sobre a API localmente aprovada; B.1/B.2 não estão encerradas sem resultado do CI. Nenhuma nova tag.
+
+- Rota /patient-audit e menu Histórico de pacientes protegidos por patient_audit.view. Campos traduzidos, instante clínico, IDs preservados, versões e mensagem explícita para salvamento sem mudança. Não exibe valores pessoais/clínicos nem consulta cadastro para inventar nomes históricos.
+- Filtros por ação/autor/paciente/período, aplicação explícita e limpeza; IDs/intervalos validados, 25 eventos por página via cursor. Atualização/filtro retorna à primeira página.
+- Estados de carregamento/vazio/erro separados; erro de rede mantém aviso sobre dados antigos. Revogação oculta eventos e limpa cache; sem armazenamento persistente.
+- Seis testes de componentes aprovados em 2,67 s; TypeScript/Vite e imagem web aprovados. Logs .data/patient-audit-ui-tests.log, .data/patient-audit-ui-build.log e .data/patient-audit-ui-image.log.
+- Chrome/API/SQL aprovado: 25+7 eventos, filtros com estação em Nova York, intervalo clínico correto, vazio, erro 503/recuperação, leitor negado/concedido/revogado. SQL preserva os 32 eventos sintéticos e registra duas concessões administrativas. Fixture histórica inserida diretamente por SQL, não representa autoria autenticada histórica. Log .data/patient-audit-ui-chrome.log.
+- Capturas desktop e 390 px inspecionadas em .data/patient-audit-history-desktop.png e .data/patient-audit-history-mobile.png, somente fictícias e fora do Git; sem rolagem horizontal da página. Não constitui aceite de todas as telas móveis.
+- Regressão Chrome/API/SQL de cadastros na imagem final aprovada: CPF, nascimento, RG, histórico, permissões, busca, conflito e reabertura; bootstrap/reinício/limpeza aprovados. Log .data/patient-audit-ui-registration.log. CI final pendente; recuperar 0028 e publicar tag apenas após aceites.

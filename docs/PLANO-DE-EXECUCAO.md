@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 09/11/2026
 
+**Preparação B.2 durante CI de B.1 — base `666ba6e`:** aproveitar API/Chrome de concessões aprovados localmente para preparar tela de histórico. Não declarar B.1/B.2 concluídas antes do CI. Validar filtros/paginação/erro/cache e leitor concedido/negado/revogado no Chrome. Nenhuma tag parcial; v0.1.29 preservada.
+
 **6D.3.2B.1 implementada, CI pendente:** produto `51bac6c`; cinco testes PostgreSQL/permissões (20,846 s), 39 frontend focados, builds API/web e HTTP aprovados. Chrome/API/SQL confirmou concessão, preservação ao editar outra permissão e revogação, com três eventos duráveis. [Relatório](./homologacao-etapa-6D-3-2B.md). [CI 42669676184](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42669676184) em andamento. **Próximo imediato:** conferir CI e resolver eventual falha antes de fechar B.1; depois B.2, tela de histórico, estados/filtros/paginação/cache e aceite Chrome. Não repetir testes locais aprovados sem mudança/falha. Instalação v0.1.29/0027 preservada; recuperação 0028 e tag posterior. Principais preservados e recursos privados removidos.
 
 **Início 6D.3.2B.1 — base `a6b05b0`:** API de leitura de metadados de pacientes, filtros/cursor, permissão própria somente leitura e matriz de concessões. Validar PostgreSQL (revogação concorrente), HTTP e frontend; tela do histórico em B.2. Instalação v0.1.29 preservada.
