@@ -16,7 +16,11 @@ A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [c
 - Aceites separados: normalização/componentes; PostgreSQL e concorrência; HTTP 401/403/filtros/paginação; Chrome com administrador, operador concedido e operador negado. Verificar eventos após exclusão de contas e ausência de credenciais na resposta. Banco e API não substituem o aceite visual.
 - Depois da consulta, antes de nova tag: migração de base 0026 com cadastros existentes, backup/restauração dos eventos e cadastros, atualização do harness que ainda espera 0026 e guias. A correção do build zlib também precisa integrar o pacote instalável, sem antecipar a migração parcial.
 
-## O que já existe e o que falta
+## Próximo recorte — 6D.3.2
+
+[Diagnóstico e contrato do histórico de edição de pacientes](./PLANO-AUDITORIA-PACIENTES.md), concluídos por inspeção estática em 09/11. Próximo: gravação atômica e aceites PostgreSQL/HTTP; leitura/UI e recuperação nas subetapas seguintes. Sem mudança da instalação v0.1.29.
+
+## Inventário anterior à implementação administrativa
 
 | Área | Evidência no código | Limite atual |
 |---|---|---|
@@ -30,7 +34,7 @@ A fundação de gravação 6D.3.1A está concluída no recorte de gravação: [c
 
 Não substituir os mecanismos existentes por um log único nem concluir que autorização ausente de histórico equivale a acesso sem permissão.
 
-## Próximo recorte proposto — 6D.3.1
+## Recorte administrativo concluído — 6D.3.1
 
 Primeira entrega: trilha de **alterações administrativas de usuários/permissões**, antes de expandir para prontuários, exames e cadastros. É um recorte pequeno com ator já disponível, útil para identificar quem concedeu acesso, inativou uma conta ou redefiniu uma senha.
 

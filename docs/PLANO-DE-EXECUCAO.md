@@ -16,6 +16,10 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 09/11/2026
 
+**6D.3.2P — diagnóstico e desenho concluídos, base `9202bd9`:** início: selecionar o recorte de edição de pacientes previsto na auditoria. Inspeção do router/caso de uso/repositório/migração/testes confirmou ausência de autoria durável na edição, incremento de versão inclusive sem mudança e bloqueio de CPF anterior ao UPDATE. [Contrato e aceites](./PLANO-AUDITORIA-PACIENTES.md). Validação exclusivamente estática, sem aceite novo de API/SQL/interface. Nenhum código funcional/migração alterado; v0.1.29 preservada. **Próximo 6D.3.2A:** escrita atômica do histórico de edição, transmissão do ator, migração aditiva e regressões PostgreSQL/HTTP; depois leitura protegida/UI e recuperação antes de nova tag. P3 físico prioritário.
+
+
+
 **Publicação concluída em 09/11/2026:** tag `piloto-cadastros-v0.1.29` = `cfc537fe54ca60def3c7db4c75de461a30d8af1d`, publicada e conferida no remoto. Verificador aprovou avanço do checkout limpo v0.1.28; isso verifica Git, enquanto migração e recuperação têm seus aceites separados. Aplicação/imagens/Compose preservam o produto `73b5b03` aprovado no CI. Guias atualizados para 0027; instalação assistida para cadastros disponível após checklist físico. [Notas](./ATUALIZACAO-AUDITORIA-V29.md). Próximo: P3 físico quando chegarem os dados do servidor; enquanto isso, selecionar o próximo recorte do plano de auditoria sem repetir 6D.3.1. Odontograma permanece posterior. Este checkpoint substitui as pendências de publicação abaixo.
 
 **Início da publicação v0.1.29 — base `81b8573`:** consolidar auditoria/0027 e build corrigido nas notas/guias; validar avanço Git de checkout limpo v0.1.28 antes de publicar tag. Produto permanece o aprovado no CI `73b5b03`; recuperação operacional aprovada em 09/11.
