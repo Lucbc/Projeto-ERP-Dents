@@ -23,3 +23,7 @@ Para instalação nova, seguir o [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.
 - Backup operacional real aprovado em 09/11, incluindo configuração/TLS/exames, permissões, Chrome e reinício. Falha Windows anterior não se repetiu; não houve relaxamento de ACL nem reparo de domínio pelo projeto.
 - Nenhuma mudança de produto após o CI; scripts de ensaio foram atualizados e executados localmente. Verificador Git de avanço não substitui migração ou aceite físico.
 - Outros tipos de auditoria permanecem no [plano](./PLANO-AUDITORIA.md); não representa auditoria geral de todo o ERP.
+
+## Publicação
+
+Tag publicada e conferida: `cfc537fe54ca60def3c7db4c75de461a30d8af1d`. Verificador Git aprovou avanço do checkout limpo v0.1.28. Alterações posteriores deste fechamento são documentais; a tag permanece fixa.

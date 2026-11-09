@@ -16,6 +16,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 
 ## Ponto de retomada — 09/11/2026
 
+**Publicação concluída em 09/11/2026:** tag `piloto-cadastros-v0.1.29` = `cfc537fe54ca60def3c7db4c75de461a30d8af1d`, publicada e conferida no remoto. Verificador aprovou avanço do checkout limpo v0.1.28; isso verifica Git, enquanto migração e recuperação têm seus aceites separados. Aplicação/imagens/Compose preservam o produto `73b5b03` aprovado no CI. Guias atualizados para 0027; instalação assistida para cadastros disponível após checklist físico. [Notas](./ATUALIZACAO-AUDITORIA-V29.md). Próximo: P3 físico quando chegarem os dados do servidor; enquanto isso, selecionar o próximo recorte do plano de auditoria sem repetir 6D.3.1. Odontograma permanece posterior. Este checkpoint substitui as pendências de publicação abaixo.
+
 **Início da publicação v0.1.29 — base `81b8573`:** consolidar auditoria/0027 e build corrigido nas notas/guias; validar avanço Git de checkout limpo v0.1.28 antes de publicar tag. Produto permanece o aprovado no CI `73b5b03`; recuperação operacional aprovada em 09/11.
 
 **Recuperação operacional concluída — 09/11/2026, base `175a27e`:** o bloqueio de Set-Acl não se repetiu; nenhum ajuste de conta/domínio ou relaxamento de ACL foi realizado. Ensaio completo aprovado com backup-server.ps1 real, configuração/TLS/exames, eventos administrativos e permissões via HTTPS, prontuário no Chrome e persistência após reinício. Bancos/contêineres privados removidos, principal preservado; volumes fictícios e backup restrito retidos. [Evidências](./homologacao-etapa-6D-3-1B.md).
@@ -414,7 +416,7 @@ Início na base `f9450df`, árvore limpa: inspeção e reprodução das divergê
 | 3 | Datas, cadastros, permissões, paginação, atualização entre PCs e interação | 3A/3B e percurso operacional concluídos; R21 residual e cobertura visual histórica/multidia na fila | Cenários por perfil e dados representativos aprovados |
 | 4 | Atendimento/prontuário e estrutura de cobrança/pagamentos | Primeiro recorte clínico 4A–4C concluído e incluído na v0.1.25; cobrança/parcelamento ampliados fora desse recorte | Escopo validado com a clínica; histórico e autoria preservados |
 | 5 | Instalação assistida, HTTPS, backup, atualização e recuperação | Piloto v0.1.25 liberado para instalação assistida; P3 físico aguarda dados do servidor | Instalar, reiniciar, atualizar e restaurar em ambiente isolado com roteiro simples |
-| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C/6D.1/6D.2/6D.3.1A concluídos nos recortes documentados; 6D.3.1B.1/B.2 e migração/dump concluídos; backup operacional aprovado em 09/11; próxima publicação da tag corrigida | Critérios da revisão atendidos e limitações aceitas explicitamente |
+| 6 | Homologação final, carga, usabilidade e piloto | 6A/6B/6C/6D.1/6D.2/6D.3.1A concluídos nos recortes documentados; 6D.3.1B.1/B.2 e migração/dump concluídos; backup operacional aprovado em 09/11; v0.1.29 publicada; próximo P3 físico/recorte de auditoria | Critérios da revisão atendidos e limitações aceitas explicitamente |
 
 Etapa 1A é pequena e pode ser concluída junto com a preparação da etapa 0. Funcionalidades de prontuário, parcelamento e instalação final terão decisões próprias antes da implementação.
 
