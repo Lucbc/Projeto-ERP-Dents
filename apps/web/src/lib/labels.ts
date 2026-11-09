@@ -96,6 +96,7 @@ export const permissionResources: PermissionResource[] = [
   "financial_reversals",
   "clinical_records",
   "administrative_audit",
+  "patient_audit",
 ];
 
 export const permissionActions: PermissionAction[] = ["view", "create", "update", "delete"];
@@ -115,6 +116,7 @@ export const permissionResourceLabels: Record<PermissionResource, string> = {
   financial: "Financeiro",
   financial_reversals: "Estornos financeiros (Criar = autorizar estorno)",
   clinical_records: "Prontuário clínico",
+  patient_audit: "Histórico de edição de pacientes (somente leitura)",
   administrative_audit: "Auditoria administrativa (somente leitura)",
 };
 

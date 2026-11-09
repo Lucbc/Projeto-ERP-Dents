@@ -48,6 +48,36 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     expect('PUT',path,{'version':2,'notes':'Fictitious forbidden'},403,session)
     assert events() == recorded
     assert 'Fictitious' not in json.dumps(recorded) and password not in json.dumps(recorded)
+    from urllib.parse import urlencode
+    endpoint = '/api/patient-audit'
+    expect('GET', endpoint, status=401, session=None)
+    expect('GET', endpoint, status=403, session=session)
+    matrix = next(row for row in expect('GET','/api/permissions')['items'] if row['role']=='reception')
+    matrix['permissions']['patient_audit'] = dict(view=True, create=True, update=True, delete=True)
+    granted = expect('PUT','/api/permissions/reception',matrix)
+    assert granted['permissions']['patient_audit'] == dict(view=True, create=False, update=False, delete=False)
+    page = expect('GET',endpoint+'?'+urlencode({'patient_id':patient['id'],'limit':1}),session=session)
+    assert len(page['items']) == 1 and page['items'][0]['actor_id'] == actor['id']
+    assert page['items'][0]['changed_fields'] == ['notes']
+    assert page['next_cursor'] is None
+    expect('PUT',path,{'version':2,'active':False})
+    first = expect('GET',endpoint+'?'+urlencode({'patient_id':patient['id'],'limit':1}),session=session)
+    second = expect('GET',endpoint+'?'+urlencode({'patient_id':patient['id'],'limit':1,
+        'cursor':first['next_cursor']}),session=session)
+    assert [first['items'][0]['after_version'],second['items'][0]['after_version']] == [3,2]
+    assert second['next_cursor'] is None
+    for query in ('limit=101','patient_id=invalid','author_id=invalid','action=invalid'):
+        expect('GET',endpoint+'?'+query,status=422)
+    expect('GET',endpoint+'?cursor=!',status=400)
+    expect('GET',endpoint+'?since=2026-01-01T00:00:00',status=400)
+    expect('POST',endpoint,{},405)
+    recorded = events()
+    matrix = next(row for row in expect('GET','/api/permissions')['items'] if row['role']=='reception')
+    matrix['permissions']['patient_audit']['view'] = False
+    expect('PUT','/api/permissions/reception',matrix)
+    expect('GET',endpoint,status=403,session=session)
+    assert events() == recorded
+    passed('Patient audit read permission, pagination, filters, invalid input and live revocation approved')
     passed('Patient HTTP authorship, no personal values, anonymous/permission denial, 400/409/422 and atomic rollback approved')
 
 

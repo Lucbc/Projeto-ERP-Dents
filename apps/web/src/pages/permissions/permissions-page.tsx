@@ -297,7 +297,7 @@ function PermissionsContent({ onDenied }: { onDenied: () => void }) {
                                 type="checkbox"
                                 aria-label={`${userRoleLabels[role]}: ${permissionResourceLabels[resource]} — ${permissionActionLabels[action]}`}
                                 disabled={!state || state.reloading || savingRole === role ||
-                                  (resource === "administrative_audit" && action !== "view") ||
+                                  ((resource === "administrative_audit" || resource === "patient_audit") && action !== "view") ||
                                   (resource === "clinical_records" && (action === "delete" ||
                                     (action !== "view" && (role !== "dentist" || !roleDraft.clinical_records.view))))}
                                 checked={Boolean(roleDraft[resource][action])}

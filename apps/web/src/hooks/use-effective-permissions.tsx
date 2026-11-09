@@ -48,7 +48,7 @@ function Reader({ user, children }: PropsWithChildren<{ user: User }>) {
     refresh: query.refresh,
     can: (resource, action) => {
       if (!data) return false;
-      if (resource === "administrative_audit") {
+      if ((resource === "administrative_audit" || resource === "patient_audit")) {
         return action === "view" && (user.role === "admin" || data.permissions[resource]?.view === true);
       }
       if (resource === "clinical_records") {

@@ -35,7 +35,8 @@ export type PermissionResource =
   | "financial"
   | "financial_reversals"
   | "clinical_records"
-  | "administrative_audit";
+  | "administrative_audit"
+  | "patient_audit";
 
 export interface PermissionActions {
   view: boolean;
