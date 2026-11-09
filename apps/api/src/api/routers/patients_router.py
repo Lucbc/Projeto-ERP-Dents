@@ -112,9 +112,10 @@ def update_patient(
     patient_id: UUID,
     payload: PatientUpdateRequest,
     db: Session = Depends(get_db_dep),
+    user: User = Depends(require_permission("patients", "update")),
 ):
     use_case = PatientUseCases(SqlAlchemyPatientRepository(db))
-    return use_case.update(patient_id, payload.model_dump(exclude_unset=True))
+    return use_case.update(patient_id, payload.model_dump(exclude_unset=True), actor_id=user.id)
 
 
 @router.get("/{patient_id}/deletion-preview", response_model=PatientDeletionPreview)

@@ -12,6 +12,7 @@ import re
 import unicodedata
 import hashlib
 import json
+from uuid import uuid4
 from src.core.domain.entities import Patient
 from src.core.domain.cpf import cpf_digits, same_cpf, validate_cpf
 from src.core.domain.patient_dates import validate_birth_date
@@ -151,14 +152,14 @@ class SqlAlchemyPatientRepository(PatientRepository):
             self.session.rollback()
             raise
 
-    def update(self, patient_id, data: dict):
+    def update(self, patient_id, data: dict, *, actor_id=None):
         try:
-            return self._update(patient_id, data)
+            return self._update(patient_id, data, actor_id=actor_id)
         except Exception:
             self.session.rollback()
             raise
 
-    def _update(self, patient_id, data: dict):
+    def _update(self, patient_id, data: dict, *, actor_id=None):
         version = data.get('version')
         if type(version) is not int or version < 1:
             raise ValidationError("Reabra o cadastro para obter a versão atual antes de salvar.")
@@ -200,6 +201,14 @@ class SqlAlchemyPatientRepository(PatientRepository):
                     if key != self._cpf_key(current.cpf):
                         self._guard_cpf(key, patient_id)
 
+        # Scalar snapshot cannot be overwritten by populate_existing below. A stale
+        # snapshot cannot produce an event because the versioned UPDATE must win.
+        before = None
+        if actor_id is not None:
+            columns = [getattr(PatientModel, key) for key in values]
+            before = self.session.execute(select(PatientModel.version, *columns).where(
+                PatientModel.id == patient_id, PatientModel.version == version)).mappings().first()
+
         # The predicate and increment are one SQL statement, including no-op edits.
         item = self.session.scalar(update(PatientModel).where(
             PatientModel.id == patient_id, PatientModel.version == version
@@ -212,6 +221,15 @@ class SqlAlchemyPatientRepository(PatientRepository):
                 return None
             raise ConflictError("Este paciente foi alterado por outra operação. Seu rascunho foi mantido. Carregue o cadastro atual antes de salvar novamente.")
 
+        if actor_id is not None:
+            if before is None:
+                raise RuntimeError("Patient audit snapshot missing")
+            changed = [key for key in values if before[key] != getattr(item, key)]
+            self.session.execute(text("""INSERT INTO patient_audit
+                (id,actor_id,patient_id,action,before_version,after_version,changed_fields)
+                VALUES (:id,:actor,:patient,'patient.updated',:before,:after,:fields)"""),
+                dict(id=uuid4(), actor=actor_id, patient=patient_id, before=version,
+                     after=item.version, fields=changed))
         self.session.commit()
         self.session.refresh(item)
         return self._to_entity(item)

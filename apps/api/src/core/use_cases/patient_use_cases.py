@@ -53,7 +53,7 @@ class PatientUseCases:
                 actor_id=actor_id, allow_replay=allow_replay)
         return self.patient_repository.create(data)
 
-    def update(self, patient_id: UUID, data: dict) -> Patient:
+    def update(self, patient_id: UUID, data: dict, *, actor_id=None) -> Patient:
         if "full_name" in data and not (data.get("full_name") or "").strip():
             raise ValidationError("Nome completo do paciente é obrigatório.")
         if "full_name" in data:
@@ -79,7 +79,8 @@ class PatientUseCases:
             if field in data:
                 data[field] = _normalize_text(data.get(field))
 
-        patient = self.patient_repository.update(patient_id, data)
+        patient = (self.patient_repository.update(patient_id, data, actor_id=actor_id)
+                   if actor_id is not None else self.patient_repository.update(patient_id, data))
         if patient is None:
             raise NotFoundError("Paciente não encontrado.")
         return patient
