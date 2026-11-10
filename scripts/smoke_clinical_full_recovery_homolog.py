@@ -173,6 +173,14 @@ $a.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($s,'Ful
         assert len(audit_page['items']) == 2 and audit_page['next_cursor'] is None
         assert [row['action'] for row in audit_page['items']] == ['permissions.updated', 'user.created']
         call('GET', '/api/administrative-audit', session=author_session, expected=403)
+        current_patient = call('GET', '/api/patients/' + patient['id'], session=admin)
+        saved_patient = call('PUT', '/api/patients/' + patient['id'],
+            {'version':current_patient['version'], 'notes':'Fictitious operational audit edit'}, admin)
+        saved_patient = call('PUT', '/api/patients/' + patient['id'], {'version':saved_patient['version']}, admin)
+        patient_page = call('GET', '/api/patient-audit', session=admin)
+        assert len(patient_page['items']) == 2 and patient_page['next_cursor'] is None
+        assert [r['changed_fields'] for r in patient_page['items']] == [[], ['notes']]
+        call('GET', '/api/patient-audit', session=author_session, expected=403)
         snapshot = fingerprint(database)
         backup = directory / 'backup'
         run_protected_powershell(str(ROOT / 'scripts/backup-server.ps1'),
@@ -221,6 +229,11 @@ print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest
         admin = call('POST', '/api/auth/login', {'email': 'full-admin@example.com', 'password': password})['session']
         author_session = call('POST', '/api/auth/login', {'email': author['email'], 'password': password})['session']
         assert call('GET', '/api/administrative-audit', session=admin) == audit_page
+        assert call('GET', '/api/patient-audit', session=admin) == patient_page
+        assert call('GET', '/api/patients/' + patient['id'], session=admin) == saved_patient
+        call('GET', '/api/patient-audit', session=author_session, expected=403)
+        passed('Operational recovery preserves patient history, no-op event, patient data and denied clinical reader')
+
         call('GET', '/api/administrative-audit', session=author_session, expected=403)
         assert fingerprint(restored)['administrative_audit'] == snapshot['administrative_audit']
         passed('Operational backup restores administrative events and read permission boundaries over HTTPS')
@@ -232,7 +245,7 @@ print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest
         assert call('GET', '/api/exams/' + new_exam['id'] + '/download', session=admin) == png
         passed('Restored configuration/TLS, original accounts, clinical receipt replay and old/new exam bytes pass HTTPS API')
         result = subprocess.run(['node', str(ROOT / 'scripts/smoke_clinical_full_recovery_homolog.cjs')],
-            input=json.dumps({'email': author['email'], 'password': password, 'patientId': patient['id']}),
+            input=json.dumps({'email': author['email'], 'password': password, 'patientId': patient['id'], 'adminEmail':'full-admin@example.com'}),
             text=True, capture_output=True, env={**os.environ, 'NODE_EXTRA_CA_CERTS': str(backup / 'tls/ca.crt')})
         if result.returncode:
             raise RuntimeError('Restored clinical Chrome acceptance failed; sensitive diagnostics withheld.')
@@ -241,6 +254,7 @@ print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest
         ready(client)
         assert call('GET', '/api/exams/' + new_exam['id'] + '/download', session=admin) == png
         assert call('GET', '/api/clinical-records/' + records[1]['id'], session=author_session)['text'] == 'Fictitious browser restored edit'
+        assert call('GET', '/api/patient-audit', session=admin) == patient_page
         assert fingerprint(database) == snapshot
         passed('Restored restart preserves browser draft edit and exam; source unchanged')
     finally:

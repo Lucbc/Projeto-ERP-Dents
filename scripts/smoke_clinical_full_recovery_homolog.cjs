@@ -18,5 +18,17 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   await page.getByRole('button', { name: 'Salvar rascunho', exact: true }).click();
   await page.getByText('Operação confirmada e versão atual conferida.', { exact: true }).waitFor();
   await page.screenshot({ path: path.resolve(__dirname, '../.data/homolog/clinical-full-recovery.png'), fullPage: true });
+  const adminPage = await browser.newPage({ ignoreHTTPSErrors: false, viewport: { width: 1440, height: 1000 } });
+  await adminPage.goto('https://localhost:18444/login');
+  await adminPage.locator('[name=email]').fill(input.adminEmail);
+  await adminPage.locator('[name=password]').fill(input.password);
+  await adminPage.getByRole('button', { name: 'Entrar', exact: true }).click();
+  await adminPage.getByText('Pacientes cadastrados', { exact: true }).waitFor();
+  await adminPage.getByRole('link', { name: 'Histórico de pacientes', exact: true }).click();
+  await adminPage.getByText('Salvamento sem alteração de campos.', { exact: true }).waitFor();
+  assert.equal(await adminPage.getByRole('article').count(), 2);
+  assert.equal(await adminPage.getByText('Paciente (ID): ' + input.patientId, { exact: true }).count(), 2);
+  await adminPage.getByText('Campos: Observações', { exact: true }).waitFor();
+  await adminPage.screenshot({ path: path.resolve(__dirname, '../.data/homolog/patient-audit-full-recovery.png'), fullPage: true });
  } finally { await browser.close(); }
 })().catch(() => { console.error('Clinical restored browser failed; raw diagnostics withheld.'); process.exitCode = 1; });

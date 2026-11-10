@@ -1,5 +1,12 @@
 # Plano de execução — ERP Dents
 
+## Fechamento — 10/11/2026
+
+6D.3.2B/C concluídas. CI final [42670528580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42670528580), produto `a296fa9`: 552 testes frontend, 392 backend (926,054 s), seis imagens sem achados no scanner. Componentes, Chrome/API/SQL e regressão de cadastros aprovados separadamente. Migração 0027→0028, dump e backup operacional Windows completos aprovados; histórico, permissões, exames/configuração/TLS e reinício preservados. Captura Chrome restaurada inspecionada. [Recuperação](./homologacao-etapa-6D-3-2C.md).
+
+Início da publicação v0.1.30: atualizar guias, conferir produto idêntico ao CI, validar avanço Git de checkout limpo v0.1.29, publicar tag e conferir remoto. Nenhum aceite físico da clínica é presumido. Depois: P3 assim que chegarem os dados do servidor; enquanto isso, selecionar o próximo recorte de auditoria de acesso clínico/download, sem repetir esta etapa. Odontograma permanece posterior.
+
+
 ## Objetivo
 
 ERP odontológico centralizado, com acesso individual pelo navegador nos computadores da clínica e operação simples do servidor. Referência: [revisão técnica](./revisao-tecnica-2026-09-15.md), base `7401b1a`.
@@ -15,6 +22,8 @@ ERP odontológico centralizado, com acesso individual pelo navegador nos computa
 - Usar dados fictícios na homologação. Em 15/10/2026, o usuário priorizou a entrada em uso para cadastros em outro servidor Windows, com digitação do zero e atualizações semanais. Preparar instalação e recuperação antes do uso real, conforme o plano do piloto; não usar dados ou volumes da clínica em testes.
 
 ## Ponto de retomada — 09/11/2026
+
+**Início C — recuperação 0028 durante CI de B:** base `7fbdde4`. Ampliar ensaios privados para 0027→0028 com dados existentes, dump e backup operacional com histórico de pacientes; conferir API, negações, imutabilidade e Chrome restaurado. CI continua necessário antes de fechar B/publicar; instalação v0.1.29 preservada.
 
 **6D.3.2B.2 implementada e aceites locais aprovados, CI pendente:** produto `a296fa9`; seis testes de componentes, build/imagem web, Chrome/API/SQL do histórico (25+7 eventos fictícios, filtros, erro/recuperação, acesso/revogação) e cadastros aprovados. Capturas desktop/390 px inspecionadas. [Relatório](./homologacao-etapa-6D-3-2B.md). [CI final 42670528580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42670528580) na fila; B.1 42669676184 ainda em execução. **Próximo:** conferir CI final e resolver falhas antes de fechar B; depois C, ampliar migração/dump e backup operacional para 0028 antes de nova tag. Não repetir aceites locais aprovados sem mudança/falha. Instalação v0.1.29/0027 preservada; não instalar main parcial. Principais intactos, recursos temporários removidos.
 

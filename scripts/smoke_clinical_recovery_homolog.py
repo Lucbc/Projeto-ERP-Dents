@@ -132,13 +132,27 @@ def main():
             VALUES ('{inherited_id}','{visits[2]['id']}','{patient['id']}','{dentist['id']}','{author['id']}',
                     'Fictitious Recovery Author','Fictitious inherited draft',1,now(),now())""")
         before_audit = fingerprint(source)
-        start(current, source, migrate_only=True)
+        start(current, source, migrate_only=True, revision="0027_administrative_audit")
         after_audit = fingerprint(source)
         assert all(after_audit[table] == value for table, value in before_audit.items() if table != 'alembic_version')
         assert set(after_audit) - set(before_audit) == {'administrative_audit'}
         assert sql(source, 'SELECT version_num FROM alembic_version') == '0027_administrative_audit'
         assert sql(source, 'SELECT count(*) FROM administrative_audit') == '0'
         passed('0026 to 0027 preserves every existing row including inherited clinical draft, without fabricated events')
+        # SQL-only metadata fixture at 0027; no invented authenticated historical action.
+        legacy_actor = str(uuid4())
+        sql(source, f"""INSERT INTO administrative_audit
+            (id,actor_id,action,target_user_id,before_version,after_version,changed_fields)
+            VALUES ('{uuid4()}','{legacy_actor}','user.updated','{legacy_actor}',1,2,ARRAY['name'])""")
+        before_patient_audit = fingerprint(source)
+        start(current, source, migrate_only=True)
+        after_patient_audit = fingerprint(source)
+        assert all(after_patient_audit[t] == v for t,v in before_patient_audit.items() if t != 'alembic_version')
+        assert set(after_patient_audit) - set(before_patient_audit) == {'patient_audit'}
+        assert sql(source, 'SELECT version_num FROM alembic_version') == '0028_patient_audit'
+        assert sql(source, 'SELECT count(*) FROM patient_audit') == '0'
+        passed('0027 to 0028 preserves all existing rows including clinical and administrative metadata; patient audit starts empty')
+
         start(current, source)
         listing = '/api/clinical-records?patient_id=' + patient['id']
         call('GET', listing, session=admin, expected=403)
@@ -167,10 +181,18 @@ def main():
                                       'role': 'reception', 'password': password})
         call('DELETE', '/api/users/' + disposable['id'] + '?version=1', session=admin, expected=204)
         audit_page = call('GET', '/api/administrative-audit', session=admin)
-        assert len(audit_page['items']) == 3 and audit_page['next_cursor'] is None
-        assert [item['action'] for item in audit_page['items']] == ['user.deleted','user.created','permissions.updated']
+        assert len(audit_page['items']) == 4 and audit_page['next_cursor'] is None
+        assert [item['action'] for item in audit_page['items'][:3]] == ['user.deleted','user.created','permissions.updated']
         call('GET', '/api/administrative-audit', session=session, expected=403)
         passed('Authenticated permission/create/delete writes persist three events; deleted target remains in audit and denied reader is blocked')
+        current_patient = call('GET', '/api/patients/' + patient['id'], session=admin)
+        saved_patient = call('PUT', '/api/patients/' + patient['id'],
+            {'version':current_patient['version'], 'notes':'Fictitious audit recovery edit'}, admin)
+        patient_page = call('GET', '/api/patient-audit', session=admin)
+        assert len(patient_page['items']) == 1 and patient_page['next_cursor'] is None
+        assert patient_page['items'][0]['changed_fields'] == ['notes']
+        assert patient_page['items'][0]['after_version'] == saved_patient['version']
+        call('GET', '/api/patient-audit', session=session, expected=403)
         stop()
         snapshot = fingerprint(source)
         run('docker', 'exec', DB, 'pg_dump', '-U', 'erp_homolog', '-Fc', '-f', archive, source)
@@ -185,6 +207,9 @@ def main():
             "UPDATE administrative_audit SET action='user.deleted'",
             'DELETE FROM administrative_audit',
             'TRUNCATE administrative_audit',
+            'UPDATE patient_audit SET action=action',
+            'DELETE FROM patient_audit',
+            'TRUNCATE patient_audit',
         ):
             rejected = subprocess.run(['docker', 'exec', '-i', DB, 'psql', '-X', '-U', 'erp_homolog',
                 '-d', restored, '-v', 'ON_ERROR_STOP=1'],
@@ -198,6 +223,11 @@ def main():
         assert call('GET', '/api/administrative-audit', session=restored_admin) == audit_page
         passed('Restored audit API preserves event IDs, actors, deleted target, timestamps, versions and permission differences')
         restored_session = call('POST', '/api/auth/login', {'email': author['email'], 'password': password})['session']
+        assert call('GET', '/api/patient-audit', session=restored_admin) == patient_page
+        call('GET', '/api/patient-audit', session=restored_session, expected=403)
+        assert call('GET', '/api/patients/' + patient['id'], session=restored_admin) == saved_patient
+        passed('Restored patient edit history preserves event metadata and read denial alongside the saved patient')
+
         assert call('GET', endpoint, session=restored_session) == amended
         assert call('GET', '/api/clinical-records/' + pending['id'], session=restored_session) == pending
         assert call('POST', endpoint + '/addenda', payload, restored_session) == amended

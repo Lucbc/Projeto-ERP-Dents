@@ -1,5 +1,11 @@
 # 6D.3.2B — leitura protegida do histórico de pacientes
 
+## Fechamento — 10/11/2026
+
+6D.3.2B/C concluídas. CI final [42670528580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42670528580), produto `a296fa9`: 552 testes frontend, 392 backend (926,054 s), seis imagens sem achados no scanner. Componentes, Chrome/API/SQL e regressão de cadastros aprovados separadamente. Migração 0027→0028, dump e backup operacional Windows completos aprovados; histórico, permissões, exames/configuração/TLS e reinício preservados. Captura Chrome restaurada inspecionada. [Recuperação](./homologacao-etapa-6D-3-2C.md).
+
+
+
 ## B.1 — API e concessão, início 09/11/2026
 
 Base `a6b05b0`. Implementação em validação; tela de histórico fica em B.2. Instalação permanece v0.1.29.
@@ -44,3 +50,5 @@ Base `666ba6e`. Para aproveitar a espera do CI, a tela foi implementada sobre a 
 ## Retomada final desta sessão
 
 **6D.3.2B.2 implementada e aceites locais aprovados, CI pendente:** produto `a296fa9`; seis testes de componentes, build/imagem web, Chrome/API/SQL do histórico (25+7 eventos fictícios, filtros, erro/recuperação, acesso/revogação) e cadastros aprovados. Capturas desktop/390 px inspecionadas. [Relatório](./homologacao-etapa-6D-3-2B.md). [CI final 42670528580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42670528580) na fila; B.1 42669676184 ainda em execução. **Próximo:** conferir CI final e resolver falhas antes de fechar B; depois C, ampliar migração/dump e backup operacional para 0028 antes de nova tag. Não repetir aceites locais aprovados sem mudança/falha. Instalação v0.1.29/0027 preservada; não instalar main parcial. Principais intactos, recursos temporários removidos.
+
+CI B.1 42669676184 também concluído com sucesso, produto `51bac6c`; o CI final acima cobre a implementação completa.

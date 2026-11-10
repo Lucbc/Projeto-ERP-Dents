@@ -47,9 +47,9 @@ Permissão própria em backend/frontend/matriz, API com limites/cursor, estados 
 
 Dump e backup operacional completo devem preservar eventos, restrições, configuração e exames. CI e guias atualizados antes de nova tag. Não substituir v0.1.29 por implementação parcial.
 
-## Estado da implementação em 09/11
+## Estado da implementação em 10/11
 
-6D.3.2A concluída em `8f9797a`, banco/HTTP e CI 42622060092 aprovados (541 frontend, 387 backend, seis imagens sem achados). Próximo B.1: consulta e permissão; B.2: tela/Chrome. [Resultados e retomada](./homologacao-etapa-6D-3-2A.md). As observações de diagnóstico abaixo descrevem o ponto inicial; leitura/UI/recuperação ainda não implementadas.
+A/B/C concluídas: gravação atômica, consulta com permissão própria, tela, Chrome/API/SQL, CI final (552 frontend/392 backend), migração e recuperação operacional aprovados. Produto `a296fa9`; [recuperação e limites](./homologacao-etapa-6D-3-2C.md). Publicação v0.1.30 em fechamento. Observações abaixo são diagnóstico histórico; R32 geral permanece aberto.
 
 ## Limites do diagnóstico inicial
 

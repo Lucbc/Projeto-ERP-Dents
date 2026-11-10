@@ -1,5 +1,12 @@
 # Retomada da homologação operacional — 23/10/2026
 
+## Fechamento — 10/11/2026
+
+6D.3.2B/C concluídas. CI final [42670528580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42670528580), produto `a296fa9`: 552 testes frontend, 392 backend (926,054 s), seis imagens sem achados no scanner. Componentes, Chrome/API/SQL e regressão de cadastros aprovados separadamente. Migração 0027→0028, dump e backup operacional Windows completos aprovados; histórico, permissões, exames/configuração/TLS e reinício preservados. Captura Chrome restaurada inspecionada. [Recuperação](./homologacao-etapa-6D-3-2C.md).
+
+Início da publicação v0.1.30: atualizar guias, conferir produto idêntico ao CI, validar avanço Git de checkout limpo v0.1.29, publicar tag e conferir remoto. Nenhum aceite físico da clínica é presumido. Depois: P3 assim que chegarem os dados do servidor; enquanto isso, selecionar o próximo recorte de auditoria de acesso clínico/download, sem repetir esta etapa. Odontograma permanece posterior.
+
+
 **6D.3.2B.2 implementada e aceites locais aprovados, CI pendente:** produto `a296fa9`; seis testes de componentes, build/imagem web, Chrome/API/SQL do histórico (25+7 eventos fictícios, filtros, erro/recuperação, acesso/revogação) e cadastros aprovados. Capturas desktop/390 px inspecionadas. [Relatório](./homologacao-etapa-6D-3-2B.md). [CI final 42670528580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42670528580) na fila; B.1 42669676184 ainda em execução. **Próximo:** conferir CI final e resolver falhas antes de fechar B; depois C, ampliar migração/dump e backup operacional para 0028 antes de nova tag. Não repetir aceites locais aprovados sem mudança/falha. Instalação v0.1.29/0027 preservada; não instalar main parcial. Principais intactos, recursos temporários removidos.
 
 **6D.3.2B.1 implementada, CI pendente:** produto `51bac6c`; cinco testes PostgreSQL/permissões (20,846 s), 39 frontend focados, builds API/web e HTTP aprovados. Chrome/API/SQL confirmou concessão, preservação ao editar outra permissão e revogação, com três eventos duráveis. [Relatório](./homologacao-etapa-6D-3-2B.md). [CI 42669676184](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42669676184) em andamento. **Próximo imediato:** conferir CI e resolver eventual falha antes de fechar B.1; depois B.2, tela de histórico, estados/filtros/paginação/cache e aceite Chrome. Não repetir testes locais aprovados sem mudança/falha. Instalação v0.1.29/0027 preservada; recuperação 0028 e tag posterior. Principais preservados e recursos privados removidos.

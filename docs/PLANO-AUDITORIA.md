@@ -1,5 +1,8 @@
 # Auditoria — inventário técnico e próximo recorte
 
+**10/11/2026 — 6D.3.2 concluída:** histórico de edições de pacientes com autoria, campos/versões, consulta por permissão, interface e recuperação aprovados. CI final: 552 frontend/392 backend. Publicação v0.1.30 em fechamento. R32 continua aberto para outros eventos; próximo recorte a desenhar: leitura clínica/download. Os inventários e próximos passos anteriores abaixo são históricos.
+
+
 Inventário estático em 06/11/2026, durante a validação de 6D.2.2. **Não é implementação, aceite HTTP/SQL ou certificação de conformidade.** R32 continua aberto. Não altera a liberação de cadastros nem substitui o checklist físico da clínica.
 
 ## Progresso em 09/11/2026
