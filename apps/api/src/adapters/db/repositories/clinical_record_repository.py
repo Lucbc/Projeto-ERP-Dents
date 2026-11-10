@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.appointment_repository import SqlAlchemyAppointmentRepository
 from src.adapters.db.repositories.user_repository import SqlAlchemyUserRepository
+from src.adapters.db.repositories.access_audit import record_clinical_access
 from src.core.domain.clinical_record import (
     ClinicalAddendum, ClinicalContext, ClinicalRecord, append_addendum, create_draft,
     finalize, require_clinical_permission, save_draft,
@@ -73,7 +74,11 @@ class SqlAlchemyClinicalRecordRepository:
         users = SqlAlchemyUserRepository(self.session)
         with users.administration_lock():
             self._authorize(users, actor_id, session_id, 'view')
-            return self._load(record_id)
+            record = self._load(record_id)
+            record_clinical_access(self.session, actor_id=actor_id, action='clinical.record_read',
+                target_id=record_id, patient_id=record.patient_id, records=[record])
+            self.session.commit()
+            return record
 
     def get_for_appointment(self, appointment_id, *, actor_id, session_id):
         users = SqlAlchemyUserRepository(self.session)
@@ -81,7 +86,13 @@ class SqlAlchemyClinicalRecordRepository:
             self._authorize(users, actor_id, session_id, 'view')
             record_id = self.session.scalar(sql('SELECT id FROM clinical_records WHERE appointment_id=:id'),
                                             {'id': appointment_id})
-            return self._load(record_id) if record_id is not None else None
+            record = self._load(record_id) if record_id is not None else None
+            patient_id = record.patient_id if record is not None else self.session.scalar(
+                sql('SELECT patient_id FROM appointments WHERE id=:id'), {'id': appointment_id})
+            record_clinical_access(self.session, actor_id=actor_id, action='clinical.appointment_read',
+                target_id=appointment_id, patient_id=patient_id, records=[record] if record else [])
+            self.session.commit()
+            return record
 
     def list_for_patient(self, patient_id, *, actor_id, session_id, limit=20, offset=0):
         if type(limit) is not int or not 1 <= limit <= 100 or type(offset) is not int or offset < 0:
@@ -93,7 +104,11 @@ class SqlAlchemyClinicalRecordRepository:
             total = self.session.scalar(sql('SELECT count(*) FROM clinical_records WHERE patient_id=:patient'), params)
             ids = self.session.scalars(sql('''SELECT id FROM clinical_records WHERE patient_id=:patient
                 ORDER BY created_at DESC,id DESC LIMIT :limit OFFSET :offset'''), params).all()
-            return {'items': [self._load(item) for item in ids], 'total': total}
+            records = [self._load(item) for item in ids]
+            record_clinical_access(self.session, actor_id=actor_id, action='clinical.patient_list',
+                target_id=patient_id, patient_id=patient_id, records=records, limit=limit, offset=offset)
+            self.session.commit()
+            return {'items': records, 'total': total}
 
     def execute(self, action, target_id, *, actor_id, session_id, key, version=None, text=None, reason=None,
                 expected_patient_id=None, appointment_version=None):

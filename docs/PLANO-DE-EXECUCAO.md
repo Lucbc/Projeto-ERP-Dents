@@ -1,5 +1,10 @@
 # Plano de execução — ERP Dents
 
+**6D.3.3A.1 implementada — aceites locais aprovados, CI pendente (10/11/2026):** migração 0029 e gravação das três consultas clínicas prontas. 39 testes clínicos (sete novos) aprovados em 72,232 s; build e HTTP/SQL autenticado aprovados, incluindo rollback e revogação concorrente. [Evidências e limites](./homologacao-etapa-6D-3-3A.md). Próximo imediato: conferir CI e regressão de cadastros antes de fechar A.1; depois A.2 download. Sem aceite Chrome novo nem tag parcial; instalação v0.1.30/0028 preservada. Recuperação 0029 ficará em C.
+
+
+**Início 6D.3.3A.1 — 10/11/2026, base `87ae720`:** implementar migração 0029 e gravação atômica das três consultas clínicas; validar metadados, recusas, rollback e imutabilidade em esquema privado de homologação. HTTP e CI serão registrados separadamente. Sem tag parcial; instalação v0.1.30 preservada.
+
 **6D.3.3P concluída — 10/11/2026, base `ba621a1`:** [diagnóstico e contrato de auditoria de acessos](./PLANO-AUDITORIA-ACESSOS.md). Inspeção identificou consultas clínicas sob bloqueio com rollback ao sair, atualização automática a cada 15 s e download com scanner fora da transação. Definidas consulta autorizada e preparação de download (sem alegar leitura humana/entrega), persistência sem conteúdo, revalidação pós-scanner, permissão própria e aceites separados. Validação estática/documental; nenhum teste novo de API/banco/interface, produto intacto. **Próximo 6D.3.3A.1:** migração/gravador e três leituras clínicas, com testes PostgreSQL/HTTP privados; depois download, consulta/UI e recuperação antes de tag. Instalação v0.1.30 preservada; P3 físico prioritário, odontograma posterior. Este ponto substitui o próximo passo de desenho registrado abaixo.
 
 

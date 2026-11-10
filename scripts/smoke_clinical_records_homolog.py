@@ -1,4 +1,5 @@
 """Clinical HTTP/SQL acceptance using only a disposable homologation schema."""
+import json
 from uuid import uuid4
 from smoke_bootstrap_homolog import main
 
@@ -110,8 +111,42 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
     assert sql(f'SELECT count(*) FROM "{schema}".clinical_records') == '2'
     assert sql(f'SELECT count(*) FROM "{schema}".clinical_addenda') == '1'
     assert sql(f'SELECT count(*) FROM "{schema}".clinical_operations') == '5'
+    def access_events():
+        return json.loads(sql(f'''SELECT coalesce(json_agg(a ORDER BY occurred_at,id),'[]'::json)::text
+            FROM "{schema}".access_audit a'''))
+
+    previous = access_events()
+    assert call('GET', endpoint, session=session) == amended
+    assert call('GET', create_path, session=session) == amended
+    assert call('GET', listing + '&limit=1&offset=1', session=session)['items'] == [amended]
+    recorded = access_events()
+    assert len(recorded) == len(previous) + 3
+    for event, action in zip(recorded[-3:], ['clinical.record_read','clinical.appointment_read','clinical.patient_list']):
+        assert event['actor_id'] == user['id'] and event['patient_id'] == patient['id']
+        assert event['action'] == action and event['record_ids'] == [amended['id']]
+        assert event['record_versions'] == [amended['version']] and event['returned_count'] == 1
+    assert recorded[-1]['page_limit'] == 1 and recorded[-1]['page_offset'] == 1
+    assert 'Fictitious' not in json.dumps(recorded) and password not in json.dumps(recorded)
+    call('GET', endpoint, status=403)  # Administrator still has no clinical grant.
+    call('GET', '/api/clinical-records/' + str(uuid4()), status=404, session=session)
+    call('GET', listing + '&limit=101', status=422, session=session)
+    assert access_events() == recorded
+    sql(f'''CREATE FUNCTION "{schema}".reject_access() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN RAISE EXCEPTION 'Fictitious failure' USING ERRCODE='23514'; END $$;
+        CREATE TRIGGER reject_access BEFORE INSERT ON "{schema}".access_audit
+        FOR EACH ROW EXECUTE FUNCTION "{schema}".reject_access()''')
+    try:
+        for url in (endpoint, create_path, listing):
+            error = call('GET', url, status=422, session=session)
+            assert 'Fictitious' not in json.dumps(error)
+        assert access_events() == recorded
+    finally:
+        sql(f'DROP TRIGGER reject_access ON "{schema}".access_audit; DROP FUNCTION "{schema}".reject_access()')
+    assert sql(f'SELECT count(*) FROM "{schema}".clinical_operations') == '5'
+    passed('HTTP/SQL: three authorized clinical query events, exact actor/versions, no content, denied/missing/invalid and failed inserts preserved')
     call('POST', '/api/auth/logout', session=session)
     call('GET', endpoint, status=401, session=session)
+    assert access_events() == recorded
     passed('HTTP/SQL: protected appointment links, controlled conflicts, preserved rows and session revocation')
 
 
