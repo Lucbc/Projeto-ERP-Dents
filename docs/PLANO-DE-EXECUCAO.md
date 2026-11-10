@@ -1,5 +1,8 @@
 # Plano de execução — ERP Dents
 
+**Publicação concluída — 10/11/2026:** `piloto-cadastros-v0.1.30` = `d13c7e29bb23de10f763a53e0ac3ee692927be93`, publicada e conferida no remoto. Verificador Git aprovou avanço do checkout limpo v0.1.29; aplicação/imagens/Compose idênticos ao produto `a296fa9` aprovado no CI. Guias alinhados à migração 0028. Instalação assistida de cadastros disponível após checklist físico. Próximo: P3 quando houver dados do servidor; enquanto aguardamos, desenhar o recorte de auditoria de leitura clínica/download antes de implementar. Não repetir 6D.3.2 sem nova falha/mudança. Odontograma posterior. Este fechamento substitui as pendências de publicação abaixo.
+
+
 ## Fechamento — 10/11/2026
 
 6D.3.2B/C concluídas. CI final [42670528580](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42670528580), produto `a296fa9`: 552 testes frontend, 392 backend (926,054 s), seis imagens sem achados no scanner. Componentes, Chrome/API/SQL e regressão de cadastros aprovados separadamente. Migração 0027→0028, dump e backup operacional Windows completos aprovados; histórico, permissões, exames/configuração/TLS e reinício preservados. Captura Chrome restaurada inspecionada. [Recuperação](./homologacao-etapa-6D-3-2C.md).

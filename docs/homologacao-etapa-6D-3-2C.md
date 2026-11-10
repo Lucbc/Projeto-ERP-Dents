@@ -24,3 +24,7 @@ Usa backup-server.ps1 real, recursos privados e volumes fictícios novos. Não r
 Ensaio operacional concluído: API preservou exatamente os dois eventos (edição e salvamento sem diferença), cadastro e negação ao leitor sem concessão. Chrome restaurado conferiu os dois eventos e seus campos; captura inspecionada. Exames antigos/novos, configuração/TLS, prontuário e edição de rascunho permaneceram funcionais após reinício. Origem intacta; bancos/contêineres privados removidos, volumes fictícios e backup protegido retidos. Sem relaxamento de ACL.
 
 CI final 42670528580 aprovado: 552 frontend, 392 backend, seis imagens sem achados. B/C concluídas; próxima ação: publicar v0.1.30/0028 e conferir avanço Git. Checklist físico permanece obrigatório. Logs locais ignorados: `.data/patient-audit-recovery.log` e `.data/patient-audit-full-recovery.log`. Não representam instalação na clínica.
+
+## Publicação verificada
+
+**Publicação concluída — 10/11/2026:** `piloto-cadastros-v0.1.30` = `d13c7e29bb23de10f763a53e0ac3ee692927be93`, publicada e conferida no remoto. Verificador Git aprovou avanço do checkout limpo v0.1.29; aplicação/imagens/Compose idênticos ao produto `a296fa9` aprovado no CI. Guias alinhados à migração 0028. Instalação assistida de cadastros disponível após checklist físico. Próximo: P3 quando houver dados do servidor; enquanto aguardamos, desenhar o recorte de auditoria de leitura clínica/download antes de implementar. Não repetir 6D.3.2 sem nova falha/mudança. Odontograma posterior. Este fechamento substitui as pendências de publicação abaixo.

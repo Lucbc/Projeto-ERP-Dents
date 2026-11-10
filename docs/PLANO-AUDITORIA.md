@@ -1,5 +1,8 @@
 # Auditoria — inventário técnico e próximo recorte
 
+**Publicação concluída — 10/11/2026:** `piloto-cadastros-v0.1.30` = `d13c7e29bb23de10f763a53e0ac3ee692927be93`, publicada e conferida no remoto. Verificador Git aprovou avanço do checkout limpo v0.1.29; aplicação/imagens/Compose idênticos ao produto `a296fa9` aprovado no CI. Guias alinhados à migração 0028. Instalação assistida de cadastros disponível após checklist físico. Próximo: P3 quando houver dados do servidor; enquanto aguardamos, desenhar o recorte de auditoria de leitura clínica/download antes de implementar. Não repetir 6D.3.2 sem nova falha/mudança. Odontograma posterior. Este fechamento substitui as pendências de publicação abaixo.
+
+
 **10/11/2026 — 6D.3.2 concluída:** histórico de edições de pacientes com autoria, campos/versões, consulta por permissão, interface e recuperação aprovados. CI final: 552 frontend/392 backend. Publicação v0.1.30 em fechamento. R32 continua aberto para outros eventos; próximo recorte a desenhar: leitura clínica/download. Os inventários e próximos passos anteriores abaixo são históricos.
 
 

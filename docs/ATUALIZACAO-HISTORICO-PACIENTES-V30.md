@@ -21,3 +21,7 @@ A API aplica `0028_patient_audit` sobre 0027, preservando tabelas existentes. Se
 - [Migração e recuperação](./homologacao-etapa-6D-3-2C.md): preservação das linhas, dump, imutabilidade, backup Windows real, exames/configuração/TLS, Chrome restaurado e reinício aprovados com dados fictícios privados.
 - Código da aplicação preserva o produto aprovado no CI. Scripts de recuperação ampliados e executados localmente. Verificação Git não substitui migração ou aceite físico.
 - Liberado para instalação assistida de cadastros; iniciar dados reais após checklist na clínica. Demais auditorias continuam no plano e a instalação física ainda não foi executada.
+
+## Publicação verificada
+
+**Publicação concluída — 10/11/2026:** `piloto-cadastros-v0.1.30` = `d13c7e29bb23de10f763a53e0ac3ee692927be93`, publicada e conferida no remoto. Verificador Git aprovou avanço do checkout limpo v0.1.29; aplicação/imagens/Compose idênticos ao produto `a296fa9` aprovado no CI. Guias alinhados à migração 0028. Instalação assistida de cadastros disponível após checklist físico. Próximo: P3 quando houver dados do servidor; enquanto aguardamos, desenhar o recorte de auditoria de leitura clínica/download antes de implementar. Não repetir 6D.3.2 sem nova falha/mudança. Odontograma posterior. Este fechamento substitui as pendências de publicação abaixo.
