@@ -1,5 +1,8 @@
 # Plano de execução — ERP Dents
 
+**Retomada 6D.3.3A.1 — 10/11/2026:** produto final `fe0ae19`; [CI 42826331688](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42826331688) em andamento. 39 regressões clínicas aprovadas; após ajuste de offset bigint, sete testes focados/build aprovados (21,072 s). HTTP/SQL e cadastros Chrome/API/SQL aprovados. **Próximo imediato: conferir CI final e corrigir eventual falha antes de declarar A.1 concluída; depois A.2, download preparado.** Não repetir aceites locais sem mudança/falha. Nenhuma nova tela, recuperação completa ou tag; v0.1.30 preservada. [Relatório](./homologacao-etapa-6D-3-3A.md). CI inicial `dc6edde` não substitui o CI do produto final.
+
+
 **6D.3.3A.1 implementada — aceites locais aprovados, CI pendente (10/11/2026):** migração 0029 e gravação das três consultas clínicas prontas. 39 testes clínicos (sete novos) aprovados em 72,232 s; build e HTTP/SQL autenticado aprovados, incluindo rollback e revogação concorrente. [Evidências e limites](./homologacao-etapa-6D-3-3A.md). Próximo imediato: conferir CI e regressão de cadastros antes de fechar A.1; depois A.2 download. Sem aceite Chrome novo nem tag parcial; instalação v0.1.30/0028 preservada. Recuperação 0029 ficará em C.
 
 
