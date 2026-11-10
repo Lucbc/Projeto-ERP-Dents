@@ -138,7 +138,21 @@ class ExamDownloadTests(unittest.TestCase):
             db.rollback.assert_called_once()
             scanned.append(stream); self.path.unlink()
         metadata=SimpleNamespace(get_download=lambda _: (SimpleNamespace(original_filename='test.png'),self.path))
-        with patch.object(exams_router,'build_use_case',return_value=metadata), patch.object(exams_router.ClamAVScanner,'scan',side_effect=scan):
-            self.response=exams_router.download_exam(uuid4(),db)
+        with patch.object(exams_router,'build_use_case',return_value=metadata), patch.object(exams_router.ClamAVScanner,'scan',side_effect=scan), \
+             patch.object(exams_router,'authorize_prepared_download') as audit:
+            actor, session_id = SimpleNamespace(id=uuid4()), uuid4()
+            self.response=exams_router.download_exam(uuid4(),db,actor,session_id)
+            audit.assert_called_once_with(db, actor_id=actor.id, session_id=session_id,
+                                          exam=metadata.get_download(None)[0])
         self.stream=scanned[0]
         self.assertEqual(self.body(self.run_response()),self.content)
+
+    def test_audit_failure_closes_scanned_descriptor_before_response(self):
+        opened = []
+        metadata=SimpleNamespace(get_download=lambda _: (SimpleNamespace(original_filename='test.png'),self.path))
+        with patch.object(exams_router,'build_use_case',return_value=metadata), \
+             patch.object(exams_router.ClamAVScanner,'scan',side_effect=opened.append), \
+             patch.object(exams_router,'authorize_prepared_download',side_effect=RuntimeError('Fictitious commit failure')):
+            with self.assertRaises(RuntimeError):
+                exams_router.download_exam(uuid4(),Mock(),SimpleNamespace(id=uuid4()),uuid4())
+        self.assertTrue(opened[0].closed)

@@ -61,6 +61,7 @@ def checks(unavailable=False):
         sql(f'''INSERT INTO "{schema}".exams (id,patient_id,original_filename,stored_filename,mime_type,size_bytes,uploaded_at)
                 VALUES ('{exam_id}','{patient['id']}','legacy.png','{filename}','image/png',{len(content)},now())''')
         expect('GET', '/api/exams/' + exam_id + '/download', status=503 if unavailable else 400)
+        assert sql(f'SELECT count(*) FROM "{schema}".access_audit') == '0'
         assert len(expect('GET', path)) == 1
         passed('legacy download fails closed and preserves file metadata')
         if not unavailable:

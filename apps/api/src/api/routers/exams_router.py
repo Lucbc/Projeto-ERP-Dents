@@ -8,9 +8,11 @@ from src.core.domain.exceptions import NotFoundError, StorageUnavailableError
 from sqlalchemy.orm import Session
 
 from src.adapters.db.repositories.exam_repository import SqlAlchemyExamRepository
+from src.adapters.db.repositories.access_audit import authorize_prepared_download
 from src.adapters.db.repositories.patient_repository import SqlAlchemyPatientRepository
 from src.adapters.storage.filesystem_exam_storage import FileSystemExamStorage
-from src.api.deps.auth import require_permission
+from src.api.deps.auth import require_permission, get_current_session_id
+from src.core.domain.entities import User
 from src.api.deps.db import get_db_dep
 from src.api.schemas.schemas import ExamResponse
 from src.core.use_cases.exam_use_cases import ExamUseCases
@@ -79,9 +81,10 @@ def upload_exam(
 
 @router.get(
     "/exams/{exam_id}/download",
-    dependencies=[Depends(require_permission("exams", "view"))],
 )
-def download_exam(exam_id: UUID, db: Session = Depends(get_db_dep)):
+def download_exam(exam_id: UUID, db: Session = Depends(get_db_dep),
+                  actor: User = Depends(require_permission('exams', 'view')),
+                  session_id: UUID = Depends(get_current_session_id)):
     use_case = build_use_case(db)
     exam, file_path = use_case.get_download(exam_id)
     # Materialized domain entity; release the read transaction before scanning
@@ -95,7 +98,9 @@ def download_exam(exam_id: UUID, db: Session = Depends(get_db_dep)):
         raise StorageUnavailableError("Arquivo do exame indisponível no armazenamento.") from error
     try:
         ClamAVScanner(host=get_settings().clamav_host).scan(stream)
-        return OpenExamResponse(stream, exam.original_filename)
+        response = OpenExamResponse(stream, exam.original_filename)
+        authorize_prepared_download(db, actor_id=actor.id, session_id=session_id, exam=exam)
+        return response
     except OSError as error:
         stream.close()
         raise StorageUnavailableError("Arquivo do exame indisponível no armazenamento.") from error

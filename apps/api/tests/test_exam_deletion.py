@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from threading import Barrier
+from uuid import UUID
 from unittest.mock import patch
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,8 +18,9 @@ class ExamDeletionTests(ExamFixture):
         from src.api.routers import exams_router
         from src.adapters.db.exam_maintenance import exam_storage_lock
         exam=self.upload()
+        session_id = UUID(self.auth.decode_access_token(self.login())['jti'])
         with patch.object(exams_router,'build_use_case',return_value=self.exams_uc), patch.object(exams_router.ClamAVScanner,'scan'):
-            response=exams_router.download_exam(exam.id,self.db)
+            response=exams_router.download_exam(exam.id,self.db,self.user,session_id)
         self.assertFalse(self.db.in_transaction())
         messages=[]
         async def run():

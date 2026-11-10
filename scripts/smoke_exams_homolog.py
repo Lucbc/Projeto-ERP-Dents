@@ -8,6 +8,10 @@ PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4
 
 
 def verify(request, email, password, admin, container, ready, passed, sql, schema):
+    def events():
+        return json.loads(sql(f'''SELECT coalesce(json_agg(a ORDER BY occurred_at,id),'[]'::json)::text
+            FROM "{schema}".access_audit a'''))
+
     def expect(method, path, payload=None, token=admin, status=200, headers=None):
         if method == 'PUT' and path.startswith('/api/permissions/') and payload is not None and 'version' not in payload:
             from permission_fixture_homolog import with_permission_version
@@ -45,6 +49,24 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     assert PNG[:8] in multipart and PNG[20:30] in multipart
     assert int(request.last_headers["Content-Length"]) == len(multipart)
     expect("GET", download_path, status=416, headers={"Range":"bytes=999999-"})
+    recorded = events()
+    actor = expect('GET','/api/auth/me')
+    assert len(recorded) == 5  # Includes preparation followed by HTTP 416.
+    for event in recorded:
+        assert event['action'] == 'exam.download_prepared' and event['actor_id'] == actor['id']
+        assert event['target_id'] == exam['id'] and event['patient_id'] == patient['id']
+        assert event['record_ids'] == [] and event['record_versions'] == [] and event['returned_count'] == 0
+    assert 'test.png' not in json.dumps(recorded) and password not in json.dumps(recorded)
+    sql(f'''CREATE FUNCTION "{schema}".reject_download_audit() RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN RAISE EXCEPTION 'Fictitious failure' USING ERRCODE='23514'; END $$;
+        CREATE TRIGGER reject_download_audit BEFORE INSERT ON "{schema}".access_audit
+        FOR EACH ROW EXECUTE FUNCTION "{schema}".reject_download_audit()''')
+    try:
+        failure = expect('GET',download_path,status=422)
+        assert isinstance(failure,dict) and 'Fictitious' not in json.dumps(failure)
+        assert events() == recorded
+    finally:
+        sql(f'DROP TRIGGER reject_download_audit ON "{schema}".access_audit; DROP FUNCTION "{schema}".reject_download_audit()')
     passed("authenticated scanned downloads preserve Range, If-Range, multipart lengths and 416")
     for data, name in ((b"<script>alert(1)</script>", "fake.png"), (PNG, "active.html"),
                        (b"<svg/>", "active.svg"), (b"", "empty.png")):
@@ -73,11 +95,13 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     else:
         raise AssertionError("Unexpected permissions response")
     passed("anonymous and unauthorized role cannot read/upload/download/delete exams")
+    assert events() == recorded
     pdf = upload(b"%PDF-1.7\n1 0 obj <<>> endobj\n%%EOF", "sample.pdf", "application/pdf")
     upload(b"\xff\xd8\xff\xe0fictitious\xff\xd9", "sample.jpg", "image/jpeg")
     expect("DELETE", "/api/exams/" + pdf["id"], status=204)
     expect("DELETE", "/api/exams/" + pdf["id"], status=404)
     expect("GET", "/api/exams/" + pdf["id"] + "/download", status=404)
+    assert events() == recorded
     dentist = expect("POST", "/api/dentists", {"full_name": "Fictitious Exam Dentist",
         "availability": [{"day_of_week": "friday", "start_time": "08:00", "end_time": "18:00"}]}, status=201)
     appointment = expect("POST", "/api/appointments", {"patient_id": patient["id"], "dentist_id": dentist["id"],
@@ -88,12 +112,15 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
     expect("DELETE", "/api/appointments/" + appointment["id"] + "?version=1", status=204)
     passed("patient with an appointment returns 409 and preserves exam metadata/files without cleanup intents")
     expect("DELETE", "/api/patients/" + patient["id"], status=204)
+    assert len(events()) == len(recorded) + 1
+    assert events()[:len(recorded)] == recorded
     assert sql(f'SELECT count(*) FROM "{schema}".exams') == "0"
     assert sql(f'SELECT count(*) FROM "{schema}".exam_file_deletions') == "0"
     result = docker("exec", container, "python", "-c",
         "from pathlib import Path; print(sum(p.is_file() for p in Path('/tmp/bootstrap-exams').rglob('*')))")
     assert result.stdout.strip() == "0"
     passed("exam and patient deletion remove metadata and physical files; cleanup queue is empty")
+    passed('Prepared download audit preserves actor/targets without content, survives patient deletion and rejects audit failure before bytes')
 
 
 if __name__ == "__main__":
