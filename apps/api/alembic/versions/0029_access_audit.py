@@ -20,7 +20,7 @@ def upgrade():
         record_versions bigint[] NOT NULL,
         returned_count integer NOT NULL CHECK(returned_count BETWEEN 0 AND 100),
         page_limit integer,
-        page_offset integer,
+        page_offset bigint,
         CHECK(cardinality(record_ids) = returned_count AND cardinality(record_versions) = returned_count),
         CHECK(coalesce(array_ndims(record_ids),1) = 1 AND coalesce(array_ndims(record_versions),1) = 1),
         CHECK(coalesce(array_lower(record_ids,1),1) = 1 AND coalesce(array_lower(record_versions,1),1) = 1),

@@ -73,6 +73,9 @@ class ClinicalAccessAuditTests(unittest.TestCase):
         self.assertIsNone(events[1]['patient_id'])
         self.assertEqual(events[2]['patient_id'], unknown)
         self.assertTrue(all(e['returned_count'] == 0 for e in events))
+        self.assertEqual(self.read('list_for_patient', self.record.patient_id, offset=2**31),
+                         {'items': [], 'total': 1})
+        self.assertEqual(self.events()[-1]['page_offset'], 2**31)
 
     def test_denial_invalid_pagination_and_missing_record_never_record_success(self):
         with self.assertRaises(NotFoundError): self.read(target=uuid4())

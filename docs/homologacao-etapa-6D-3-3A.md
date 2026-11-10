@@ -18,10 +18,16 @@ Implementação em 10/11/2026, base `87ae720`. Aceites locais aprovados; CI comp
 - Concorrência real: leitura aguardou bloqueio administrativo; revogação confirmada antes de liberar o bloqueio impediu conteúdo e evento.
 - HTTP autenticado/SQL: harness clínico existente ampliado e aprovado. Conferiu três ações/ator/IDs/versões, sem texto/segredo; 403/404/422/401 sem novos eventos, falha de INSERT nas três rotas sem conteúdo e recibos intactos; ciclo clínico original/replay/adendo e reinício aprovados. Recursos privados removidos.
 - Logs locais ignorados: `.data/clinical-access-build.log`, `.data/clinical-access-tests.log`, `.data/clinical-access-regression.log`, `.data/clinical-access-http.log`.
-- Não houve aceite novo de Chrome: nenhuma interface foi alterada. Testes de API/banco não substituem a futura tela da auditoria.
+- Chrome/API/SQL do piloto de cadastros aprovado: CPF, nascimento, documentos históricos, RG, permissões, busca, conflito, reabertura e reinício. Log `.data/clinical-access-registration.log`. Nenhuma interface mudou; esse teste de regressão não substitui o futuro aceite visual da auditoria.
 
 ## Pendências e retomada
 
-Conferir CI completo e regressão de cadastros antes de fechar A.1. Depois A.2: preparação de download e revalidação pós-scanner; B: consulta/permissão/UI; C: recuperação completa/capacidade e publicação. Harness de recuperação ainda espera 0028: adaptar explicitamente a migração 0029 na etapa C, sem alegar que o ensaio v30 cobre a nova versão. Não repetir aceites locais aprovados sem mudança/falha.
+Conferir CI completo antes de fechar A.1; regressão de cadastros aprovada. Depois A.2: preparação de download e revalidação pós-scanner; B: consulta/permissão/UI; C: recuperação completa/capacidade e publicação. Harness de recuperação ainda espera 0028: adaptar explicitamente a migração 0029 na etapa C, sem alegar que o ensaio v30 cobre a nova versão. Não repetir aceites locais aprovados sem mudança/falha.
 
 Instalação segue `piloto-cadastros-v0.1.30`/0028. Não instalar main parcial. P3 físico prioritário; odontograma posterior.
+
+## Revisão final
+
+Offset da auditoria alterado para bigint, compatível com OFFSET do PostgreSQL; teste acrescentado para página vazia com offset 2**31, evitando falha nova em consultas anteriormente aceitas. CI inicial 42826078949 do produto `dc6edde` foi iniciado; resultado do produto final deverá ser conferido após este ajuste.
+
+Build final e sete testes PostgreSQL focados aprovados em 21,072 s após ajuste do offset (`.data/clinical-access-final-tests.log`). Sem mudança de rotas, UI ou autorização após o HTTP/Chrome aprovados.
