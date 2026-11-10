@@ -1,5 +1,8 @@
 # Auditoria — inventário técnico e próximo recorte
 
+**6D.3.3P concluída — 10/11/2026, base `ba621a1`:** [diagnóstico e contrato de auditoria de acessos](./PLANO-AUDITORIA-ACESSOS.md). Inspeção identificou consultas clínicas sob bloqueio com rollback ao sair, atualização automática a cada 15 s e download com scanner fora da transação. Definidas consulta autorizada e preparação de download (sem alegar leitura humana/entrega), persistência sem conteúdo, revalidação pós-scanner, permissão própria e aceites separados. Validação estática/documental; nenhum teste novo de API/banco/interface, produto intacto. **Próximo 6D.3.3A.1:** migração/gravador e três leituras clínicas, com testes PostgreSQL/HTTP privados; depois download, consulta/UI e recuperação antes de tag. Instalação v0.1.30 preservada; P3 físico prioritário, odontograma posterior. Este ponto substitui o próximo passo de desenho registrado abaixo.
+
+
 **Publicação concluída — 10/11/2026:** `piloto-cadastros-v0.1.30` = `d13c7e29bb23de10f763a53e0ac3ee692927be93`, publicada e conferida no remoto. Verificador Git aprovou avanço do checkout limpo v0.1.29; aplicação/imagens/Compose idênticos ao produto `a296fa9` aprovado no CI. Guias alinhados à migração 0028. Instalação assistida de cadastros disponível após checklist físico. Próximo: P3 quando houver dados do servidor; enquanto aguardamos, desenhar o recorte de auditoria de leitura clínica/download antes de implementar. Não repetir 6D.3.2 sem nova falha/mudança. Odontograma posterior. Este fechamento substitui as pendências de publicação abaixo.
 
 
