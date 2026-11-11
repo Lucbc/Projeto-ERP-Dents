@@ -22,3 +22,5 @@ Base `9437a46`; API e configuração de permissões. Não inclui ainda a tela de
 ### Próximo
 
 Conferir CI antes de fechar B.1. Depois B.2: tela de histórico com semântica de consulta autorizada/download preparado, filtros/estados/cache e aceite Chrome. Medir capacidade e índices antes de publicar; recuperação 0028→0029→0030 ainda em C. Não instalar main parcial nem repetir aceites aprovados sem mudança/falha.
+
+**CI de B.1 em acompanhamento:** produto `01c985a`; [execução 42932186738](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42932186738). Aceites locais aprovados, aguardando CI antes de declarar B.1 concluída e avançar à tela B.2. Sem mudança de produto após esse commit; instalação v0.1.30 preservada.

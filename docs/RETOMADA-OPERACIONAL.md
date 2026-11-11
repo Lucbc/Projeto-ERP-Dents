@@ -1,5 +1,8 @@
 # Retomada da homologação operacional — 23/10/2026
 
+**CI de B.1 em acompanhamento:** produto `01c985a`; [execução 42932186738](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42932186738). Aceites locais aprovados, aguardando CI antes de declarar B.1 concluída e avançar à tela B.2. Sem mudança de produto após esse commit; instalação v0.1.30 preservada.
+
+
 **6D.3.3B.1 implementada — aceites locais aprovados, CI pendente (10/11/2026):** consulta paginada/filtrada de acessos e permissão própria. Cinco testes backend (31,649 s), 44 frontend focados, builds API/web, HTTP clínico/exames e Chrome/API/SQL de concessão/preservação/revogação aprovados. [Relatório](./homologacao-etapa-6D-3-3B.md). Próximo: conferir CI antes de encerrar B.1; depois B.2 tela/Chrome. Sem nova tag ou migração; instalação v0.1.30 preservada. Não repetir aceites locais sem mudança/falha.
 
 
