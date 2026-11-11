@@ -1,5 +1,8 @@
 # 6D.3.3 — auditoria de consultas clínicas e preparação de downloads
 
+**6D.3.3A concluída — 10/11/2026:** consultas clínicas (A.1) e preparação de downloads (A.2) aprovadas. Produto `faca0e0`; [CI final 42875524681](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42875524681) concluído com sucesso: 552 testes frontend, 406 backend (828,274 s), fluxos HTTP e seis imagens sem achados. Aceites locais PostgreSQL/ASGI/HTTP, scanner real e regressões documentados no [relatório](./homologacao-etapa-6D-3-3A.md). **Próximo 6D.3.3B.1:** API de consulta paginada/filtrada e permissão própria `access_audit.view`, com revalidação de sessão/concessão e matriz frontend; depois B.2 tela/Chrome, capacidade e C recuperação completa antes de tag. Não repetir A sem mudança/falha. Instalação segue v0.1.30/0028; main contém 0029/0030 em desenvolvimento, sem liberação parcial. P3 físico prioritário; odontograma posterior. Este fechamento substitui as pendências de CI abaixo.
+
+
 Diagnóstico e desenho em 10/11/2026, base `ba621a1`. **Inspeção estática, sem implementação nem novos aceites de API, banco ou interface.** Instalação `piloto-cadastros-v0.1.30` preservada. P3 físico tem prioridade quando chegarem os dados do servidor; odontograma permanece posterior.
 
 ## Evidências no código

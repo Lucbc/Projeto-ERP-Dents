@@ -1,5 +1,8 @@
 # Retomada da homologação operacional — 23/10/2026
 
+**6D.3.3A concluída — 10/11/2026:** consultas clínicas (A.1) e preparação de downloads (A.2) aprovadas. Produto `faca0e0`; [CI final 42875524681](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42875524681) concluído com sucesso: 552 testes frontend, 406 backend (828,274 s), fluxos HTTP e seis imagens sem achados. Aceites locais PostgreSQL/ASGI/HTTP, scanner real e regressões documentados no [relatório](./homologacao-etapa-6D-3-3A.md). **Próximo 6D.3.3B.1:** API de consulta paginada/filtrada e permissão própria `access_audit.view`, com revalidação de sessão/concessão e matriz frontend; depois B.2 tela/Chrome, capacidade e C recuperação completa antes de tag. Não repetir A sem mudança/falha. Instalação segue v0.1.30/0028; main contém 0029/0030 em desenvolvimento, sem liberação parcial. P3 físico prioritário; odontograma posterior. Este fechamento substitui as pendências de CI abaixo.
+
+
 **6D.3.3A.2 — aceites locais aprovados, CI pendente (10/11/2026):** produto `faca0e0`; [CI 42875524681](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42875524681) executando. Migração 0030 e download preparado com revalidação pós-scanner implementados. Bateria final: 48 testes de exames, um optativo ignorado (230,474 s), sete de auditoria clínica aprovados (47,837 s); HTTP real de arquivos/antivírus/quota e indisponibilidade aprovados. Próximo: conferir CI final antes de encerrar A.2; depois B.1 consulta/permissão. Sem nova tela/tag nem recuperação completa 0030; v0.1.30 preservada.
 
 
