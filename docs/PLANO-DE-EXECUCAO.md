@@ -1,5 +1,10 @@
 # Plano de execução — ERP Dents
 
+**6D.3.3B.1 implementada — aceites locais aprovados, CI pendente (10/11/2026):** consulta paginada/filtrada de acessos e permissão própria. Cinco testes backend (31,649 s), 44 frontend focados, builds API/web, HTTP clínico/exames e Chrome/API/SQL de concessão/preservação/revogação aprovados. [Relatório](./homologacao-etapa-6D-3-3B.md). Próximo: conferir CI antes de encerrar B.1; depois B.2 tela/Chrome. Sem nova tag ou migração; instalação v0.1.30 preservada. Não repetir aceites locais sem mudança/falha.
+
+
+**Início 6D.3.3B.1 — 10/11/2026, base `9437a46`:** consulta paginada/filtrada de metadados com `access_audit.view`, revalidação sob bloqueio e matriz de concessões. Validar banco/HTTP/componentes e Chrome das permissões; tela do histórico em B.2. Instalação v0.1.30 preservada.
+
 **6D.3.3A concluída — 10/11/2026:** consultas clínicas (A.1) e preparação de downloads (A.2) aprovadas. Produto `faca0e0`; [CI final 42875524681](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42875524681) concluído com sucesso: 552 testes frontend, 406 backend (828,274 s), fluxos HTTP e seis imagens sem achados. Aceites locais PostgreSQL/ASGI/HTTP, scanner real e regressões documentados no [relatório](./homologacao-etapa-6D-3-3A.md). **Próximo 6D.3.3B.1:** API de consulta paginada/filtrada e permissão própria `access_audit.view`, com revalidação de sessão/concessão e matriz frontend; depois B.2 tela/Chrome, capacidade e C recuperação completa antes de tag. Não repetir A sem mudança/falha. Instalação segue v0.1.30/0028; main contém 0029/0030 em desenvolvimento, sem liberação parcial. P3 físico prioritário; odontograma posterior. Este fechamento substitui as pendências de CI abaixo.
 
 

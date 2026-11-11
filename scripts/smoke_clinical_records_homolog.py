@@ -144,6 +144,40 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         sql(f'DROP TRIGGER reject_access ON "{schema}".access_audit; DROP FUNCTION "{schema}".reject_access()')
     assert sql(f'SELECT count(*) FROM "{schema}".clinical_operations') == '5'
     passed('HTTP/SQL: three authorized clinical query events, exact actor/versions, no content, denied/missing/invalid and failed inserts preserved')
+    audit_url = '/api/access-audit'
+    call('GET', audit_url, status=401, session=None)
+    call('GET', audit_url, status=403, session=session)
+    # Read-only auditor with neither clinical nor exam access.
+    matrix = next(item for item in call('GET','/api/permissions')['items'] if item['role']=='reception')
+    matrix['permissions']['clinical_records'] = dict(view=False,create=False,update=False,delete=False)
+    matrix['permissions']['exams'] = dict(view=False,create=False,update=False,delete=False)
+    matrix['permissions']['access_audit'] = dict(view=True,create=True,update=True,delete=True)
+    result = call('PUT','/api/permissions/reception',matrix)
+    assert result['permissions']['access_audit'] == dict(view=True,create=False,update=False,delete=False)
+    auditor = call('POST','/api/auth/login',{'email':'reception-reader@example.com','password':password},session=None)['session']
+    first = call('GET',audit_url+'?limit=1&patient_id='+patient['id'],session=auditor)
+    assert first['items'][0]['id'] == recorded[-1]['id']
+    assert first['items'][0]['record_versions'] == [amended['version']]
+    assert request.last_headers['Cache-Control'] == 'no-store'
+    from urllib.parse import urlencode
+    second_page = call('GET',audit_url+'?'+urlencode({'limit':1,'cursor':first['next_cursor']}),session=auditor)
+    assert second_page['items'][0]['id'] == recorded[-2]['id']
+    filtered = call('GET',audit_url+'?'+urlencode({'target_id':created['id'],'author_id':user['id'],
+        'action':'clinical.record_read','limit':100}),session=auditor)
+    assert filtered['items'] and all(e['target_id']==created['id'] and e['actor_id']==user['id'] for e in filtered['items'])
+    call('GET',endpoint,status=403,session=auditor)
+    call('GET','/api/patients/'+patient['id']+'/exams',status=403,session=auditor)
+    for query in ('limit=101','action=bad','target_id=bad','patient_id=bad','author_id=bad'):
+        call('GET',audit_url+'?'+query,status=422,session=auditor)
+    call('GET',audit_url+'?cursor=!',status=400,session=auditor)
+    call('GET',audit_url+'?since=2026-01-01T00:00:00',status=400,session=auditor)
+    call('POST',audit_url,{},status=405,session=auditor)
+    matrix = next(item for item in call('GET','/api/permissions')['items'] if item['role']=='reception')
+    matrix['permissions']['access_audit']['view'] = False
+    call('PUT','/api/permissions/reception',matrix)
+    call('GET',audit_url,status=403,session=auditor)
+    assert access_events() == recorded  # Reading the audit must never recursively create events.
+    passed('Access audit HTTP: read-only grant, no clinical/exam access, no-store, filters/cursor, invalid input and immediate revocation')
     call('POST', '/api/auth/logout', session=session)
     call('GET', endpoint, status=401, session=session)
     assert access_events() == recorded

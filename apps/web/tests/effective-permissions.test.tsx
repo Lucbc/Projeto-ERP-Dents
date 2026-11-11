@@ -190,3 +190,22 @@ it.each<UserRole>(["admin", "coordinator", "dentist", "reception"])("patient aud
   vi.mocked(permissionService.me).mockRejectedValue(failure(403));
   await tick(15_005); expect(screen.getByTestId("patient-audit").textContent).toBe("false:false:false:false");
 });
+
+function AccessAuditConsumer() {
+  const access = useEffectivePermissions();
+  return <span data-testid="access-audit">{(["view", "create", "update", "delete"] as const).map(action =>
+    String(access.can("access_audit", action))).join(":")}</span>;
+}
+
+it.each<UserRole>(["admin", "coordinator", "dentist", "reception"])("access audit is read-only and current for %s", async role => {
+  user = { ...user!, role };
+  vi.mocked(permissionService.me).mockResolvedValue(matrix(true, role));
+  render(<QueryClientProvider client={client}><EffectivePermissionsProvider><AccessAuditConsumer /></EffectivePermissionsProvider></QueryClientProvider>);
+  await tick(); expect(screen.getByTestId("access-audit").textContent).toBe(role === "admin" ? "true:false:false:false" : "false:false:false:false");
+  vi.mocked(permissionService.me).mockResolvedValue({ ...matrix(true, role), permissions: {
+    access_audit: { view: true, create: true, update: true, delete: true },
+  } });
+  await tick(15_005); expect(screen.getByTestId("access-audit").textContent).toBe("true:false:false:false");
+  vi.mocked(permissionService.me).mockRejectedValue(failure(403));
+  await tick(15_005); expect(screen.getByTestId("access-audit").textContent).toBe("false:false:false:false");
+});

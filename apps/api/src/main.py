@@ -15,6 +15,7 @@ from src.api.routers.auth_router import router as auth_router
 from src.api.routers.consultations_router import router as consultations_router
 from src.api.routers.administrative_audit_router import router as administrative_audit_router
 from src.api.routers.patient_audit_router import router as patient_audit_router
+from src.api.routers.access_audit_router import router as access_audit_router
 from src.api.routers.clinical_records_router import router as clinical_records_router
 from src.api.routers.dentists_router import router as dentists_router
 from src.api.routers.exams_router import router as exams_router
@@ -104,6 +105,7 @@ app.include_router(consultations_router)
 app.include_router(clinical_records_router)
 app.include_router(administrative_audit_router)
 app.include_router(patient_audit_router)
+app.include_router(access_audit_router)
 app.include_router(procedures_router)
 app.include_router(specialties_router)
 app.include_router(financial_router)

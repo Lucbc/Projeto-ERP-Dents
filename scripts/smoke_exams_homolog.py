@@ -57,6 +57,10 @@ def verify(request, email, password, admin, container, ready, passed, sql, schem
         assert event['target_id'] == exam['id'] and event['patient_id'] == patient['id']
         assert event['record_ids'] == [] and event['record_versions'] == [] and event['returned_count'] == 0
     assert 'test.png' not in json.dumps(recorded) and password not in json.dumps(recorded)
+    page = expect('GET','/api/access-audit?action=exam.download_prepared&target_id='+exam['id'])
+    assert len(page['items']) == 5 and page['next_cursor'] is None
+    assert {e['id'] for e in page['items']} == {e['id'] for e in recorded}
+    assert all(e['record_ids']==[] and e['page_limit'] is None for e in page['items'])
     sql(f'''CREATE FUNCTION "{schema}".reject_download_audit() RETURNS trigger LANGUAGE plpgsql AS $$
         BEGIN RAISE EXCEPTION 'Fictitious failure' USING ERRCODE='23514'; END $$;
         CREATE TRIGGER reject_download_audit BEFORE INSERT ON "{schema}".access_audit
