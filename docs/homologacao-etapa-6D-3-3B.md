@@ -41,3 +41,9 @@ Quatro Dockerfiles alterados: API fixa krb5-libs 1.22.3-r0; PostgreSQL fixa tamb
 - Roteiros de instalação/atualização/liberação/checklist sinalizam que a tag v0.1.30 ainda não contém estes patches. Não instalar main parcial. Se a implantação física anteceder o fechamento da auditoria, preparar/homologar patch isolado sobre v0.1.30 antes de nova tag.
 
 Próximo: CI completo da correção; só então encerrar B.1 e iniciar B.2. Nenhuma nova versão instalável publicada nesta correção.
+
+## Fechamento B.1
+
+**6D.3.3B.1 concluída — 12/11/2026:** produto `97001e6`; [CI 43219031029](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43219031029) aprovado: 557 frontend, 411 backend (795,292 s), HTTP e seis imagens sem achados. Consulta paginada/filtrada, permissão própria, revogação concorrente e matriz Chrome/API/SQL aprovadas. Correção krb5-libs/libxslt validada também em builds/scanner/banco privado e cadastros. [Relatório](./homologacao-etapa-6D-3-3B.md). **Próximo B.2:** tela Histórico de acessos com filtros/paginação/estados/cache, semântica de consulta autorizada/download preparado e aceite Chrome. Depois capacidade e recuperação completa antes de tag. Não repetir B.1 sem mudança/falha. Tag v0.1.30 ainda não inclui os patches; instalação física exige pacote corrigido, isolado sobre a tag se antecipada. Não instalar main parcial. Este fechamento substitui as pendências de CI abaixo.
+
+Log ignorado `.data/access-reader-security-ci-final.log`. Nenhuma mudança de aplicação/imagens depois do produto aprovado; fechamento documental. Tela do histórico ainda não implementada.
