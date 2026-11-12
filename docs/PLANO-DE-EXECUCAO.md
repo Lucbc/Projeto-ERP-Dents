@@ -1,5 +1,7 @@
 # Plano de execução — ERP Dents
 
+**CI B.2 em acompanhamento:** produto `90e8074`; [execução 43271932148](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43271932148). Frontend aprovado; backend/HTTP e scanner ainda pendentes de conclusão. Conferir resultado final antes de fechar B.2. Aceites locais já aprovados, sem necessidade de repetir enquanto não houver mudança/falha.
+
 **6D.3.3B.2 — aceites locais aprovados, CI pendente (12/11/2026):** tela Histórico de acessos com filtros, paginação, permissão própria e descarte de cache ao perder acesso. Dez testes de componentes, build web, Chrome/API/SQL (32 eventos sintéticos preservados), capturas desktop/celular e regressão cadastral aprovados. [Relatório](./homologacao-etapa-6D-3-3B.md). Próximo imediato: publicar e conferir CI completo antes de fechar B.2; depois capacidade/índices e recuperação 0029/0030 antes de tag. Não repetir aceites locais sem mudança/falha. Sem alteração de instalação nesta etapa; v0.1.30 ainda precisa dos patches já registrados, não instalar main parcial.
 
 **Início 6D.3.3B.2 — 12/11/2026, base `2ba2e13`:** tela Histórico de acessos, navegação por permissão, filtros/paginação e estados/cache. Validar componentes/build e Chrome/API/SQL com metadados fictícios, sem alegar leitura humana/entrega de arquivo. Sem tag antes de capacidade/recuperação.
