@@ -62,3 +62,9 @@ Base `2ba2e13`. Menu e rota `/access-audit` protegidos por `access_audit.view`; 
 - Evidências locais ignoradas: `.data/access-history-components.log`, `.data/access-history-build.log`, `.data/access-history-chrome.log`, `.data/access-history-registration.log` e capturas `access-audit-history-desktop.png`/`access-audit-history-mobile.png`.
 
 CI completo pendente. Próximo: conferir CI antes de concluir B.2; depois capacidade/índices e migração/recuperação completa antes de publicar nova tag. A instalação permanece condicionada ao pacote corrigido e checklist físico conforme os guias atuais.
+
+## Fechamento B.2
+
+**6D.3.3B.2 concluída — 12/11/2026:** produto `90e8074`; [CI 43271932148](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43271932148) aprovado: 567 testes frontend, 411 backend (954,060 s), fluxos HTTP e seis imagens sem achados. Tela, filtros/paginação, cache e permissões aprovados em componentes e Chrome/API/SQL; regressão de cadastros e revisão visual desktop/celular aprovadas. [Relatório](./homologacao-etapa-6D-3-3B.md). **Próximo B.3: capacidade/índices com até dez clientes fictícios, volume acumulado e atualização automática clínica; depois C, migração 0028→0030 e recuperação completa antes de tag.** Não repetir B.2 sem nova mudança/falha. Sem alteração de roteiro de instalação nesta etapa; tag v0.1.30 ainda não inclui os patches de segurança já registrados. Não instalar main parcial; preparar pacote corrigido isolado se P3 físico for antecipado. Este fechamento substitui as pendências de CI anteriores.
+
+Log final ignorado: `.data/access-history-ci-final.log`. CI terminou em cerca de 28 minutos; o tempo de 954,060 s acima é apenas da bateria backend, não de todos os roteiros HTTP. Nenhuma mudança de produto após o commit validado. B.3 continua pendente; o sucesso de B.2 não comprova capacidade nem recuperação da nova auditoria.
