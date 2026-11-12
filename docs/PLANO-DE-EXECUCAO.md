@@ -1,5 +1,11 @@
 # Plano de execução — ERP Dents
 
+**12/11/2026 — correção local do scanner aprovada, novo CI pendente:** pins krb5-libs/libxslt atualizados em quatro Dockerfiles; seis builds e scanner sem achados, inicialização/dump/restauração do PostgreSQL privado e cadastros Chrome/API/SQL aprovados. [Evidências](./homologacao-etapa-6D-3-3B.md). Próximo: CI completo corrigido antes de fechar B.1/iniciar B.2. Roteiros sinalizam patch ainda ausente na tag v0.1.30; não instalar main parcial.
+
+
+**12/11/2026 — B.1 bloqueada pelo scanner de imagens, correção iniciada:** CI 42932186738 terminou com 557 frontend e 411 backend aprovados (797,756 s), mas reprovou no scanner: krb5-libs 1.22.2-r1 em API/DB e libxslt 1.1.43-r3 em web/gateway/edge/DB. Fixar versões indicadas no relatório (1.22.3-r0 e 1.1.43-r4), reconstruir/verificar as seis imagens e regressões antes de novo CI. B.2 ainda não iniciada. Sem alterações de volumes ou migrações; não instalar main parcial.
+
+
 **CI de B.1 em acompanhamento:** produto `01c985a`; [execução 42932186738](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42932186738). Aceites locais aprovados, aguardando CI antes de declarar B.1 concluída e avançar à tela B.2. Sem mudança de produto após esse commit; instalação v0.1.30 preservada.
 
 

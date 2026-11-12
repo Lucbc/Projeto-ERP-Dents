@@ -24,3 +24,20 @@ Base `9437a46`; API e configuração de permissões. Não inclui ainda a tela de
 Conferir CI antes de fechar B.1. Depois B.2: tela de histórico com semântica de consulta autorizada/download preparado, filtros/estados/cache e aceite Chrome. Medir capacidade e índices antes de publicar; recuperação 0028→0029→0030 ainda em C. Não instalar main parcial nem repetir aceites aprovados sem mudança/falha.
 
 **CI de B.1 em acompanhamento:** produto `01c985a`; [execução 42932186738](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/42932186738). Aceites locais aprovados, aguardando CI antes de declarar B.1 concluída e avançar à tela B.2. Sem mudança de produto após esse commit; instalação v0.1.30 preservada.
+
+## Retomada em 12/11
+
+**12/11/2026 — B.1 bloqueada pelo scanner de imagens, correção iniciada:** CI 42932186738 terminou com 557 frontend e 411 backend aprovados (797,756 s), mas reprovou no scanner: krb5-libs 1.22.2-r1 em API/DB e libxslt 1.1.43-r3 em web/gateway/edge/DB. Fixar versões indicadas no relatório (1.22.3-r0 e 1.1.43-r4), reconstruir/verificar as seis imagens e regressões antes de novo CI. B.2 ainda não iniciada. Sem alterações de volumes ou migrações; não instalar main parcial.
+
+### Correção das imagens — aceites locais em 12/11
+
+Quatro Dockerfiles alterados: API fixa krb5-libs 1.22.3-r0; PostgreSQL fixa também libxslt 1.1.43-r4; web e base compartilhada de gateway/edge fixam libxslt 1.1.43-r4. Preservados digests de base, PostgreSQL 16, configuração, volumes e entrypoints. Nenhuma mudança na API de auditoria ou migrações.
+
+- Build das seis imagens aprovado; versões corrigidas disponíveis no repositório apk e resolvidas pelo build.
+- Scanner Trivy aprovado nas seis imagens, sem achados; base de vulnerabilidades atualizada em 12/11/2026 às 07:01 UTC. Sem exclusão de regras ou supressão de achados.
+- Nova imagem PostgreSQL inicializou, gravou tabela fictícia, gerou dump e restaurou em banco privado. Contêiner sem rede/portas e com tmpfs, removido no final; não montou volumes principais. Isso não substitui o ensaio completo de recuperação da aplicação em C.
+- Cadastros Chrome/API/SQL aprovados com novas imagens API/web: CPF/nascimento/documentos históricos/RG/permissões/busca/conflito/reabertura/reinício. Primeiro ensaio parou porque API/DB/web de homologação estavam desligados desde o dia anterior; reiniciados os contêineres existentes sem recriar/remover volumes. Ensaio repetido e aprovado, recursos temporários removidos.
+- Logs ignorados: `.data/access-reader-security-build.log`, `.data/access-reader-security-scan.log`, `.data/access-reader-security-db.log`, `.data/access-reader-security-registration.log`.
+- Roteiros de instalação/atualização/liberação/checklist sinalizam que a tag v0.1.30 ainda não contém estes patches. Não instalar main parcial. Se a implantação física anteceder o fechamento da auditoria, preparar/homologar patch isolado sobre v0.1.30 antes de nova tag.
+
+Próximo: CI completo da correção; só então encerrar B.1 e iniciar B.2. Nenhuma nova versão instalável publicada nesta correção.

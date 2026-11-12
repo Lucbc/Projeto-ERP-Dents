@@ -1,5 +1,8 @@
 # Checklist para começar os cadastros na clínica
 
+**Pendência de pacote — 12/11/2026:** o scanner identificou correções de krb5-libs/libxslt nas imagens usadas pelo projeto. A atualização está em validação, ainda sem nova tag instalável. Antes de uma nova instalação na clínica, obter o pacote corrigido do suporte; não substituir a tag estável por main, que contém migrações de auditoria ainda em homologação. As liberações históricas abaixo não incluem essa correção. Se a instalação for antecipada, preparar a correção isolada sobre v0.1.30 e homologá-la antes de publicar. [Acompanhamento](./homologacao-etapa-6D-3-3B.md).
+
+
 Preparado em 16/10/2026. Usar junto com o [passo a passo de instalação](./INSTALACAO-CLINICA-WINDOWS.md). **Esta ficha está em branco: não comprova que a clínica já foi instalada.** Versão indicada: `piloto-cadastros-v0.1.30`.
 
 O suporte preenche uma cópia fora do Git, por exemplo em `.data/implantacao-clinica.md`. Não incluir senhas, código de ativação, conteúdo de `.env`, dados ou capturas de pacientes. Guardar as credenciais em local próprio.

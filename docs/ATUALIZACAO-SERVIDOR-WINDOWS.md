@@ -1,5 +1,8 @@
 # Atualização semanal do servidor Windows
 
+**Pendência de pacote — 12/11/2026:** o scanner identificou correções de krb5-libs/libxslt nas imagens usadas pelo projeto. A atualização está em validação, ainda sem nova tag instalável. Antes de uma nova instalação na clínica, obter o pacote corrigido do suporte; não substituir a tag estável por main, que contém migrações de auditoria ainda em homologação. As liberações históricas abaixo não incluem essa correção. Se a instalação for antecipada, preparar a correção isolada sobre v0.1.30 e homologá-la antes de publicar. [Acompanhamento](./homologacao-etapa-6D-3-3B.md).
+
+
 ## Estado — 10/11/2026
 
 **P4.1/P4.2 concluídas no escopo de atualização sem nova migração.** Troca real de imagens `v0.1.1` → `v0.1.2` aprovada em recursos privados, com dados existentes; ferramentas operacionais consolidadas em `piloto-cadastros-v0.1.3`, sem mudança da aplicação em relação à `v0.1.2`. Este documento organiza a manutenção assistida; não é um atualizador automático nem comprovação de atualização em produção. A instalação inicial do piloto continua liberada pelo [roteiro Windows](./INSTALACAO-CLINICA-WINDOWS.md).

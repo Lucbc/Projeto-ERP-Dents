@@ -1,5 +1,8 @@
 # Liberação para instalar — piloto de cadastros
 
+**Pendência de pacote — 12/11/2026:** o scanner identificou correções de krb5-libs/libxslt nas imagens usadas pelo projeto. A atualização está em validação, ainda sem nova tag instalável. Antes de uma nova instalação na clínica, obter o pacote corrigido do suporte; não substituir a tag estável por main, que contém migrações de auditoria ainda em homologação. As liberações históricas abaixo não incluem essa correção. Se a instalação for antecipada, preparar a correção isolada sobre v0.1.30 e homologá-la antes de publicar. [Acompanhamento](./homologacao-etapa-6D-3-3B.md).
+
+
 **10/11/2026 — pacote atual [v0.1.30](./ATUALIZACAO-HISTORICO-PACIENTES-V30.md):** histórico de edições de pacientes/0028, permissões próprias e recuperação completa aprovados. Mantém liberação assistida para cadastros após checklist físico. Referências a versões anteriores abaixo descrevem entregas acumuladas.
 
 
