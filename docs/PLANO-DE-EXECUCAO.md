@@ -1,5 +1,9 @@
 # Plano de execução — ERP Dents
 
+**6D.3.3B.2 — aceites locais aprovados, CI pendente (12/11/2026):** tela Histórico de acessos com filtros, paginação, permissão própria e descarte de cache ao perder acesso. Dez testes de componentes, build web, Chrome/API/SQL (32 eventos sintéticos preservados), capturas desktop/celular e regressão cadastral aprovados. [Relatório](./homologacao-etapa-6D-3-3B.md). Próximo imediato: publicar e conferir CI completo antes de fechar B.2; depois capacidade/índices e recuperação 0029/0030 antes de tag. Não repetir aceites locais sem mudança/falha. Sem alteração de instalação nesta etapa; v0.1.30 ainda precisa dos patches já registrados, não instalar main parcial.
+
+**Início 6D.3.3B.2 — 12/11/2026, base `2ba2e13`:** tela Histórico de acessos, navegação por permissão, filtros/paginação e estados/cache. Validar componentes/build e Chrome/API/SQL com metadados fictícios, sem alegar leitura humana/entrega de arquivo. Sem tag antes de capacidade/recuperação.
+
 **6D.3.3B.1 concluída — 12/11/2026:** produto `97001e6`; [CI 43219031029](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43219031029) aprovado: 557 frontend, 411 backend (795,292 s), HTTP e seis imagens sem achados. Consulta paginada/filtrada, permissão própria, revogação concorrente e matriz Chrome/API/SQL aprovadas. Correção krb5-libs/libxslt validada também em builds/scanner/banco privado e cadastros. [Relatório](./homologacao-etapa-6D-3-3B.md). **Próximo B.2:** tela Histórico de acessos com filtros/paginação/estados/cache, semântica de consulta autorizada/download preparado e aceite Chrome. Depois capacidade e recuperação completa antes de tag. Não repetir B.1 sem mudança/falha. Tag v0.1.30 ainda não inclui os patches; instalação física exige pacote corrigido, isolado sobre a tag se antecipada. Não instalar main parcial. Este fechamento substitui as pendências de CI abaixo.
 
 

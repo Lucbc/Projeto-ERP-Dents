@@ -47,3 +47,18 @@ Próximo: CI completo da correção; só então encerrar B.1 e iniciar B.2. Nenh
 **6D.3.3B.1 concluída — 12/11/2026:** produto `97001e6`; [CI 43219031029](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43219031029) aprovado: 557 frontend, 411 backend (795,292 s), HTTP e seis imagens sem achados. Consulta paginada/filtrada, permissão própria, revogação concorrente e matriz Chrome/API/SQL aprovadas. Correção krb5-libs/libxslt validada também em builds/scanner/banco privado e cadastros. [Relatório](./homologacao-etapa-6D-3-3B.md). **Próximo B.2:** tela Histórico de acessos com filtros/paginação/estados/cache, semântica de consulta autorizada/download preparado e aceite Chrome. Depois capacidade e recuperação completa antes de tag. Não repetir B.1 sem mudança/falha. Tag v0.1.30 ainda não inclui os patches; instalação física exige pacote corrigido, isolado sobre a tag se antecipada. Não instalar main parcial. Este fechamento substitui as pendências de CI abaixo.
 
 Log ignorado `.data/access-reader-security-ci-final.log`. Nenhuma mudança de aplicação/imagens depois do produto aprovado; fechamento documental. Tela do histórico ainda não implementada.
+
+## B.2 — interface do histórico (12/11/2026)
+
+Base `2ba2e13`. Menu e rota `/access-audit` protegidos por `access_audit.view`; filtros por ação, responsável, paciente, alvo e período de São Paulo, paginação por cursor e atualização. Estados de carregamento, vazio, falha e recuperação; negação 401/403 remove resultados/cache. Exibe apenas metadados, distingue consulta autorizada de leitura humana e download preparado de entrega efetiva. Nenhuma mudança de API, banco, migração ou instalação nesta subetapa.
+
+### Validação local
+
+- Componentes: dez testes aprovados (14,12 s), incluindo cache/permissão, filtros, paginação e semântica dos eventos. Build web aprovado.
+- Chrome/API: administrador e leitor concedido; acesso negado e revogado, paginação 25+7, filtros de ação/alvo/paciente/período, erro 503 com recuperação e resultado vazio. Fuso do navegador diferente do fuso da clínica no ensaio.
+- Banco: 32 eventos históricos exclusivamente sintéticos inseridos por SQL em esquema privado; hash integral preservado após navegação e dois eventos administrativos de alteração de permissão. Este aceite valida a leitura, não substitui os testes de geração autenticada de eventos em A/B.1.
+- Capturas desktop e 390 px inspecionadas: conteúdo legível, sem transbordamento horizontal.
+- Regressão de cadastros Chrome/API/SQL aprovada: CPF, nascimento, dados históricos, RG, permissões, busca, conflito, reabertura e reinício. Recursos temporários removidos, volumes principais preservados.
+- Evidências locais ignoradas: `.data/access-history-components.log`, `.data/access-history-build.log`, `.data/access-history-chrome.log`, `.data/access-history-registration.log` e capturas `access-audit-history-desktop.png`/`access-audit-history-mobile.png`.
+
+CI completo pendente. Próximo: conferir CI antes de concluir B.2; depois capacidade/índices e migração/recuperação completa antes de publicar nova tag. A instalação permanece condicionada ao pacote corrigido e checklist físico conforme os guias atuais.
