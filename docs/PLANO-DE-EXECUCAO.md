@@ -1,5 +1,7 @@
 # Plano de execução — ERP Dents
 
+**CI B.3.2 em acompanhamento — 13/11/2026:** produto `08df9ab`; [execução 43435196341](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43435196341). Aceites locais aprovados; conferir resultado final antes de concluir. Para C, ampliar `smoke_clinical_recovery_homolog.py` (atualmente espera head 0028) e `smoke_clinical_full_recovery_homolog.py/.cjs` para auditoria de acessos/índices 0031, sem perder os aceites anteriores. Nenhuma alteração nesses roteiros ainda.
+
 **B.3.2 — aceites locais aprovados, CI pendente (13/11/2026):** migração 0031 e leitura clínica em lote implementadas. 42 testes clínicos distintos, build, HTTP, Chrome clínico/cadastros e capacidade aprovados. Carga de dez clientes: p95 clínico 391–478 ms, histórico 370–452 ms; 570 requisições corretas. Migração real com 192 mil eventos preservados (2,598 s), revogação concorrente e hash das evoluções verificados. [Relatório](./homologacao-etapa-6D-3-3B-otimizacao.md). Próximo imediato: publicar/conferir CI antes de fechar B.3.2; depois C, recuperação completa 0028→0031 e tag. Sem alteração de instalação; não instalar main parcial. Não repetir aceites locais sem mudança/falha.
 
 **Início B.3.2 — 12/11/2026, base `4b9d06d`:** migração aditiva 0031 e leitura clínica em lote preservando bloqueios/autorização. Validar migração preenchida, conteúdo/adendos/paginação, revogação concorrente, regressões e ensaio de capacidade atualizado; CI antes de concluir. Recuperação completa e tag posteriores.
