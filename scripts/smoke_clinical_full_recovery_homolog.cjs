@@ -18,6 +18,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   await page.getByRole('button', { name: 'Salvar rascunho', exact: true }).click();
   await page.getByText('Operação confirmada e versão atual conferida.', { exact: true }).waitFor();
   await page.screenshot({ path: path.resolve(__dirname, '../.data/homolog/clinical-full-recovery.png'), fullPage: true });
+  assert.equal(await page.getByRole('link', { name: 'Histórico de acessos', exact: true }).count(), 0);
+  await page.goto('https://localhost:18444/access-audit');
+  await page.getByText('Sem permissão para acessar esta página.', { exact: true }).waitFor();
   const adminPage = await browser.newPage({ ignoreHTTPSErrors: false, viewport: { width: 1440, height: 1000 } });
   await adminPage.goto('https://localhost:18444/login');
   await adminPage.locator('[name=email]').fill(input.adminEmail);
@@ -30,5 +33,18 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
   assert.equal(await adminPage.getByText('Paciente (ID): ' + input.patientId, { exact: true }).count(), 2);
   await adminPage.getByText('Campos: Observações', { exact: true }).waitFor();
   await adminPage.screenshot({ path: path.resolve(__dirname, '../.data/homolog/patient-audit-full-recovery.png'), fullPage: true });
+  await adminPage.getByRole('link', { name: 'Histórico de acessos', exact: true }).click();
+  await adminPage.getByRole('article').first().waitFor();
+  for (const id of input.accessEventIds) {
+    const row = adminPage.getByRole('article').filter({ has: adminPage.getByText(id, { exact: true }) });
+    assert.equal(await row.count(), 1);
+  }
+  await adminPage.getByLabel('Ação', { exact: true }).selectOption('exam.download_prepared');
+  await adminPage.getByLabel('Alvo (ID)', { exact: true }).fill(input.examId);
+  await adminPage.getByRole('button', { name: 'Aplicar filtros', exact: true }).click();
+  await adminPage.getByRole('article', { name: 'Download preparado' }).first().waitFor();
+  assert.ok(await adminPage.getByText('Arquivo preparado para resposta. Não confirma transmissão ou recebimento.', { exact: true }).count() >= 1);
+  assert.equal(await adminPage.getByRole('article', { name: /Consulta clínica/ }).count(), 0);
+  await adminPage.screenshot({ path: path.resolve(__dirname, '../.data/homolog/access-audit-full-recovery.png'), fullPage: true });
  } finally { await browser.close(); }
 })().catch(() => { console.error('Clinical restored browser failed; raw diagnostics withheld.'); process.exitCode = 1; });

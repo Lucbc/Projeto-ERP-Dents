@@ -1,13 +1,13 @@
 # Instalação na clínica — servidor Windows
 
-**Pendência de pacote — 12/11/2026:** o scanner identificou correções de krb5-libs/libxslt nas imagens usadas pelo projeto. A correção foi aprovada no CI 43219031029 em 12/11, mas ainda não há nova tag instalável que a inclua. Antes de uma nova instalação na clínica, obter o pacote corrigido do suporte; não substituir a tag estável por main, que contém migrações de auditoria ainda em homologação. As liberações históricas abaixo não incluem essa correção. Se a instalação for antecipada, preparar a correção isolada sobre v0.1.30 e homologá-la antes de publicar. [Acompanhamento](./homologacao-etapa-6D-3-3B.md).
+**Pacote corrigido — 13/11/2026:** usar `piloto-cadastros-v0.1.31`, com correções krb5-libs/libxslt e auditoria de acessos/índices até 0031. CI, cadastros e recuperação completa aprovados. Seguir a tag indicada, não o desenvolvimento em main. [Notas da versão](./ATUALIZACAO-ACESSOS-V31.md).
 
 
-Atualizado em 10/11/2026. Dados serão cadastrados do zero, em outro computador Windows.
+Atualizado em 13/11/2026. Dados serão cadastrados do zero, em outro computador Windows.
 
-## Versão de instalação — 10/11/2026
+## Versão de instalação — 13/11/2026
 
-A v0.1.30 inclui a correção do pacote zlib indisponível no build da v0.1.28 e o histórico de edições de pacientes com migração 0028. CI, cadastros, migração e recuperação operacional completa aprovados. Usar a tag indicada abaixo, preservando configuração, banco, exames e backups nas atualizações. [Notas da versão](./ATUALIZACAO-HISTORICO-PACIENTES-V30.md).
+A v0.1.31 inclui o histórico de consultas clínicas e downloads preparados, otimizações de consulta e correções de segurança nas imagens. Aplica migrações aditivas até 0031 e mantém os recursos cadastrais anteriores. CI, cadastros, migração e recuperação operacional completa aprovados. Usar a tag indicada abaixo, preservando configuração, banco, exames e backups nas atualizações. [Notas da versão](./ATUALIZACAO-ACESSOS-V31.md).
 
 ## Como será o uso
 
@@ -15,11 +15,11 @@ O servidor fica ligado e concentra o programa, banco e exames. Cada estação ab
 
 O sistema apresenta horários no fuso de São Paulo, inclusive quando uma estação está configurada em outro fuso. Não é necessário configurar o fuso dentro do programa. Mantenha data e hora do Windows sincronizadas automaticamente.
 
-**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.30`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
+**Situação atual: liberado para instalação assistida do piloto de cadastros**, versão `piloto-cadastros-v0.1.31`. Reúne melhorias de busca e paginação, proteção contra CPF inválido/repetido, recusa de nascimento futuro em novas atribuições e preservação de documentos e contatos históricos. Consulte [escopo, limites e aceites](./LIBERACAO-PILOTO-CADASTROS.md). Os preparadores, a instalação vazia e a recuperação passaram em homologação; a instalação física na clínica ainda não foi executada. Concluir as verificações locais do passo 8 antes de começar a digitação real.
 
 ## 1. Preparar o computador servidor — suporte
 
-A v0.1.30 acrescenta histórico de pacientes protegido por permissão e migração aditiva 0028, além de corrigir o build. Mantém as melhorias anteriores e o prontuário, inicialmente sem acesso em todos os perfis. Para começar os cadastros, não é necessário habilitar acesso clínico. Consulte as [notas do pacote](./ATUALIZACAO-HISTORICO-PACIENTES-V30.md); instalações existentes seguem o roteiro de atualização, sem recriar configuração ou volumes.
+A v0.1.31 acrescenta histórico de acessos protegido por permissão e migrações aditivas 0029–0031, além das correções de segurança. Mantém as melhorias anteriores e o prontuário, inicialmente sem acesso em todos os perfis. Para começar os cadastros, não é necessário habilitar acesso clínico. Consulte as [notas do pacote](./ATUALIZACAO-ACESSOS-V31.md); instalações existentes seguem o roteiro de atualização, sem recriar configuração ou volumes.
 
 Informação provisória do responsável: Windows 10 Home ou 11 Home, possivelmente 16 GB de RAM; confirmar no computador antes de instalar. Abrir `winver` para conferir edição/versão e **Configurações → Sistema → Sobre** para RAM/processador. A edição Home admite containers Linux, que são os utilizados pelo ERP; não comprar uma atualização para Pro apenas por esse motivo. A versão/build do Windows, WSL e virtualização ainda precisam atender aos requisitos oficiais abaixo. Não considerar qualquer Windows 10 automaticamente compatível ou ainda suportado.
 
@@ -47,7 +47,7 @@ Abrir PowerShell. Exemplo de pasta nova:
 ```powershell
 git clone https://github.com/Lucbc/Projeto-ERP-Dents.git C:\ERP-Dents
 Set-Location C:\ERP-Dents
-git checkout piloto-cadastros-v0.1.30
+git checkout piloto-cadastros-v0.1.31
 git status --short
 git rev-parse HEAD
 .\scripts\check-server.ps1

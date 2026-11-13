@@ -30,6 +30,11 @@ def run(*args, env=None, input=None):
     return result.stdout
 
 
+def assert_access_indexes(database):
+    assert sql(database, """SELECT count(*) FROM pg_indexes WHERE schemaname='public'
+        AND indexname IN ('ix_access_audit_time','ix_access_audit_target','ix_access_audit_action')""") == '3'
+
+
 def main():
     verify_target()
     info = json.loads(run('docker', 'inspect', DB))[0]
@@ -145,13 +150,28 @@ def main():
             (id,actor_id,action,target_user_id,before_version,after_version,changed_fields)
             VALUES ('{uuid4()}','{legacy_actor}','user.updated','{legacy_actor}',1,2,ARRAY['name'])""")
         before_patient_audit = fingerprint(source)
-        start(current, source, migrate_only=True)
+        start(current, source, migrate_only=True, revision="0028_patient_audit")
         after_patient_audit = fingerprint(source)
         assert all(after_patient_audit[t] == v for t,v in before_patient_audit.items() if t != 'alembic_version')
         assert set(after_patient_audit) - set(before_patient_audit) == {'patient_audit'}
         assert sql(source, 'SELECT version_num FROM alembic_version') == '0028_patient_audit'
         assert sql(source, 'SELECT count(*) FROM patient_audit') == '0'
         passed('0027 to 0028 preserves all existing rows including clinical and administrative metadata; patient audit starts empty')
+
+        # Explicit historical metadata fixture; not an authenticated old write.
+        sql(source, f"""INSERT INTO patient_audit
+            (id,actor_id,patient_id,action,before_version,after_version,changed_fields)
+            VALUES ('{uuid4()}','{legacy_actor}','{patient['id']}','patient.updated',1,2,ARRAY['notes']);
+            UPDATE patients SET version=2,notes='Fictitious inherited note' WHERE id='{patient['id']}'""")
+        before_access = fingerprint(source)
+        start(current, source, migrate_only=True)
+        after_access = fingerprint(source)
+        assert all(after_access[t] == v for t,v in before_access.items() if t != 'alembic_version')
+        assert set(after_access) - set(before_access) == {'access_audit'}
+        assert sql(source, 'SELECT version_num FROM alembic_version') == '0031_access_audit_indexes'
+        assert sql(source, 'SELECT count(*) FROM access_audit') == '0'
+        assert_access_indexes(source)
+        passed('0028 to 0031 preserves all prior rows, adds empty access history and installs three query indexes')
 
         start(current, source)
         listing = '/api/clinical-records?patient_id=' + patient['id']
@@ -189,10 +209,18 @@ def main():
         saved_patient = call('PUT', '/api/patients/' + patient['id'],
             {'version':current_patient['version'], 'notes':'Fictitious audit recovery edit'}, admin)
         patient_page = call('GET', '/api/patient-audit', session=admin)
-        assert len(patient_page['items']) == 1 and patient_page['next_cursor'] is None
+        assert len(patient_page['items']) == 2 and patient_page['next_cursor'] is None
         assert patient_page['items'][0]['changed_fields'] == ['notes']
         assert patient_page['items'][0]['after_version'] == saved_patient['version']
         call('GET', '/api/patient-audit', session=session, expected=403)
+        assert call('GET', '/api/clinical-records/from-appointment/' + visits[0]['id'], session=session) == amended
+        assert call('GET', listing, session=session)['total'] == 3
+        access_page = call('GET', '/api/access-audit', session=admin)
+        assert len(access_page['items']) == 3 and access_page['next_cursor'] is None
+        assert {e['action'] for e in access_page['items']} == {
+            'clinical.record_read', 'clinical.appointment_read', 'clinical.patient_list'}
+        assert all(e['actor_id'] == author['id'] and e['patient_id'] == patient['id'] for e in access_page['items'])
+        call('GET', '/api/access-audit', session=session, expected=403)
         stop()
         snapshot = fingerprint(source)
         run('docker', 'exec', DB, 'pg_dump', '-U', 'erp_homolog', '-Fc', '-f', archive, source)
@@ -210,12 +238,16 @@ def main():
             'UPDATE patient_audit SET action=action',
             'DELETE FROM patient_audit',
             'TRUNCATE patient_audit',
+            'UPDATE access_audit SET action=action',
+            'DELETE FROM access_audit',
+            'TRUNCATE access_audit',
         ):
             rejected = subprocess.run(['docker', 'exec', '-i', DB, 'psql', '-X', '-U', 'erp_homolog',
                 '-d', restored, '-v', 'ON_ERROR_STOP=1'],
                 input=('BEGIN; ' + statement + '; ROLLBACK;').encode(), capture_output=True)
             assert rejected.returncode != 0, 'Restored clinical database guard did not reject mutation'
         assert fingerprint(restored) == snapshot
+        assert_access_indexes(restored)
         passed('Restored PostgreSQL guards reject clinical rewrites and administrative event UPDATE/DELETE/TRUNCATE')
         start(current, restored)
         # Reauthenticate against restored accounts, rather than relying on old browser cookies.
@@ -223,6 +255,9 @@ def main():
         assert call('GET', '/api/administrative-audit', session=restored_admin) == audit_page
         passed('Restored audit API preserves event IDs, actors, deleted target, timestamps, versions and permission differences')
         restored_session = call('POST', '/api/auth/login', {'email': author['email'], 'password': password})['session']
+        assert call('GET', '/api/access-audit', session=restored_admin) == access_page
+        call('GET', '/api/access-audit', session=restored_session, expected=403)
+        passed('Restored access history preserves exact events, versions, query indexes, mutation guards and read denial')
         assert call('GET', '/api/patient-audit', session=restored_admin) == patient_page
         call('GET', '/api/patient-audit', session=restored_session, expected=403)
         assert call('GET', '/api/patients/' + patient['id'], session=restored_admin) == saved_patient

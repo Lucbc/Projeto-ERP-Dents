@@ -14,7 +14,7 @@ from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
 
 from cookie_client import CookieClient
-from smoke_clinical_recovery_homolog import run, PROJECT, DB
+from smoke_clinical_recovery_homolog import run, PROJECT, DB, assert_access_indexes
 from smoke_backup_restore_homolog import fingerprint
 from smoke_homolog import ROOT, STATE, verify_target
 
@@ -181,6 +181,18 @@ $a.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($s,'Ful
         assert len(patient_page['items']) == 2 and patient_page['next_cursor'] is None
         assert [r['changed_fields'] for r in patient_page['items']] == [[], ['notes']]
         call('GET', '/api/patient-audit', session=author_session, expected=403)
+        assert call('GET', endpoint, session=author_session) == final
+        assert call('GET', '/api/clinical-records/from-appointment/' + visits[0]['id'], session=author_session) == final
+        assert call('GET', '/api/clinical-records?patient_id=' + patient['id'], session=author_session)['total'] == 2
+        access_page = call('GET', '/api/access-audit?limit=100', session=admin)
+        assert len(access_page['items']) == 4 and access_page['next_cursor'] is None
+        assert {e['action'] for e in access_page['items']} == {
+            'clinical.record_read', 'clinical.appointment_read', 'clinical.patient_list', 'exam.download_prepared'}
+        prepared = next(e for e in access_page['items'] if e['action'] == 'exam.download_prepared')
+        assert prepared['target_id'] == exam['id'] and prepared['actor_id'] == call('GET', '/api/auth/me', session=admin)['id']
+        assert all(e['patient_id'] == patient['id'] for e in access_page['items'])
+        call('GET', '/api/access-audit', session=author_session, expected=403)
+        assert_access_indexes(database)
         snapshot = fingerprint(database)
         backup = directory / 'backup'
         run_protected_powershell(str(ROOT / 'scripts/backup-server.ps1'),
@@ -205,6 +217,13 @@ $a.AddAccessRule((New-Object Security.AccessControl.FileSystemAccessRule($s,'Ful
         finally:
             run('docker', 'exec', DB, 'rm', '-f', remote)
         assert fingerprint(restored) == snapshot
+        assert_access_indexes(restored)
+        for statement in ('UPDATE access_audit SET action=action', 'DELETE FROM access_audit', 'TRUNCATE access_audit'):
+            rejected = subprocess.run(['docker', 'exec', '-i', DB, 'psql', '-X', '-U', 'erp_homolog',
+                '-d', restored, '-v', 'ON_ERROR_STOP=1'],
+                input=('BEGIN; ' + statement + '; ROLLBACK;').encode(), capture_output=True)
+            assert rejected.returncode != 0, 'Restored access audit guard did not reject mutation'
+        assert fingerprint(restored) == snapshot
         helper = prefix + '-extract'
         containers.append(helper)
         code = '''import hashlib,json,pathlib,tarfile
@@ -228,6 +247,9 @@ print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest
         client = start_web(prefix + '-r-web', prefix + '-r-api', backup / 'tls')
         admin = call('POST', '/api/auth/login', {'email': 'full-admin@example.com', 'password': password})['session']
         author_session = call('POST', '/api/auth/login', {'email': author['email'], 'password': password})['session']
+        assert call('GET', '/api/access-audit?limit=100', session=admin) == access_page
+        call('GET', '/api/access-audit', session=author_session, expected=403)
+        passed('Operational restore preserves all four access actions, metadata, indexes, guards and read permissions')
         assert call('GET', '/api/administrative-audit', session=admin) == audit_page
         assert call('GET', '/api/patient-audit', session=admin) == patient_page
         assert call('GET', '/api/patients/' + patient['id'], session=admin) == saved_patient
@@ -245,7 +267,8 @@ print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest
         assert call('GET', '/api/exams/' + new_exam['id'] + '/download', session=admin) == png
         passed('Restored configuration/TLS, original accounts, clinical receipt replay and old/new exam bytes pass HTTPS API')
         result = subprocess.run(['node', str(ROOT / 'scripts/smoke_clinical_full_recovery_homolog.cjs')],
-            input=json.dumps({'email': author['email'], 'password': password, 'patientId': patient['id'], 'adminEmail':'full-admin@example.com'}),
+            input=json.dumps({'email': author['email'], 'password': password, 'patientId': patient['id'], 'adminEmail':'full-admin@example.com',
+                'accessEventIds': [e['id'] for e in access_page['items']], 'examId': exam['id']}),
             text=True, capture_output=True, env={**os.environ, 'NODE_EXTRA_CA_CERTS': str(backup / 'tls/ca.crt')})
         if result.returncode:
             raise RuntimeError('Restored clinical Chrome acceptance failed; sensitive diagnostics withheld.')
@@ -255,6 +278,10 @@ print(json.dumps({str(f.relative_to(p)):hashlib.sha256(f.read_bytes()).hexdigest
         assert call('GET', '/api/exams/' + new_exam['id'] + '/download', session=admin) == png
         assert call('GET', '/api/clinical-records/' + records[1]['id'], session=author_session)['text'] == 'Fictitious browser restored edit'
         assert call('GET', '/api/patient-audit', session=admin) == patient_page
+        access_after = call('GET', '/api/access-audit?limit=100', session=admin)['items']
+        assert all(e in access_after for e in access_page['items'])
+        assert len(access_after) > len(access_page['items'])
+        call('GET', '/api/access-audit', session=author_session, expected=403)
         assert fingerprint(database) == snapshot
         passed('Restored restart preserves browser draft edit and exam; source unchanged')
     finally:

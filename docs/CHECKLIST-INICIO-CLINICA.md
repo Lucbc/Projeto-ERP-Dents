@@ -1,9 +1,9 @@
 # Checklist para começar os cadastros na clínica
 
-**Pendência de pacote — 12/11/2026:** o scanner identificou correções de krb5-libs/libxslt nas imagens usadas pelo projeto. A correção foi aprovada no CI 43219031029 em 12/11, mas ainda não há nova tag instalável que a inclua. Antes de uma nova instalação na clínica, obter o pacote corrigido do suporte; não substituir a tag estável por main, que contém migrações de auditoria ainda em homologação. As liberações históricas abaixo não incluem essa correção. Se a instalação for antecipada, preparar a correção isolada sobre v0.1.30 e homologá-la antes de publicar. [Acompanhamento](./homologacao-etapa-6D-3-3B.md).
+**Pacote corrigido — 13/11/2026:** usar `piloto-cadastros-v0.1.31`, com correções krb5-libs/libxslt e auditoria de acessos/índices até 0031. CI, cadastros e recuperação completa aprovados. Seguir a tag indicada, não o desenvolvimento em main. [Notas da versão](./ATUALIZACAO-ACESSOS-V31.md).
 
 
-Preparado em 16/10/2026. Usar junto com o [passo a passo de instalação](./INSTALACAO-CLINICA-WINDOWS.md). **Esta ficha está em branco: não comprova que a clínica já foi instalada.** Versão indicada: `piloto-cadastros-v0.1.30`.
+Preparado em 16/10/2026. Usar junto com o [passo a passo de instalação](./INSTALACAO-CLINICA-WINDOWS.md). **Esta ficha está em branco: não comprova que a clínica já foi instalada.** Versão indicada: `piloto-cadastros-v0.1.31`.
 
 O suporte preenche uma cópia fora do Git, por exemplo em `.data/implantacao-clinica.md`. Não incluir senhas, código de ativação, conteúdo de `.env`, dados ou capturas de pacientes. Guardar as credenciais em local próprio.
 
@@ -26,7 +26,7 @@ Conferir os requisitos oficiais pelo roteiro de instalação; a estimativa de Wi
 - [ ] Versão/commit instalado registrado: ______; data: ______.
 - [ ] Data/hora do servidor e das estações corretas, com sincronização automática do Windows; as regras de dia da clínica usam São Paulo.
 - [ ] Configuração e certificado exclusivos desta clínica; nenhuma conta ou base de homologação copiada.
-- [ ] Na v0.1.30, migração 0028 conferida e acesso clínico negado para os perfis de digitação; nenhum novo módulo habilitado automaticamente.
+- [ ] Na v0.1.31, migração 0031 conferida e acesso clínico negado para os perfis de digitação; nenhum novo módulo habilitado automaticamente.
 - [ ] URL HTTPS abre no servidor sem aviso de certificado; `/health` responde.
 - [ ] Administrador criado e guardado pelo responsável, sem compartilhamento com a recepção.
 - [ ] Uma conta por operador, com Painel/visualizar e Pacientes/visualizar/criar/editar; exclusão e demais módulos desabilitados no perfil de digitação.
