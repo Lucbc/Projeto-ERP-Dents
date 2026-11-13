@@ -41,3 +41,9 @@ Chrome confirmou consulta inicial e atualização periódica sem interação, co
 - Evidências ignoradas: `.data/access-batch-build.log`, `access-batch-tests.log`, `access-batch-revocation.log`, `access-batch-http.log`, `access-batch-capacity.log`, `access-capacity-metrics.json`; comparação anterior em `access-capacity-before-batch.json`. Apenas métricas e dados fictícios; segredos não publicados.
 
 Logs adicionais ignorados: `.data/access-batch-browser.log` e `.data/access-batch-registration.log`.
+
+## Fechamento
+
+**B.3.2 concluída — 13/11/2026:** produto `08df9ab`; [CI 43435196341](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43435196341) aprovado: 567 testes frontend, 414 backend (632,535 s), fluxos HTTP e seis imagens sem achados. Migração 0031 e leitura clínica em lote aprovadas, incluindo capacidade com dez clientes, preservação de dados, revogação concorrente e Chrome/cadastros. [Relatório](./homologacao-etapa-6D-3-3B-otimizacao.md). **Próximo C:** ampliar os roteiros de recuperação para 0028→0031, dump/restauração e backup operacional Windows com auditoria de acessos, exames/configuração/TLS, permissões e Chrome restaurado; somente depois atualizar guias e publicar tag. Não repetir B sem mudança/falha. Sem nova versão instalável nesta etapa; v0.1.30 ainda exige pacote com patches, não instalar main parcial. P3 físico prioritário se os dados do servidor chegarem. Este fechamento substitui as pendências de CI anteriores.
+
+Log final ignorado `.data/access-batch-ci-final.log`. Nenhuma mudança de aplicação após o produto aprovado. Fechamento documental; capacidade no hardware físico e recuperação completa não foram presumidas.
