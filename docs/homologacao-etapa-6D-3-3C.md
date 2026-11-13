@@ -30,3 +30,7 @@ Chrome restaurado confirmou os eventos anteriores pelos IDs, negação ao dentis
 Bancos/contêineres privados removidos; volumes fictícios e backup protegido retidos pelo contrato do ensaio. Nenhum volume principal removido nem ACL relaxada. Log ignorado `.data/access-audit-full-recovery.log`. Aplicação/imagens/Compose idênticos ao produto `08df9ab` aprovado no CI 43435196341 (567 frontend, 414 backend, seis imagens sem achados); não é necessário repetir esse CI por mudanças apenas nos roteiros executados localmente e documentação.
 
 C concluída. Próximo: publicar v0.1.31 com guias alinhados à revisão 0031 e verificar avanço Git da v0.1.30. O ensaio não substitui o checklist físico da clínica.
+
+## Publicação verificada
+
+**Publicação concluída — 13/11/2026:** `piloto-cadastros-v0.1.31` = `879efa612d09285b205edc0f473d106ab5a86a65`, publicada e conferida no remoto. Avanço de checkout limpo v0.1.30 aprovado pelo verificador; aplicação/imagens/Compose idênticos ao produto `08df9ab` do CI 43435196341. Migração 0028→0031 e recuperação completa aprovadas; guias alinhados. Inclui os patches krb5-libs/libxslt antes pendentes na tag. **Pronto para instalação assistida do piloto de cadastros após checklist físico; a clínica ainda não foi instalada.** Próximo: priorizar P3 assim que houver dados do servidor. Enquanto aguardamos, retomar a seleção de melhorias no plano principal sem repetir esta auditoria nem condicionar o início dos cadastros às melhorias adiadas; odontograma permanece posterior. Este fechamento substitui pendências de publicação/patch anteriores.
