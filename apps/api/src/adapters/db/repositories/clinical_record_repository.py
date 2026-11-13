@@ -102,9 +102,20 @@ class SqlAlchemyClinicalRecordRepository:
             self._authorize(users, actor_id, session_id, 'view')
             params = {'patient': patient_id, 'limit': limit, 'offset': offset}
             total = self.session.scalar(sql('SELECT count(*) FROM clinical_records WHERE patient_id=:patient'), params)
-            ids = self.session.scalars(sql('''SELECT id FROM clinical_records WHERE patient_id=:patient
-                ORDER BY created_at DESC,id DESC LIMIT :limit OFFSET :offset'''), params).all()
-            records = [self._load(item) for item in ids]
+            rows = [dict(row) for row in self.session.execute(sql('''
+                SELECT * FROM clinical_records WHERE patient_id=:patient
+                ORDER BY created_at DESC,id DESC LIMIT :limit OFFSET :offset FOR UPDATE'''), params).mappings()]
+            # Keep the authorization/row locks through audit commit, but fetch
+            # addenda once per page instead of two round trips per record.
+            additions = {row['id']: [] for row in rows}
+            if rows:
+                for item in self.session.execute(sql('''
+                    SELECT record_id,id,author_id,author_name,dentist_id,text,reason,recorded_at
+                    FROM clinical_addenda WHERE record_id = ANY(:ids)
+                    ORDER BY record_id,record_version'''), {'ids': list(additions)}).mappings():
+                    data = dict(item)
+                    additions[data.pop('record_id')].append(data)
+            records = [_decode({**row, 'addenda': additions[row['id']]}) for row in rows]
             record_clinical_access(self.session, actor_id=actor_id, action='clinical.patient_list',
                 target_id=patient_id, patient_id=patient_id, records=records, limit=limit, offset=offset)
             self.session.commit()

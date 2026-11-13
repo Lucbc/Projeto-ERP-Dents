@@ -81,6 +81,24 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
                'clients': 10, 'rounds_per_client': 6, 'batches_per_phase': 3,
                'environment': {'docker_cpus': engine['NCPU'], 'docker_memory_bytes': engine['MemTotal'],
                    'api_image': json.loads(docker('inspect', container).stdout)[0]['Image']}, 'phases': {}}
+    index_count = int(sql(f"SELECT count(*) FROM pg_indexes WHERE schemaname='{schema}' AND indexname IN "
+        "('ix_access_audit_time','ix_access_audit_target','ix_access_audit_action')"))
+    assert index_count in (0, 3), 'Unexpected partial index installation'
+    phases = ('optimized',) if index_count == 3 else ('baseline', 'candidate_indexes')
+    if index_count == 3:
+        # Exercise actual Alembic upgrade with populated history, not equivalent DDL.
+        def audit_hash():
+            return sql(f"SELECT md5(string_agg(md5(to_jsonb(a)::text),'' ORDER BY id)) FROM {schema}.access_audit a")
+        before = audit_hash()
+        docker('exec', container, 'python', '-m', 'alembic', 'downgrade', '0030_exam_access_audit')
+        assert audit_hash() == before
+        started = perf_counter()
+        docker('exec', container, 'python', '-m', 'alembic', 'upgrade', 'head')
+        metrics['populated_migration_seconds'] = round(perf_counter()-started, 3)
+        assert audit_hash() == before
+        assert int(sql(f"SELECT count(*) FROM pg_indexes WHERE schemaname='{schema}' AND indexname IN "
+            "('ix_access_audit_time','ix_access_audit_target','ix_access_audit_action')")) == 3
+        passed('Actual 0030 to 0031 upgrade and index-only downgrade preserve all 192000 synthetic events')
     listing = '/api/clinical-records?patient_id=' + patient['id']
     fields = 'id,occurred_at,actor_id,action,patient_id,target_id,record_ids,record_versions,returned_count,page_limit,page_offset'
     filters = {
@@ -148,7 +166,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         return {'duration_s': round(duration, 2), 'requests': len(rows), 'latency': summary,
                 'p95_under_2s': all(row['p95_ms'] < 2000 for row in summary.values())}
 
-    for label in ('baseline', 'candidate_indexes'):
+    for label in phases:
         if label == 'candidate_indexes':
             for name, columns in [('time', 'occurred_at DESC,id DESC'),
                                   ('target', 'target_id,occurred_at DESC,id DESC'),
@@ -160,7 +178,7 @@ def verify(request, email, password, token, container, ready, passed, sql, schem
         metrics['phases'][label] = phase
         REPORT.write_text(json.dumps(metrics, indent=2), encoding='utf-8')
         passed(label + ': three batches; 570 HTTP requests, 180 clinical audit events and thirty concurrent patient creations verified')
-    assert sql(f'SELECT count(*) FROM {schema}.patients') == '5060'
+    assert int(sql(f'SELECT count(*) FROM {schema}.patients')) == 5000 + 30*len(phases)
     assert sql(f'SELECT count(*) FROM {schema}.clinical_records') == '100'
     browser_before = int(sql(f'SELECT count(*) FROM {schema}.access_audit'))
     browser(request, email, password, token, container, ready, passed, sql, schema,

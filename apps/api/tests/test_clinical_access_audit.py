@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 from uuid import uuid4
 
-from sqlalchemy import text
+from sqlalchemy import event, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -131,13 +131,19 @@ class ClinicalAccessAuditTests(unittest.TestCase):
         self.assertEqual(self.events(), original)
 
     def test_revocation_committed_while_read_waits_prevents_content_and_event(self):
+        self.assert_revocation_while_waiting('get', self.record.id)
+
+    def test_revocation_committed_while_batch_waits_prevents_content_and_event(self):
+        self.assert_revocation_while_waiting('list_for_patient', self.record.patient_id)
+
+    def assert_revocation_while_waiting(self, method, target):
         ready, pids = threading.Event(), []
         def attempt():
             with Session(self.engine) as db:
                 pids.append(db.scalar(text('SELECT pg_backend_pid()')))
                 ready.set()
                 with self.assertRaises(ForbiddenError):
-                    SqlAlchemyClinicalRecordRepository(db).get(self.record.id,
+                    getattr(SqlAlchemyClinicalRecordRepository(db), method)(target,
                         actor_id=self.fixture.actor, session_id=self.fixture.session_id)
         with ThreadPoolExecutor(max_workers=1) as pool:
             with Session(self.engine) as db:
@@ -153,6 +159,53 @@ class ClinicalAccessAuditTests(unittest.TestCase):
                     db.commit()
             pending.result(timeout=10)
         self.assertEqual(self.events(), [])
+
+    def test_batch_page_preserves_addenda_order_versions_and_bounded_queries(self):
+        first = self.fixture.call('addendum', self.record.id, version=2,
+                                  text='First fictitious addition', reason='Clarification')
+        first = self.fixture.call('addendum', first.id, version=3,
+                                  text='Second fictitious addition', reason='Correction')
+        records = [first]
+        for hour in (2, 4):
+            visit = self.fixture.fixture.insert(self.fixture.fixture.data(hour=hour))
+            records.append(self.fixture.call(target=visit, text='Fictitious other evolution'))
+        foreign_visit = self.fixture.fixture.insert(self.fixture.fixture.data(patient=1, hour=6))
+        self.fixture.call(target=foreign_visit, text='Fictitious foreign patient evolution')
+        ordered = sorted(records, key=lambda r: (r.created_at, r.id), reverse=True)
+        queries = []
+        def capture(connection, cursor, statement, parameters, context, many):
+            normalized = statement.lower().strip()
+            if normalized.startswith('select') and ('from clinical_records' in normalized or 'from clinical_addenda' in normalized):
+                queries.append(normalized)
+        event.listen(self.engine, 'before_cursor_execute', capture)
+        try:
+            result = self.read('list_for_patient', self.record.patient_id, limit=100)
+        finally:
+            event.remove(self.engine, 'before_cursor_execute', capture)
+        self.assertEqual(result, {'items': ordered, 'total': 3})
+        self.assertLessEqual(len(queries), 3, 'Page query count must not grow with number of evolutions')
+        self.assertEqual(self.read('list_for_patient', self.record.patient_id, limit=2, offset=1),
+                         {'items': ordered[1:], 'total': 3})
+        self.assertEqual(self.events()[0]['record_ids'], [r.id for r in ordered])
+        self.assertEqual(self.events()[0]['record_versions'], [r.version for r in ordered])
+
+    def test_index_migration_preserves_populated_history_and_guards(self):
+        self.read()
+        original = self.events()
+        migrate = self.fixture.fixture.migrate
+        self.assertEqual(migrate('downgrade', '0030_exam_access_audit').returncode, 0)
+        self.assertEqual(self.events(), original)
+        self.assertEqual(migrate('upgrade', 'head').returncode, 0)
+        self.assertEqual(self.events(), original)
+        with self.engine.connect() as db:
+            definitions = dict(db.execute(text("SELECT indexname,indexdef FROM pg_indexes WHERE schemaname=current_schema() AND tablename='access_audit'" )).all())
+        for name in ('time', 'target', 'action'):
+            self.assertIn('ix_access_audit_' + name, definitions)
+            self.assertIn('occurred_at DESC, id DESC', definitions['ix_access_audit_' + name])
+        for statement in ('UPDATE access_audit SET action=action', 'DELETE FROM access_audit', 'TRUNCATE access_audit'):
+            with self.assertRaises(IntegrityError):
+                with self.engine.begin() as db: db.execute(text(statement))
+        self.assertEqual(self.events(), original)
 
     def test_migration_from_0028_preserves_records_and_starts_empty(self):
         self.assertEqual(self.fixture.fixture.migrate('downgrade','0028_patient_audit').returncode, 0)
