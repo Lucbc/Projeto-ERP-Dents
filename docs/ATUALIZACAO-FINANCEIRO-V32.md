@@ -1,6 +1,6 @@
 # v0.1.32 — paginação financeira e correção de dependência
 
-Preparação em 16/11/2026. **Aguardando CI; tag ainda não publicada.**
+Consolidação em 16/11/2026. Tag: `piloto-cadastros-v0.1.32`.
 
 ## Mudanças
 
@@ -18,6 +18,6 @@ Antes da manutenção, conferir backup completo. Seguir o roteiro para parar gat
 ## Evidências e limites
 
 - [Homologação 6E.1](./homologacao-etapa-6E-1.md): componentes, PostgreSQL, HTTP e Chrome com 205 lançamentos; regressões financeiras e de cadastros aprovadas.
-- Build da API corrigida e cadastros Chrome/API/SQL aprovados. Auditorias npm/Python sem achados. CI completo do produto `bcf55f3` ainda em execução.
+- Build da API corrigida e cadastros Chrome/API/SQL aprovados. Auditorias npm/Python sem achados. [CI 43870480572](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43870480572) do produto `bcf55f3` aprovado: 570 testes frontend, 415 backend (976,154 s), fluxos HTTP e seis imagens sem achados.
 - Recuperação completa da revisão 0031 validada na [v0.1.31](./homologacao-etapa-6D-3-3C.md). Não repetida nesta etapa, que não altera migração, armazenamento ou configuração operacional.
 - A instalação física ainda depende dos dados do computador e do [checklist local](./CHECKLIST-INICIO-CLINICA.md). Não representa aceite no servidor da clínica nem habilita novos módulos automaticamente.

@@ -1,9 +1,9 @@
 # Checklist para começar os cadastros na clínica
 
-**Pacote corrigido — 13/11/2026:** usar `piloto-cadastros-v0.1.31`, com correções krb5-libs/libxslt e auditoria de acessos/índices até 0031. CI, cadastros e recuperação completa aprovados. Seguir a tag indicada, não o desenvolvimento em main. [Notas da versão](./ATUALIZACAO-ACESSOS-V31.md).
+**Pacote corrigido — 16/11/2026:** usar `piloto-cadastros-v0.1.32`, com paginação financeira e dnspython 2.9.2. CI e cadastros aprovados; mantém a revisão 0031 e a configuração da v0.1.31. Seguir a tag indicada, não o desenvolvimento em main. [Notas da versão](./ATUALIZACAO-FINANCEIRO-V32.md).
 
 
-Preparado em 16/10/2026. Usar junto com o [passo a passo de instalação](./INSTALACAO-CLINICA-WINDOWS.md). **Esta ficha está em branco: não comprova que a clínica já foi instalada.** Versão indicada: `piloto-cadastros-v0.1.31`.
+Preparado em 16/10/2026. Usar junto com o [passo a passo de instalação](./INSTALACAO-CLINICA-WINDOWS.md). **Esta ficha está em branco: não comprova que a clínica já foi instalada.** Versão indicada: `piloto-cadastros-v0.1.32`.
 
 O suporte preenche uma cópia fora do Git, por exemplo em `.data/implantacao-clinica.md`. Não incluir senhas, código de ativação, conteúdo de `.env`, dados ou capturas de pacientes. Guardar as credenciais em local próprio.
 
@@ -26,7 +26,7 @@ Conferir os requisitos oficiais pelo roteiro de instalação; a estimativa de Wi
 - [ ] Versão/commit instalado registrado: ______; data: ______.
 - [ ] Data/hora do servidor e das estações corretas, com sincronização automática do Windows; as regras de dia da clínica usam São Paulo.
 - [ ] Configuração e certificado exclusivos desta clínica; nenhuma conta ou base de homologação copiada.
-- [ ] Na v0.1.31, migração 0031 conferida e acesso clínico negado para os perfis de digitação; nenhum novo módulo habilitado automaticamente.
+- [ ] Na v0.1.32, revisão 0031 conferida e acesso clínico negado para os perfis de digitação; nenhum novo módulo habilitado automaticamente.
 - [ ] URL HTTPS abre no servidor sem aviso de certificado; `/health` responde.
 - [ ] Administrador criado e guardado pelo responsável, sem compartilhamento com a recepção.
 - [ ] Uma conta por operador, com Painel/visualizar e Pacientes/visualizar/criar/editar; exclusão e demais módulos desabilitados no perfil de digitação.
