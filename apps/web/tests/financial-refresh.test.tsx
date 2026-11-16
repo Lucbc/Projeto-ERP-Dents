@@ -93,7 +93,7 @@ it("refreshes list and totals without writes or polling form references, and sho
   vi.mocked(financialService.summary).mockResolvedValue({ ...summary, received_cents: 12000, entries_count: 205 });
   await tick(15010);
   expect(list().getByText("Remote paid")).toBeTruthy(); expect(list().getByRole("cell", { name: "Pago", exact: true })).toBeTruthy();
-  expect(list().getByText(/Exibindo 1 de 205/).textContent).toContain("Limite desta lista: 200");
+  expect(list().getByText(/Exibindo 1 de 205/).textContent).toContain("Até 200 por página");
   expect(totals().getByText(/Lancamentos: 205/)).toBeTruthy();
   expect(financialService.list).toHaveBeenCalledTimes(2); expect(financialService.summary).toHaveBeenCalledTimes(2);
   expect(patientService.listAll).toHaveBeenCalledTimes(1); expect(appointmentService.list).not.toHaveBeenCalled();
@@ -232,4 +232,46 @@ it("forwards cancellation to both financial HTTP reads", async () => {
   await financialService.list({ limit: 200 }, signal); await financialService.summary({ from: "2030-01-01" }, signal);
   expect(get).toHaveBeenCalledWith("/api/financial", { params: { limit: 200 }, signal });
   expect(get).toHaveBeenCalledWith("/api/financial/summary", { params: { from: "2030-01-01" }, signal });
+});
+
+
+it("paginates financial history beyond 200 and resets filters without changing the summary scope", async () => {
+  vi.mocked(financialService.list).mockImplementation(async params => ({
+    items: [{ ...entry, description: params.offset ? "Second page" : "First page" }], total: 205,
+  }));
+  show(); await tick();
+  fireEvent.click(list().getByRole("button", { name: "Próxima página" })); await tick();
+  expect(list().getByText("Second page")).toBeTruthy();
+  expect(financialService.list).toHaveBeenLastCalledWith(expect.objectContaining({ limit: 200, offset: 200 }), expect.any(AbortSignal));
+  expect(list().getByRole("button", { name: "Próxima página" }).hasAttribute("disabled")).toBe(true);
+  expect(financialService.summary).toHaveBeenCalledTimes(1);
+  fireEvent.change(list().getByPlaceholderText("Buscar por descricao, paciente ou dentista"), { target: { value: "needle" } }); await tick();
+  expect(financialService.list).toHaveBeenLastCalledWith(expect.objectContaining({ search: "needle", offset: 0 }), expect.any(AbortSignal));
+  expect(list().getByRole("button", { name: "Página anterior" }).hasAttribute("disabled")).toBe(true);
+});
+
+
+it("keeps the selected page on failure, clamps it after remote deletion, and never invents zero totals", async () => {
+  vi.mocked(financialService.list).mockImplementation(async params => ({
+    items: [{ ...entry, description: params.offset ? "Last row" : "First row" }], total: 201,
+  }));
+  show(); await tick(); fireEvent.click(list().getByRole("button", { name: "Próxima página" })); await tick();
+  vi.mocked(financialService.list).mockRejectedValue(failure(503)); await tick(15010);
+  expect(list().getByText("Last row")).toBeTruthy();
+  expect(list().getByText(/Página 2 de 2/)).toBeTruthy();
+  vi.mocked(financialService.list).mockImplementation(async params => ({ items: params.offset ? [] : [entry], total: 200 }));
+  fireEvent.click(list().getByRole("button", { name: "Atualizar lançamentos financeiros" })); await tick();
+  expect(list().getByText(/Página 1 de 1/)).toBeTruthy();
+  expect(financialService.list).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 0 }), expect.any(AbortSignal));
+});
+
+it("preserves an open edit and its captured version across page refreshes", async () => {
+  vi.mocked(financialService.list).mockImplementation(async params => ({ items: [entry], total: 201 }));
+  const field = show(); await tick(); fireEvent.click(list().getByRole("button", { name: "Próxima página" })); await tick();
+  fireEvent.click(list().getByRole("button", { name: "Editar", exact: true })); await tick();
+  fireEvent.change(field("description"), { target: { value: "Unsaved page-two draft" } });
+  vi.mocked(financialService.list).mockResolvedValue({ items: [{ ...entry, version: 8 }], total: 201 });
+  await tick(15010);
+  expect(field("description").value).toBe("Unsaved page-two draft");
+  expect(list().getByText(/Página 2 de 2/)).toBeTruthy();
 });

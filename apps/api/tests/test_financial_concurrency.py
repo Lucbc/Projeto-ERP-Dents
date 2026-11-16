@@ -1,10 +1,10 @@
 """Financial races use independent connections and disposable fictitious schemas."""
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, datetime, timezone
 import os
 from threading import Barrier
 import unittest
-from uuid import uuid4
+from uuid import UUID, uuid4
 from types import SimpleNamespace
 
 from sqlalchemy import select, text, Table, MetaData
@@ -92,6 +92,24 @@ class FinancialConcurrencyTests(unittest.TestCase):
         result = self.race([lambda uc: uc.create(self.data())]*2)
         self.assertEqual(sorted(status for status,_ in result), ['conflict','ok'])
         self.assertEqual(self.count(), 1)
+
+    def test_tied_dates_have_stable_pages_without_duplicate_or_missing_rows(self):
+        ids = [UUID(int=n) for n in (3, 1, 2)]
+        with Session(self.engine) as db:
+            for identifier in ids:
+                db.add(FinancialEntryModel(id=identifier, entry_type='income', status='pending',
+                    description='Fictitious pagination charge', amount_cents=1000, total_cents=1000,
+                    due_date=date(2030, 1, 7), created_at=datetime(2030, 1, 1, tzinfo=timezone.utc)))
+            db.commit()
+            repository = SqlAlchemyFinancialRepository(db)
+            params = dict(search=None, entry_type=None, status=None, dt_from=None, dt_to=None,
+                          patient_id=None, dentist_id=None, appointment_id=None, limit=2)
+            first, total = repository.list(**params, offset=0)
+            second, second_total = repository.list(**params, offset=2)
+            self.assertEqual(total, 3)
+            self.assertEqual(second_total, 3)
+            self.assertEqual([row.id for row in first + second], sorted(ids, reverse=True))
+            self.assertEqual(repository.list(**params, offset=4), ([], 3))
 
     def test_same_key_concurrent_generation_returns_same_entry(self):
         key = uuid4()

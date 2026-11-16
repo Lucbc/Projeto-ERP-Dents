@@ -132,6 +132,8 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   const [toDate, setToDate] = useState("");
   const [patientFilter, setPatientFilter] = useState("");
   const [dentistFilter, setDentistFilter] = useState("");
+  const [offset, setOffset] = useState(0);
+  const pageSize = 200;
 
   const [openEntryModal, setOpenEntryModal] = useState(false);
   const [openGenerateModal, setOpenGenerateModal] = useState(false);
@@ -209,6 +211,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
       toDate,
       patientFilter,
       dentistFilter,
+      offset,
     ],
     (signal) => guard(() => financialService.list({
         search: search || undefined,
@@ -218,10 +221,16 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
         to: toDate || undefined,
         patient_id: patientFilter || undefined,
         dentist_id: dentistFilter || undefined,
-        limit: 200,
-        offset: 0,
+        limit: pageSize,
+        offset,
       }, signal)),
   );
+
+  useEffect(() => {
+    if (!financialEntriesQuery.isSuccess || financialEntriesQuery.isFetching || !financialEntriesQuery.data) return;
+    const lastOffset = Math.max(0, Math.ceil(financialEntriesQuery.data.total / pageSize) - 1) * pageSize;
+    if (offset > lastOffset) setOffset(lastOffset);
+  }, [financialEntriesQuery.isSuccess, financialEntriesQuery.isFetching, financialEntriesQuery.data, offset]);
 
   const summaryQuery = useLiveQuery(
     ["financial", "summary", fromDate, toDate],
@@ -480,6 +489,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
   };
 
   const clearFilters = () => {
+    setOffset(0);
     setSearch("");
     setEntryTypeFilter("");
     setStatusFilter("");
@@ -576,9 +586,9 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
           <Input
             placeholder="Buscar por descricao, paciente ou dentista"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => { setSearch(event.target.value); setOffset(0); }}
           />
-          <Select aria-label="Filtrar por tipo" value={entryTypeFilter} onChange={(event) => setEntryTypeFilter(event.target.value)}>
+          <Select aria-label="Filtrar por tipo" value={entryTypeFilter} onChange={(event) => { setEntryTypeFilter(event.target.value); setOffset(0); }}>
             <option value="">Todos tipos</option>
             {financialEntryTypeOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -586,7 +596,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
               </option>
             ))}
           </Select>
-          <Select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <Select aria-label="Filtrar por status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setOffset(0); }}>
             <option value="">Todos status</option>
             {financialEntryStatusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -595,10 +605,10 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
             ))}
           </Select>
           <div className="grid grid-cols-2 gap-2">
-            <Input aria-label="Vencimento inicial" type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-            <Input aria-label="Vencimento final" type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+            <Input aria-label="Vencimento inicial" type="date" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setOffset(0); }} />
+            <Input aria-label="Vencimento final" type="date" value={toDate} onChange={(event) => { setToDate(event.target.value); setOffset(0); }} />
           </div>
-          <Select disabled={!pageReferences.patients.ready} aria-label="Filtrar por paciente" value={patientFilter} onChange={(event) => setPatientFilter(event.target.value)}>
+          <Select disabled={!pageReferences.patients.ready} aria-label="Filtrar por paciente" value={patientFilter} onChange={(event) => { setPatientFilter(event.target.value); setOffset(0); }}>
             <option value="">Todos pacientes</option>
             {patientFilter && !patients.some(item => item.id === patientFilter) && <option value={patientFilter}>Paciente indisponível — filtro mantido</option>}
             {patients.map((patient) => (
@@ -607,7 +617,7 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
               </option>
             ))}
           </Select>
-          <Select disabled={!pageReferences.dentists.ready} aria-label="Filtrar por dentista" value={dentistFilter} onChange={(event) => setDentistFilter(event.target.value)}>
+          <Select disabled={!pageReferences.dentists.ready} aria-label="Filtrar por dentista" value={dentistFilter} onChange={(event) => { setDentistFilter(event.target.value); setOffset(0); }}>
             <option value="">Todos dentistas</option>
             {dentistFilter && !dentists.some(item => item.id === dentistFilter) && <option value={dentistFilter}>Dentista indisponível — filtro mantido</option>}
             {dentists.map((dentist) => (
@@ -627,9 +637,17 @@ function FinancialContent({ guard }: { guard: FinancialRead }) {
       <LiveQueryStatus query={financialEntriesQuery} subject="lançamentos financeiros" />
       {!financialEntriesQuery.data && !financialEntriesQuery.isError && <LoadingState message="Carregando lancamentos financeiros..." />}
       {financialEntriesQuery.data && <p className="text-sm text-muted-foreground">
-        Exibindo {entries.length} de {financialEntriesQuery.data.total} lançamentos. Limite desta lista: 200.
-        {financialEntriesQuery.data.total > entries.length && " Refine os filtros para localizar os demais lançamentos."}
+        Exibindo {entries.length} de {financialEntriesQuery.data.total} lançamentos. Até {pageSize} por página.
+        {financialEntriesQuery.data.total > pageSize && " Use as páginas ou refine os filtros."}
       </p>}
+      <nav aria-label="Paginação dos lançamentos" className="flex flex-wrap items-center gap-3">
+        <Button variant="outline" disabled={offset === 0 || financialEntriesQuery.isFetching || !financialEntriesQuery.online}
+          onClick={() => setOffset(current => Math.max(0, current - pageSize))}>Página anterior</Button>
+        <span aria-live="polite">Página {offset / pageSize + 1}
+          {financialEntriesQuery.data && ` de ${Math.max(1, Math.ceil(financialEntriesQuery.data.total / pageSize))}`}</span>
+        <Button variant="outline" disabled={!financialEntriesQuery.data || financialEntriesQuery.isError || financialEntriesQuery.isFetching || !financialEntriesQuery.online || offset + pageSize >= financialEntriesQuery.data.total}
+          onClick={() => setOffset(current => current + pageSize)}>Próxima página</Button>
+      </nav>
 
       {financialEntriesQuery.data && (
         <Card>

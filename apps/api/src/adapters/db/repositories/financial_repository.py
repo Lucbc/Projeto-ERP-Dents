@@ -76,7 +76,7 @@ class SqlAlchemyFinancialRepository(FinancialHistoryMixin, FinancialRepository):
 
         total = self.session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
         rows = self.session.execute(
-            stmt.order_by(FinancialEntryModel.due_date.desc(), FinancialEntryModel.created_at.desc())
+            stmt.order_by(FinancialEntryModel.due_date.desc(), FinancialEntryModel.created_at.desc(), FinancialEntryModel.id.desc())
             .limit(limit)
             .offset(offset)
         ).all()
