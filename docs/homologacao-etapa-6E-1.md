@@ -29,4 +29,8 @@ Evidências locais ignoradas: `.data/financial-pagination-before.log`, `financia
 
 ## Próximo
 
-Aceites funcionais e CI concluídos. Guias alinhados para v0.1.32/0031; publicar e conferir a tag e o avanço de checkout limpo da v0.1.31. Não repetir recuperação completa por esta alteração sem migração, armazenamento ou configuração; dados financeiros não são regravados pela nova navegação.
+Aceites funcionais, CI e publicação concluídos. Guias alinhados para v0.1.32/0031; tag e avanço de checkout limpo da v0.1.31 conferidos. Não repetir recuperação completa por esta alteração sem migração, armazenamento ou configuração; dados financeiros não são regravados pela nova navegação.
+
+## Publicação verificada
+
+**Publicação 6E.1 concluída — 16/11/2026:** `piloto-cadastros-v0.1.32` = `32873f916f7ab8cf2b0fa0f02642e5c517cd608f`, tag anotada publicada e conferida no remoto. Produto idêntico a `bcf55f3`, CI 43870480572 aprovado (570 frontend, 415 backend, HTTP e seis imagens sem achados). Avanço de checkout limpo v0.1.31 aprovado; guias atualizados; dnspython 2.9.2 incluído. **Pronto para instalação assistida dos cadastros após checklist físico; clínica ainda não instalada.** Revisão 0031, sem migração/configuração nova. Próximo: P3 físico assim que chegarem dados do servidor; enquanto isso, selecionar o próximo residual do plano principal a partir dos achados documentados, sem repetir paginação, auditoria ou recuperação já aceitas. Odontograma continua posterior. Este fechamento substitui pendências de CI/publicação desta etapa.
