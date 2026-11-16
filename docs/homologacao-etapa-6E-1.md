@@ -13,13 +13,17 @@ Resumo financeiro mantém seu escopo por vencimento, independente da página. At
 - Reprodução: teste de componente falhou pela ausência do botão de próxima página antes da correção.
 - Componentes: 48 testes aprovados em cinco arquivos, incluindo paginação/reset de busca, resumo independente, erro/recuperação, redução remota e rascunho preservado; regressões de edição, pagamentos e referências incluídas.
 - Backend/PostgreSQL: 50 testes financeiros aprovados em 213,957 s, incluindo novo caso de empate de datas com paginação sem repetição/omissão; histórico, versões, concorrência e datas mantidos.
-- Build API/web aprovado. Nenhuma dependência ou esquema alterado.
+- Build API/web da paginação aprovado. Esquema inalterado; atualização posterior de dependência descrita abaixo.
 - API/SQL: massa fictícia de 205 lançamentos com datas iguais, ordem por ID conferida integralmente; páginas 200+5 e página além do fim vazia com total correto.
 - Chrome/API: perfil somente leitura, primeira/segunda página, erro 503 com linhas preservadas e recuperação, busca/limpeza de filtros, exclusão de cinco lançamentos por outra sessão com retorno à primeira página e revogação de acesso. Zero escritas pelo leitor. Captura da segunda página inspecionada.
 - SQL final: 200 linhas restantes, versões e valores preservados, nenhum pagamento gerado. Esquema/API/segredos temporários removidos; volumes principais preservados.
 - Primeiro ensaio da massa SQL parou antes da interface porque faltava definir search_path do esquema privado para os triggers financeiros. Preparação corrigida e ensaio repetido com sucesso; não foi alteração do comportamento da aplicação.
 
-Regressões adicionais de histórico/pagamentos HTTP, atualização financeira Chrome e cadastros estão em execução na retomada. CI completo ainda pendente.
+Regressões adicionais de histórico/pagamentos HTTP, atualização financeira Chrome (sessões independentes, conflitos, filtros/rascunhos, erros e revogação) e cadastros Chrome/API/SQL aprovadas. Logs locais `financial-pagination-history.log`, `financial-pagination-refresh.log` e `financial-pagination-registration.log`.
+
+## Correção da auditoria de dependências
+
+CI [43869711128](https://github.com/Lucbc/Projeto-ERP-Dents/actions/runs/43869711128) do produto `32daad6` interrompido antes dos testes pela auditoria Python. Reprodução local identificou dnspython 2.9.0 afetado por CVE-2026-128089 / GHSA-vvf4-9x63-8xvv, consumo excessivo de memória/CPU ao interpretar registro WKS de arquivo de zona malicioso. O ERP não oferece importação de zonas DNS; a dependência é mantida por email-validator. Atualização restrita para a versão corrigida 2.9.2, sem alterar outras versões do lock. Auditorias npm/Python locais aprovadas em `.data/security-pagination-fixed`. Build e cadastros com o patch e novo CI completo ainda pendentes; sem tag parcial.
 
 Evidências locais ignoradas: `.data/financial-pagination-before.log`, `financial-pagination-components.log`, `financial-pagination-backend.log`, `financial-pagination-build.log`, `financial-pagination-api-build.log`, `financial-pagination-browser.log` e `financial-pagination-page-two.png`.
 
